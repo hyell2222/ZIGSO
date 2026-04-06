@@ -4,12 +4,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
-import { AdminDashboard } from "@/app/admin/auth/components/admin-dashboard";
+import { AdminAuthForm } from "@/app/admin/auth/components/admin-auth-form";
 import { SupabaseConfigNotice } from "@/app/admin/auth/components/supabase-config-notice";
-import { TopNav } from "@/components/layout/top-nav";
 import { hasSupabaseEnv, supabase } from "@/lib/supabase";
 
-export default function AdminPage() {
+export default function AdminSignInPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
 
@@ -22,38 +21,35 @@ export default function AdminPage() {
     enabled: hasSupabaseEnv,
   });
 
-  const signOutMutation = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase.auth.signOut();
+  const signInMutation = useMutation({
+    mutationFn: async ({ email, password }: { email: string; password: string }) => {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["auth-session"] });
+      router.replace("/admin");
     },
   });
 
   useEffect(() => {
     if (!hasSupabaseEnv || sessionQuery.isLoading) return;
-    if (!sessionQuery.data) router.replace("/admin/sign-in");
+    if (sessionQuery.data) router.replace("/admin");
   }, [router, sessionQuery.data, sessionQuery.isLoading]);
 
+  if (!hasSupabaseEnv) return <SupabaseConfigNotice />;
+
   return (
-    <div className="min-h-screen">
-      <TopNav />
-      <main className="flex justify-center items-center py-40">
-        {!hasSupabaseEnv ? (
-          <SupabaseConfigNotice />
-        ) : sessionQuery.data ? (
-          <AdminDashboard
-            onSignOut={async () => {
-              await signOutMutation.mutateAsync();
-            }}
-            isSigningOut={signOutMutation.isPending}
-          />
-        ) : (
-          <p className="text-sm text-slate-400">Redirecting to sign in...</p>
-        )}
-      </main>
-    </div>
+    <AdminAuthForm
+      mode="sign-in"
+      onSubmit={async (email, password) => {
+        await signInMutation.mutateAsync({ email, password });
+      }}
+      isLoading={signInMutation.isPending}
+      message={signInMutation.error?.message ?? null}
+      switchHref="/admin/sign-up"
+      switchPrompt="No account yet?"
+      switchLabel="Sign up"
+    />
   );
 }

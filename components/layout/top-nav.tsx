@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Shield, Users } from "lucide-react";
+import { Shield } from "lucide-react";
 
 export function TopNav() {
   return (

@@ -1,40 +1,48 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, LogOut, Sparkles, Timer, Users } from "lucide-react";
-import { FormEvent, useMemo, useState } from "react";
+import { Loader2, Sparkles, Timer, Users } from "lucide-react";
+import { useMemo, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { supabase } from "@/lib/supabase";
 import { GamePhase } from "@/lib/types";
-import { hasSupabaseEnv, supabase } from "@/lib/supabase";
 
 const PHASES: GamePhase[] = ["briefing", "evidence", "interrogation", "deduction", "verdict"];
+const DEFAULT_PROMPT =
+  "Generate a school-safe cyberpunk mystery for 11th grade students with four teams and conflicting motives.";
+const TEAM_TEMPLATES = [
+  ["Signal Analysts", "Analyze digital evidence and camera logs."],
+  ["Bio-Forensics Unit", "Interpret forensic anomalies and scene traces."],
+  ["Witness Interrogation Desk", "Cross-check statements and contradictions."],
+  ["Internal Affairs", "Investigate hidden motives and institutional secrets."],
+] as const;
 
-type AuthView = "sign-in" | "dashboard";
+type AdminDashboardProps = {
+  onSignOut: () => Promise<void>;
+  isSigningOut?: boolean;
+};
 
-export function AdminDashboard() {
+type GameSummary = {
+  id: string;
+  title: string;
+  phase: GamePhase;
+  classroom_code: string;
+  created_at: string;
+};
+
+function generateCode(length: number) {
+  return Math.random().toString(36).slice(2, 2 + length).toUpperCase();
+}
+
+export function AdminDashboard({ onSignOut, isSigningOut }: AdminDashboardProps) {
   const queryClient = useQueryClient();
-  const [authView, setAuthView] = useState<AuthView>("sign-in");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [selectedGameId, setSelectedGameId] = useState<string>("");
-  const [scenarioPrompt, setScenarioPrompt] = useState(
-    "Generate a school-safe cyberpunk mystery for 11th grade students with four teams and conflicting motives.",
-  );
-
-  const sessionQuery = useQuery({
-    queryKey: ["auth-session"],
-    queryFn: async () => {
-      const { data } = await supabase.auth.getSession();
-      return data.session;
-    },
-    enabled: hasSupabaseEnv,
-  });
+  const [scenarioPrompt, setScenarioPrompt] = useState(DEFAULT_PROMPT);
 
   const gamesQuery = useQuery({
     queryKey: ["admin-games"],
@@ -45,40 +53,14 @@ export function AdminDashboard() {
         .order("created_at", { ascending: false })
         .limit(20);
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []) as GameSummary[];
     },
-    enabled: Boolean(sessionQuery.data),
   });
 
   const activeGame = useMemo(
     () => gamesQuery.data?.find((game) => game.id === selectedGameId),
     [gamesQuery.data, selectedGameId],
   );
-
-  const signInMutation = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) throw error;
-    },
-    onSuccess: async () => {
-      setMessage("Teacher session connected.");
-      setAuthView("dashboard");
-      await queryClient.invalidateQueries({ queryKey: ["auth-session"] });
-    },
-    onError: (error) => setMessage(error.message),
-  });
-
-  const signOutMutation = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      setAuthView("sign-in");
-      setMessage("Session closed.");
-    },
-    onError: (error) => setMessage(error.message),
-  });
 
   const createAiScenarioMutation = useMutation({
     mutationFn: async () => {
@@ -93,7 +75,7 @@ export function AdminDashboard() {
         data?.publicBriefing ??
         "A faculty member was found unconscious in the digital media lab after hours. The room was sealed from inside. Teams must reconstruct timeline, motive, and method.";
       const aiCasePayload = data ?? null;
-      const classroomCode = Math.random().toString(36).slice(2, 8).toUpperCase();
+      const classroomCode = generateCode(6);
 
       const { data: game, error: insertError } = await supabase
         .from("games")
@@ -109,17 +91,12 @@ export function AdminDashboard() {
         .single();
       if (insertError) throw insertError;
 
-      const teams = [
-        ["Signal Analysts", "Analyze digital evidence and camera logs."],
-        ["Bio-Forensics Unit", "Interpret forensic anomalies and scene traces."],
-        ["Witness Interrogation Desk", "Cross-check statements and contradictions."],
-        ["Internal Affairs", "Investigate hidden motives and institutional secrets."],
-      ].map(([name, role]) => ({
+      const teams = TEAM_TEMPLATES.map(([name, role]) => ({
         game_id: game.id,
         name,
         role,
         private_briefing: `${name}: ${role}`,
-        access_code: Math.random().toString(36).slice(2, 7).toUpperCase(),
+        access_code: generateCode(5),
       }));
 
       const { error: teamError } = await supabase.from("teams").insert(teams);
@@ -149,63 +126,6 @@ export function AdminDashboard() {
     onError: (error) => setMessage(error.message),
   });
 
-  if (!hasSupabaseEnv) {
-    return (
-      <Card className="max-w-3xl">
-        <CardHeader>
-          <CardTitle>Supabase Configuration Required</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2 text-sm text-slate-300">
-          <p>Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` in `.env.local`.</p>
-          <p>
-            This project is static-export compatible: teacher security is enforced by Supabase Auth and
-            Row Level Security policies, not server sessions.
-          </p>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  const isSignedIn = Boolean(sessionQuery.data) || authView === "dashboard";
-
-  if (!isSignedIn) {
-    return (
-      <Card className="max-w-md">
-        <CardHeader>
-          <CardTitle>Teacher Login</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form
-            className="space-y-3"
-            onSubmit={(event: FormEvent<HTMLFormElement>) => {
-              event.preventDefault();
-              signInMutation.mutate();
-            }}
-          >
-            <Input
-              type="email"
-              placeholder="teacher@school.edu"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              required
-            />
-            <Input
-              type="password"
-              placeholder="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              required
-            />
-            <Button className="w-full" disabled={signInMutation.isPending}>
-              {signInMutation.isPending ? "Signing in..." : "Sign In"}
-            </Button>
-            {message ? <p className="text-xs text-slate-300">{message}</p> : null}
-          </form>
-        </CardContent>
-      </Card>
-    );
-  }
-
   return (
     <div className="grid gap-4 lg:grid-cols-[1.2fr_1fr]">
       <Card>
@@ -227,8 +147,7 @@ export function AdminDashboard() {
               )}
               Generate Mystery Case
             </Button>
-            <Button variant="secondary" onClick={() => signOutMutation.mutate()} disabled={signOutMutation.isPending}>
-              <LogOut className="mr-2 h-4 w-4" />
+            <Button variant="secondary" onClick={() => void onSignOut()} disabled={isSigningOut}>
               Sign Out
             </Button>
           </div>
