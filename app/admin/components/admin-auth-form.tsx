@@ -31,19 +31,24 @@ export function AdminAuthForm({
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    await onSubmit(email, password);
+    try {
+      await onSubmit(email, password);
+    } catch {
+      // Mutation errors are surfaced via React Query state (`message` prop).
+      // Catch here to avoid unhandled promise rejection in browser console.
+    }
   }
 
   return (
     <Card className="max-w-md">
       <CardHeader>
-        <CardTitle>{mode === "sign-in" ? "Teacher Sign In" : "Teacher Sign Up"}</CardTitle>
+        <CardTitle>{mode === "sign-in" ? "Sign In" : "Sign Up"}</CardTitle>
       </CardHeader>
       <CardContent>
         <form className="space-y-2" onSubmit={(event) => void handleSubmit(event)}>
           <Input
             type="email"
-            placeholder="teacher@school.edu"
+            placeholder="email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             required
@@ -57,7 +62,7 @@ export function AdminAuthForm({
           />
           <div className="flex justify-center pt-6">
             <Button type="submit" disabled={isLoading}>
-              {mode === "sign-in" ? "Sign In" : "Create Account"}
+              {mode === "sign-in" ? "Sign In" : "Sign Up"}
             </Button>
           </div>
           <p className="pt-3 text-center text-xs text-slate-300">

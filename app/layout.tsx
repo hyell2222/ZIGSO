@@ -16,6 +16,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "CODEZERO",
   description: "Team-based classroom cyber mystery platform",
+  icons: {
+    icon: "/window.svg",
+  },
 };
 
 export default function RootLayout({

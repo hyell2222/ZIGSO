@@ -4,10 +4,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
-import { AdminDashboard } from "@/app/admin/auth/components/admin-dashboard";
-import { SupabaseConfigNotice } from "@/app/admin/auth/components/supabase-config-notice";
+import { AdminDashboard } from "@/app/admin/components/admin-dashboard";
 import { TopNav } from "@/components/layout/top-nav";
-import { hasSupabaseEnv, supabase } from "@/lib/supabase";
+import { ROUTES } from "@/lib/routes";
+import { supabase } from "@/lib/supabase";
 
 export default function AdminPage() {
   const router = useRouter();
@@ -19,7 +19,6 @@ export default function AdminPage() {
       const { data } = await supabase.auth.getSession();
       return data.session;
     },
-    enabled: hasSupabaseEnv,
   });
 
   const signOutMutation = useMutation({
@@ -33,25 +32,21 @@ export default function AdminPage() {
   });
 
   useEffect(() => {
-    if (!hasSupabaseEnv || sessionQuery.isLoading) return;
-    if (!sessionQuery.data) router.replace("/admin/sign-in");
+    if (sessionQuery.isLoading) return;
+    if (!sessionQuery.data) router.replace(ROUTES.admin.signIn);
   }, [router, sessionQuery.data, sessionQuery.isLoading]);
 
   return (
     <div className="min-h-screen">
       <TopNav />
       <main className="flex justify-center items-center py-40">
-        {!hasSupabaseEnv ? (
-          <SupabaseConfigNotice />
-        ) : sessionQuery.data ? (
+        {sessionQuery.data && (
           <AdminDashboard
             onSignOut={async () => {
               await signOutMutation.mutateAsync();
             }}
             isSigningOut={signOutMutation.isPending}
           />
-        ) : (
-          <p className="text-sm text-slate-400">Redirecting to sign in...</p>
         )}
       </main>
     </div>

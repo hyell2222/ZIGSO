@@ -4,9 +4,10 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
-import { AdminAuthForm } from "@/app/admin/auth/components/admin-auth-form";
-import { SupabaseConfigNotice } from "@/app/admin/auth/components/supabase-config-notice";
-import { hasSupabaseEnv, supabase } from "@/lib/supabase";
+import { AdminAuthForm } from "@/app/admin/components/admin-auth-form";
+import { ROUTES } from "@/lib/routes";
+import { supabase } from "@/lib/supabase";
+import { TopNav } from "@/components/layout/top-nav";
 
 export default function AdminSignUpPage() {
   const router = useRouter();
@@ -17,7 +18,6 @@ export default function AdminSignUpPage() {
       const { data } = await supabase.auth.getSession();
       return data.session;
     },
-    enabled: hasSupabaseEnv,
   });
 
   const signUpMutation = useMutation({
@@ -26,16 +26,14 @@ export default function AdminSignUpPage() {
       if (error) throw error;
     },
     onSuccess: () => {
-      router.replace("/admin/sign-in");
+      router.replace(ROUTES.admin.signIn);
     },
   });
 
   useEffect(() => {
-    if (!hasSupabaseEnv || sessionQuery.isLoading) return;
-    if (sessionQuery.data) router.replace("/admin");
+    if (sessionQuery.isLoading) return;
+    if (sessionQuery.data) router.replace(ROUTES.admin.root);
   }, [router, sessionQuery.data, sessionQuery.isLoading]);
-
-  if (!hasSupabaseEnv) return <SupabaseConfigNotice />;
 
   const message =
     signUpMutation.error?.message ??
@@ -44,16 +42,22 @@ export default function AdminSignUpPage() {
       : null);
 
   return (
-    <AdminAuthForm
-      mode="sign-up"
-      onSubmit={async (email, password) => {
-        await signUpMutation.mutateAsync({ email, password });
-      }}
-      isLoading={signUpMutation.isPending}
-      message={message}
-      switchHref="/admin/sign-in"
-      switchPrompt="Already have an account?"
-      switchLabel="Sign in"
-    />
+    <>
+      <TopNav />
+      <main className="flex items-center justify-center py-40">
+        <AdminAuthForm
+          mode="sign-up"
+          onSubmit={(email, password) => {
+            signUpMutation.mutate({ email, password });
+            return Promise.resolve();
+          }}
+          isLoading={signUpMutation.isPending}
+          message={message}
+          switchHref={ROUTES.admin.signIn}
+          switchPrompt="Already have an account?"
+          switchLabel="Sign in"
+        />
+      </main>
+    </>
   );
 }
