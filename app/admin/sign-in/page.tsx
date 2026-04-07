@@ -6,7 +6,7 @@ import { useEffect } from "react";
 
 import { AdminAuthForm } from "@/app/admin/components/admin-auth-form";
 import { ROUTES } from "@/lib/routes";
-import { supabase } from "@/lib/supabase";
+import { hasSupabaseEnv, supabase } from "@/lib/supabase";
 import { TopNav } from "@/components/layout/top-nav";
 
 export default function AdminSignInPage() {
@@ -16,6 +16,7 @@ export default function AdminSignInPage() {
   const sessionQuery = useQuery({
     queryKey: ["auth-session"],
     queryFn: async () => {
+      if (!hasSupabaseEnv) return null;
       const { data } = await supabase.auth.getSession();
       return data.session;
     },
@@ -23,6 +24,11 @@ export default function AdminSignInPage() {
 
   const signInMutation = useMutation({
     mutationFn: async ({ email, password }: { email: string; password: string }) => {
+      if (!hasSupabaseEnv) {
+        throw new Error(
+          "Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.",
+        );
+      }
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
     },
@@ -47,8 +53,13 @@ export default function AdminSignInPage() {
             signInMutation.mutate({ email, password });
             return Promise.resolve();
           }}
-          isLoading={signInMutation.isPending}
-          message={signInMutation.error?.message ?? null}
+          isLoading={signInMutation.isPending || !hasSupabaseEnv}
+          message={
+            signInMutation.error?.message ??
+            (!hasSupabaseEnv
+              ? "Supabase is not configured. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to .env."
+              : null)
+          }
           switchHref={ROUTES.admin.signUp}
           switchPrompt="No account yet?"
           switchLabel="Sign up"
