@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 import { AdminAuthForm } from "@/app/admin/components/admin-auth-form";
+import { getCurrentSession, signUpTeacher } from "@/lib/api/auth";
 import { ROUTES } from "@/lib/routes";
-import { hasSupabaseEnv, supabase } from "@/lib/supabase";
+import { hasSupabaseEnv } from "@/lib/supabase";
 import { TopNav } from "@/components/layout/top-nav";
 
 export default function AdminSignUpPage() {
@@ -16,8 +17,7 @@ export default function AdminSignUpPage() {
     queryKey: ["auth-session"],
     queryFn: async () => {
       if (!hasSupabaseEnv) return null;
-      const { data } = await supabase.auth.getSession();
-      return data.session;
+      return getCurrentSession();
     },
   });
 
@@ -28,8 +28,7 @@ export default function AdminSignUpPage() {
           "Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.",
         );
       }
-      const { error } = await supabase.auth.signUp({ email, password });
-      if (error) throw error;
+      await signUpTeacher(email, password);
     },
     onSuccess: () => {
       router.replace(ROUTES.admin.signIn);

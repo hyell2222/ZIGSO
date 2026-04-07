@@ -4,9 +4,10 @@ import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
+import { getCurrentSession } from "@/lib/api/auth";
 import { TopNav } from "@/components/layout/top-nav";
 import { ROUTES } from "@/lib/routes";
-import { hasSupabaseEnv, supabase } from "@/lib/supabase";
+import { hasSupabaseEnv } from "@/lib/supabase";
 
 export default function AdminPage() {
   const router = useRouter();
@@ -15,8 +16,7 @@ export default function AdminPage() {
     queryKey: ["auth-session"],
     queryFn: async () => {
       if (!hasSupabaseEnv) return null;
-      const { data } = await supabase.auth.getSession();
-      return data.session;
+      return getCurrentSession();
     },
   });
 
@@ -30,7 +30,7 @@ export default function AdminPage() {
       router.replace(ROUTES.admin.signIn);
       return;
     }
-    router.replace(ROUTES.admin.projects);
+    router.replace(ROUTES.admin.scenarios);
   }, [router, sessionQuery.data, sessionQuery.isLoading]);
 
   return (

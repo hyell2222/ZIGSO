@@ -4,11 +4,18 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, RefreshCcw, Send } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
+import {
+  getSessionByJoinCode,
+  getSessionDetails,
+  getTeamById,
+  joinPlayerSession,
+  listSessionTeams,
+  submitVote,
+} from "@/lib/api/play";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { TeamSubmission } from "@/lib/types";
 import { hasSupabaseEnv, supabase } from "@/lib/supabase";
 
@@ -21,113 +28,98 @@ const defaultSubmission: TeamSubmission = {
 
 export function PlayRoom() {
   const queryClient = useQueryClient();
-  const [classroomCode, setClassroomCode] = useState("");
-  const [teamAccessCode, setTeamAccessCode] = useState("");
+  const [joinCode, setJoinCode] = useState("");
+  const [nickname, setNickname] = useState("");
+  const [sessionId, setSessionId] = useState<string | null>(null);
   const [teamId, setTeamId] = useState<string | null>(null);
-  const [gameId, setGameId] = useState<string | null>(null);
   const [submission, setSubmission] = useState<TeamSubmission>(defaultSubmission);
   const [message, setMessage] = useState<string | null>(null);
 
   const teamQuery = useQuery({
-    queryKey: ["play-team", teamId],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("teams").select("*").eq("id", teamId).single();
-      if (error) throw error;
-      return data;
-    },
-    enabled: Boolean(teamId),
+    queryKey: ["play-team", teamId, sessionId],
+    queryFn: async () => getTeamById(teamId as string),
+    enabled: Boolean(teamId && sessionId),
   });
 
-  const gameQuery = useQuery({
-    queryKey: ["play-game", gameId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("games")
-        .select("id,title,phase,public_briefing,classroom_code")
-        .eq("id", gameId)
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    enabled: Boolean(gameId),
+  const sessionQuery = useQuery({
+    queryKey: ["play-session", sessionId],
+    queryFn: async () => getSessionDetails(sessionId as string),
+    enabled: Boolean(sessionId),
+  });
+
+  const teamsQuery = useQuery({
+    queryKey: ["play-session-teams", sessionId],
+    queryFn: async () => listSessionTeams(sessionId as string),
+    enabled: Boolean(sessionId),
   });
 
   useEffect(() => {
-    if (!gameId) return;
+    if (!sessionId) return;
     const channel = supabase
-      .channel(`game:${gameId}`)
+      .channel(`session:${sessionId}`)
       .on(
         "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "games", filter: `id=eq.${gameId}` },
+        { event: "UPDATE", schema: "public", table: "game_sessions", filter: `id=eq.${sessionId}` },
         () => {
-          queryClient.invalidateQueries({ queryKey: ["play-game", gameId] });
+          queryClient.invalidateQueries({ queryKey: ["play-session", sessionId] });
         },
       )
       .subscribe();
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [gameId, queryClient]);
+  }, [sessionId, queryClient]);
 
   const joinMutation = useMutation({
     mutationFn: async () => {
-      const normalizedClassroomCode = classroomCode.trim().toUpperCase();
-      const normalizedTeamCode = teamAccessCode.trim().toUpperCase();
-      const { data: game, error: gameError } = await supabase
-        .from("games")
-        .select("id")
-        .eq("classroom_code", normalizedClassroomCode)
-        .single();
-      if (gameError) throw gameError;
-
-      const { data: team, error: teamError } = await supabase
-        .from("teams")
-        .select("id,game_id")
-        .eq("game_id", game.id)
-        .eq("access_code", normalizedTeamCode)
-        .single();
-      if (teamError) throw teamError;
-
-      setTeamId(team.id);
-      setGameId(team.game_id);
+      const normalizedJoinCode = joinCode.trim().toUpperCase();
+      const session = await getSessionByJoinCode(normalizedJoinCode);
+      setSessionId(session.id);
+      setTeamId(null);
     },
-    onSuccess: () => setMessage("Connected to investigation room."),
+    onSuccess: () => setMessage("Connected to session. Select your team."),
+    onError: (error) => setMessage(error.message),
+  });
+
+  const registerMutation = useMutation({
+    mutationFn: async () => {
+      if (!sessionId || !teamId) throw new Error("Select a team first.");
+      if (!nickname.trim()) throw new Error("Enter your nickname.");
+      await joinPlayerSession({
+        session_id: sessionId,
+        team_id: teamId,
+        nickname: nickname.trim(),
+      });
+    },
+    onSuccess: () => setMessage("Player joined successfully."),
     onError: (error) => setMessage(error.message),
   });
 
   const submitMutation = useMutation({
     mutationFn: async () => {
-      if (!teamId || !gameId) throw new Error("Join a room first.");
-      const { error } = await supabase.from("submissions").upsert({
-        game_id: gameId,
+      if (!teamId || !sessionId) throw new Error("Join a session first.");
+      await submitVote({
+        session_id: sessionId,
         team_id: teamId,
-        culprit: submission.culprit,
-        motive: submission.motive,
-        method: submission.method,
-        timeline: submission.timeline,
+        target_team_id: submission.culprit,
       });
-      if (error) throw error;
     },
-    onSuccess: () => setMessage("Deduction report transmitted."),
+    onSuccess: () => setMessage("Vote submitted."),
     onError: (error) => setMessage(error.message),
   });
 
   const phaseHelp = useMemo(() => {
-    switch (gameQuery.data?.phase) {
-      case "briefing":
-        return "Read the incident summary and identify key unknowns.";
-      case "evidence":
-        return "Organize clues and confirm what is fact vs assumption.";
-      case "interrogation":
-        return "Challenge other teams and resolve contradictions.";
-      case "deduction":
-        return "Lock your suspect, motive, method, and timeline.";
-      case "verdict":
-        return "Submit final report and prepare your defense.";
+    switch (sessionQuery.data?.status) {
+      case "waiting":
+        return "Wait for teacher start signal.";
+      case "in_progress":
+        return "Discuss with your team and prepare your vote.";
+      case "finished":
+        return "Session finished. Review your deductions.";
       default:
         return "Await teacher instructions.";
     }
-  }, [gameQuery.data?.phase]);
+  }, [sessionQuery.data?.status]);
 
   if (!hasSupabaseEnv) {
     return (
@@ -146,7 +138,7 @@ export function PlayRoom() {
     <div className="grid gap-4 lg:grid-cols-[1fr_1.2fr]">
       <Card>
         <CardHeader>
-          <CardTitle>Join Team Console</CardTitle>
+          <CardTitle>Session Join Console</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <form
@@ -157,15 +149,15 @@ export function PlayRoom() {
             }}
           >
             <Input
-              placeholder="Classroom code (e.g. A7K2QX)"
-              value={classroomCode}
-              onChange={(event) => setClassroomCode(event.target.value)}
+              placeholder="Session join code (e.g. A7K2QX)"
+              value={joinCode}
+              onChange={(event) => setJoinCode(event.target.value)}
               required
             />
             <Input
-              placeholder="Team access code"
-              value={teamAccessCode}
-              onChange={(event) => setTeamAccessCode(event.target.value)}
+              placeholder="Your nickname"
+              value={nickname}
+              onChange={(event) => setNickname(event.target.value)}
               required
             />
             <Button type="submit" className="w-full" disabled={joinMutation.isPending}>
@@ -173,11 +165,27 @@ export function PlayRoom() {
               Connect
             </Button>
           </form>
+          {teamsQuery.data && teamsQuery.data.length > 0 ? (
+            <select
+              className="h-10 w-full rounded-md border border-slate-700 bg-slate-950 px-3 text-sm text-slate-100"
+              value={teamId ?? ""}
+              onChange={(event) => setTeamId(event.target.value)}
+            >
+              <option value="">Select team</option>
+              {teamsQuery.data.map((team) => (
+                <option key={team.id} value={team.id}>
+                  {team.name}
+                </option>
+              ))}
+            </select>
+          ) : null}
+          <Button onClick={() => registerMutation.mutate()} disabled={registerMutation.isPending || !teamId}>
+            Join as Player
+          </Button>
           {teamQuery.data ? (
             <div className="rounded-md border border-slate-800 p-3 text-sm text-slate-200">
               <p className="font-semibold text-cyan-300">{teamQuery.data.name}</p>
-              <p className="text-xs text-slate-400">{teamQuery.data.role}</p>
-              <p className="mt-2 text-xs">{teamQuery.data.private_briefing}</p>
+              <p className="text-xs text-slate-400">Character ID: {teamQuery.data.character_id}</p>
             </div>
           ) : null}
           {message ? <p className="text-xs text-slate-300">{message}</p> : null}
@@ -186,51 +194,38 @@ export function PlayRoom() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Deduction Terminal</CardTitle>
+          <CardTitle>Vote Terminal</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {gameQuery.data ? (
+          {sessionQuery.data ? (
             <>
               <div className="flex flex-wrap items-center gap-2">
-                <Badge>{gameQuery.data.phase}</Badge>
-                <p className="text-sm font-semibold text-slate-100">{gameQuery.data.title}</p>
+                <Badge>{sessionQuery.data.status}</Badge>
+                <p className="text-sm font-semibold text-slate-100">
+                  {sessionQuery.data.scenarios?.[0]?.title ?? "Session"}
+                </p>
               </div>
               <p className="rounded-md border border-slate-800 bg-slate-950/60 p-3 text-sm text-slate-200">
-                {gameQuery.data.public_briefing}
+                {sessionQuery.data.scenarios?.[0]?.description ?? "No scenario description."}
               </p>
               <p className="text-xs text-cyan-300">{phaseHelp}</p>
             </>
           ) : (
             <p className="rounded-md border border-dashed border-slate-700 p-3 text-xs text-slate-400">
-              Join with classroom/team code to access the case.
+              Join with session code to access scenario details.
             </p>
           )}
 
           <div className="space-y-2">
             <Input
-              placeholder="Who is the culprit?"
+              placeholder="Target team ID for vote"
               value={submission.culprit}
               onChange={(event) => setSubmission((prev) => ({ ...prev, culprit: event.target.value }))}
-            />
-            <Input
-              placeholder="What is the motive?"
-              value={submission.motive}
-              onChange={(event) => setSubmission((prev) => ({ ...prev, motive: event.target.value }))}
-            />
-            <Input
-              placeholder="What method was used?"
-              value={submission.method}
-              onChange={(event) => setSubmission((prev) => ({ ...prev, method: event.target.value }))}
-            />
-            <Textarea
-              placeholder="Timeline and reasoning"
-              value={submission.timeline}
-              onChange={(event) => setSubmission((prev) => ({ ...prev, timeline: event.target.value }))}
             />
           </div>
           <Button onClick={() => submitMutation.mutate()} disabled={submitMutation.isPending || !teamId}>
             <Send className="mr-2 h-4 w-4" />
-            Submit Report
+            Submit Vote
           </Button>
 
           <div className="rounded-md border border-amber-500/20 bg-amber-500/5 p-3 text-xs text-amber-200">

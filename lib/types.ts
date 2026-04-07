@@ -14,21 +14,19 @@ export type TeamSubmission = {
 
 export type Team = {
   id: string;
-  game_id: string;
-  name: string;
-  role: string;
-  private_briefing: string;
-  access_code: string;
+  session_id: string | null;
+  character_id: string;
+  name: string | null;
 };
 
-export type Game = {
+export type GameSession = {
   id: string;
-  title: string;
-  grade_level: string;
-  classroom_code: string;
-  phase: GamePhase;
-  public_briefing: string;
-  ai_case_payload: Record<string, unknown> | null;
-  created_by: string;
-  created_at: string;
+  scenario_id: string | null;
+  host_id: string | null;
+  join_code: string;
+  status: string | null;
+  max_players: number | null;
+  started_at: string | null;
+  ended_at: string | null;
+  created_at: string | null;
 };
