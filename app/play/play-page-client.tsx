@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, Send } from "lucide-react";
+import { AlertTriangle, Loader2, Send } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
@@ -66,6 +66,17 @@ export function PlayPageClient() {
     };
   }, [sessionId, queryClient]);
 
+  const sessionPhase = sessionQuery.data?.phase ?? (sessionId ? "waiting" : null);
+
+  useEffect(() => {
+    const p = sessionQuery.data?.phase;
+    if (p === "role_assignment" && teamId) {
+      setShowRoleReveal(true);
+    } else if (p && p !== "role_assignment") {
+      setShowRoleReveal(false);
+    }
+  }, [sessionQuery.data?.phase, teamId]);
+
   const joinAndRegisterMutation = useMutation({
     mutationFn: async () => {
       const normalizedJoinCode = joinCode.trim().toUpperCase();
@@ -81,7 +92,6 @@ export function PlayPageClient() {
       });
       setTeamId(result.team.id);
       setTeamName(result.team.name ?? "Team");
-      setShowRoleReveal(true);
     },
     onSuccess: () => setMessage("Joined successfully. Team assigned randomly."),
     onError: (error) => setMessage(error.message),
@@ -103,9 +113,10 @@ export function PlayPageClient() {
   const phaseHelp = useMemo(() => {
     const row = sessionQuery.data;
     if (!row) return "";
-    if (row.ended_at) return "This session has ended.";
-    if (!row.phase_started_at) return "Wait for the teacher to start the game.";
-    switch (row.phase) {
+    const phase = row.phase ?? "waiting";
+    if (phase === "session_ended") return "This session has ended.";
+    if (phase === "waiting") return "Wait for the teacher to start the game.";
+    switch (phase) {
       case "role_assignment":
         return "Role assignment and understanding the case.";
       case "first_investigation":
@@ -120,6 +131,10 @@ export function PlayPageClient() {
         return "Follow the teacher's instructions.";
     }
   }, [sessionQuery.data]);
+
+  const isWaitingLobby =
+    Boolean(teamId && sessionId) &&
+    (sessionQuery.isLoading || sessionPhase === "waiting");
 
   if (!hasSupabaseEnv) {
     return (
@@ -166,8 +181,21 @@ export function PlayPageClient() {
         </div>
       ) : null}
 
-      {showRoleReveal && teamQuery.data ? (
-        <div className="absolute inset-0 z-20 flex items-center justify-center rounded-lg bg-slate-950/90 p-4 backdrop-blur-sm">
+      {isWaitingLobby ? (
+        <div
+          className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-4 rounded-lg bg-slate-950/95 p-6 backdrop-blur-sm"
+          role="status"
+          aria-live="polite"
+        >
+          <Loader2 className="h-10 w-10 animate-spin text-cyan-400" aria-hidden />
+          <p className="text-center text-sm text-slate-300">교사가 게임을 시작할 때까지 잠시만 기다려 주세요.</p>
+        </div>
+      ) : null}
+
+      {showRoleReveal &&
+      teamQuery.data &&
+      sessionPhase === "role_assignment" ? (
+        <div className="absolute inset-0 z-30 flex items-center justify-center rounded-lg bg-slate-950/90 p-4 backdrop-blur-sm">
           <div className="w-full max-w-lg rounded-lg border border-cyan-800/60 bg-slate-900 p-6">
             <h3 className="text-xl font-semibold text-cyan-200">내 팀 배정 완료</h3>
             <p className="mt-2 text-sm text-slate-300">입장이 완료되었습니다. 당신의 팀(캐릭터) 정보입니다.</p>
@@ -184,7 +212,10 @@ export function PlayPageClient() {
         </div>
       ) : null}
 
-      <div className="grid gap-4 lg:grid-cols-[1fr_1.2fr]">
+      <div
+        className={`grid gap-4 lg:grid-cols-[1fr_1.2fr] ${isWaitingLobby ? "pointer-events-none min-h-[280px] opacity-0" : ""}`}
+        aria-hidden={isWaitingLobby}
+      >
         <Card>
           <CardHeader>
             <CardTitle>Session Info</CardTitle>

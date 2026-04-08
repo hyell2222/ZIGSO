@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 
 import { getCurrentSession } from "@/lib/api/auth";
 import { advanceSessionPhase, beginHostingSession, endSession, getNextPhase } from "@/lib/api/scenarios";
@@ -24,11 +24,13 @@ const PHASES: { key: ScenarioPhase; label: string }[] = [
 ];
 
 const PHASE_MINUTES: Record<ScenarioPhase, number> = {
+  waiting: 10,
   role_assignment: 10,
   first_investigation: 12,
   briefing: 8,
   second_investigation: 12,
   final_vote: 8,
+  session_ended: 10,
 };
 
 function formatMmSs(totalSeconds: number) {
@@ -102,8 +104,8 @@ function ScenarioSessionHostContent() {
   }, [router, authQuery.data, authQuery.isLoading]);
 
   useEffect(() => {
-    const phase = (sessionQuery.data?.phase as ScenarioPhase) ?? "role_assignment";
-    const defaultMinutes = PHASE_MINUTES[phase];
+    const phase = (sessionQuery.data?.phase as ScenarioPhase) ?? "waiting";
+    const defaultMinutes = PHASE_MINUTES[phase] ?? 10;
     setTimerInputMinutes(defaultMinutes);
     setTimerRemainingSec(defaultMinutes * 60);
     setIsTimerRunning(false);
@@ -130,7 +132,7 @@ function ScenarioSessionHostContent() {
 
   const nextPhaseMutation = useMutation({
     mutationFn: async () => {
-      const current = sessionQuery.data?.phase ?? "role_assignment";
+      const current = sessionQuery.data?.phase ?? "waiting";
       const next = getNextPhase(current);
       if (!next) throw new Error("Already at final phase.");
       await advanceSessionPhase(sessionId, next);
@@ -146,8 +148,62 @@ function ScenarioSessionHostContent() {
     },
   });
 
-  const sessionStarted = Boolean(sessionQuery.data?.phase_started_at);
-  const sessionEnded = Boolean(sessionQuery.data?.ended_at);
+  const hostLeaveRef = useRef({
+    sessionId: "",
+    shouldEnd: false,
+    beginPending: false,
+    endPending: false,
+  });
+
+  useEffect(() => {
+    let leaveGuardReady = false;
+    const tid = window.setTimeout(() => {
+      leaveGuardReady = true;
+    }, 100);
+
+    const runEndSessionOnHostLeave = () => {
+      if (!leaveGuardReady) return;
+      const s = hostLeaveRef.current;
+      if (s.beginPending || s.endPending) return;
+      if (!s.shouldEnd || !s.sessionId) return;
+      void endSession(s.sessionId);
+    };
+
+    const onPageHide = (e: PageTransitionEvent) => {
+      if (e.persisted) return;
+      runEndSessionOnHostLeave();
+    };
+
+    window.addEventListener("pagehide", onPageHide);
+    return () => {
+      window.clearTimeout(tid);
+      window.removeEventListener("pagehide", onPageHide);
+      runEndSessionOnHostLeave();
+    };
+  }, []);
+
+  const sessionRowForLeave = sessionQuery.data;
+  const hostUserIdForLeave = authQuery.data?.user.id;
+  const isHostOfLoadedSession = Boolean(
+    sessionId &&
+      sessionRowForLeave &&
+      hostUserIdForLeave &&
+      sessionRowForLeave.host_id === hostUserIdForLeave,
+  );
+  const phaseForLeave = sessionRowForLeave?.phase ?? null;
+  const shouldEndOnHostLeave =
+    isHostOfLoadedSession && phaseForLeave !== "session_ended";
+
+  hostLeaveRef.current = {
+    sessionId,
+    shouldEnd: shouldEndOnHostLeave,
+    beginPending: beginMutation.isPending,
+    endPending: endMutation.isPending,
+  };
+
+  const phase = (sessionQuery.data?.phase as ScenarioPhase) ?? "waiting";
+  const sessionStarted = phase !== "waiting";
+  const sessionEnded = phase === "session_ended";
 
   const playerTotal = playersQuery.data?.length ?? 0;
 
@@ -214,16 +270,17 @@ function ScenarioSessionHostContent() {
               <ArrowLeft className="mr-1 h-4 w-4" />
               Back
             </Button>
-            {!sessionStarted ? (
-              <div>
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Join code</p>
-                <p className="font-mono text-3xl font-semibold tracking-[0.2em] text-cyan-300 sm:text-4xl">
-                  {row.join_code}
-                </p>
-              </div>
-            ) : row.scenarios?.title ? (
-              <p className="text-sm text-slate-400">{row.scenarios.title}</p>
-            ) : null}
+            <div>
+              <p className="font-mono text-3xl font-semibold tracking-[0.2em] text-cyan-300 sm:text-4xl">
+                {row.scenarios?.title}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Join code</p>
+              <p className="font-mono text-3xl font-semibold tracking-[0.2em] text-cyan-300 sm:text-4xl">
+                {row.join_code}
+              </p>
+            </div>
           </div>
           <div className="flex shrink-0 flex-col items-end gap-2 sm:flex-row sm:items-center">
             {!sessionStarted ? (

@@ -17,15 +17,13 @@ export type SessionDetailsRow = {
   join_code: string;
   host_id: string | null;
   phase: string | null;
-  phase_started_at: string | null;
-  ended_at: string | null;
   scenarios: { title: string | null; description: string | null } | null;
 };
 
 export async function getSessionDetails(sessionId: string) {
   const { data, error } = await supabase
     .from("game_sessions")
-    .select("id,join_code,host_id,phase,phase_started_at,ended_at,scenarios(title,description)")
+    .select("id,join_code,host_id,phase,scenarios(title,description)")
     .eq("id", sessionId)
     .single();
   if (error) throw error;

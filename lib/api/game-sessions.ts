@@ -15,11 +15,13 @@ export type StartedGameSession = {
 };
 
 export type ScenarioPhase =
+  | "waiting"
   | "role_assignment"
   | "first_investigation"
   | "briefing"
   | "second_investigation"
-  | "final_vote";
+  | "final_vote"
+  | "session_ended";
 
 function generateJoinCode(length: number) {
   return Math.random().toString(36).slice(2, 2 + length).toUpperCase();
@@ -46,8 +48,7 @@ export async function startGameSession(scenario: ScenarioRecord, hostId?: string
       host_id: hostId,
       join_code: joinCode,
       max_teams: scenario.character_count ?? null,
-      phase: "role_assignment",
-      phase_started_at: null,
+      phase: "waiting",
     })
     .select("id,join_code")
     .single();
@@ -79,38 +80,32 @@ const PHASE_ORDER: ScenarioPhase[] = [
 ];
 
 export function getNextPhase(current: string | null): ScenarioPhase | null {
+  if (current === "waiting" || current === "session_ended") return null;
   const idx = PHASE_ORDER.indexOf((current as ScenarioPhase) ?? "role_assignment");
   if (idx < 0 || idx >= PHASE_ORDER.length - 1) return null;
   return PHASE_ORDER[idx + 1];
 }
 
 export async function beginHostingSession(sessionId: string) {
-  const now = new Date().toISOString();
   const { error } = await supabase
     .from("game_sessions")
-    .update({
-      phase: "role_assignment",
-      phase_started_at: now,
-      started_at: now,
-    })
+    .update({ phase: "role_assignment" })
     .eq("id", sessionId);
   if (error) throw error;
 }
 
 export async function advanceSessionPhase(sessionId: string, nextPhase: ScenarioPhase) {
-  const now = new Date().toISOString();
   const { error } = await supabase
     .from("game_sessions")
-    .update({ phase: nextPhase, phase_started_at: now })
+    .update({ phase: nextPhase })
     .eq("id", sessionId);
   if (error) throw error;
 }
 
 export async function endSession(sessionId: string) {
-  const now = new Date().toISOString();
   const { error } = await supabase
     .from("game_sessions")
-    .update({ ended_at: now, phase: "final_vote", phase_started_at: now })
+    .update({ phase: "session_ended" })
     .eq("id", sessionId);
   if (error) throw error;
 }

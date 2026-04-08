@@ -25,7 +25,6 @@ export type GameSession = {
   host_id: string | null;
   join_code: string;
   max_teams: number | null;
-  started_at: string | null;
-  ended_at: string | null;
+  phase: string | null;
   created_at: string | null;
 };
