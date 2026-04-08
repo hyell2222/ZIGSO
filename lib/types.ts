@@ -24,7 +24,6 @@ export type GameSession = {
   scenario_id: string | null;
   host_id: string | null;
   join_code: string;
-  status: string | null;
   max_players: number | null;
   started_at: string | null;
   ended_at: string | null;

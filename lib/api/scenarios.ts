@@ -103,6 +103,16 @@ export async function listScenarios(teacherId: string) {
   return (data ?? []) as ScenarioRecord[];
 }
 
+export {
+  advanceSessionPhase,
+  beginHostingSession,
+  endSession,
+  getNextPhase,
+  type ScenarioPhase,
+  startGameSession,
+} from "@/lib/api/game-sessions";
+export type { StartedGameSession } from "@/lib/api/game-sessions";
+
 export async function createScenario(input: CreateScenarioInput) {
   // #region agent log
   fetch("http://127.0.0.1:7749/ingest/bf6ab18c-c394-4192-9205-66b8beb594f8", {

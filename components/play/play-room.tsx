@@ -12,7 +12,6 @@ import {
   listSessionTeams,
   submitVote,
 } from "@/lib/api/play";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -109,17 +108,25 @@ export function PlayRoom() {
   });
 
   const phaseHelp = useMemo(() => {
-    switch (sessionQuery.data?.status) {
-      case "waiting":
-        return "Wait for teacher start signal.";
-      case "in_progress":
-        return "Discuss with your team and prepare your vote.";
-      case "finished":
-        return "Session finished. Review your deductions.";
+    const row = sessionQuery.data;
+    if (!row) return "";
+    if (row.ended_at) return "This session has ended.";
+    if (!row.phase_started_at) return "Wait for the teacher to start the game.";
+    switch (row.phase) {
+      case "role_assignment":
+        return "Role assignment and understanding the case.";
+      case "first_investigation":
+        return "First on-site investigation.";
+      case "briefing":
+        return "Briefing phase.";
+      case "second_investigation":
+        return "Second on-site investigation.";
+      case "final_vote":
+        return "Final vote and accusation.";
       default:
-        return "Await teacher instructions.";
+        return "Follow the teacher's instructions.";
     }
-  }, [sessionQuery.data?.status]);
+  }, [sessionQuery.data]);
 
   if (!hasSupabaseEnv) {
     return (
@@ -199,14 +206,8 @@ export function PlayRoom() {
         <CardContent className="space-y-3">
           {sessionQuery.data ? (
             <>
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge>{sessionQuery.data.status}</Badge>
-                <p className="text-sm font-semibold text-slate-100">
-                  {sessionQuery.data.scenarios?.[0]?.title ?? "Session"}
-                </p>
-              </div>
               <p className="rounded-md border border-slate-800 bg-slate-950/60 p-3 text-sm text-slate-200">
-                {sessionQuery.data.scenarios?.[0]?.description ?? "No scenario description."}
+                {sessionQuery.data.scenarios?.description ?? "No scenario description."}
               </p>
               <p className="text-xs text-cyan-300">{phaseHelp}</p>
             </>

@@ -14,6 +14,13 @@ export type StartedGameSession = {
   scenarioTitle: string;
 };
 
+export type ScenarioPhase =
+  | "role_assignment"
+  | "first_investigation"
+  | "briefing"
+  | "second_investigation"
+  | "final_vote";
+
 function generateJoinCode(length: number) {
   return Math.random().toString(36).slice(2, 2 + length).toUpperCase();
 }
@@ -38,8 +45,9 @@ export async function startGameSession(scenario: ScenarioRecord, hostId?: string
       scenario_id: scenario.id,
       host_id: hostId,
       join_code: joinCode,
-      status: "waiting",
       max_players: scenario.player_count ?? null,
+      phase: "role_assignment",
+      phase_started_at: null,
     })
     .select("id,join_code")
     .single();
@@ -60,4 +68,49 @@ export async function startGameSession(scenario: ScenarioRecord, hostId?: string
     joinCode: session.join_code,
     scenarioTitle: scenario.title ?? "Untitled scenario",
   } satisfies StartedGameSession;
+}
+
+const PHASE_ORDER: ScenarioPhase[] = [
+  "role_assignment",
+  "first_investigation",
+  "briefing",
+  "second_investigation",
+  "final_vote",
+];
+
+export function getNextPhase(current: string | null): ScenarioPhase | null {
+  const idx = PHASE_ORDER.indexOf((current as ScenarioPhase) ?? "role_assignment");
+  if (idx < 0 || idx >= PHASE_ORDER.length - 1) return null;
+  return PHASE_ORDER[idx + 1];
+}
+
+export async function beginHostingSession(sessionId: string) {
+  const now = new Date().toISOString();
+  const { error } = await supabase
+    .from("game_sessions")
+    .update({
+      phase: "role_assignment",
+      phase_started_at: now,
+      started_at: now,
+    })
+    .eq("id", sessionId);
+  if (error) throw error;
+}
+
+export async function advanceSessionPhase(sessionId: string, nextPhase: ScenarioPhase) {
+  const now = new Date().toISOString();
+  const { error } = await supabase
+    .from("game_sessions")
+    .update({ phase: nextPhase, phase_started_at: now })
+    .eq("id", sessionId);
+  if (error) throw error;
+}
+
+export async function endSession(sessionId: string) {
+  const now = new Date().toISOString();
+  const { error } = await supabase
+    .from("game_sessions")
+    .update({ ended_at: now, phase: "final_vote", phase_started_at: now })
+    .eq("id", sessionId);
+  if (error) throw error;
 }

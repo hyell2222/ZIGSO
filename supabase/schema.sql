@@ -19,12 +19,17 @@ create table if not exists public.game_sessions (
   scenario_id uuid references public.scenarios(id) on delete restrict,
   host_id uuid references auth.users(id),
   join_code text not null,
-  status text default 'waiting',
   max_players integer,
+  phase text default 'briefing',
+  phase_started_at timestamptz,
   started_at timestamp without time zone,
   ended_at timestamp without time zone,
   created_at timestamp without time zone default now()
 );
+
+-- Existing databases: add phase columns if missing
+alter table public.game_sessions add column if not exists phase text default 'briefing';
+alter table public.game_sessions add column if not exists phase_started_at timestamptz;
 
 create table if not exists public.teams (
   id uuid primary key default gen_random_uuid(),
