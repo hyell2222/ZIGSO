@@ -82,7 +82,7 @@ export default function AdminScenariosPage() {
                     >
                       <p className="font-semibold text-slate-100">{scenario.title ?? "Untitled scenario"}</p>
                       <p className="text-xs text-slate-400">
-                        Difficulty: {scenario.difficulty ?? "Unspecified"} · Players: {scenario.player_count ?? "TBD"}
+                        Difficulty: {scenario.difficulty ?? "Unspecified"} · Players: {scenario.character_count ?? "TBD"}
                       </p>
                       <p className="mt-1 line-clamp-2 text-xs text-slate-300">
                         {scenario.description ?? "No description provided yet."}

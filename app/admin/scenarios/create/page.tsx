@@ -20,7 +20,7 @@ export default function AdminScenarioCreatePage() {
   const [message, setMessage] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [playerCount, setPlayerCount] = useState(5);
+  const [characterCount, setcharacterCount] = useState(5);
   const [difficulty, setDifficulty] = useState("hard");
   const [data, setData] = useState("");
 
@@ -64,7 +64,7 @@ export default function AdminScenarioCreatePage() {
             sessionUserId: sessionQuery.data?.user.id ?? null,
             hasTitle: Boolean(title.trim()),
             hasDescription: Boolean(description.trim()),
-            playerCount,
+            characterCount,
           },
           timestamp: Date.now(),
         }),
@@ -73,7 +73,7 @@ export default function AdminScenarioCreatePage() {
       await createScenario({
         title,
         description,
-        player_count: playerCount,
+        character_count: characterCount,
         difficulty,
         data: parsedData,
         teacher_id: sessionQuery.data?.user.id ?? null,
@@ -109,8 +109,8 @@ export default function AdminScenarioCreatePage() {
               <Input
                 type="number"
                 min={2}
-                value={playerCount}
-                onChange={(event) => setPlayerCount(Number(event.target.value) || 2)}
+                value={characterCount}
+                onChange={(event) => setcharacterCount(Number(event.target.value) || 2)}
                 placeholder="Player count"
               />
               <Input

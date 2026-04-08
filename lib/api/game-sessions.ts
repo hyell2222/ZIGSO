@@ -45,7 +45,7 @@ export async function startGameSession(scenario: ScenarioRecord, hostId?: string
       scenario_id: scenario.id,
       host_id: hostId,
       join_code: joinCode,
-      max_players: scenario.player_count ?? null,
+      max_teams: scenario.character_count ?? null,
       phase: "role_assignment",
       phase_started_at: null,
     })

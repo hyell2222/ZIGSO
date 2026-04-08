@@ -6,7 +6,7 @@ export type ScenarioRecord = {
   id: string;
   title: string | null;
   description: string | null;
-  player_count: number | null;
+  character_count: number | null;
   difficulty: string | null;
   data: Record<string, unknown> | null;
   teacher_id?: string | null;
@@ -15,7 +15,7 @@ export type ScenarioRecord = {
 type CreateScenarioInput = {
   title: string | null;
   description: string | null;
-  player_count: number | null;
+  character_count: number | null;
   difficulty: string | null;
   data: Record<string, unknown> | null;
   teacher_id?: string | null;
@@ -44,7 +44,7 @@ export async function listScenarios(teacherId: string) {
   // #endregion
   const { data, error } = await supabase
     .from("scenarios")
-    .select("id,title,description,player_count,difficulty,data,teacher_id")
+    .select("id,title,description,character_count,difficulty,data,teacher_id")
     .eq("teacher_id", teacherId)
     .order("created_at", { ascending: false });
   if (error) throw error;
@@ -131,7 +131,7 @@ export async function createScenario(input: CreateScenarioInput) {
         teacherId: input.teacher_id ?? null,
         hasTitle: Boolean(input.title?.trim()),
         hasDescription: Boolean(input.description?.trim()),
-        playerCount: input.player_count ?? null,
+        characterCount: input.character_count ?? null,
       },
       timestamp: Date.now(),
     }),

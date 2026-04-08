@@ -273,7 +273,7 @@ function ScenarioSessionHostContent() {
                   >
                     <span className="font-medium text-slate-100">{p.nickname ?? "Player"}</span>
                     <span className="text-xs text-slate-500">
-                      {p.teams?.name ?? "Team"} · {p.is_connected ? "접속" : "오프라인"}
+                      {p.teams?.name ?? "Team"}
                     </span>
                   </li>
                 ))}
