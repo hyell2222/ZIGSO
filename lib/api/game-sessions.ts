@@ -3,11 +3,6 @@
 import { supabase } from "@/lib/supabase";
 import type { ScenarioRecord } from "@/lib/api/scenarios";
 
-type ScenarioCharacter = {
-  id?: string;
-  name?: string;
-};
-
 export type StartedGameSession = {
   sessionId: string;
   joinCode: string;
@@ -32,12 +27,16 @@ export async function startGameSession(scenario: ScenarioRecord, hostId?: string
     throw new Error("You must be signed in to start a game.");
   }
 
-  const characters = Array.isArray(scenario.data?.characters)
-    ? (scenario.data.characters as ScenarioCharacter[])
-    : [];
+  const { data: characters, error: charactersError } = await supabase
+    .from("characters")
+    .select("id,name")
+    .eq("scenario_id", scenario.id)
+    .order("name", { ascending: true });
 
-  if (characters.length === 0) {
-    throw new Error("Selected scenario has no characters in data.characters.");
+  if (charactersError) throw charactersError;
+
+  if (!characters || characters.length === 0) {
+    throw new Error("Selected scenario has no characters.");
   }
 
   const joinCode = generateJoinCode(6);
@@ -47,22 +46,12 @@ export async function startGameSession(scenario: ScenarioRecord, hostId?: string
       scenario_id: scenario.id,
       host_id: hostId,
       join_code: joinCode,
-      max_teams: scenario.character_count ?? null,
       phase: "waiting",
     })
     .select("id,join_code")
     .single();
 
   if (sessionError) throw sessionError;
-
-  const teams = characters.map((character, index) => ({
-    session_id: session.id,
-    character_id: character.id?.trim() || `character_${index + 1}`,
-    name: character.name?.trim() || `Character ${index + 1}`,
-  }));
-
-  const { error: teamError } = await supabase.from("teams").insert(teams);
-  if (teamError) throw teamError;
 
   return {
     sessionId: session.id,

@@ -10,8 +10,8 @@ export type SessionPresencePayload = {
   role: SessionPresenceRole;
   player_id?: string;
   nickname?: string;
-  team_id?: string;
-  team_name?: string;
+  character_id?: string;
+  character_name?: string;
 };
 
 export type SessionPresenceRow = {
@@ -35,8 +35,8 @@ export function flattenPresenceState(state: Record<string, unknown[]> | undefine
             role: o.role,
             player_id: typeof o.player_id === "string" ? o.player_id : undefined,
             nickname: typeof o.nickname === "string" ? o.nickname : undefined,
-            team_id: typeof o.team_id === "string" ? o.team_id : undefined,
-            team_name: typeof o.team_name === "string" ? o.team_name : undefined,
+            character_id: typeof o.character_id === "string" ? o.character_id : undefined,
+            character_name: typeof o.character_name === "string" ? o.character_name : undefined,
           },
         });
       }

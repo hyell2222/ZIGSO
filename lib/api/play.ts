@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabase";
 export async function getSessionByJoinCode(joinCode: string) {
   const { data, error } = await supabase
     .from("game_sessions")
-    .select("id")
+    .select("id,scenario_id")
     .eq("join_code", joinCode)
     .single();
   if (error) throw error;
@@ -17,13 +17,19 @@ export type SessionDetailsRow = {
   join_code: string;
   host_id: string | null;
   phase: string | null;
-  scenarios: { title: string | null; description: string | null } | null;
+  scenario_id: string | null;
+  scenarios: {
+    title: string | null;
+    description: string | null;
+    incident: Record<string, unknown> | null;
+    solution: string | null;
+  } | null;
 };
 
 export async function getSessionDetails(sessionId: string) {
   const { data, error } = await supabase
     .from("game_sessions")
-    .select("id,join_code,host_id,phase,scenarios(title,description)")
+    .select("id,join_code,host_id,phase,scenario_id,scenarios(title,description,incident,solution)")
     .eq("id", sessionId)
     .single();
   if (error) throw error;
@@ -34,32 +40,42 @@ export type SessionPlayerRow = {
   id: string;
   nickname: string | null;
   joined_at: string | null;
-  team_id: string | null;
-  teams: { name: string | null; character_id: string | null } | null;
+  character_id: string | null;
+  characters: { name: string | null; role: string | null } | null;
 };
 
 export async function listSessionPlayers(sessionId: string) {
   const { data, error } = await supabase
     .from("players")
-    .select("id,nickname,joined_at,team_id,teams(name,character_id)")
+    .select("id,nickname,joined_at,character_id,characters(name,role)")
     .eq("session_id", sessionId)
     .order("joined_at", { ascending: true });
   if (error) throw error;
   return (data ?? []) as unknown as SessionPlayerRow[];
 }
 
-export async function listSessionTeams(sessionId: string) {
+export async function listSessionCharacters(sessionId: string) {
+  const { data: session, error: sessionError } = await supabase
+    .from("game_sessions")
+    .select("scenario_id")
+    .eq("id", sessionId)
+    .single();
+
+  if (sessionError) throw sessionError;
+  if (!session?.scenario_id) return [];
+
   const { data, error } = await supabase
-    .from("teams")
-    .select("id,name,character_id")
-    .eq("session_id", sessionId)
-    .order("created_at", { ascending: true });
+    .from("characters")
+    .select("id,name,role,information,alibi,motive")
+    .eq("scenario_id", session.scenario_id)
+    .order("name", { ascending: true });
+
   if (error) throw error;
   return data ?? [];
 }
 
-export async function getTeamById(teamId: string) {
-  const { data, error } = await supabase.from("teams").select("*").eq("id", teamId).single();
+export async function getCharacterById(characterId: string) {
+  const { data, error } = await supabase.from("characters").select("*").eq("id", characterId).single();
   if (error) throw error;
   return data;
 }
@@ -68,57 +84,60 @@ export async function joinPlayerSession(input: {
   session_id: string;
   nickname: string;
 }) {
-  const { data: teams, error: teamError } = await supabase
-    .from("teams")
-    .select("id,name,character_id")
-    .eq("session_id", input.session_id);
-  if (teamError) throw teamError;
-  if (!teams || teams.length === 0) {
-    throw new Error("No teams found for this session.");
+  const { data: session, error: sessionError } = await supabase
+    .from("game_sessions")
+    .select("scenario_id")
+    .eq("id", input.session_id)
+    .single();
+
+  if (sessionError) throw sessionError;
+  if (!session?.scenario_id) {
+    throw new Error("This session is not linked to a scenario.");
+  }
+
+  const { data: characters, error: characterError } = await supabase
+    .from("characters")
+    .select("id,name,role,information,alibi,motive")
+    .eq("scenario_id", session.scenario_id);
+
+  if (characterError) throw characterError;
+  if (!characters || characters.length === 0) {
+    throw new Error("No characters found for this session.");
   }
 
   const { data: existingPlayers, error: playersError } = await supabase
     .from("players")
-    .select("team_id")
+    .select("character_id")
     .eq("session_id", input.session_id);
   if (playersError) throw playersError;
 
-  const teamCounts = new Map<string, number>();
-  for (const team of teams) {
-    teamCounts.set(team.id, 0);
+  const characterCounts = new Map<string, number>();
+  for (const character of characters) {
+    characterCounts.set(character.id, 0);
   }
   for (const player of existingPlayers ?? []) {
-    if (player.team_id && teamCounts.has(player.team_id)) {
-      teamCounts.set(player.team_id, (teamCounts.get(player.team_id) ?? 0) + 1);
+    if (player.character_id && characterCounts.has(player.character_id)) {
+      characterCounts.set(player.character_id, (characterCounts.get(player.character_id) ?? 0) + 1);
     }
   }
 
-  const minCount = Math.min(...Array.from(teamCounts.values()));
-  const candidateTeams = teams.filter((team) => (teamCounts.get(team.id) ?? 0) === minCount);
-  const selectedTeam = candidateTeams[Math.floor(Math.random() * candidateTeams.length)];
+  const minCount = Math.min(...Array.from(characterCounts.values()));
+  const candidateCharacters = characters.filter((character) => (characterCounts.get(character.id) ?? 0) === minCount);
+  const selectedCharacter = candidateCharacters[Math.floor(Math.random() * candidateCharacters.length)];
 
   const { data: joinedPlayer, error } = await supabase
     .from("players")
     .insert({
       session_id: input.session_id,
-      team_id: selectedTeam.id,
+      character_id: selectedCharacter.id,
       nickname: input.nickname,
     })
-    .select("id,nickname,team_id")
+    .select("id,nickname,character_id")
     .single();
   if (error) throw error;
 
   return {
     player: joinedPlayer,
-    team: selectedTeam,
+    character: selectedCharacter,
   };
-}
-
-export async function submitVote(input: {
-  session_id: string;
-  team_id: string;
-  target_team_id: string;
-}) {
-  const { error } = await supabase.from("votes").insert(input);
-  if (error) throw error;
 }

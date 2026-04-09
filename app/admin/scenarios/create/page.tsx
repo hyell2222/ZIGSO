@@ -20,9 +20,12 @@ export default function AdminScenarioCreatePage() {
   const [message, setMessage] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [characterCount, setcharacterCount] = useState(5);
   const [difficulty, setDifficulty] = useState("hard");
-  const [data, setData] = useState("");
+  const [incident, setIncident] = useState("");
+  const [solution, setSolution] = useState("");
+  const [characters, setCharacters] = useState("");
+  const [locations, setLocations] = useState("");
+  const [clues, setClues] = useState("");
 
   const sessionQuery = useQuery({
     queryKey: ["auth-session"],
@@ -43,40 +46,32 @@ export default function AdminScenarioCreatePage() {
 
   const createScenarioMutation = useMutation({
     mutationFn: async () => {
-      let parsedData: Record<string, unknown> = {};
-      if (data.trim()) {
-        parsedData = JSON.parse(data) as Record<string, unknown>;
+      const parsedIncident = incident.trim() ? (JSON.parse(incident) as Record<string, unknown>) : null;
+      const parsedCharacters = characters.trim() ? (JSON.parse(characters) as Record<string, unknown>[]) : [];
+      const parsedLocations = locations.trim() ? (JSON.parse(locations) as Record<string, unknown>[]) : [];
+      const parsedClues = clues.trim() ? (JSON.parse(clues) as Record<string, unknown>[]) : [];
+
+      if (!Array.isArray(parsedCharacters)) {
+        throw new Error("Characters must be a JSON array.");
       }
-      // #region agent log
-      fetch("http://127.0.0.1:7749/ingest/bf6ab18c-c394-4192-9205-66b8beb594f8", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Debug-Session-Id": "55cc55",
-        },
-        body: JSON.stringify({
-          sessionId: "55cc55",
-          runId: "empty-scenarios-pre-fix",
-          hypothesisId: "H3",
-          location: "app/admin/scenarios/create/page.tsx:50",
-          message: "admin create scenario mutation",
-          data: {
-            sessionUserId: sessionQuery.data?.user.id ?? null,
-            hasTitle: Boolean(title.trim()),
-            hasDescription: Boolean(description.trim()),
-            characterCount,
-          },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-      // #endregion
+      if (!Array.isArray(parsedLocations)) {
+        throw new Error("Locations must be a JSON array.");
+      }
+      if (!Array.isArray(parsedClues)) {
+        throw new Error("Clues must be a JSON array.");
+      }
+
       await createScenario({
         title,
         description,
-        character_count: characterCount,
+        character_count: parsedCharacters.length,
         difficulty,
-        data: parsedData,
-        teacher_id: sessionQuery.data?.user.id ?? null,
+        incident: parsedIncident,
+        solution,
+        characters: parsedCharacters,
+        locations: parsedLocations,
+        clues: parsedClues,
+        creator_id: sessionQuery.data?.user.id ?? null,
       });
     },
     onSuccess: async () => {
@@ -105,28 +100,39 @@ export default function AdminScenarioCreatePage() {
               onChange={(event) => setDescription(event.target.value)}
               placeholder="Scenario description"
             />
-            <div className="grid gap-2 sm:grid-cols-2">
-              <Input
-                type="number"
-                min={2}
-                value={characterCount}
-                onChange={(event) => setcharacterCount(Number(event.target.value) || 2)}
-                placeholder="Player count"
-              />
-              <Input
-                value={difficulty}
-                onChange={(event) => setDifficulty(event.target.value)}
-                placeholder="Difficulty"
-              />
-            </div>
+            <Input
+              value={difficulty}
+              onChange={(event) => setDifficulty(event.target.value)}
+              placeholder="Difficulty"
+            />
             <Textarea
-              value={data}
-              onChange={(event) => setData(event.target.value)}
-              placeholder='Scenario JSON data, e.g. {"characters":[...],"solution":{...}}'
+              value={incident}
+              onChange={(event) => setIncident(event.target.value)}
+              placeholder='Incident JSON, e.g. {"summary":"...","victim":"..."}'
+            />
+            <Textarea
+              value={solution}
+              onChange={(event) => setSolution(event.target.value)}
+              placeholder="Scenario solution"
+            />
+            <Textarea
+              value={characters}
+              onChange={(event) => setCharacters(event.target.value)}
+              placeholder='Characters JSON array, e.g. [{"name":"Alex","role":"Witness","alibi":"...","information":{},"motive":{}}]'
+            />
+            <Textarea
+              value={locations}
+              onChange={(event) => setLocations(event.target.value)}
+              placeholder='Locations JSON array, e.g. [{"name":"Library","information":{"floor":2}}]'
+            />
+            <Textarea
+              value={clues}
+              onChange={(event) => setClues(event.target.value)}
+              placeholder='Clues JSON array, e.g. [{"name":"Note","information":{"text":"..."}, "character_name":"Alex","location_name":"Library"}]'
             />
             <Button
               onClick={() => createScenarioMutation.mutate()}
-              disabled={createScenarioMutation.isPending || !title.trim() || !description.trim()}
+              disabled={createScenarioMutation.isPending || !title.trim() || !description.trim() || !characters.trim()}
             >
               {createScenarioMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               Save Scenario

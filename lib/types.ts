@@ -5,18 +5,22 @@ export type GamePhase =
   | "deduction"
   | "verdict";
 
-export type TeamSubmission = {
-  culprit: string;
-  motive: string;
-  method: string;
-  timeline: string;
+export type CharacterRecord = {
+  id: string;
+  scenario_id: string | null;
+  name: string | null;
+  role: string | null;
+  information: Record<string, unknown> | null;
+  alibi: string | null;
+  motive: Record<string, unknown> | null;
 };
 
-export type Team = {
+export type PlayerRecord = {
   id: string;
   session_id: string | null;
-  character_id: string;
-  name: string | null;
+  nickname: string | null;
+  character_id: string | null;
+  joined_at: string | null;
 };
 
 export type GameSession = {
@@ -24,7 +28,6 @@ export type GameSession = {
   scenario_id: string | null;
   host_id: string | null;
   join_code: string;
-  max_teams: number | null;
   phase: string | null;
   created_at: string | null;
 };

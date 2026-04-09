@@ -2,14 +2,39 @@
 
 import { supabase } from "@/lib/supabase";
 
+type JsonObject = Record<string, unknown>;
+
 export type ScenarioRecord = {
   id: string;
   title: string | null;
   description: string | null;
   character_count: number | null;
   difficulty: string | null;
-  data: Record<string, unknown> | null;
-  teacher_id?: string | null;
+  incident: JsonObject | null;
+  solution: string | null;
+  creator_id?: string | null;
+};
+
+export type ScenarioCharacterInput = {
+  name?: string | null;
+  role?: string | null;
+  information?: JsonObject | null;
+  alibi?: string | null;
+  motive?: JsonObject | null;
+};
+
+export type ScenarioLocationInput = {
+  name?: string | null;
+  information?: JsonObject | null;
+};
+
+export type ScenarioClueInput = {
+  name?: string | null;
+  information?: JsonObject | null;
+  character_id?: string | null;
+  location_id?: string | null;
+  character_name?: string | null;
+  location_name?: string | null;
 };
 
 type CreateScenarioInput = {
@@ -17,89 +42,34 @@ type CreateScenarioInput = {
   description: string | null;
   character_count: number | null;
   difficulty: string | null;
-  data: Record<string, unknown> | null;
-  teacher_id?: string | null;
+  incident: JsonObject | null;
+  solution: string | null;
+  characters?: ScenarioCharacterInput[];
+  locations?: ScenarioLocationInput[];
+  clues?: ScenarioClueInput[];
+  creator_id?: string | null;
 };
 
+function normalizeText(value: string | null | undefined) {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : null;
+}
+
+function buildIdMap(rows: Array<{ id: string; name: string | null }>) {
+  return new Map(
+    rows
+      .map((row) => [row.name?.trim().toLowerCase(), row.id] as const)
+      .filter((entry): entry is [string, string] => Boolean(entry[0] && entry[1])),
+  );
+}
+
 export async function listScenarios(teacherId: string) {
-  // #region agent log
-  fetch("http://127.0.0.1:7749/ingest/bf6ab18c-c394-4192-9205-66b8beb594f8", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Debug-Session-Id": "55cc55",
-    },
-    body: JSON.stringify({
-      sessionId: "55cc55",
-      runId: "empty-scenarios-pre-fix",
-      hypothesisId: "H2",
-      location: "lib/api/scenarios.ts:25",
-      message: "listScenarios called",
-      data: {
-        teacherId,
-      },
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {});
-  // #endregion
   const { data, error } = await supabase
     .from("scenarios")
-    .select("id,title,description,character_count,difficulty,data,teacher_id")
-    .eq("teacher_id", teacherId)
+    .select("id,title,description,character_count,difficulty,incident,solution,creator_id")
+    .eq("creator_id", teacherId)
     .order("created_at", { ascending: false });
   if (error) throw error;
-  // #region agent log
-  fetch("http://127.0.0.1:7749/ingest/bf6ab18c-c394-4192-9205-66b8beb594f8", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Debug-Session-Id": "55cc55",
-    },
-    body: JSON.stringify({
-      sessionId: "55cc55",
-      runId: "empty-scenarios-pre-fix",
-      hypothesisId: "H2",
-      location: "lib/api/scenarios.ts:41",
-      message: "listScenarios filtered result",
-      data: {
-        teacherId,
-        count: data?.length ?? 0,
-        teacherIds: (data ?? []).slice(0, 5).map((scenario) => scenario.teacher_id ?? null),
-      },
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {});
-  // #endregion
-  if ((data?.length ?? 0) === 0) {
-    const [{ count: totalCount }, { count: nullTeacherCount }, { data: sampleRows }] = await Promise.all([
-      supabase.from("scenarios").select("*", { count: "exact", head: true }),
-      supabase.from("scenarios").select("*", { count: "exact", head: true }).is("teacher_id", null),
-      supabase.from("scenarios").select("id,teacher_id").order("created_at", { ascending: false }).limit(5),
-    ]);
-    // #region agent log
-    fetch("http://127.0.0.1:7749/ingest/bf6ab18c-c394-4192-9205-66b8beb594f8", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Debug-Session-Id": "55cc55",
-      },
-      body: JSON.stringify({
-        sessionId: "55cc55",
-        runId: "empty-scenarios-pre-fix",
-        hypothesisId: "H4",
-        location: "lib/api/scenarios.ts:61",
-        message: "listScenarios empty diagnostics",
-        data: {
-          teacherId,
-          totalCount: totalCount ?? 0,
-          nullTeacherCount: nullTeacherCount ?? 0,
-          sampleTeacherIds: (sampleRows ?? []).map((scenario) => scenario.teacher_id ?? null),
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
-  }
   return (data ?? []) as ScenarioRecord[];
 }
 
@@ -114,29 +84,84 @@ export {
 export type { StartedGameSession } from "@/lib/api/game-sessions";
 
 export async function createScenario(input: CreateScenarioInput) {
-  // #region agent log
-  fetch("http://127.0.0.1:7749/ingest/bf6ab18c-c394-4192-9205-66b8beb594f8", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Debug-Session-Id": "55cc55",
-    },
-    body: JSON.stringify({
-      sessionId: "55cc55",
-      runId: "empty-scenarios-pre-fix",
-      hypothesisId: "H3",
-      location: "lib/api/scenarios.ts:84",
-      message: "createScenario insert payload",
-      data: {
-        teacherId: input.teacher_id ?? null,
-        hasTitle: Boolean(input.title?.trim()),
-        hasDescription: Boolean(input.description?.trim()),
-        characterCount: input.character_count ?? null,
-      },
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {});
-  // #endregion
-  const { error } = await supabase.from("scenarios").insert(input);
-  if (error) throw error;
+  const characters = input.characters ?? [];
+  const locations = input.locations ?? [];
+  const clues = input.clues ?? [];
+
+  const { data: scenario, error: scenarioError } = await supabase
+    .from("scenarios")
+    .insert({
+      title: normalizeText(input.title),
+      description: normalizeText(input.description),
+      character_count: characters.length || input.character_count,
+      difficulty: normalizeText(input.difficulty),
+      incident: input.incident,
+      solution: normalizeText(input.solution),
+      creator_id: input.creator_id ?? null,
+    })
+    .select("id")
+    .single();
+
+  if (scenarioError) throw scenarioError;
+
+  try {
+    const { data: insertedCharacters, error: charactersError } = characters.length
+      ? await supabase
+          .from("characters")
+          .insert(
+            characters.map((character) => ({
+              scenario_id: scenario.id,
+              name: normalizeText(character.name),
+              role: normalizeText(character.role),
+              information: character.information ?? null,
+              alibi: normalizeText(character.alibi),
+              motive: character.motive ?? null,
+            })),
+          )
+          .select("id,name")
+      : { data: [], error: null };
+
+    if (charactersError) throw charactersError;
+
+    const { data: insertedLocations, error: locationsError } = locations.length
+      ? await supabase
+          .from("locations")
+          .insert(
+            locations.map((location) => ({
+              scenario_id: scenario.id,
+              name: normalizeText(location.name),
+              information: location.information ?? null,
+            })),
+          )
+          .select("id,name")
+      : { data: [], error: null };
+
+    if (locationsError) throw locationsError;
+
+    if (clues.length) {
+      const characterIdsByName = buildIdMap((insertedCharacters ?? []) as Array<{ id: string; name: string | null }>);
+      const locationIdsByName = buildIdMap((insertedLocations ?? []) as Array<{ id: string; name: string | null }>);
+
+      const { error: cluesError } = await supabase.from("clues").insert(
+        clues.map((clue) => ({
+          scenario_id: scenario.id,
+          name: normalizeText(clue.name),
+          information: clue.information ?? null,
+          character_id:
+            normalizeText(clue.character_id) ??
+            characterIdsByName.get(clue.character_name?.trim().toLowerCase() ?? "") ??
+            null,
+          location_id:
+            normalizeText(clue.location_id) ??
+            locationIdsByName.get(clue.location_name?.trim().toLowerCase() ?? "") ??
+            null,
+        })),
+      );
+
+      if (cluesError) throw cluesError;
+    }
+  } catch (error) {
+    await supabase.from("scenarios").delete().eq("id", scenario.id);
+    throw error;
+  }
 }
