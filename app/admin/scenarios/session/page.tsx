@@ -3,15 +3,20 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 
 import { getCurrentSession } from "@/lib/api/auth";
 import { advanceSessionPhase, beginHostingSession, endSession, getNextPhase } from "@/lib/api/scenarios";
-import { getSessionDetails, listSessionPlayers } from "@/lib/api/play";
+import { getSessionDetails } from "@/lib/api/play";
 import { TopNav } from "@/components/layout/top-nav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ROUTES } from "@/lib/routes";
+import {
+  flattenPresenceState,
+  getSessionRoomChannelName,
+  type SessionPresenceRow,
+} from "@/lib/realtime/session-presence";
 import { hasSupabaseEnv, supabase } from "@/lib/supabase";
 import type { ScenarioPhase } from "@/lib/api/scenarios";
 
@@ -48,6 +53,7 @@ function ScenarioSessionHostContent() {
   const [timerInputMinutes, setTimerInputMinutes] = useState<number>(10);
   const [timerRemainingSec, setTimerRemainingSec] = useState<number>(10 * 60);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
+  const [presenceRows, setPresenceRows] = useState<SessionPresenceRow[]>([]);
 
   const authQuery = useQuery({
     queryKey: ["auth-session"],
@@ -63,24 +69,25 @@ function ScenarioSessionHostContent() {
     enabled: Boolean(sessionId && authQuery.data),
   });
 
-  const playersQuery = useQuery({
-    queryKey: ["host-players", sessionId],
-    queryFn: () => listSessionPlayers(sessionId),
-    enabled: Boolean(sessionId && authQuery.data),
-    refetchInterval: 4000,
-  });
+  const hostUserId = authQuery.data?.user?.id;
+  const isVerifiedHost = Boolean(
+    sessionId &&
+      hostUserId &&
+      sessionQuery.data &&
+      sessionQuery.data.host_id === hostUserId,
+  );
 
   useEffect(() => {
-    if (!sessionId) return;
+    if (!hasSupabaseEnv || !sessionId || !isVerifiedHost || !hostUserId) return;
+
     const channel = supabase
-      .channel(`host-session:${sessionId}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "players", filter: `session_id=eq.${sessionId}` },
-        () => {
-          void queryClient.invalidateQueries({ queryKey: ["host-players", sessionId] });
+      .channel(getSessionRoomChannelName(sessionId), {
+        config: {
+          presence: {
+            key: `host:${hostUserId}`,
+          },
         },
-      )
+      })
       .on(
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "game_sessions", filter: `id=eq.${sessionId}` },
@@ -88,11 +95,29 @@ function ScenarioSessionHostContent() {
           void queryClient.invalidateQueries({ queryKey: ["host-session", sessionId] });
         },
       )
-      .subscribe();
+      .on("presence", { event: "sync" }, () => {
+        setPresenceRows(flattenPresenceState(channel.presenceState()));
+      })
+      .on("presence", { event: "join" }, () => {
+        setPresenceRows(flattenPresenceState(channel.presenceState()));
+      })
+      .on("presence", { event: "leave" }, () => {
+        setPresenceRows(flattenPresenceState(channel.presenceState()));
+      })
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") {
+          void channel.track({
+            role: "host",
+            nickname: "호스트",
+          });
+        }
+      });
+
     return () => {
+      setPresenceRows([]);
       void supabase.removeChannel(channel);
     };
-  }, [sessionId, queryClient]);
+  }, [sessionId, queryClient, isVerifiedHost, hostUserId]);
 
   useEffect(() => {
     if (authQuery.isLoading) return;
@@ -183,12 +208,8 @@ function ScenarioSessionHostContent() {
   }, []);
 
   const sessionRowForLeave = sessionQuery.data;
-  const hostUserIdForLeave = authQuery.data?.user.id;
   const isHostOfLoadedSession = Boolean(
-    sessionId &&
-      sessionRowForLeave &&
-      hostUserIdForLeave &&
-      sessionRowForLeave.host_id === hostUserIdForLeave,
+    sessionId && sessionRowForLeave && hostUserId && sessionRowForLeave.host_id === hostUserId,
   );
   const phaseForLeave = sessionRowForLeave?.phase ?? null;
   const shouldEndOnHostLeave =
@@ -201,11 +222,16 @@ function ScenarioSessionHostContent() {
     endPending: endMutation.isPending,
   };
 
+  const presencePlayersOnly = useMemo(
+    () => presenceRows.filter((r) => r.payload.role === "player"),
+    [presenceRows],
+  );
+
+  const playercount = presencePlayersOnly.length;
+
   const phase = (sessionQuery.data?.phase as ScenarioPhase) ?? "waiting";
   const sessionStarted = phase !== "waiting";
   const sessionEnded = phase === "session_ended";
-
-  const playerTotal = playersQuery.data?.length ?? 0;
 
   if (!sessionId) {
     return (
@@ -313,25 +339,20 @@ function ScenarioSessionHostContent() {
             {sessionEnded ? <span className="text-xs text-slate-500">종료됨</span> : null}
           </div>
         </header>
-
-        {!sessionStarted ? (
-          <section className="space-y-3">
-            <h2 className="text-sm font-semibold text-slate-300">접속 중인 플레이어</h2>
-            {playersQuery.isLoading ? (
-              <p className="text-sm text-slate-500">불러오는 중…</p>
-            ) : playerTotal === 0 ? (
-              <p className="text-sm text-slate-500">아직 입장한 플레이어가 없습니다.</p>
+        
+        {phase === "waiting" ? (
+          <section className="space-y-3 rounded-lg border border-slate-800 bg-slate-900/30 p-4">
+            <h2 className="text-sm font-semibold text-slate-300">실시간 접속</h2>
+            {presencePlayersOnly.length === 0 ? (
+              <p className="text-sm text-slate-500">접속한 학생이 없습니다.</p>
             ) : (
               <ul className="space-y-2">
-                {playersQuery.data?.map((p) => (
+                {presencePlayersOnly.map((pr) => (
                   <li
-                    key={p.id}
+                    key={pr.presenceKey}
                     className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-slate-800 px-3 py-2 text-sm"
                   >
-                    <span className="font-medium text-slate-100">{p.nickname ?? "Player"}</span>
-                    <span className="text-xs text-slate-500">
-                      {p.teams?.name ?? "Team"}
-                    </span>
+                    <span className="font-medium text-slate-100">{pr.payload.nickname ?? "Player"}</span>
                   </li>
                 ))}
               </ul>
@@ -418,7 +439,7 @@ function ScenarioSessionHostContent() {
 
       <div className="pointer-events-none fixed bottom-4 right-4 z-40">
         <div className="pointer-events-auto rounded-md border border-slate-700 bg-slate-950/95 px-3 py-2 text-sm text-slate-200 shadow-lg backdrop-blur">
-          플레이어 <span className="font-semibold text-cyan-300">{playerTotal}</span>명
+          플레이어 <span className="font-semibold text-cyan-300">{playercount}</span>명
         </div>
       </div>
     </div>
