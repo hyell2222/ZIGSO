@@ -80,6 +80,33 @@ export async function getCharacterById(characterId: string) {
   return data;
 }
 
+export type ScenarioLocationForMap = {
+  id: string;
+  name: string | null;
+  information: Record<string, unknown> | null;
+};
+
+export type ScenarioClueForMap = {
+  id: string;
+  name: string | null;
+  information: Record<string, unknown> | null;
+  location_id: string | null;
+};
+
+/** 플레이어 맵용: 시나리오의 장소·단서 (단서는 location_id로 장소에 묶임) */
+export async function getScenarioMapEntities(scenarioId: string) {
+  const [locRes, clueRes] = await Promise.all([
+    supabase.from("locations").select("id,name,information").eq("scenario_id", scenarioId).order("name", { ascending: true }),
+    supabase.from("clues").select("id,name,information,location_id").eq("scenario_id", scenarioId).order("name", { ascending: true }),
+  ]);
+  if (locRes.error) throw locRes.error;
+  if (clueRes.error) throw clueRes.error;
+  return {
+    locations: (locRes.data ?? []) as ScenarioLocationForMap[],
+    clues: (clueRes.data ?? []) as ScenarioClueForMap[],
+  };
+}
+
 export async function joinPlayerSession(input: {
   session_id: string;
   nickname: string;

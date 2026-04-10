@@ -2,13 +2,15 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, Loader2 } from "lucide-react";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, Suspense, useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 
 import {
   getSessionByJoinCode,
   getCharacterById,
   getSessionDetails,
+  getScenarioMapEntities,
   joinPlayerSession,
 } from "@/lib/api/play";
 import { TopNav } from "@/components/layout/top-nav";
@@ -18,7 +20,12 @@ import { Input } from "@/components/ui/input";
 import { getSessionRoomChannelName } from "@/lib/realtime/session-presence";
 import { hasSupabaseEnv, supabase } from "@/lib/supabase";
 
-export default function PlayPage() {
+const InvestigationMap = dynamic(
+  () => import("@/components/play/investigation-map").then((mod) => mod.InvestigationMap),
+  { ssr: false, loading: () => <p className="text-sm text-slate-500">맵 로딩 중…</p> },
+);
+
+function PlayPageContent() {
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const joinCode = searchParams.get("code")?.trim().toUpperCase() ?? "";
@@ -108,6 +115,15 @@ export default function PlayPage() {
     sessionPhase === "role_assignment" &&
     Boolean(characterId) &&
     !hideRoleReveal;
+
+  const showInvestigationMap =
+    sessionPhase === "first_investigation" && Boolean(characterId) && !isWaitingLobby;
+
+  const mapQuery = useQuery({
+    queryKey: ["play-scenario-map", sessionQuery.data?.scenario_id],
+    queryFn: async () => getScenarioMapEntities(sessionQuery.data!.scenario_id!),
+    enabled: Boolean(showInvestigationMap && sessionQuery.data?.scenario_id),
+  });
 
   const body = !hasSupabaseEnv ? (
     <Card className="max-w-3xl">
@@ -234,6 +250,35 @@ export default function PlayPage() {
     </div>
   );
 
+  if (hasSupabaseEnv && showInvestigationMap) {
+    return (
+      <div className="fixed inset-0 z-[100] flex h-dvh max-h-dvh flex-col overflow-hidden bg-slate-950">
+        {mapQuery.isLoading ? (
+          <div
+            className="flex flex-1 flex-col items-center justify-center gap-3 text-slate-400"
+            role="status"
+            aria-live="polite"
+          >
+            <Loader2 className="h-8 w-8 animate-spin text-cyan-400" aria-hidden />
+            <p className="text-sm">장소·단서 정보를 불러오는 중…</p>
+          </div>
+        ) : mapQuery.isError ? (
+          <div className="flex flex-1 items-center justify-center p-6 text-center text-sm text-red-300">
+            맵 데이터를 불러오지 못했습니다.
+            {mapQuery.error instanceof Error ? ` ${mapQuery.error.message}` : null}
+          </div>
+        ) : (
+          <InvestigationMap
+            variant="fullscreen"
+            className="min-h-0 flex-1"
+            locations={mapQuery.data?.locations ?? []}
+            clues={mapQuery.data?.clues ?? []}
+          />
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen">
       <TopNav />
@@ -247,5 +292,22 @@ export default function PlayPage() {
         {body}
       </main>
     </div>
+  );
+}
+
+export default function PlayPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen">
+          <TopNav />
+          <main className="mx-auto w-full max-w-7xl px-4 py-8">
+            <p className="text-sm text-slate-400">Loading…</p>
+          </main>
+        </div>
+      }
+    >
+      <PlayPageContent />
+    </Suspense>
   );
 }
