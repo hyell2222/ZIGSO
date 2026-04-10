@@ -101,28 +101,6 @@ export default function PlayPage() {
     onError: (error) => setMessage(error.message),
   });
 
-  const phaseHelp = useMemo(() => {
-    const row = sessionQuery.data;
-    if (!row) return "";
-    const phase = row.phase ?? "waiting";
-    if (phase === "session_ended") return "This session has ended.";
-    if (phase === "waiting") return "Wait for the teacher to start the game.";
-    switch (phase) {
-      case "role_assignment":
-        return "Role assignment and understanding the case.";
-      case "first_investigation":
-        return "First on-site investigation.";
-      case "briefing":
-        return "Briefing phase.";
-      case "second_investigation":
-        return "Second on-site investigation.";
-      case "final_vote":
-        return "Final vote and accusation.";
-      default:
-        return "Follow the teacher's instructions.";
-    }
-  }, [sessionQuery.data]);
-
   const isWaitingLobby =
     Boolean(characterId && sessionId) &&
     (sessionQuery.isLoading || sessionPhase === "waiting");
@@ -217,6 +195,12 @@ export default function PlayPage() {
                 {characterQuery.data.alibi ? (
                   <p className="mt-2 text-xs text-slate-300">Alibi: {characterQuery.data.alibi}</p>
                 ) : null}
+                {characterQuery.data.motive ? (
+                  <p className="mt-2 text-xs text-slate-300">Motive: {JSON.stringify(characterQuery.data.motive)}</p>
+                ) : null}
+                {characterQuery.data.information ? (
+                  <p className="mt-2 text-xs text-slate-300">Information: {JSON.stringify(characterQuery.data.information)}</p>
+                ) : null}
               </div>
             ) : (
               <p className="text-sm text-slate-400">닉네임 설정 후 입장하면 캐릭터 정보가 표시됩니다.</p>
@@ -235,24 +219,15 @@ export default function PlayPage() {
                 <p className="rounded-md border border-slate-800 bg-slate-950/60 p-3 text-sm text-slate-200">
                   {sessionQuery.data.scenarios?.description ?? "No scenario description."}
                 </p>
-                <p className="text-xs text-cyan-300">{phaseHelp}</p>
-                {sessionQuery.data.scenarios?.solution ? (
-                  <p className="text-xs text-slate-400">Solution note is saved for the host.</p>
-                ) : null}
+                <p className="rounded-md border border-slate-800 bg-slate-950/60 p-3 text-sm text-slate-200">
+                  {sessionQuery.data.scenarios?.incident ? JSON.stringify(sessionQuery.data.scenarios.incident) : "No incident information."}
+                </p>
               </>
             ) : (
               <p className="rounded-md border border-dashed border-slate-700 p-3 text-xs text-slate-400">
                 Join with session code to access scenario details.
               </p>
             )}
-
-            <div className="rounded-md border border-amber-500/20 bg-amber-500/5 p-3 text-xs text-amber-200">
-              <p className="mb-1 flex items-center gap-1 font-semibold">
-                <AlertTriangle className="h-3.5 w-3.5" />
-                Classroom Safety Notice
-              </p>
-              <p>Use age-appropriate fictional content only. No graphic violence or personal targeting.</p>
-            </div>
           </CardContent>
         </Card>
       </div>
