@@ -52,8 +52,12 @@ create table if not exists public.players (
   session_id uuid,
   character_id uuid,
   nickname text,
-  joined_at timestamptz default timezone('utc', now())
+  joined_at timestamptz default timezone('utc', now()),
+  vote_character_id uuid
 );
+
+alter table if exists public.players
+  add column if not exists vote_character_id uuid;
 
 do $$
 begin
@@ -120,6 +124,14 @@ begin
       add constraint players_character_id_fkey
       foreign key (character_id) references public.characters(id) on delete set null;
   end if;
+
+  if not exists (
+    select 1 from pg_constraint where conname = 'players_vote_character_id_fkey'
+  ) then
+    alter table public.players
+      add constraint players_vote_character_id_fkey
+      foreign key (vote_character_id) references public.characters(id) on delete set null;
+  end if;
 end
 $$;
 
@@ -134,6 +146,7 @@ create index if not exists game_sessions_scenario_id_idx on public.game_sessions
 create index if not exists game_sessions_host_id_idx on public.game_sessions (host_id);
 create index if not exists players_session_id_idx on public.players (session_id);
 create index if not exists players_character_id_idx on public.players (character_id);
+create index if not exists players_vote_character_id_idx on public.players (vote_character_id);
 
 alter table if exists public.scenarios enable row level security;
 alter table if exists public.characters enable row level security;
@@ -161,6 +174,7 @@ drop policy if exists "hosts can delete own sessions" on public.game_sessions;
 
 drop policy if exists "players readable" on public.players;
 drop policy if exists "players can join" on public.players;
+drop policy if exists "players can set vote_character_id" on public.players;
 
 create policy "public read scenarios" on public.scenarios
   for select using (true);
@@ -244,6 +258,12 @@ create policy "players readable" on public.players
   for select using (true);
 create policy "players can join" on public.players
   for insert with check (true);
+/* anon: player row id로 최종 투표만 기록 — 테이블 권한으로 vote_character_id 컬럼만 UPDATE 허용 */
+create policy "players can set vote_character_id" on public.players
+  for update
+  to anon, authenticated
+  using (true)
+  with check (true);
 
 grant usage on schema public to anon, authenticated;
 grant select on public.scenarios to anon, authenticated;
@@ -253,6 +273,7 @@ grant select on public.clues to anon, authenticated;
 grant select on public.game_sessions to anon, authenticated;
 grant select on public.players to anon, authenticated;
 grant insert on public.players to anon, authenticated;
+grant update (vote_character_id) on public.players to anon, authenticated;
 grant insert, update, delete on public.scenarios to authenticated;
 grant insert, update, delete on public.characters to authenticated;
 grant insert, update, delete on public.locations to authenticated;

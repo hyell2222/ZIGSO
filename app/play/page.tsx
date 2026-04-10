@@ -1,29 +1,28 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { FormEvent, Suspense, useEffect, useState } from "react";
-import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 
-import {
-  getSessionByJoinCode,
-  getCharacterById,
-  getSessionDetails,
-  getScenarioMapEntities,
-  joinPlayerSession,
-} from "@/lib/api/play";
+import { FinalVoteForm } from "@/components/play/final-vote-form";
+import { InvestigationMapShell } from "@/components/play/investigation-map-shell";
+import { SessionInfoLayout } from "@/components/play/session-info-layout";
 import { TopNav } from "@/components/layout/top-nav";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import {
+  getCharacterById,
+  getScenarioMapEntities,
+  getSessionByJoinCode,
+  getSessionDetails,
+  joinPlayerSession,
+  listSessionCharacters,
+} from "@/lib/api/play";
 import { getSessionRoomChannelName } from "@/lib/realtime/session-presence";
+import { isInvestigationPhase } from "@/lib/play-session-phase";
 import { hasSupabaseEnv, supabase } from "@/lib/supabase";
-
-const InvestigationMap = dynamic(
-  () => import("@/components/play/investigation-map").then((mod) => mod.InvestigationMap),
-  { ssr: false, loading: () => <p className="text-sm text-slate-500">맵 로딩 중…</p> },
-);
 
 function PlayPageContent() {
   const searchParams = useSearchParams();
@@ -117,12 +116,21 @@ function PlayPageContent() {
     !hideRoleReveal;
 
   const showInvestigationMap =
-    sessionPhase === "first_investigation" && Boolean(characterId) && !isWaitingLobby;
+    isInvestigationPhase(sessionPhase) && Boolean(characterId) && !isWaitingLobby;
+
+  const showFinalVoteOnly =
+    sessionPhase === "final_vote" && Boolean(characterId) && Boolean(sessionId) && !isWaitingLobby;
 
   const mapQuery = useQuery({
-    queryKey: ["play-scenario-map", sessionQuery.data?.scenario_id],
+    queryKey: ["play-scenario-map", sessionQuery.data?.scenario_id, sessionPhase],
     queryFn: async () => getScenarioMapEntities(sessionQuery.data!.scenario_id!),
     enabled: Boolean(showInvestigationMap && sessionQuery.data?.scenario_id),
+  });
+
+  const voteCharactersQuery = useQuery({
+    queryKey: ["play-session-characters", sessionId],
+    queryFn: async () => listSessionCharacters(sessionId as string),
+    enabled: Boolean(showFinalVoteOnly && sessionId),
   });
 
   const body = !hasSupabaseEnv ? (
@@ -199,83 +207,53 @@ function PlayPageContent() {
         className={`grid gap-4 lg:grid-cols-[1fr_1.2fr] ${isWaitingLobby ? "pointer-events-none min-h-[280px] opacity-0" : ""}`}
         aria-hidden={isWaitingLobby}
       >
-        <Card>
-          <CardHeader>
-            <CardTitle>Session Info</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {characterQuery.data ? (
-              <div className="rounded-md border border-slate-800 p-3 text-sm text-slate-200">
-                <p className="font-semibold text-cyan-300">{characterName ?? characterQuery.data.name}</p>
-                <p className="text-xs text-slate-400">Role: {characterQuery.data.role ?? "Unknown role"}</p>
-                {characterQuery.data.alibi ? (
-                  <p className="mt-2 text-xs text-slate-300">Alibi: {characterQuery.data.alibi}</p>
-                ) : null}
-                {characterQuery.data.motive ? (
-                  <p className="mt-2 text-xs text-slate-300">Motive: {JSON.stringify(characterQuery.data.motive)}</p>
-                ) : null}
-                {characterQuery.data.information ? (
-                  <p className="mt-2 text-xs text-slate-300">Information: {JSON.stringify(characterQuery.data.information)}</p>
-                ) : null}
-              </div>
-            ) : (
-              <p className="text-sm text-slate-400">닉네임 설정 후 입장하면 캐릭터 정보가 표시됩니다.</p>
-            )}
-            {message ? <p className="text-xs text-slate-300">{message}</p> : null}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Scenario Briefing</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {sessionQuery.data ? (
-              <>
-                <p className="rounded-md border border-slate-800 bg-slate-950/60 p-3 text-sm text-slate-200">
-                  {sessionQuery.data.scenarios?.description ?? "No scenario description."}
-                </p>
-                <p className="rounded-md border border-slate-800 bg-slate-950/60 p-3 text-sm text-slate-200">
-                  {sessionQuery.data.scenarios?.incident ? JSON.stringify(sessionQuery.data.scenarios.incident) : "No incident information."}
-                </p>
-              </>
-            ) : (
-              <p className="rounded-md border border-dashed border-slate-700 p-3 text-xs text-slate-400">
-                Join with session code to access scenario details.
-              </p>
-            )}
-          </CardContent>
-        </Card>
+        <SessionInfoLayout
+          characterName={characterName}
+          characterQuery={characterQuery}
+          sessionQuery={sessionQuery}
+          message={message}
+        />
       </div>
     </div>
   );
 
-  if (hasSupabaseEnv && showInvestigationMap) {
+  if (hasSupabaseEnv && showFinalVoteOnly && sessionId && characterId) {
     return (
-      <div className="fixed inset-0 z-[100] flex h-dvh max-h-dvh flex-col overflow-hidden bg-slate-950">
-        {mapQuery.isLoading ? (
-          <div
-            className="flex flex-1 flex-col items-center justify-center gap-3 text-slate-400"
-            role="status"
-            aria-live="polite"
-          >
+      <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center overflow-auto bg-slate-950 p-4">
+        {voteCharactersQuery.isLoading ? (
+          <div className="flex flex-col items-center gap-3 text-slate-400" role="status" aria-live="polite">
             <Loader2 className="h-8 w-8 animate-spin text-cyan-400" aria-hidden />
-            <p className="text-sm">장소·단서 정보를 불러오는 중…</p>
+            <p className="text-sm">투표 정보를 불러오는 중…</p>
           </div>
-        ) : mapQuery.isError ? (
-          <div className="flex flex-1 items-center justify-center p-6 text-center text-sm text-red-300">
-            맵 데이터를 불러오지 못했습니다.
-            {mapQuery.error instanceof Error ? ` ${mapQuery.error.message}` : null}
+        ) : voteCharactersQuery.isError ? (
+          <div className="max-w-md text-center text-sm text-red-300">
+            캐릭터 목록을 불러오지 못했습니다.
+            {voteCharactersQuery.error instanceof Error ? ` ${voteCharactersQuery.error.message}` : null}
           </div>
         ) : (
-          <InvestigationMap
-            variant="fullscreen"
-            className="min-h-0 flex-1"
-            locations={mapQuery.data?.locations ?? []}
-            clues={mapQuery.data?.clues ?? []}
+          <FinalVoteForm
+            playerId={playerId}
+            ownCharacterId={characterId}
+            characters={(voteCharactersQuery.data ?? []).map((c) => ({
+              id: c.id,
+              name: c.name,
+              role: c.role,
+            }))}
           />
         )}
       </div>
+    );
+  }
+
+  if (hasSupabaseEnv && showInvestigationMap && sessionPhase && isInvestigationPhase(sessionPhase)) {
+    return (
+      <InvestigationMapShell
+        phase={sessionPhase}
+        mapLoading={mapQuery.isLoading}
+        mapError={mapQuery.error as Error | null}
+        locations={mapQuery.data?.locations ?? []}
+        clues={mapQuery.data?.clues ?? []}
+      />
     );
   }
 

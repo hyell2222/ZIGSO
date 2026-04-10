@@ -41,13 +41,14 @@ export type SessionPlayerRow = {
   nickname: string | null;
   joined_at: string | null;
   character_id: string | null;
+  vote_character_id: string | null;
   characters: { name: string | null; role: string | null } | null;
 };
 
 export async function listSessionPlayers(sessionId: string) {
   const { data, error } = await supabase
     .from("players")
-    .select("id,nickname,joined_at,character_id,characters(name,role)")
+    .select("id,nickname,joined_at,character_id,vote_character_id,characters(name,role)")
     .eq("session_id", sessionId)
     .order("joined_at", { ascending: true });
   if (error) throw error;
@@ -72,6 +73,25 @@ export async function listSessionCharacters(sessionId: string) {
 
   if (error) throw error;
   return data ?? [];
+}
+
+export async function getPlayerVoteCharacterId(playerId: string) {
+  const { data, error } = await supabase
+    .from("players")
+    .select("vote_character_id")
+    .eq("id", playerId)
+    .single();
+  if (error) throw error;
+  const v = data?.vote_character_id;
+  return typeof v === "string" && v.length > 0 ? v : null;
+}
+
+export async function submitPlayerFinalVote(input: { playerId: string; voteCharacterId: string }) {
+  const { error } = await supabase
+    .from("players")
+    .update({ vote_character_id: input.voteCharacterId })
+    .eq("id", input.playerId);
+  if (error) throw error;
 }
 
 export async function getCharacterById(characterId: string) {
@@ -159,7 +179,7 @@ export async function joinPlayerSession(input: {
       character_id: selectedCharacter.id,
       nickname: input.nickname,
     })
-    .select("id,nickname,character_id")
+    .select("id,nickname,character_id,vote_character_id")
     .single();
   if (error) throw error;
 

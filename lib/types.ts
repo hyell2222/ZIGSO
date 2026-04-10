@@ -20,6 +20,7 @@ export type PlayerRecord = {
   session_id: string | null;
   nickname: string | null;
   character_id: string | null;
+  vote_character_id: string | null;
   joined_at: string | null;
 };
 

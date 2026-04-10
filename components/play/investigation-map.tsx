@@ -123,6 +123,8 @@ function computeWorldSize(layouts: LocationLayout[], placements: CluePlacement[]
 type InvestigationMapProps = {
   className?: string;
   variant?: "embedded" | "fullscreen";
+  /** 상단 상태줄에 표시 (예: 1차 현장 / 2차 현장) */
+  phaseLabel?: string;
   locations?: ScenarioLocationForMap[];
   clues?: ScenarioClueForMap[];
   onEvidenceProgress?: (found: number, total: number) => void;
@@ -142,6 +144,7 @@ function readHostSize(el: HTMLElement) {
 export function InvestigationMap({
   className,
   variant = "embedded",
+  phaseLabel = "1차 현장",
   locations: locationsProp,
   clues: cluesProp,
   onEvidenceProgress,
@@ -360,7 +363,7 @@ export function InvestigationMap({
           !isFull && "px-0",
         )}
       >
-        <span>1차 현장 — 탐색 중</span>
+        <span>{phaseLabel} — 탐색 중</span>
         <span className="font-mono text-amber-200/90">
           단서 수집 {foundCount} / {Math.max(totalCollectibles, 0)}
         </span>
