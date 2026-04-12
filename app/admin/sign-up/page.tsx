@@ -4,7 +4,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
-import { AdminAuthForm } from "@/app/admin/components/admin-auth-form";
+import { AdminAuthForm } from "@/components/admin/admin-auth-form";
 import { getCurrentSession, signUpTeacher } from "@/lib/api/auth";
 import { ROUTES } from "@/lib/routes";
 import { hasSupabaseEnv } from "@/lib/supabase";
