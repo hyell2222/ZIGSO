@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { FormEvent, Suspense, useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { FinalVoteForm } from "@/components/play/final-vote-form";
 import { InvestigationMapShell } from "@/components/play/investigation-map-shell";
@@ -14,17 +14,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
   getCharacterById,
+  getPlaySessionDetails,
+  getPlaySessionVoteOutcome,
   getScenarioMapEntities,
   getSessionByJoinCode,
-  getSessionDetails,
   joinPlayerSession,
   listSessionCharacters,
 } from "@/lib/api/play";
 import { getSessionRoomChannelName } from "@/lib/realtime/session-presence";
 import { isInvestigationPhase } from "@/lib/play-session-phase";
+import { ROUTES } from "@/lib/routes";
 import { hasSupabaseEnv, supabase } from "@/lib/supabase";
 
 function PlayPageContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const joinCode = searchParams.get("code")?.trim().toUpperCase() ?? "";
@@ -44,8 +47,14 @@ function PlayPageContent() {
 
   const sessionQuery = useQuery({
     queryKey: ["play-session", sessionId],
-    queryFn: async () => getSessionDetails(sessionId as string),
+    queryFn: async () => getPlaySessionDetails(sessionId as string),
     enabled: Boolean(sessionId),
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    refetchInterval: sessionId ? 3_000 : false,
+    refetchIntervalInBackground: true,
   });
 
   useEffect(() => {
@@ -75,6 +84,11 @@ function PlayPageContent() {
             character_id: characterId ?? undefined,
             character_name: characterName ?? undefined,
           });
+          return;
+        }
+
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+          void queryClient.invalidateQueries({ queryKey: ["play-session", sessionId] });
         }
       });
 
@@ -84,6 +98,11 @@ function PlayPageContent() {
   }, [sessionId, playerId, characterId, characterName, nickname, queryClient]);
 
   const sessionPhase = sessionQuery.data?.phase ?? (sessionId ? "waiting" : null);
+
+  useEffect(() => {
+    if (sessionPhase !== "session_ended") return;
+    router.replace(ROUTES.home);
+  }, [sessionPhase, router]);
 
   const joinAndRegisterMutation = useMutation({
     mutationFn: async () => {
@@ -120,6 +139,8 @@ function PlayPageContent() {
 
   const showFinalVoteOnly =
     sessionPhase === "final_vote" && Boolean(characterId) && Boolean(sessionId) && !isWaitingLobby;
+  const showArrestOutcomeOnly =
+    sessionPhase === "arrest_result" && Boolean(characterId) && Boolean(sessionId) && !isWaitingLobby;
 
   const mapQuery = useQuery({
     queryKey: ["play-scenario-map", sessionQuery.data?.scenario_id, sessionPhase],
@@ -131,6 +152,15 @@ function PlayPageContent() {
     queryKey: ["play-session-characters", sessionId],
     queryFn: async () => listSessionCharacters(sessionId as string),
     enabled: Boolean(showFinalVoteOnly && sessionId),
+  });
+
+  const voteOutcomeQuery = useQuery({
+    queryKey: ["play-session-vote-outcome", sessionId],
+    queryFn: async () => getPlaySessionVoteOutcome(sessionId as string),
+    enabled: Boolean(showArrestOutcomeOnly && sessionId),
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   });
 
   const body = !hasSupabaseEnv ? (
@@ -240,6 +270,37 @@ function PlayPageContent() {
               role: c.role,
             }))}
           />
+        )}
+      </div>
+    );
+  }
+
+  if (hasSupabaseEnv && showArrestOutcomeOnly) {
+    return (
+      <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center overflow-auto bg-slate-950 p-4">
+        {voteOutcomeQuery.isLoading ? (
+          <div className="flex flex-col items-center gap-3 text-slate-400" role="status" aria-live="polite">
+            <Loader2 className="h-8 w-8 animate-spin text-cyan-400" aria-hidden />
+            <p className="text-sm">검거 결과를 불러오는 중…</p>
+          </div>
+        ) : voteOutcomeQuery.isError ? (
+          <div className="max-w-md text-center text-sm text-red-300">
+            검거 결과를 불러오지 못했습니다.
+            {voteOutcomeQuery.error instanceof Error ? ` ${voteOutcomeQuery.error.message}` : null}
+          </div>
+        ) : (
+          <Card className="mx-auto w-full max-w-md border-slate-700 bg-slate-900/90">
+            <CardHeader>
+              <CardTitle className={voteOutcomeQuery.data?.culpritArrested ? "text-emerald-300" : "text-rose-300"}>
+                {voteOutcomeQuery.data?.culpritArrested ? "범인 지목 성공" : "범인 지목 실패"}
+              </CardTitle>
+              <p className="mt-1 text-sm text-slate-400">
+                {voteOutcomeQuery.data?.culpritArrested
+                  ? "최종 투표 결과, 학생들이 범인을 정확히 지목했습니다."
+                  : "최종 투표 결과, 학생들이 실제 범인을 지목하지 못했습니다."}
+              </p>
+            </CardHeader>
+          </Card>
         )}
       </div>
     );

@@ -16,6 +16,7 @@ export type ScenarioPhase =
   | "briefing"
   | "second_investigation"
   | "final_vote"
+  | "arrest_result"
   | "session_ended";
 
 function generateJoinCode(length: number) {
@@ -66,6 +67,7 @@ const PHASE_ORDER: ScenarioPhase[] = [
   "briefing",
   "second_investigation",
   "final_vote",
+  "arrest_result",
 ];
 
 export function getNextPhase(current: string | null): ScenarioPhase | null {

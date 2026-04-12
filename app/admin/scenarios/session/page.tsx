@@ -7,7 +7,7 @@ import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 
 import { getCurrentSession } from "@/lib/api/auth";
 import { advanceSessionPhase, beginHostingSession, endSession, getNextPhase } from "@/lib/api/scenarios";
-import { getSessionDetails } from "@/lib/api/play";
+import { getHostSessionDetails, getHostSessionVoteSummary } from "@/lib/api/play";
 import { TopNav } from "@/components/layout/top-nav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,24 +25,184 @@ const PHASES: { key: ScenarioPhase; label: string }[] = [
   { key: "first_investigation", label: "1차 현장 검증" },
   { key: "briefing", label: "브리핑" },
   { key: "second_investigation", label: "2차 현장 검증" },
-  { key: "final_vote", label: "최종 투표 및 검거" },
+  { key: "final_vote", label: "최종 투표" },
+  { key: "arrest_result", label: "검거 결과 발표" },
 ];
 
-const PHASE_MINUTES: Record<ScenarioPhase, number> = {
-  waiting: 10,
+const ROLES: { key: string; label: string }[] = [
+  { key: "suspect", label: "용의자" },
+  { key: "culprit", label: "범인" },
+];
+
+type TimedPhase = Exclude<ScenarioPhase, "waiting" | "arrest_result" | "session_ended">;
+
+const PHASE_MINUTES: Record<TimedPhase, number> = {
   role_assignment: 10,
   first_investigation: 12,
   briefing: 8,
   second_investigation: 12,
   final_vote: 8,
-  session_ended: 10,
 };
 
-function formatMmSs(totalSeconds: number) {
+function isTimedPhase(phase: ScenarioPhase): phase is TimedPhase {
+  return phase !== "waiting" && phase !== "arrest_result" && phase !== "session_ended";
+}
+
+function formatHhMmSs(totalSeconds: number) {
   const s = Math.max(0, Math.floor(totalSeconds));
-  const m = Math.floor(s / 60);
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
   const r = s % 60;
-  return `${m}:${r.toString().padStart(2, "0")}`;
+  return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}:${r.toString().padStart(2, "0")}`;
+}
+
+function formatTimerDisplay(totalSeconds: number) {
+  const s = Math.max(0, Math.floor(totalSeconds));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const r = s % 60;
+  if (h === 0) {
+    return `${m.toString().padStart(2, "0")}:${r.toString().padStart(2, "0")}`;
+  }
+  return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}:${r.toString().padStart(2, "0")}`;
+}
+
+function timerDigitsToSeconds(digits: string) {
+  const padded = digits.replace(/\D/g, "").slice(-6).padStart(6, "0");
+  const hours = Number(padded.slice(0, 2));
+  const minutes = Number(padded.slice(2, 4));
+  const seconds = Number(padded.slice(4, 6));
+  return hours * 3600 + minutes * 60 + seconds;
+}
+
+function formatTimerDigits(digits: string) {
+  const padded = digits.replace(/\D/g, "").slice(-6).padStart(6, "0");
+  return `${padded.slice(0, 2)}:${padded.slice(2, 4)}:${padded.slice(4, 6)}`;
+}
+
+function secondsToTimerDigits(totalSeconds: number) {
+  const formatted = formatHhMmSs(totalSeconds).replace(/:/g, "");
+  return formatted.replace(/^0+/, "");
+}
+
+function PhaseTimerCard({ phase }: { phase: TimedPhase }) {
+  const defaultMinutes = PHASE_MINUTES[phase];
+  const [timerRemainingSec, setTimerRemainingSec] = useState<number>(defaultMinutes * 60);
+  const [resetBaselineSec, setResetBaselineSec] = useState<number>(defaultMinutes * 60);
+  const [isTimerRunning, setIsTimerRunning] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [timerInputDigits, setTimerInputDigits] = useState(secondsToTimerDigits(defaultMinutes * 60));
+  const timerInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    if (!isTimerRunning) return;
+    const id = window.setInterval(() => {
+      setTimerRemainingSec((prev) => {
+        if (prev <= 1) {
+          setIsTimerRunning(false);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => window.clearInterval(id);
+  }, [isTimerRunning]);
+
+  useEffect(() => {
+    if (!isEditing || !timerInputRef.current) return;
+    const length = timerInputRef.current.value.length;
+    timerInputRef.current.setSelectionRange(length, length);
+  }, [isEditing, timerInputDigits]);
+
+  const commitTimerValue = () => {
+    const nextSeconds = timerDigitsToSeconds(timerInputDigits);
+    setTimerRemainingSec(nextSeconds);
+    setResetBaselineSec(nextSeconds);
+    setIsTimerRunning(false);
+    setTimerInputDigits(secondsToTimerDigits(nextSeconds));
+    setIsEditing(false);
+  };
+
+  return (
+    <section className="rounded-lg border border-slate-800 bg-slate-900/40 p-6">
+      <h2 className="mb-4 text-center text-sm font-semibold text-slate-300">타이머</h2>
+      <div className="flex flex-col items-center gap-4">
+        {isEditing ? (
+          <Input
+            ref={timerInputRef}
+            autoFocus
+            value={formatTimerDigits(timerInputDigits)}
+            inputMode="numeric"
+            onChange={(e) => {
+              const digits = e.target.value.replace(/\D/g, "").slice(-6);
+              setTimerInputDigits(digits);
+            }}
+            onBlur={commitTimerValue}
+            onKeyDown={(e) => {
+              if (/^\d$/.test(e.key)) {
+                e.preventDefault();
+                setTimerInputDigits((prev) => (prev + e.key).slice(-6));
+                return;
+              }
+
+              if (e.key === "Backspace") {
+                e.preventDefault();
+                setTimerInputDigits((prev) => prev.slice(0, -1));
+                return;
+              }
+
+              if (e.key === "Enter") {
+                e.preventDefault();
+                commitTimerValue();
+                return;
+              }
+
+              if (e.key === "Escape") {
+                e.preventDefault();
+                setTimerInputDigits(secondsToTimerDigits(timerRemainingSec));
+                setIsEditing(false);
+                return;
+              }
+
+              if (e.key === "Tab" || e.key.startsWith("Arrow")) return;
+
+              e.preventDefault();
+            }}
+            className="h-20 !w-[9ch] px-0 text-center font-mono text-5xl tabular-nums text-slate-500 border-none sm:text-6xl"
+            aria-label="타이머 시간 입력"
+          />
+        ) : (
+          <button
+            type="button"
+            onClick={() => {
+              setTimerInputDigits("");
+              setIsEditing(true);
+            }}
+            className="h-20 text-center font-mono text-5xl tabular-nums text-cyan-200 transition hover:text-cyan-100 sm:text-6xl"
+          >
+            {formatTimerDisplay(timerRemainingSec)}
+          </button>
+        )}
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          <Button size="sm" onClick={() => setIsTimerRunning((v) => !v)}>
+            {isTimerRunning ? "일시정지" : "시작"}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setTimerRemainingSec(resetBaselineSec);
+              setIsTimerRunning(false);
+              setTimerInputDigits(secondsToTimerDigits(resetBaselineSec));
+              setIsEditing(false);
+            }}
+          >
+            초기화
+          </Button>
+        </div>
+      </div>
+    </section>
+  );
 }
 
 function ScenarioSessionHostContent() {
@@ -50,9 +210,6 @@ function ScenarioSessionHostContent() {
   const searchParams = useSearchParams();
   const sessionId = searchParams.get("id")?.trim() ?? "";
   const queryClient = useQueryClient();
-  const [timerInputMinutes, setTimerInputMinutes] = useState<number>(10);
-  const [timerRemainingSec, setTimerRemainingSec] = useState<number>(10 * 60);
-  const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [presenceRows, setPresenceRows] = useState<SessionPresenceRow[]>([]);
 
   const authQuery = useQuery({
@@ -65,8 +222,16 @@ function ScenarioSessionHostContent() {
 
   const sessionQuery = useQuery({
     queryKey: ["host-session", sessionId],
-    queryFn: () => getSessionDetails(sessionId),
+    queryFn: () => getHostSessionDetails(sessionId),
     enabled: Boolean(sessionId && authQuery.data),
+  });
+
+  const voteSummaryQuery = useQuery({
+    queryKey: ["host-session-vote-summary", sessionId],
+    queryFn: () => getHostSessionVoteSummary(sessionId),
+    enabled: Boolean(sessionId && sessionQuery.data?.phase === "arrest_result"),
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
   const hostUserId = authQuery.data?.user?.id;
@@ -128,28 +293,6 @@ function ScenarioSessionHostContent() {
     if (!authQuery.data) router.replace(ROUTES.admin.signIn);
   }, [router, authQuery.data, authQuery.isLoading]);
 
-  useEffect(() => {
-    const phase = (sessionQuery.data?.phase as ScenarioPhase) ?? "waiting";
-    const defaultMinutes = PHASE_MINUTES[phase] ?? 10;
-    setTimerInputMinutes(defaultMinutes);
-    setTimerRemainingSec(defaultMinutes * 60);
-    setIsTimerRunning(false);
-  }, [sessionQuery.data?.phase]);
-
-  useEffect(() => {
-    if (!isTimerRunning) return;
-    const id = window.setInterval(() => {
-      setTimerRemainingSec((prev) => {
-        if (prev <= 1) {
-          setIsTimerRunning(false);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    return () => window.clearInterval(id);
-  }, [isTimerRunning]);
-
   const beginMutation = useMutation({
     mutationFn: () => beginHostingSession(sessionId),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["host-session", sessionId] }),
@@ -162,14 +305,9 @@ function ScenarioSessionHostContent() {
       if (!next) throw new Error("Already at final phase.");
       await advanceSessionPhase(sessionId, next);
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["host-session", sessionId] }),
-  });
-
-  const endMutation = useMutation({
-    mutationFn: () => endSession(sessionId),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["host-session", sessionId] });
-      router.push(ROUTES.admin.scenarios);
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["host-session", sessionId] });
+      await queryClient.invalidateQueries({ queryKey: ["host-session-vote-summary", sessionId] });
     },
   });
 
@@ -177,7 +315,6 @@ function ScenarioSessionHostContent() {
     sessionId: "",
     shouldEnd: false,
     beginPending: false,
-    endPending: false,
   });
 
   useEffect(() => {
@@ -189,7 +326,7 @@ function ScenarioSessionHostContent() {
     const runEndSessionOnHostLeave = () => {
       if (!leaveGuardReady) return;
       const s = hostLeaveRef.current;
-      if (s.beginPending || s.endPending) return;
+      if (s.beginPending) return;
       if (!s.shouldEnd || !s.sessionId) return;
       void endSession(s.sessionId);
     };
@@ -215,12 +352,13 @@ function ScenarioSessionHostContent() {
   const shouldEndOnHostLeave =
     isHostOfLoadedSession && phaseForLeave !== "session_ended";
 
-  hostLeaveRef.current = {
-    sessionId,
-    shouldEnd: shouldEndOnHostLeave,
-    beginPending: beginMutation.isPending,
-    endPending: endMutation.isPending,
-  };
+  useEffect(() => {
+    hostLeaveRef.current = {
+      sessionId,
+      shouldEnd: shouldEndOnHostLeave,
+      beginPending: beginMutation.isPending,
+    };
+  }, [sessionId, shouldEndOnHostLeave, beginMutation.isPending]);
 
   const presencePlayersOnly = useMemo(
     () => presenceRows.filter((r) => r.payload.role === "player"),
@@ -230,8 +368,10 @@ function ScenarioSessionHostContent() {
   const playercount = presencePlayersOnly.length;
 
   const phase = (sessionQuery.data?.phase as ScenarioPhase) ?? "waiting";
+  const nextPhase = getNextPhase(phase);
   const sessionStarted = phase !== "waiting";
   const sessionEnded = phase === "session_ended";
+  const shouldShowTimer = isTimedPhase(phase);
 
   if (!sessionId) {
     return (
@@ -273,6 +413,7 @@ function ScenarioSessionHostContent() {
   }
 
   const row = sessionQuery.data;
+  const voteSummary = voteSummaryQuery.data;
   if (row.host_id !== authQuery.data?.user.id) {
     return (
       <div className="min-h-screen">
@@ -292,10 +433,6 @@ function ScenarioSessionHostContent() {
           className={`flex flex-wrap items-start justify-between gap-6 pb-6 ${!sessionStarted ? "border-b border-slate-800" : ""}`}
         >
           <div className="min-w-0 flex-1 space-y-3">
-            <Button variant="secondary" onClick={() => router.push(ROUTES.admin.scenarios)}>
-              <ArrowLeft className="mr-1 h-4 w-4" />
-              Back
-            </Button>
             <div>
               <p className="font-mono text-3xl font-semibold tracking-[0.2em] text-cyan-300 sm:text-4xl">
                 {row.scenarios?.title}
@@ -315,26 +452,15 @@ function ScenarioSessionHostContent() {
                 Start
               </Button>
             ) : null}
-            {sessionStarted && !sessionEnded ? (
-              <>
+            {sessionStarted && !sessionEnded && nextPhase ? (
                 <Button
                   variant="secondary"
                   onClick={() => nextPhaseMutation.mutate()}
-                  disabled={nextPhaseMutation.isPending || !getNextPhase(row.phase)}
+                  disabled={nextPhaseMutation.isPending}
                 >
                   {nextPhaseMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                   Next
                 </Button>
-                <Button
-                  variant="ghost"
-                  className="text-slate-400 hover:text-red-300"
-                  onClick={() => endMutation.mutate()}
-                  disabled={endMutation.isPending}
-                >
-                  {endMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                  End
-                </Button>
-              </>
             ) : null}
             {sessionEnded ? <span className="text-xs text-slate-500">종료됨</span> : null}
           </div>
@@ -364,7 +490,7 @@ function ScenarioSessionHostContent() {
           <>
             <section className="space-y-3">
               <h2 className="text-sm font-semibold text-slate-300">Phase</h2>
-              <div className="grid gap-2 md:grid-cols-5">
+              <div className="grid gap-2 md:grid-cols-6">
                 {PHASES.map((phase, idx) => {
                   const currentIdx = PHASES.findIndex(
                     (p) => p.key === ((row.phase as ScenarioPhase) ?? "role_assignment"),
@@ -389,50 +515,88 @@ function ScenarioSessionHostContent() {
               </div>
             </section>
 
-            <section className="rounded-lg border border-slate-800 bg-slate-900/40 p-6">
-              <h2 className="mb-4 text-center text-sm font-semibold text-slate-300">타이머</h2>
-              <div className="flex flex-col items-center gap-4">
-                <span className="font-mono text-5xl tabular-nums text-cyan-200 sm:text-6xl">
-                  {formatMmSs(timerRemainingSec)}
-                </span>
-                <div className="flex flex-wrap items-center justify-center gap-2">
-                  <Input
-                    type="number"
-                    min={1}
-                    value={timerInputMinutes}
-                    onChange={(e) => setTimerInputMinutes(Number(e.target.value) || 1)}
-                    className="w-24"
-                  />
-                  <span className="text-sm text-slate-500">분</span>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => {
-                      setTimerRemainingSec(Math.max(1, timerInputMinutes) * 60);
-                      setIsTimerRunning(false);
-                    }}
-                  >
-                    설정
-                  </Button>
-                  <Button size="sm" onClick={() => setIsTimerRunning((v) => !v)}>
-                    {isTimerRunning ? "일시정지" : "시작"}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      const phase = (row.phase as ScenarioPhase) ?? "role_assignment";
-                      const defaults = PHASE_MINUTES[phase];
-                      setTimerInputMinutes(defaults);
-                      setTimerRemainingSec(defaults * 60);
-                      setIsTimerRunning(false);
-                    }}
-                  >
-                    초기화
-                  </Button>
+            {shouldShowTimer ? <PhaseTimerCard key={phase} phase={phase} /> : null}
+
+            {phase === "arrest_result" ? (
+              <section className="space-y-4 rounded-lg border border-cyan-900/50 bg-slate-900/50 p-6">
+                <div>
+                  <h2 className="text-sm font-semibold text-cyan-200">최종 투표 결과</h2>
                 </div>
-              </div>
-            </section>
+
+                {voteSummaryQuery.isLoading ? (
+                  <div className="flex items-center gap-2 text-sm text-slate-400">
+                    <Loader2 className="h-4 w-4 animate-spin text-cyan-400" />
+                    결과를 집계하는 중…
+                  </div>
+                ) : voteSummaryQuery.isError ? (
+                  <p className="text-sm text-red-300">
+                    {voteSummaryQuery.error instanceof Error
+                      ? voteSummaryQuery.error.message
+                      : "투표 결과를 불러오지 못했습니다."}
+                  </p>
+                ) : !voteSummary ? (
+                  <p className="text-sm text-slate-400">투표 결과가 아직 없습니다.</p>
+                ) : (
+                  <>
+                    <div className="grid gap-3 md:grid-cols-3">
+                      <div className="rounded-md border border-slate-800 bg-slate-950/60 p-4">
+                        <p className="text-xs uppercase tracking-wide text-slate-500">투표 수</p>
+                        <p className="mt-2 text-2xl font-semibold text-slate-100">{voteSummary.totalVotes}</p>
+                      </div>
+                      <div className="rounded-md border border-slate-800 bg-slate-950/60 p-4">
+                        <p className="text-xs uppercase tracking-wide text-slate-500">최다 지목</p>
+                        <p className="mt-2 text-sm font-medium text-slate-100">
+                          {voteSummary.topVotedCharacterNames.length > 0
+                            ? voteSummary.topVotedCharacterNames.join(", ")
+                            : "없음"}
+                        </p>
+                      </div>
+                      <div className="rounded-md border border-slate-800 bg-slate-950/60 p-4">
+                        <p className="text-xs uppercase tracking-wide text-slate-500">검거 결과</p>
+                        <p
+                          className={`mt-2 text-sm font-semibold ${
+                            voteSummary.culpritArrested ? "text-emerald-300" : "text-rose-300"
+                          }`}
+                        >
+                          {voteSummary.culpritArrested ? "범인 검거 성공" : "범인 검거 실패"}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="rounded-md border border-slate-800 bg-slate-950/60 p-4">
+                      <p className="text-xs uppercase tracking-wide text-slate-500">시나리오 정답</p>
+                      <p className="mt-2 whitespace-pre-wrap text-sm text-slate-200">
+                        {row.scenarios?.solution ?? voteSummary.solution ?? "등록된 정답이 없습니다."}
+                      </p>
+                    </div>
+
+                    <div className="rounded-md border border-slate-800 bg-slate-950/60 p-4">
+                      <p className="text-xs uppercase tracking-wide text-slate-500">캐릭터별 득표</p>
+                      {voteSummary.results.length === 0 ? (
+                        <p className="mt-2 text-sm text-slate-400">집계할 캐릭터가 없습니다.</p>
+                      ) : (
+                        <ul className="mt-3 space-y-2">
+                          {voteSummary.results.map((result) => (
+                            <li
+                              key={result.characterId}
+                              className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-slate-800 px-3 py-2 text-sm"
+                            >
+                              <div>
+                                <span className="font-medium text-slate-100">{result.name ?? "이름 없음"}</span>
+                                {result.role ? <span className="ml-2 text-slate-500">{ROLES.find((r) => r.key === result.role)?.label ?? result.role}</span> : null}
+                                {result.isCulprit ? <span className="ml-2 text-amber-300">정답</span> : null}
+                                {result.isTopVoted ? <span className="ml-2 text-cyan-300">최다 지목</span> : null}
+                              </div>
+                              <span className="font-mono text-slate-300">{result.voteCount}표</span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  </>
+                )}
+              </section>
+            ) : null}
           </>
         ) : null}
       </main>

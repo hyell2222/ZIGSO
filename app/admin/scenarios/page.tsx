@@ -53,10 +53,6 @@ export default function AdminScenariosPage() {
       <TopNav />
       <main className="mx-auto w-full max-w-7xl px-4 py-8">
         <div className="mb-4">
-          <Button variant="secondary" onClick={() => router.back()}>
-            <ArrowLeft className="mr-1 h-4 w-4" />
-            Back
-          </Button>
         </div>
         {sessionQuery.data ? (
           <div className="space-y-6">

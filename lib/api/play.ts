@@ -22,18 +22,36 @@ export type SessionDetailsRow = {
     title: string | null;
     description: string | null;
     incident: Record<string, unknown> | null;
+  } | null;
+};
+
+export type HostSessionDetailsRow = Omit<SessionDetailsRow, "scenarios"> & {
+  scenarios: {
+    title: string | null;
+    description: string | null;
+    incident: Record<string, unknown> | null;
     solution: string | null;
   } | null;
 };
 
-export async function getSessionDetails(sessionId: string) {
+export async function getPlaySessionDetails(sessionId: string) {
+  const { data, error } = await supabase
+    .from("game_sessions")
+    .select("id,join_code,host_id,phase,scenario_id,scenarios(title,description,incident)")
+    .eq("id", sessionId)
+    .single();
+  if (error) throw error;
+  return data as unknown as SessionDetailsRow;
+}
+
+export async function getHostSessionDetails(sessionId: string) {
   const { data, error } = await supabase
     .from("game_sessions")
     .select("id,join_code,host_id,phase,scenario_id,scenarios(title,description,incident,solution)")
     .eq("id", sessionId)
     .single();
   if (error) throw error;
-  return data as unknown as SessionDetailsRow;
+  return data as unknown as HostSessionDetailsRow;
 }
 
 export type SessionPlayerRow = {
@@ -84,6 +102,116 @@ export async function getPlayerVoteCharacterId(playerId: string) {
   if (error) throw error;
   const v = data?.vote_character_id;
   return typeof v === "string" && v.length > 0 ? v : null;
+}
+
+type VoteSummaryCharacter = {
+  characterId: string;
+  name: string | null;
+  role: string | null;
+  voteCount: number;
+  isTopVoted: boolean;
+  isCulprit: boolean;
+};
+
+export type HostSessionVoteSummary = {
+  totalVotes: number;
+  topVoteCount: number;
+  culpritArrested: boolean;
+  solution: string | null;
+  topVotedCharacterNames: string[];
+  culpritCharacterNames: string[];
+  results: VoteSummaryCharacter[];
+};
+
+export type PlaySessionVoteOutcome = {
+  culpritArrested: boolean;
+};
+
+async function computeSessionVoteSummary(sessionId: string) {
+  const { data: session, error: sessionError } = await supabase
+    .from("game_sessions")
+    .select("scenario_id,scenarios(solution)")
+    .eq("id", sessionId)
+    .single();
+
+  if (sessionError) throw sessionError;
+  if (!session?.scenario_id) {
+    throw new Error("This session is not linked to a scenario.");
+  }
+
+  const [charactersRes, votesRes] = await Promise.all([
+    supabase
+      .from("characters")
+      .select("id,name,role")
+      .eq("scenario_id", session.scenario_id)
+      .order("name", { ascending: true }),
+    supabase.from("players").select("vote_character_id").eq("session_id", sessionId),
+  ]);
+
+  if (charactersRes.error) throw charactersRes.error;
+  if (votesRes.error) throw votesRes.error;
+
+  const characters = charactersRes.data ?? [];
+  const votes = votesRes.data ?? [];
+  const counts = new Map<string, number>();
+
+  for (const character of characters) {
+    counts.set(character.id, 0);
+  }
+
+  for (const vote of votes) {
+    const voteCharacterId = vote.vote_character_id;
+    if (voteCharacterId && counts.has(voteCharacterId)) {
+      counts.set(voteCharacterId, (counts.get(voteCharacterId) ?? 0) + 1);
+    }
+  }
+
+  const scenarioRelation = Array.isArray(session.scenarios) ? session.scenarios[0] : session.scenarios;
+  const solution = scenarioRelation?.solution ?? null;
+  const culpritCharacterIds = characters
+    .filter((character) => (character.role ?? "").trim().toLowerCase() === "culprit")
+    .map((character) => character.id);
+
+  const topVoteCount = Math.max(0, ...Array.from(counts.values()));
+  const topVotedCharacterIds =
+    topVoteCount > 0
+      ? characters.filter((character) => (counts.get(character.id) ?? 0) === topVoteCount).map((character) => character.id)
+      : [];
+
+  const results: VoteSummaryCharacter[] = characters
+    .map((character) => ({
+      characterId: character.id,
+      name: character.name ?? null,
+      role: character.role ?? null,
+      voteCount: counts.get(character.id) ?? 0,
+      isTopVoted: topVotedCharacterIds.includes(character.id),
+      isCulprit: culpritCharacterIds.includes(character.id),
+    }))
+    .sort((a, b) => {
+      if (b.voteCount !== a.voteCount) return b.voteCount - a.voteCount;
+      return (a.name ?? "").localeCompare(b.name ?? "");
+    });
+
+  return {
+    totalVotes: votes.filter((vote) => typeof vote.vote_character_id === "string" && vote.vote_character_id.length > 0).length,
+    topVoteCount,
+    culpritArrested: topVotedCharacterIds.some((id) => culpritCharacterIds.includes(id)),
+    solution,
+    topVotedCharacterNames: results.filter((result) => result.isTopVoted).map((result) => result.name ?? "이름 없음"),
+    culpritCharacterNames: results.filter((result) => result.isCulprit).map((result) => result.name ?? "이름 없음"),
+    results,
+  } satisfies HostSessionVoteSummary;
+}
+
+export async function getHostSessionVoteSummary(sessionId: string) {
+  return computeSessionVoteSummary(sessionId);
+}
+
+export async function getPlaySessionVoteOutcome(sessionId: string) {
+  const summary = await computeSessionVoteSummary(sessionId);
+  return {
+    culpritArrested: summary.culpritArrested,
+  } satisfies PlaySessionVoteOutcome;
 }
 
 export async function submitPlayerFinalVote(input: { playerId: string; voteCharacterId: string }) {
