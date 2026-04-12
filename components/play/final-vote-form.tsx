@@ -56,7 +56,7 @@ export function FinalVoteForm({ playerId, characters, ownCharacterId }: FinalVot
 
   if (!playerId) {
     return (
-      <div className="flex min-h-[50vh] items-center justify-center p-6 text-sm text-slate-400">
+      <div className="flex min-h-[50vh] items-center justify-center p-6 text-sm text-[var(--muted-foreground)]">
         플레이어 정보를 불러오는 중입니다.
       </div>
     );
@@ -64,7 +64,7 @@ export function FinalVoteForm({ playerId, characters, ownCharacterId }: FinalVot
 
   if (voteQuery.isLoading) {
     return (
-      <div className="flex min-h-[40vh] items-center justify-center p-6 text-sm text-slate-400">
+      <div className="flex min-h-[40vh] items-center justify-center p-6 text-sm text-[var(--muted-foreground)]">
         투표 기록을 확인하는 중…
       </div>
     );
@@ -72,10 +72,10 @@ export function FinalVoteForm({ playerId, characters, ownCharacterId }: FinalVot
 
   if (voteQuery.isError) {
     return (
-      <Card className="mx-auto w-full max-w-md border-red-900/50 bg-slate-900/90">
+      <Card className="mx-auto w-full max-w-md border-[var(--primary)]/60 bg-[rgba(36,40,43,0.9)]">
         <CardHeader>
-          <CardTitle className="text-red-300">불러오기 실패</CardTitle>
-          <p className="mt-1 text-sm text-slate-400">
+          <CardTitle className="text-[var(--primary)]">불러오기 실패</CardTitle>
+          <p className="mt-1 text-sm text-[var(--muted-foreground)]">
             {voteQuery.error instanceof Error ? voteQuery.error.message : "알 수 없는 오류"}
           </p>
         </CardHeader>
@@ -85,27 +85,27 @@ export function FinalVoteForm({ playerId, characters, ownCharacterId }: FinalVot
 
   if (submittedId) {
     return (
-      <Card className="mx-auto w-full max-w-md border-slate-700 bg-slate-900/90">
+      <Card className="mx-auto w-full max-w-md border-[var(--border)] bg-[rgba(36,40,43,0.9)]">
         <CardHeader>
-          <CardTitle className="text-cyan-200">투표가 접수되었습니다</CardTitle>
-          <p className="mt-1 text-sm text-slate-400">선택: {submittedName ?? "—"}</p>
+          <CardTitle className="text-[var(--accent)]">투표가 접수되었습니다</CardTitle>
+          <p className="mt-1 text-sm text-[var(--muted-foreground)]">선택: {submittedName ?? "—"}</p>
         </CardHeader>
       </Card>
     );
   }
 
   return (
-    <Card className="mx-auto w-full max-w-md border-slate-700 bg-slate-900/90">
+    <Card className="mx-auto w-full max-w-md border-[var(--border)] bg-[rgba(36,40,43,0.9)]">
       <CardHeader>
-        <CardTitle className="text-cyan-200">최종 투표 — 범인 지목</CardTitle>
-        <p className="mt-1 text-sm text-slate-400">
+        <CardTitle className="text-[var(--accent)]">최종 투표 — 범인 지목</CardTitle>
+        <p className="mt-1 text-sm text-[var(--muted-foreground)]">
           시나리오에 등장하는 캐릭터 중 범인으로 생각되는 인물을 한 명 선택하세요.
         </p>
       </CardHeader>
       <CardContent>
         <form className="space-y-5" onSubmit={handleSubmit}>
           <div className="space-y-2">
-            <label htmlFor="vote-target" className="text-sm font-medium text-slate-200">
+            <label htmlFor="vote-target" className="text-sm font-medium text-[var(--foreground)]">
               지목할 캐릭터
             </label>
             <select
@@ -115,8 +115,8 @@ export function FinalVoteForm({ playerId, characters, ownCharacterId }: FinalVot
               onChange={(e) => setChoice(e.target.value)}
               disabled={voteMutation.isPending}
               className={cn(
-                "flex h-10 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100",
-                "ring-offset-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-600 focus-visible:ring-offset-2",
+                "flex h-10 w-full rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)]",
+                "ring-offset-[var(--background)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2",
                 "disabled:opacity-60",
               )}
             >
@@ -130,10 +130,10 @@ export function FinalVoteForm({ playerId, characters, ownCharacterId }: FinalVot
             </select>
           </div>
           {options.length === 0 ? (
-            <p className="text-sm text-amber-300">이 시나리오에 투표할 다른 캐릭터가 없습니다.</p>
+            <p className="text-sm text-[var(--accent)]">이 시나리오에 투표할 다른 캐릭터가 없습니다.</p>
           ) : null}
           {voteMutation.isError ? (
-            <p className="text-sm text-red-300">
+            <p className="text-sm text-[var(--primary)]">
               {voteMutation.error instanceof Error ? voteMutation.error.message : "투표 저장에 실패했습니다."}
             </p>
           ) : null}

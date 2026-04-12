@@ -124,8 +124,8 @@ function PhaseTimerCard({ phase }: { phase: TimedPhase }) {
   };
 
   return (
-    <section className="rounded-lg border border-slate-800 bg-slate-900/40 p-6">
-      <h2 className="mb-4 text-center text-sm font-semibold text-slate-300">타이머</h2>
+    <section className="rounded-lg border border-[var(--border)] bg-[rgba(36,40,43,0.55)] p-6">
+      <h2 className="mb-4 text-center text-sm font-semibold text-[var(--foreground)]">타이머</h2>
       <div className="flex flex-col items-center gap-4">
         {isEditing ? (
           <Input
@@ -168,7 +168,7 @@ function PhaseTimerCard({ phase }: { phase: TimedPhase }) {
 
               e.preventDefault();
             }}
-            className="h-20 !w-[9ch] px-0 text-center font-mono text-5xl tabular-nums text-slate-500 border-none sm:text-6xl"
+            className="h-20 !w-[9ch] border-none px-0 text-center font-mono text-5xl tabular-nums text-[var(--muted-foreground)] sm:text-6xl"
             aria-label="타이머 시간 입력"
           />
         ) : (
@@ -178,7 +178,7 @@ function PhaseTimerCard({ phase }: { phase: TimedPhase }) {
               setTimerInputDigits("");
               setIsEditing(true);
             }}
-            className="h-20 text-center font-mono text-5xl tabular-nums text-cyan-200 transition hover:text-cyan-100 sm:text-6xl"
+            className="h-20 text-center font-mono text-5xl tabular-nums text-[var(--accent)] transition hover:text-[#dce48a] sm:text-6xl"
           >
             {formatTimerDisplay(timerRemainingSec)}
           </button>
@@ -378,7 +378,7 @@ function ScenarioSessionHostContent() {
       <div className="min-h-screen">
         <TopNav />
         <main className="mx-auto w-full max-w-7xl px-4 py-8">
-          <p className="text-sm text-slate-400">세션 ID가 없습니다.</p>
+          <p className="text-sm text-[var(--muted-foreground)]">세션 ID가 없습니다.</p>
           <Button className="mt-4" variant="secondary" onClick={() => router.push(ROUTES.admin.scenarios)}>
             목록으로
           </Button>
@@ -392,7 +392,7 @@ function ScenarioSessionHostContent() {
       <div className="min-h-screen">
         <TopNav />
         <main className="mx-auto w-full max-w-7xl px-4 py-8">
-          <p className="text-sm text-slate-400">불러오는 중…</p>
+          <p className="text-sm text-[var(--muted-foreground)]">불러오는 중…</p>
         </main>
       </div>
     );
@@ -403,7 +403,7 @@ function ScenarioSessionHostContent() {
       <div className="min-h-screen">
         <TopNav />
         <main className="mx-auto w-full max-w-7xl px-4 py-8">
-          <p className="text-sm text-red-400">세션을 불러올 수 없습니다.</p>
+          <p className="text-sm text-[var(--primary)]">세션을 불러올 수 없습니다.</p>
           <Button className="mt-4" variant="secondary" onClick={() => router.push(ROUTES.admin.scenarios)}>
             목록으로
           </Button>
@@ -419,7 +419,7 @@ function ScenarioSessionHostContent() {
       <div className="min-h-screen">
         <TopNav />
         <main className="mx-auto w-full max-w-7xl px-4 py-8">
-          <p className="text-sm text-amber-200">이 세션의 호스트가 아닙니다.</p>
+          <p className="text-sm text-[var(--accent)]">이 세션의 호스트가 아닙니다.</p>
         </main>
       </div>
     );
@@ -430,17 +430,17 @@ function ScenarioSessionHostContent() {
       <TopNav />
       <main className="mx-auto w-full max-w-7xl space-y-6 px-4 pb-24 pt-8">
         <header
-          className={`flex flex-wrap items-start justify-between gap-6 pb-6 ${!sessionStarted ? "border-b border-slate-800" : ""}`}
+          className={`flex flex-wrap items-start justify-between gap-6 pb-6 ${!sessionStarted ? "border-b border-[var(--border)]" : ""}`}
         >
           <div className="min-w-0 flex-1 space-y-3">
             <div>
-              <p className="font-mono text-3xl font-semibold tracking-[0.2em] text-cyan-300 sm:text-4xl">
+              <p className="font-mono text-3xl font-semibold tracking-[0.2em] text-[var(--accent)] sm:text-4xl">
                 {row.scenarios?.title}
               </p>
             </div>
             <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Join code</p>
-              <p className="font-mono text-3xl font-semibold tracking-[0.2em] text-cyan-300 sm:text-4xl">
+              <p className="text-xs font-medium uppercase tracking-wide text-[var(--muted-foreground)]">Join code</p>
+              <p className="font-mono text-3xl font-semibold tracking-[0.2em] text-[var(--accent)] sm:text-4xl">
                 {row.join_code}
               </p>
             </div>
@@ -462,23 +462,23 @@ function ScenarioSessionHostContent() {
                   Next
                 </Button>
             ) : null}
-            {sessionEnded ? <span className="text-xs text-slate-500">종료됨</span> : null}
+            {sessionEnded ? <span className="text-xs text-[var(--muted-foreground)]">종료됨</span> : null}
           </div>
         </header>
         
         {phase === "waiting" ? (
-          <section className="space-y-3 rounded-lg border border-slate-800 bg-slate-900/30 p-4">
-            <h2 className="text-sm font-semibold text-slate-300">실시간 접속</h2>
+          <section className="space-y-3 rounded-lg border border-[var(--border)] bg-[rgba(36,40,43,0.45)] p-4">
+            <h2 className="text-sm font-semibold text-[var(--foreground)]">실시간 접속</h2>
             {presencePlayersOnly.length === 0 ? (
-              <p className="text-sm text-slate-500">접속한 학생이 없습니다.</p>
+              <p className="text-sm text-[var(--muted-foreground)]">접속한 학생이 없습니다.</p>
             ) : (
               <ul className="space-y-2">
                 {presencePlayersOnly.map((pr) => (
                   <li
                     key={pr.presenceKey}
-                    className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-slate-800 px-3 py-2 text-sm"
+                    className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-[var(--border)] bg-[rgba(15,17,19,0.35)] px-3 py-2 text-sm"
                   >
-                    <span className="font-medium text-slate-100">{pr.payload.nickname ?? "Player"}</span>
+                    <span className="font-medium text-[var(--foreground)]">{pr.payload.nickname ?? "Player"}</span>
                   </li>
                 ))}
               </ul>
@@ -489,7 +489,7 @@ function ScenarioSessionHostContent() {
         {sessionStarted ? (
           <>
             <section className="space-y-3">
-              <h2 className="text-sm font-semibold text-slate-300">Phase</h2>
+              <h2 className="text-sm font-semibold text-[var(--foreground)]">Phase</h2>
               <div className="grid gap-2 md:grid-cols-6">
                 {PHASES.map((phase, idx) => {
                   const currentIdx = PHASES.findIndex(
@@ -502,10 +502,10 @@ function ScenarioSessionHostContent() {
                       key={phase.key}
                       className={`rounded-md border px-2 py-2 text-center text-xs leading-snug ${
                         isCurrent
-                          ? "border-cyan-400 bg-cyan-500/10 text-cyan-200"
+                          ? "border-[var(--accent)] bg-[rgba(201,209,107,0.1)] text-[var(--accent)]"
                           : isDone
-                            ? "border-slate-700 bg-slate-800 text-slate-200"
-                            : "border-slate-800 text-slate-500"
+                            ? "border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)]"
+                            : "border-[var(--border)] text-[var(--muted-foreground)]"
                       }`}
                     >
                       {phase.label}
@@ -518,44 +518,44 @@ function ScenarioSessionHostContent() {
             {shouldShowTimer ? <PhaseTimerCard key={phase} phase={phase} /> : null}
 
             {phase === "arrest_result" ? (
-              <section className="space-y-4 rounded-lg border border-cyan-900/50 bg-slate-900/50 p-6">
+              <section className="space-y-4 rounded-lg border border-[var(--accent)]/40 bg-[rgba(36,40,43,0.55)] p-6">
                 <div>
-                  <h2 className="text-sm font-semibold text-cyan-200">최종 투표 결과</h2>
+                  <h2 className="text-sm font-semibold text-[var(--accent)]">최종 투표 결과</h2>
                 </div>
 
                 {voteSummaryQuery.isLoading ? (
-                  <div className="flex items-center gap-2 text-sm text-slate-400">
-                    <Loader2 className="h-4 w-4 animate-spin text-cyan-400" />
+                  <div className="flex items-center gap-2 text-sm text-[var(--muted-foreground)]">
+                    <Loader2 className="h-4 w-4 animate-spin text-[var(--accent)]" />
                     결과를 집계하는 중…
                   </div>
                 ) : voteSummaryQuery.isError ? (
-                  <p className="text-sm text-red-300">
+                  <p className="text-sm text-[var(--primary)]">
                     {voteSummaryQuery.error instanceof Error
                       ? voteSummaryQuery.error.message
                       : "투표 결과를 불러오지 못했습니다."}
                   </p>
                 ) : !voteSummary ? (
-                  <p className="text-sm text-slate-400">투표 결과가 아직 없습니다.</p>
+                  <p className="text-sm text-[var(--muted-foreground)]">투표 결과가 아직 없습니다.</p>
                 ) : (
                   <>
                     <div className="grid gap-3 md:grid-cols-3">
-                      <div className="rounded-md border border-slate-800 bg-slate-950/60 p-4">
-                        <p className="text-xs uppercase tracking-wide text-slate-500">투표 수</p>
-                        <p className="mt-2 text-2xl font-semibold text-slate-100">{voteSummary.totalVotes}</p>
+                      <div className="rounded-md border border-[var(--border)] bg-[rgba(15,17,19,0.35)] p-4">
+                        <p className="text-xs uppercase tracking-wide text-[var(--muted-foreground)]">투표 수</p>
+                        <p className="mt-2 text-2xl font-semibold text-[var(--foreground)]">{voteSummary.totalVotes}</p>
                       </div>
-                      <div className="rounded-md border border-slate-800 bg-slate-950/60 p-4">
-                        <p className="text-xs uppercase tracking-wide text-slate-500">최다 지목</p>
-                        <p className="mt-2 text-sm font-medium text-slate-100">
+                      <div className="rounded-md border border-[var(--border)] bg-[rgba(15,17,19,0.35)] p-4">
+                        <p className="text-xs uppercase tracking-wide text-[var(--muted-foreground)]">최다 지목</p>
+                        <p className="mt-2 text-sm font-medium text-[var(--foreground)]">
                           {voteSummary.topVotedCharacterNames.length > 0
                             ? voteSummary.topVotedCharacterNames.join(", ")
                             : "없음"}
                         </p>
                       </div>
-                      <div className="rounded-md border border-slate-800 bg-slate-950/60 p-4">
-                        <p className="text-xs uppercase tracking-wide text-slate-500">검거 결과</p>
+                      <div className="rounded-md border border-[var(--border)] bg-[rgba(15,17,19,0.35)] p-4">
+                        <p className="text-xs uppercase tracking-wide text-[var(--muted-foreground)]">검거 결과</p>
                         <p
                           className={`mt-2 text-sm font-semibold ${
-                            voteSummary.culpritArrested ? "text-emerald-300" : "text-rose-300"
+                            voteSummary.culpritArrested ? "text-[var(--accent)]" : "text-[var(--primary)]"
                           }`}
                         >
                           {voteSummary.culpritArrested ? "범인 검거 성공" : "범인 검거 실패"}
@@ -563,31 +563,31 @@ function ScenarioSessionHostContent() {
                       </div>
                     </div>
 
-                    <div className="rounded-md border border-slate-800 bg-slate-950/60 p-4">
-                      <p className="text-xs uppercase tracking-wide text-slate-500">시나리오 정답</p>
-                      <p className="mt-2 whitespace-pre-wrap text-sm text-slate-200">
+                    <div className="rounded-md border border-[var(--border)] bg-[rgba(15,17,19,0.35)] p-4">
+                      <p className="text-xs uppercase tracking-wide text-[var(--muted-foreground)]">시나리오 정답</p>
+                      <p className="mt-2 whitespace-pre-wrap text-sm text-[var(--foreground)]">
                         {row.scenarios?.solution ?? voteSummary.solution ?? "등록된 정답이 없습니다."}
                       </p>
                     </div>
 
-                    <div className="rounded-md border border-slate-800 bg-slate-950/60 p-4">
-                      <p className="text-xs uppercase tracking-wide text-slate-500">캐릭터별 득표</p>
+                    <div className="rounded-md border border-[var(--border)] bg-[rgba(15,17,19,0.35)] p-4">
+                      <p className="text-xs uppercase tracking-wide text-[var(--muted-foreground)]">캐릭터별 득표</p>
                       {voteSummary.results.length === 0 ? (
-                        <p className="mt-2 text-sm text-slate-400">집계할 캐릭터가 없습니다.</p>
+                        <p className="mt-2 text-sm text-[var(--muted-foreground)]">집계할 캐릭터가 없습니다.</p>
                       ) : (
                         <ul className="mt-3 space-y-2">
                           {voteSummary.results.map((result) => (
                             <li
                               key={result.characterId}
-                              className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-slate-800 px-3 py-2 text-sm"
+                              className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-[var(--border)] bg-[rgba(36,40,43,0.35)] px-3 py-2 text-sm"
                             >
                               <div>
-                                <span className="font-medium text-slate-100">{result.name ?? "이름 없음"}</span>
-                                {result.role ? <span className="ml-2 text-slate-500">{ROLES.find((r) => r.key === result.role)?.label ?? result.role}</span> : null}
-                                {result.isCulprit ? <span className="ml-2 text-amber-300">정답</span> : null}
-                                {result.isTopVoted ? <span className="ml-2 text-cyan-300">최다 지목</span> : null}
+                                <span className="font-medium text-[var(--foreground)]">{result.name ?? "이름 없음"}</span>
+                                {result.role ? <span className="ml-2 text-[var(--muted-foreground)]">{ROLES.find((r) => r.key === result.role)?.label ?? result.role}</span> : null}
+                                {result.isCulprit ? <span className="ml-2 text-[var(--primary)]">정답</span> : null}
+                                {result.isTopVoted ? <span className="ml-2 text-[var(--accent)]">최다 지목</span> : null}
                               </div>
-                              <span className="font-mono text-slate-300">{result.voteCount}표</span>
+                              <span className="font-mono text-[var(--foreground)]">{result.voteCount}표</span>
                             </li>
                           ))}
                         </ul>
@@ -602,8 +602,8 @@ function ScenarioSessionHostContent() {
       </main>
 
       <div className="pointer-events-none fixed bottom-4 right-4 z-40">
-        <div className="pointer-events-auto rounded-md border border-slate-700 bg-slate-950/95 px-3 py-2 text-sm text-slate-200 shadow-lg backdrop-blur">
-          플레이어 <span className="font-semibold text-cyan-300">{playercount}</span>명
+        <div className="pointer-events-auto rounded-md border border-[var(--border)] bg-[rgba(15,17,19,0.95)] px-3 py-2 text-sm text-[var(--foreground)] shadow-lg backdrop-blur">
+          플레이어 <span className="font-semibold text-[var(--accent)]">{playercount}</span>명
         </div>
       </div>
     </div>
@@ -617,7 +617,7 @@ export default function ScenarioSessionHostPage() {
         <div className="min-h-screen">
           <TopNav />
           <main className="mx-auto w-full max-w-7xl px-4 py-8">
-            <p className="text-sm text-slate-400">불러오는 중…</p>
+            <p className="text-sm text-[var(--muted-foreground)]">불러오는 중…</p>
           </main>
         </div>
       }

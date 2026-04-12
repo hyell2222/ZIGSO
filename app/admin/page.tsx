@@ -37,7 +37,7 @@ export default function AdminPage() {
     <div className="min-h-screen">
       <TopNav />
       <main className="flex justify-center items-center py-20">
-        <p className="text-sm text-slate-400">Redirecting...</p>
+        <p className="text-sm text-[var(--muted-foreground)]">Redirecting...</p>
       </main>
     </div>
   );

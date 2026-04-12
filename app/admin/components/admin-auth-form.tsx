@@ -65,13 +65,13 @@ export function AdminAuthForm({
               {mode === "sign-in" ? "Sign In" : "Sign Up"}
             </Button>
           </div>
-          <p className="pt-3 text-center text-xs text-slate-300">
+          <p className="pt-3 text-center text-xs text-[var(--foreground)]">
             {switchPrompt}{" "}
-            <Link href={switchHref} className="text-cyan-300 hover:text-cyan-200">
+            <Link href={switchHref} className="text-[var(--accent)] hover:text-[#dce48a]">
               {switchLabel}
             </Link>
           </p>
-          {message ? <p className="text-xs text-slate-300">{message}</p> : null}
+          {message ? <p className="text-xs text-[var(--foreground)]">{message}</p> : null}
         </form>
       </CardContent>
     </Card>

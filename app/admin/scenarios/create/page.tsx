@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -88,8 +88,8 @@ export default function AdminScenarioCreatePage() {
         <div className="mb-4">
         </div>
         {sessionQuery.data ? (
-          <section className="space-y-4 rounded-md border border-slate-800 p-4">
-            <h1 className="text-2xl font-bold text-slate-100">Create Scenario</h1>
+          <section className="space-y-4 rounded-md border border-[var(--border)] bg-[rgba(36,40,43,0.55)] p-4">
+            <h1 className="text-2xl font-bold text-[var(--foreground)]">Create Scenario</h1>
             <Input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Scenario title" />
             <Textarea
               value={description}
@@ -133,7 +133,7 @@ export default function AdminScenarioCreatePage() {
               {createScenarioMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               Save Scenario
             </Button>
-            {message ? <p className="text-xs text-slate-300">{message}</p> : null}
+            {message ? <p className="text-xs text-[var(--foreground)]">{message}</p> : null}
           </section>
         ) : null}
       </main>

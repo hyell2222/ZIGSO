@@ -6,7 +6,7 @@ export function Card({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
     <div
       className={cn(
-        "rounded-xl border border-cyan-400/20 bg-slate-900/70 backdrop-blur",
+        "rounded-xl border border-[var(--border)] bg-[rgba(36,40,43,0.82)] backdrop-blur",
         className,
       )}
       {...props}
@@ -15,13 +15,13 @@ export function Card({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
 }
 
 export function CardHeader({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn("border-b border-slate-800 px-5 py-4", className)} {...props} />;
+  return <div className={cn("border-b border-[var(--border)] px-5 py-4", className)} {...props} />;
 }
 
 export function CardTitle({ className, ...props }: HTMLAttributes<HTMLHeadingElement>) {
   return (
     <h3
-      className={cn("text-base font-semibold tracking-wide text-cyan-300", className)}
+      className={cn("text-base font-semibold tracking-wide text-[var(--accent)]", className)}
       {...props}
     />
   );

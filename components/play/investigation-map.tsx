@@ -352,35 +352,35 @@ export function InvestigationMap({
   return (
     <div
       className={cn(
-        isFull ? "relative flex h-full min-h-0 w-full flex-col bg-slate-950" : "",
+        isFull ? "relative flex h-full min-h-0 w-full flex-col bg-[var(--background)]" : "",
         className,
       )}
     >
       <div
         className={cn(
-          "flex shrink-0 items-center justify-between gap-2 border-slate-800 text-xs text-slate-400",
+          "flex shrink-0 items-center justify-between gap-2 border-[var(--border)] text-xs text-[var(--muted-foreground)]",
           isFull ? "border-b px-4 py-2" : "mb-2",
           !isFull && "px-0",
         )}
       >
         <span>{phaseLabel} — 탐색 중</span>
-        <span className="font-mono text-amber-200/90">
+        <span className="font-mono text-[var(--accent)]">
           단서 수집 {foundCount} / {Math.max(totalCollectibles, 0)}
         </span>
       </div>
       <div
         ref={hostRef}
         className={cn(
-          "w-full overflow-hidden bg-slate-950",
-          isFull ? "min-h-0 flex-1" : "min-h-[420px] rounded-md border border-slate-700",
+          "w-full overflow-hidden bg-[var(--background)]",
+          isFull ? "min-h-0 flex-1" : "min-h-[420px] rounded-md border border-[var(--border)]",
         )}
       />
       {!isFull ? (
-        <p className="mt-2 text-xs text-slate-500">
+        <p className="mt-2 text-xs text-[var(--muted-foreground)]">
           키보드 방향키(↑↓←→)로 맵을 돌아다니며 장소에 배치된 단서를 찾을 수 있습니다.
         </p>
       ) : (
-        <p className="pointer-events-none absolute bottom-3 left-1/2 z-10 -translate-x-1/2 text-center text-[11px] text-slate-500">
+        <p className="pointer-events-none absolute bottom-3 left-1/2 z-10 -translate-x-1/2 text-center text-[11px] text-[var(--muted-foreground)]">
           방향키 ↑↓←→ · 노란 표식 = clues (location 기준)
         </p>
       )}

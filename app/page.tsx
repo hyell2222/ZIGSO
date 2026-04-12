@@ -14,9 +14,9 @@ export default function Home() {
     <div className="min-h-screen">
       <TopNav />
       <main className="flex justify-center items-center py-40">
-        <section className="rounded-xl border border-cyan-400/20 bg-[radial-gradient(circle_at_top,#0f3650_0%,#020617_45%,#020617_100%)] p-8">
+        <section className="rounded-xl border border-[var(--border)] bg-[radial-gradient(circle_at_top,rgba(123,14,14,0.38)_0%,rgba(36,40,43,0.94)_45%,rgba(15,17,19,1)_100%)] p-8">
           <form
-            className="text-slate-300 flex flex-col gap-8 max-w-md mx-auto"
+            className="mx-auto flex max-w-md flex-col gap-8 text-[var(--foreground)]"
             onSubmit={(event: FormEvent<HTMLFormElement>) => {
               event.preventDefault();
               const code = joinCode.trim().toUpperCase();
@@ -29,7 +29,7 @@ export default function Home() {
               placeholder="code number"
               value={joinCode}
               onChange={(event) => setJoinCode(event.target.value)}
-              className="w-full h-10 rounded-md border border-slate-700 bg-slate-950 px-3 text-sm text-slate-100 placeholder:text-slate-500 focus:border-cyan-400 focus:outline-none"
+              className="h-10 w-full rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 text-sm text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:border-[var(--accent)] focus:outline-none"
               required
             />
             <Button className="w-full" type="submit">

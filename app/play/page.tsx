@@ -168,17 +168,17 @@ function PlayPageContent() {
       <CardHeader>
         <CardTitle>Setup Required</CardTitle>
       </CardHeader>
-      <CardContent className="text-sm text-slate-300">
+      <CardContent className="text-sm text-[var(--foreground)]">
         Add Supabase environment variables to run multiplayer classroom mode.
       </CardContent>
     </Card>
   ) : (
     <div className="relative">
       {!characterId ? (
-        <div className="absolute inset-0 z-20 flex items-center justify-center rounded-lg bg-slate-950/80 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-lg border border-slate-700 bg-slate-900 p-5">
-            <h3 className="text-lg font-semibold text-slate-100">닉네임 설정 (필수)</h3>
-            <p className="mt-1 text-sm text-slate-400">닉네임을 입력하면 바로 입장하고 캐릭터가 랜덤 배정됩니다.</p>
+        <div className="absolute inset-0 z-20 flex items-center justify-center rounded-lg bg-[rgba(15,17,19,0.88)] p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">
+            <h3 className="text-lg font-semibold text-[var(--foreground)]">닉네임 설정 (필수)</h3>
+            <p className="mt-1 text-sm text-[var(--muted-foreground)]">닉네임을 입력하면 바로 입장하고 캐릭터가 랜덤 배정됩니다.</p>
             <form
               className="mt-4 space-y-3"
               onSubmit={(event: FormEvent<HTMLFormElement>) => {
@@ -197,34 +197,34 @@ function PlayPageContent() {
               </Button>
             </form>
             {!joinCode.trim() ? (
-              <p className="mt-3 text-xs text-amber-300">입장 코드가 없습니다. 홈에서 코드를 입력해 다시 입장해 주세요.</p>
+              <p className="mt-3 text-xs text-[var(--accent)]">입장 코드가 없습니다. 홈에서 코드를 입력해 다시 입장해 주세요.</p>
             ) : null}
-            {message ? <p className="mt-3 text-xs text-slate-300">{message}</p> : null}
+            {message ? <p className="mt-3 text-xs text-[var(--foreground)]">{message}</p> : null}
           </div>
         </div>
       ) : null}
 
       {isWaitingLobby ? (
         <div
-          className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-4 rounded-lg bg-slate-950/95 p-6 backdrop-blur-sm"
+          className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-4 rounded-lg bg-[rgba(15,17,19,0.95)] p-6 backdrop-blur-sm"
           role="status"
           aria-live="polite"
         >
-          <Loader2 className="h-10 w-10 animate-spin text-cyan-400" aria-hidden />
-          <p className="text-center text-sm text-slate-300">교사가 게임을 시작할 때까지 잠시만 기다려 주세요.</p>
+          <Loader2 className="h-10 w-10 animate-spin text-[var(--accent)]" aria-hidden />
+          <p className="text-center text-sm text-[var(--foreground)]">교사가 게임을 시작할 때까지 잠시만 기다려 주세요.</p>
         </div>
       ) : null}
 
       {shouldShowRoleReveal && characterQuery.data ? (
-        <div className="absolute inset-0 z-30 flex items-center justify-center rounded-lg bg-slate-950/90 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-lg rounded-lg border border-cyan-800/60 bg-slate-900 p-6">
-            <h3 className="text-xl font-semibold text-cyan-200">내 캐릭터 배정 완료</h3>
-            <p className="mt-2 text-sm text-slate-300">입장이 완료되었습니다. 당신에게 배정된 캐릭터 정보입니다.</p>
-            <div className="mt-5 rounded-md border border-slate-700 bg-slate-950/70 p-4">
-              <p className="text-xs text-slate-400">CHARACTER</p>
-              <p className="text-lg font-semibold text-cyan-300">{characterName ?? characterQuery.data.name}</p>
-              <p className="mt-2 text-xs text-slate-400">ROLE</p>
-              <p className="text-sm text-slate-100">{characterQuery.data.role ?? "Unknown role"}</p>
+        <div className="absolute inset-0 z-30 flex items-center justify-center rounded-lg bg-[rgba(15,17,19,0.9)] p-4 backdrop-blur-sm">
+          <div className="w-full max-w-lg rounded-lg border border-[var(--accent)]/40 bg-[var(--surface)] p-6">
+            <h3 className="text-xl font-semibold text-[var(--accent)]">내 캐릭터 배정 완료</h3>
+            <p className="mt-2 text-sm text-[var(--foreground)]">입장이 완료되었습니다. 당신에게 배정된 캐릭터 정보입니다.</p>
+            <div className="mt-5 rounded-md border border-[var(--border)] bg-[rgba(15,17,19,0.35)] p-4">
+              <p className="text-xs text-[var(--muted-foreground)]">CHARACTER</p>
+              <p className="text-lg font-semibold text-[var(--accent)]">{characterName ?? characterQuery.data.name}</p>
+              <p className="mt-2 text-xs text-[var(--muted-foreground)]">ROLE</p>
+              <p className="text-sm text-[var(--foreground)]">{characterQuery.data.role ?? "Unknown role"}</p>
             </div>
             <Button className="mt-5 w-full" onClick={() => setHideRoleReveal(true)}>
               확인하고 게임 화면으로
@@ -249,14 +249,14 @@ function PlayPageContent() {
 
   if (hasSupabaseEnv && showFinalVoteOnly && sessionId && characterId) {
     return (
-      <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center overflow-auto bg-slate-950 p-4">
+      <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center overflow-auto bg-[var(--background)] p-4">
         {voteCharactersQuery.isLoading ? (
-          <div className="flex flex-col items-center gap-3 text-slate-400" role="status" aria-live="polite">
-            <Loader2 className="h-8 w-8 animate-spin text-cyan-400" aria-hidden />
+          <div className="flex flex-col items-center gap-3 text-[var(--muted-foreground)]" role="status" aria-live="polite">
+            <Loader2 className="h-8 w-8 animate-spin text-[var(--accent)]" aria-hidden />
             <p className="text-sm">투표 정보를 불러오는 중…</p>
           </div>
         ) : voteCharactersQuery.isError ? (
-          <div className="max-w-md text-center text-sm text-red-300">
+          <div className="max-w-md text-center text-sm text-[var(--primary)]">
             캐릭터 목록을 불러오지 못했습니다.
             {voteCharactersQuery.error instanceof Error ? ` ${voteCharactersQuery.error.message}` : null}
           </div>
@@ -277,24 +277,24 @@ function PlayPageContent() {
 
   if (hasSupabaseEnv && showArrestOutcomeOnly) {
     return (
-      <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center overflow-auto bg-slate-950 p-4">
+      <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center overflow-auto bg-[var(--background)] p-4">
         {voteOutcomeQuery.isLoading ? (
-          <div className="flex flex-col items-center gap-3 text-slate-400" role="status" aria-live="polite">
-            <Loader2 className="h-8 w-8 animate-spin text-cyan-400" aria-hidden />
+          <div className="flex flex-col items-center gap-3 text-[var(--muted-foreground)]" role="status" aria-live="polite">
+            <Loader2 className="h-8 w-8 animate-spin text-[var(--accent)]" aria-hidden />
             <p className="text-sm">검거 결과를 불러오는 중…</p>
           </div>
         ) : voteOutcomeQuery.isError ? (
-          <div className="max-w-md text-center text-sm text-red-300">
+          <div className="max-w-md text-center text-sm text-[var(--primary)]">
             검거 결과를 불러오지 못했습니다.
             {voteOutcomeQuery.error instanceof Error ? ` ${voteOutcomeQuery.error.message}` : null}
           </div>
         ) : (
-          <Card className="mx-auto w-full max-w-md border-slate-700 bg-slate-900/90">
+          <Card className="mx-auto w-full max-w-md border-[var(--border)] bg-[rgba(36,40,43,0.9)]">
             <CardHeader>
-              <CardTitle className={voteOutcomeQuery.data?.culpritArrested ? "text-emerald-300" : "text-rose-300"}>
+              <CardTitle className={voteOutcomeQuery.data?.culpritArrested ? "text-[var(--accent)]" : "text-[var(--primary)]"}>
                 {voteOutcomeQuery.data?.culpritArrested ? "범인 지목 성공" : "범인 지목 실패"}
               </CardTitle>
-              <p className="mt-1 text-sm text-slate-400">
+              <p className="mt-1 text-sm text-[var(--muted-foreground)]">
                 {voteOutcomeQuery.data?.culpritArrested
                   ? "최종 투표 결과, 학생들이 범인을 정확히 지목했습니다."
                   : "최종 투표 결과, 학생들이 실제 범인을 지목하지 못했습니다."}
@@ -323,8 +323,8 @@ function PlayPageContent() {
       <TopNav />
       <main className="mx-auto w-full max-w-7xl px-4 py-8">
         <div className="mb-5">
-          <h2 className="text-2xl font-bold text-slate-100">Player Session Room</h2>
-          <p className="text-sm text-slate-400">
+          <h2 className="text-2xl font-bold text-[var(--foreground)]">Player Session Room</h2>
+          <p className="text-sm text-[var(--muted-foreground)]">
             Join a session with a join code, set your nickname, and receive a random character assignment.
           </p>
         </div>
@@ -341,7 +341,7 @@ export default function PlayPage() {
         <div className="min-h-screen">
           <TopNav />
           <main className="mx-auto w-full max-w-7xl px-4 py-8">
-            <p className="text-sm text-slate-400">Loading…</p>
+            <p className="text-sm text-[var(--muted-foreground)]">Loading…</p>
           </main>
         </div>
       }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -56,47 +56,44 @@ export default function AdminScenariosPage() {
         </div>
         {sessionQuery.data ? (
           <div className="space-y-6">
-            <section className="space-y-4 rounded-md border border-slate-800 p-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-slate-100">Scenario List</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-[var(--foreground)]">Scenario List</h2>
                 {(scenariosQuery.data?.length ?? 0) > 0 ? (
                   <Button onClick={() => router.push(ROUTES.admin.scenariosCreate)}>Create</Button>
                 ) : null}
+            </div>
+            {scenariosQuery.isLoading ? (
+              <p className="text-sm text-[var(--muted-foreground)]">Loading scenarios...</p>
+            ) : (scenariosQuery.data?.length ?? 0) === 0 ? (
+              <div className="flex justify-center py-10">
+                <Button onClick={() => router.push(ROUTES.admin.scenariosCreate)}>Create</Button>
               </div>
-              {scenariosQuery.isLoading ? (
-                <p className="text-sm text-slate-400">Loading scenarios...</p>
-              ) : (scenariosQuery.data?.length ?? 0) === 0 ? (
-                <div className="flex justify-center py-10">
-                  <Button onClick={() => router.push(ROUTES.admin.scenariosCreate)}>Create</Button>
-                </div>
-              ) : (
-                <div className="grid gap-3 md:grid-cols-2">
-                  {scenariosQuery.data?.map((scenario) => (
-                    <div
-                      key={scenario.id}
-                      className="space-y-3 rounded-md border border-slate-700 p-3 text-left transition hover:border-slate-500"
+            ) : (
+              <div className="grid gap-3 md:grid-cols-2">
+                {scenariosQuery.data?.map((scenario) => (
+                  <div
+                    key={scenario.id}
+                    className="space-y-3 rounded-md border border-[var(--border)] bg-[rgba(15,17,19,0.45)] p-3 text-left transition hover:border-[var(--accent)]"
+                  >
+                    <p className="font-semibold text-[var(--foreground)]">{scenario.title ?? "Untitled scenario"}</p>
+                    <p className="text-xs text-[var(--muted-foreground)]">
+                      Difficulty: {scenario.difficulty ?? "Unspecified"} · Players: {scenario.character_count ?? "TBD"}
+                    </p>
+                    <p className="mt-1 line-clamp-2 text-xs text-[var(--foreground)]">
+                      {scenario.description ?? "No description provided yet."}
+                    </p>
+                    <Button
+                      onClick={() => startGameMutation.mutate(scenario)}
+                      disabled={startGameMutation.isPending || !sessionQuery.data?.user.id}
                     >
-                      <p className="font-semibold text-slate-100">{scenario.title ?? "Untitled scenario"}</p>
-                      <p className="text-xs text-slate-400">
-                        Difficulty: {scenario.difficulty ?? "Unspecified"} · Players: {scenario.character_count ?? "TBD"}
-                      </p>
-                      <p className="mt-1 line-clamp-2 text-xs text-slate-300">
-                        {scenario.description ?? "No description provided yet."}
-                      </p>
-                      <Button
-                        onClick={() => startGameMutation.mutate(scenario)}
-                        disabled={startGameMutation.isPending || !sessionQuery.data?.user.id}
-                      >
-                        {startGameMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                        Start Game
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </section>
-
-            {errorMessage ? <p className="text-sm text-red-400">{errorMessage}</p> : null}
+                      {startGameMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                      Start Game
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+            {errorMessage ? <p className="text-sm text-[var(--primary)]">{errorMessage}</p> : null}
           </div>
         ) : null}
       </main>
