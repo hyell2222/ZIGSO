@@ -129,10 +129,10 @@ function PlayPageContent() {
   const isWaitingLobby =
     Boolean(characterId && sessionId) &&
     (sessionQuery.isLoading || sessionPhase === "waiting");
-  const shouldShowRoleReveal =
-    sessionPhase === "role_assignment" &&
-    Boolean(characterId) &&
-    !hideRoleReveal;
+  const hasJoinedSession = Boolean(characterId && sessionId);
+  const shouldShowCharacterReveal =
+    hasJoinedSession && sessionPhase === "role_assignment" && !hideRoleReveal;
+  const shouldShowSessionDetails = hasJoinedSession && hideRoleReveal;
 
   const showInvestigationMap =
     isInvestigationPhase(sessionPhase) && Boolean(characterId) && !isWaitingLobby;
@@ -163,89 +163,10 @@ function PlayPageContent() {
     refetchOnWindowFocus: true,
   });
 
-  const body = !hasSupabaseEnv ? (
-    <Card className="max-w-3xl">
-      <CardHeader>
-        <CardTitle>Setup Required</CardTitle>
-      </CardHeader>
-      <CardContent className="text-sm text-[var(--foreground)]">
-        Add Supabase environment variables to run multiplayer classroom mode.
-      </CardContent>
-    </Card>
-  ) : (
-    <div className="relative">
-      {!characterId ? (
-        <div className="absolute inset-0 z-20 flex items-center justify-center rounded-lg bg-[rgba(15,17,19,0.88)] p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">
-            <h3 className="text-lg font-semibold text-[var(--foreground)]">닉네임 설정 (필수)</h3>
-            <p className="mt-1 text-sm text-[var(--muted-foreground)]">닉네임을 입력하면 바로 입장하고 캐릭터가 랜덤 배정됩니다.</p>
-            <form
-              className="mt-4 space-y-3"
-              onSubmit={(event: FormEvent<HTMLFormElement>) => {
-                event.preventDefault();
-                joinAndRegisterMutation.mutate();
-              }}
-            >
-              <Input
-                placeholder="닉네임"
-                value={nickname}
-                onChange={(event) => setNickname(event.target.value)}
-                required
-              />
-              <Button type="submit" className="w-full" disabled={joinAndRegisterMutation.isPending}>
-                Join as Player
-              </Button>
-            </form>
-            {!joinCode.trim() ? (
-              <p className="mt-3 text-xs text-[var(--accent)]">입장 코드가 없습니다. 홈에서 코드를 입력해 다시 입장해 주세요.</p>
-            ) : null}
-            {message ? <p className="mt-3 text-xs text-[var(--foreground)]">{message}</p> : null}
-          </div>
-        </div>
-      ) : null}
-
-      {isWaitingLobby ? (
-        <div
-          className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-4 rounded-lg bg-[rgba(15,17,19,0.95)] p-6 backdrop-blur-sm"
-          role="status"
-          aria-live="polite"
-        >
-          <Loader2 className="h-10 w-10 animate-spin text-[var(--accent)]" aria-hidden />
-          <p className="text-center text-sm text-[var(--foreground)]">교사가 게임을 시작할 때까지 잠시만 기다려 주세요.</p>
-        </div>
-      ) : null}
-
-      {shouldShowRoleReveal && characterQuery.data ? (
-        <div className="absolute inset-0 z-30 flex items-center justify-center rounded-lg bg-[rgba(15,17,19,0.9)] p-4 backdrop-blur-sm">
-          <div className="w-full max-w-lg rounded-lg border border-[var(--accent)]/40 bg-[var(--surface)] p-6">
-            <h3 className="text-xl font-semibold text-[var(--accent)]">내 캐릭터 배정 완료</h3>
-            <p className="mt-2 text-sm text-[var(--foreground)]">입장이 완료되었습니다. 당신에게 배정된 캐릭터 정보입니다.</p>
-            <div className="mt-5 rounded-md border border-[var(--border)] bg-[rgba(15,17,19,0.35)] p-4">
-              <p className="text-xs text-[var(--muted-foreground)]">CHARACTER</p>
-              <p className="text-lg font-semibold text-[var(--accent)]">{characterName ?? characterQuery.data.name}</p>
-              <p className="mt-2 text-xs text-[var(--muted-foreground)]">ROLE</p>
-              <p className="text-sm text-[var(--foreground)]">{characterQuery.data.role ?? "Unknown role"}</p>
-            </div>
-            <Button className="mt-5 w-full" onClick={() => setHideRoleReveal(true)}>
-              확인하고 게임 화면으로
-            </Button>
-          </div>
-        </div>
-      ) : null}
-
-      <div
-        className={`grid gap-4 lg:grid-cols-[1fr_1.2fr] ${isWaitingLobby ? "pointer-events-none min-h-[280px] opacity-0" : ""}`}
-        aria-hidden={isWaitingLobby}
-      >
-        <SessionInfoLayout
-          characterName={characterName}
-          characterQuery={characterQuery}
-          sessionQuery={sessionQuery}
-          message={message}
-        />
-      </div>
-    </div>
-  );
+  const ROLES: { key: string; label: string }[] = [
+    { key: "suspect", label: "용의자" },
+    { key: "culprit", label: "범인" },
+  ];
 
   if (hasSupabaseEnv && showFinalVoteOnly && sessionId && characterId) {
     return (
@@ -296,8 +217,8 @@ function PlayPageContent() {
               </CardTitle>
               <p className="mt-1 text-sm text-[var(--muted-foreground)]">
                 {voteOutcomeQuery.data?.culpritArrested
-                  ? "최종 투표 결과, 학생들이 범인을 정확히 지목했습니다."
-                  : "최종 투표 결과, 학생들이 실제 범인을 지목하지 못했습니다."}
+                  ? "최종 투표 결과, 범인을 정확히 지목했습니다."
+                  : "최종 투표 결과, 실제 범인을 지목하지 못했습니다."}
               </p>
             </CardHeader>
           </Card>
@@ -318,17 +239,115 @@ function PlayPageContent() {
     );
   }
 
+  if (!hasSupabaseEnv) {
+    return (
+      <div className="min-h-screen">
+        <TopNav />
+        <main className="mx-auto w-full max-w-7xl px-4 py-8">
+          <Card className="max-w-3xl">
+            <CardHeader>
+              <CardTitle>Setup Required</CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm text-[var(--foreground)]">
+              Add Supabase environment variables to run multiplayer classroom mode.
+            </CardContent>
+          </Card>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen">
-      <TopNav />
       <main className="mx-auto w-full max-w-7xl px-4 py-8">
-        <div className="mb-5">
-          <h2 className="text-2xl font-bold text-[var(--foreground)]">Player Session Room</h2>
-          <p className="text-sm text-[var(--muted-foreground)]">
-            Join a session with a join code, set your nickname, and receive a random character assignment.
-          </p>
-        </div>
-        {body}
+
+        {!hasJoinedSession ? (
+          <section className="flex items-center justify-center rounded-lg bg-[rgba(15,17,19,0.88)] p-4 backdrop-blur-sm">
+            <div className="w-full max-w-md rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">
+              <h3 className="text-lg font-semibold text-[var(--foreground)]">닉네임 설정 (필수)</h3>
+              <p className="mt-1 text-sm text-[var(--muted-foreground)]">
+                닉네임을 입력하면 바로 입장하고 캐릭터가 랜덤 배정됩니다.
+              </p>
+              <form
+                className="mt-4 space-y-3"
+                onSubmit={(event: FormEvent<HTMLFormElement>) => {
+                  event.preventDefault();
+                  joinAndRegisterMutation.mutate();
+                }}
+              >
+                <Input
+                  placeholder="닉네임"
+                  value={nickname}
+                  onChange={(event) => setNickname(event.target.value)}
+                  required
+                />
+                <Button type="submit" className="w-full" disabled={joinAndRegisterMutation.isPending}>
+                  Join as Player
+                </Button>
+              </form>
+              {!joinCode.trim() ? (
+                <p className="mt-3 text-xs text-[var(--accent)]">입장 코드가 없습니다. 홈에서 코드를 입력해 다시 입장해 주세요.</p>
+              ) : null}
+              {message ? <p className="mt-3 text-xs text-[var(--foreground)]">{message}</p> : null}
+            </div>
+          </section>
+        ) : null}
+
+        {shouldShowCharacterReveal ? (
+          <section className="rounded-lg border border-[var(--accent)]/40 bg-[var(--surface)] p-6">
+            {characterQuery.isLoading ? (
+              <div className="flex flex-col items-center justify-center gap-3 py-10 text-[var(--muted-foreground)]">
+                <Loader2 className="h-8 w-8 animate-spin text-[var(--accent)]" aria-hidden />
+                <p className="text-sm">캐릭터 정보를 불러오는 중…</p>
+              </div>
+            ) : characterQuery.isError ? (
+              <div className="py-6 text-sm text-[var(--primary)]">
+                캐릭터 정보를 불러오지 못했습니다.
+                {characterQuery.error instanceof Error ? ` ${characterQuery.error.message}` : null}
+              </div>
+            ) : characterQuery.data ? (
+              <>
+                <h3 className="text-xl font-semibold text-[var(--accent)]">내 캐릭터 배정 완료</h3>
+                <p className="mt-2 text-sm text-[var(--foreground)]">
+                  입장이 완료되었습니다. 당신에게 배정된 캐릭터 정보입니다.
+                </p>
+                <div className="mt-5 rounded-md border border-[var(--border)] bg-[rgba(15,17,19,0.35)] p-4">
+                  <p className="text-xs text-[var(--muted-foreground)]">CHARACTER</p>
+                  <p className="text-lg font-semibold text-[var(--accent)]">
+                    {characterName ?? characterQuery.data.name}
+                  </p>
+                  <p className="mt-2 text-xs text-[var(--muted-foreground)]">ROLE</p>
+                  <p className="text-sm text-[var(--foreground)]">
+                    {ROLES.find((r) => r.key === characterQuery.data.role)?.label ?? characterQuery.data.role ?? "Unknown role"}
+                  </p>
+                </div>
+                <Button className="mt-5 w-full" onClick={() => setHideRoleReveal(true)}>
+                  확인하고 게임 화면으로
+                </Button>
+              </>
+            ) : null}
+          </section>
+        ) : null}
+
+        {hasJoinedSession && isWaitingLobby ? (
+          <Card className="mt-4">
+            <CardContent className="flex items-center gap-3 py-5 text-[var(--foreground)]">
+              <Loader2 className="h-5 w-5 animate-spin text-[var(--accent)]" aria-hidden />
+              <p className="text-sm">교사가 게임을 시작할 때까지 잠시만 기다려 주세요.</p>
+            </CardContent>
+          </Card>
+        ) : null}
+
+        {shouldShowSessionDetails ? (
+          <div className="mt-4">
+            <SessionInfoLayout
+              characterName={characterName}
+              characterQuery={characterQuery}
+              sessionQuery={sessionQuery}
+              message={message}
+            />
+          </div>
+        ) : null}
       </main>
     </div>
   );
