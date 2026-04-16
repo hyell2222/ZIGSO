@@ -4,7 +4,7 @@ import "./globals.css";
 import { QueryProvider } from "@/providers/query-provider";
 
 const dungGeunMo = localFont({
-  src: "../assets/DungGeunMo.otf",
+  src: "../public/assets/DungGeunMo.otf",
   variable: "--font-dunggeunmo",
   display: "swap",
 });
