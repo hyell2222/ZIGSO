@@ -134,7 +134,8 @@ function PlayPageContent() {
   const hasJoinedSession = Boolean(characterId && sessionId);
   const shouldShowCharacterReveal =
     hasJoinedSession && sessionPhase === "role_assignment" && !hideRoleReveal;
-  const shouldShowSessionDetails = hasJoinedSession && (hideRoleReveal || sessionPhase !== "role_assignment");
+  const shouldShowSessionDetails =
+    hasJoinedSession && !isWaitingLobby && (hideRoleReveal || sessionPhase !== "role_assignment");
 
   const showInvestigationMap =
     isInvestigationPhase(sessionPhase) && Boolean(characterId) && !isWaitingLobby;
