@@ -288,6 +288,10 @@ type InvestigationMapProps = {
   locations?: ScenarioLocationForMap[];
   clues?: ScenarioClueForMap[];
   onEvidenceProgress?: (found: number, total: number) => void;
+  /** 부모에서 단서 인벤토리 상태를 유지하고 싶을 때 초기값으로 전달 */
+  initialDiscoveredClueIds?: string[];
+  /** 발견 단서 변경을 부모로 전달 (phase 전환 후 briefing 인벤토리 표시용) */
+  onDiscoveredClueIdsChange?: (ids: string[]) => void;
 };
 
 /** 풀스크린 시 부모 div 실제 크기로 캔버스 맞춤 (getBoundingClientRect + 최소값 보정) */
@@ -310,6 +314,8 @@ export function InvestigationMap({
   locations: locationsProp,
   clues: cluesProp,
   onEvidenceProgress,
+  initialDiscoveredClueIds,
+  onDiscoveredClueIdsChange,
 }: InvestigationMapProps) {
   const locations = locationsProp ?? [];
   const clues = cluesProp ?? [];
@@ -322,7 +328,7 @@ export function InvestigationMap({
   const [activeEvidence, setActiveEvidence] = useState<ActiveEvidenceState>(null);
   const [selectedEvidence, setSelectedEvidence] = useState<EvidenceEntry | null>(null);
   /** F로 조사해 획득한 clue id (인벤토리 표시용) */
-  const [discoveredClueIds, setDiscoveredClueIds] = useState<string[]>([]);
+  const [discoveredClueIds, setDiscoveredClueIds] = useState<string[]>(initialDiscoveredClueIds ?? []);
   const [inventoryOpen, setInventoryOpen] = useState(true);
   const registerDiscoveriesRef = useRef<(ids: string[]) => void>(() => {});
 
@@ -369,6 +375,15 @@ export function InvestigationMap({
   }, [discoveredClueIds.length, totalEvidence]);
 
   useEffect(() => {
+    onDiscoveredClueIdsChange?.(discoveredClueIds);
+  }, [discoveredClueIds, onDiscoveredClueIdsChange]);
+
+  useEffect(() => {
+    if (!initialDiscoveredClueIds) return;
+    setDiscoveredClueIds(initialDiscoveredClueIds);
+  }, [initialDiscoveredClueIds]);
+
+  useEffect(() => {
     if (!selectedEvidence) return;
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") setSelectedEvidence(null);
@@ -394,7 +409,6 @@ export function InvestigationMap({
    */
   useEffect(() => {
     setActiveEvidence(null);
-    setDiscoveredClueIds([]);
     const parent = hostRef.current;
     if (!parent) return;
 

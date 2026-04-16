@@ -18,6 +18,8 @@ type InvestigationMapShellProps = {
   mapError: Error | null;
   locations: ScenarioLocationForMap[];
   clues: ScenarioClueForMap[];
+  discoveredClueIds?: string[];
+  onDiscoveredClueIdsChange?: (ids: string[]) => void;
 };
 
 export function InvestigationMapShell({
@@ -26,6 +28,8 @@ export function InvestigationMapShell({
   mapError,
   locations,
   clues,
+  discoveredClueIds,
+  onDiscoveredClueIdsChange,
 }: InvestigationMapShellProps) {
   const label = investigationPhaseLabel(phase);
 
@@ -52,6 +56,8 @@ export function InvestigationMapShell({
           className="min-h-0 flex-1"
           locations={locations}
           clues={clues}
+          initialDiscoveredClueIds={discoveredClueIds}
+          onDiscoveredClueIdsChange={onDiscoveredClueIdsChange}
         />
       )}
     </div>

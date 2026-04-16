@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
-import { FormEvent, Suspense, useEffect, useState } from "react";
+import { FormEvent, Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { FinalVoteForm } from "@/components/play/final-vote-form";
@@ -21,6 +21,7 @@ import {
   joinPlayerSession,
   listSessionCharacters,
 } from "@/lib/api/play";
+import type { ScenarioClueForMap } from "@/lib/api/play";
 import { getSessionRoomChannelName } from "@/lib/realtime/session-presence";
 import { isInvestigationPhase } from "@/lib/play-session-phase";
 import { ROUTES } from "@/lib/routes";
@@ -37,6 +38,7 @@ function PlayPageContent() {
   const [characterId, setCharacterId] = useState<string | null>(null);
   const [characterName, setCharacterName] = useState<string | null>(null);
   const [hideRoleReveal, setHideRoleReveal] = useState(false);
+  const [discoveredClueIds, setDiscoveredClueIds] = useState<string[]>([]);
   const [message, setMessage] = useState<string | null>(null);
 
   const characterQuery = useQuery({
@@ -132,10 +134,11 @@ function PlayPageContent() {
   const hasJoinedSession = Boolean(characterId && sessionId);
   const shouldShowCharacterReveal =
     hasJoinedSession && sessionPhase === "role_assignment" && !hideRoleReveal;
-  const shouldShowSessionDetails = hasJoinedSession && hideRoleReveal;
+  const shouldShowSessionDetails = hasJoinedSession && (hideRoleReveal || sessionPhase !== "role_assignment");
 
   const showInvestigationMap =
     isInvestigationPhase(sessionPhase) && Boolean(characterId) && !isWaitingLobby;
+  const showBriefingInfoOnly = sessionPhase === "briefing" && Boolean(characterId) && !isWaitingLobby;
 
   const showFinalVoteOnly =
     sessionPhase === "final_vote" && Boolean(characterId) && Boolean(sessionId) && !isWaitingLobby;
@@ -145,8 +148,20 @@ function PlayPageContent() {
   const mapQuery = useQuery({
     queryKey: ["play-scenario-map", sessionQuery.data?.scenario_id, sessionPhase],
     queryFn: async () => getScenarioMapEntities(sessionQuery.data!.scenario_id!),
-    enabled: Boolean(showInvestigationMap && sessionQuery.data?.scenario_id),
+    enabled: Boolean((showInvestigationMap || showBriefingInfoOnly) && sessionQuery.data?.scenario_id),
   });
+
+  const discoveredCluesForBriefing = useMemo(() => {
+    const byId = new Map((mapQuery.data?.clues ?? []).map((clue) => [clue.id, clue]));
+    return discoveredClueIds
+      .map((id) => byId.get(id))
+      .filter((clue): clue is ScenarioClueForMap => clue != null)
+      .sort((a, b) => (a.name ?? "").localeCompare(b.name ?? ""));
+  }, [discoveredClueIds, mapQuery.data?.clues]);
+
+  useEffect(() => {
+    setDiscoveredClueIds([]);
+  }, [sessionId]);
 
   const voteCharactersQuery = useQuery({
     queryKey: ["play-session-characters", sessionId],
@@ -235,7 +250,56 @@ function PlayPageContent() {
         mapError={mapQuery.error as Error | null}
         locations={mapQuery.data?.locations ?? []}
         clues={mapQuery.data?.clues ?? []}
+        discoveredClueIds={discoveredClueIds}
+        onDiscoveredClueIdsChange={setDiscoveredClueIds}
       />
+    );
+  }
+
+  if (hasSupabaseEnv && showBriefingInfoOnly) {
+    return (
+      <div className="min-h-screen">
+        <TopNav />
+        <main className="mx-auto w-full max-w-7xl px-4 py-8">
+          <div className="space-y-4">
+            <SessionInfoLayout
+              characterName={characterName}
+              characterQuery={characterQuery}
+              sessionQuery={sessionQuery}
+              message={message}
+            />
+            <Card>
+              <CardHeader>
+                <CardTitle>증거 인벤토리</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {mapQuery.isLoading ? (
+                  <p className="text-sm text-[var(--muted-foreground)]">증거를 불러오는 중…</p>
+                ) : mapQuery.isError ? (
+                  <p className="text-sm text-[var(--primary)]">
+                    증거 목록을 불러오지 못했습니다.
+                    {mapQuery.error instanceof Error ? ` ${mapQuery.error.message}` : null}
+                  </p>
+                ) : discoveredCluesForBriefing.length === 0 ? (
+                  <p className="text-sm text-[var(--muted-foreground)]">아직 수집한 증거가 없습니다.</p>
+                ) : (
+                  <ul className="space-y-2">
+                    {discoveredCluesForBriefing.map((clue) => (
+                      <li
+                        key={clue.id}
+                        className="rounded-md border border-[var(--border)] bg-[rgba(15,17,19,0.35)] px-3 py-2 text-sm text-[var(--foreground)]"
+                      >
+                        <p className="font-medium text-[var(--accent)]">{clue.name ?? "이름 없는 증거"}</p>
+                        <p className="text-xs text-[var(--muted-foreground)]">{clue.location_id ?? "위치 정보 없음"}</p>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </main>
+      </div>
     );
   }
 
