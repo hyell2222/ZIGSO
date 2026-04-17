@@ -29,11 +29,6 @@ const PHASES: { key: ScenarioPhase; label: string }[] = [
   { key: "arrest_result", label: "검거 결과 발표" },
 ];
 
-const ROLES: { key: string; label: string }[] = [
-  { key: "suspect", label: "용의자" },
-  { key: "culprit", label: "범인" },
-];
-
 type TimedPhase = Exclude<ScenarioPhase, "waiting" | "arrest_result" | "session_ended">;
 
 const PHASE_MINUTES: Record<TimedPhase, number> = {
@@ -584,7 +579,7 @@ function ScenarioSessionHostContent() {
                             >
                               <div>
                                 <span className="font-medium text-[var(--foreground)]">{result.name ?? "이름 없음"}</span>
-                                {result.role ? <span className="ml-2 text-[var(--muted-foreground)]">{ROLES.find((r) => r.key === result.role)?.label ?? result.role}</span> : null}
+                                {result.role ? <span className="ml-2 text-[var(--muted-foreground)]">{result.role}</span> : null}
                                 {result.isCulprit ? <span className="ml-2 text-[var(--primary)]">정답</span> : null}
                                 {result.isTopVoted ? <span className="ml-2 text-[var(--accent)]">최다 지목</span> : null}
                               </div>

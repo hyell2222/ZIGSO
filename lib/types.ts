@@ -1,3 +1,5 @@
+import type { CharacterAlibi } from "@/lib/character-alibi";
+
 export type GamePhase =
   | "briefing"
   | "evidence"
@@ -10,9 +12,9 @@ export type CharacterRecord = {
   scenario_id: string | null;
   name: string | null;
   role: string | null;
+  is_culprit: boolean | null;
   information: Record<string, unknown> | null;
-  alibi: string | null;
-  motive: Record<string, unknown> | null;
+  alibi: CharacterAlibi | null;
 };
 
 export type PlayerRecord = {

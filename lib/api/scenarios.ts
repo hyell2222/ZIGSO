@@ -1,6 +1,8 @@
 "use client";
 
+import type { CharacterAlibi } from "@/lib/character-alibi";
 import { supabase } from "@/lib/supabase";
+import type { ScenarioIncident } from "@/lib/scenario-incident";
 
 type JsonObject = Record<string, unknown>;
 
@@ -10,7 +12,7 @@ export type ScenarioRecord = {
   description: string | null;
   character_count: number | null;
   difficulty: string | null;
-  incident: JsonObject | null;
+  incident: ScenarioIncident | null;
   solution: string | null;
   creator_id?: string | null;
 };
@@ -18,9 +20,9 @@ export type ScenarioRecord = {
 export type ScenarioCharacterInput = {
   name?: string | null;
   role?: string | null;
+  is_culprit?: boolean | null;
   information?: JsonObject | null;
-  alibi?: string | null;
-  motive?: JsonObject | null;
+  alibi?: CharacterAlibi | null;
 };
 
 export type ScenarioLocationInput = {
@@ -42,7 +44,7 @@ type CreateScenarioInput = {
   description: string | null;
   character_count: number | null;
   difficulty: string | null;
-  incident: JsonObject | null;
+  incident: ScenarioIncident | null;
   solution: string | null;
   characters?: ScenarioCharacterInput[];
   locations?: ScenarioLocationInput[];
@@ -113,9 +115,9 @@ export async function createScenario(input: CreateScenarioInput) {
               scenario_id: scenario.id,
               name: normalizeText(character.name),
               role: normalizeText(character.role),
+              is_culprit: character.is_culprit ?? false,
               information: character.information ?? null,
-              alibi: normalizeText(character.alibi),
-              motive: character.motive ?? null,
+              alibi: character.alibi ?? null,
             })),
           )
           .select("id,name")

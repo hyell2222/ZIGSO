@@ -179,11 +179,6 @@ function PlayPageContent() {
     refetchOnWindowFocus: true,
   });
 
-  const ROLES: { key: string; label: string }[] = [
-    { key: "suspect", label: "용의자" },
-    { key: "culprit", label: "범인" },
-  ];
-
   if (hasSupabaseEnv && showFinalVoteOnly && sessionId && characterId) {
     return (
       <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center overflow-auto bg-[var(--background)] p-4">
@@ -383,7 +378,11 @@ function PlayPageContent() {
                   </p>
                   <p className="mt-2 text-xs text-[var(--muted-foreground)]">ROLE</p>
                   <p className="text-sm text-[var(--foreground)]">
-                    {ROLES.find((r) => r.key === characterQuery.data.role)?.label ?? characterQuery.data.role ?? "Unknown role"}
+                    {characterQuery.data.role ?? "역할 정보 없음"}
+                  </p>
+                  <p className="mt-2 text-xs text-[var(--muted-foreground)]">IDENTITY</p>
+                  <p className="text-sm text-[var(--foreground)]">
+                    {characterQuery.data.is_culprit ? "범인" : "용의자"}
                   </p>
                 </div>
                 <Button className="mt-5 w-full" onClick={() => setHideRoleReveal(true)}>

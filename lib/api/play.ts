@@ -1,6 +1,7 @@
 "use client";
 
 import { supabase } from "@/lib/supabase";
+import type { ScenarioIncident } from "@/lib/scenario-incident";
 
 export async function getSessionByJoinCode(joinCode: string) {
   const { data, error } = await supabase
@@ -21,7 +22,7 @@ export type SessionDetailsRow = {
   scenarios: {
     title: string | null;
     description: string | null;
-    incident: Record<string, unknown> | null;
+    incident: ScenarioIncident | null;
   } | null;
 };
 
@@ -29,7 +30,7 @@ export type HostSessionDetailsRow = Omit<SessionDetailsRow, "scenarios"> & {
   scenarios: {
     title: string | null;
     description: string | null;
-    incident: Record<string, unknown> | null;
+    incident: ScenarioIncident | null;
     solution: string | null;
   } | null;
 };
@@ -60,13 +61,13 @@ export type SessionPlayerRow = {
   joined_at: string | null;
   character_id: string | null;
   vote_character_id: string | null;
-  characters: { name: string | null; role: string | null } | null;
+  characters: { name: string | null; role: string | null; is_culprit: boolean | null } | null;
 };
 
 export async function listSessionPlayers(sessionId: string) {
   const { data, error } = await supabase
     .from("players")
-    .select("id,nickname,joined_at,character_id,vote_character_id,characters(name,role)")
+    .select("id,nickname,joined_at,character_id,vote_character_id,characters(name,role,is_culprit)")
     .eq("session_id", sessionId)
     .order("joined_at", { ascending: true });
   if (error) throw error;
@@ -85,7 +86,7 @@ export async function listSessionCharacters(sessionId: string) {
 
   const { data, error } = await supabase
     .from("characters")
-    .select("id,name,role,information,alibi,motive")
+    .select("id,name,role,is_culprit,information,alibi")
     .eq("scenario_id", session.scenario_id)
     .order("name", { ascending: true });
 
@@ -108,9 +109,9 @@ type VoteSummaryCharacter = {
   characterId: string;
   name: string | null;
   role: string | null;
+  isCulprit: boolean;
   voteCount: number;
   isTopVoted: boolean;
-  isCulprit: boolean;
 };
 
 export type HostSessionVoteSummary = {
@@ -142,7 +143,7 @@ async function computeSessionVoteSummary(sessionId: string) {
   const [charactersRes, votesRes] = await Promise.all([
     supabase
       .from("characters")
-      .select("id,name,role")
+      .select("id,name,role,is_culprit")
       .eq("scenario_id", session.scenario_id)
       .order("name", { ascending: true }),
     supabase.from("players").select("vote_character_id").eq("session_id", sessionId),
@@ -169,7 +170,7 @@ async function computeSessionVoteSummary(sessionId: string) {
   const scenarioRelation = Array.isArray(session.scenarios) ? session.scenarios[0] : session.scenarios;
   const solution = scenarioRelation?.solution ?? null;
   const culpritCharacterIds = characters
-    .filter((character) => (character.role ?? "").trim().toLowerCase() === "culprit")
+    .filter((character) => character.is_culprit === true)
     .map((character) => character.id);
 
   const topVoteCount = Math.max(0, ...Array.from(counts.values()));
@@ -183,9 +184,9 @@ async function computeSessionVoteSummary(sessionId: string) {
       characterId: character.id,
       name: character.name ?? null,
       role: character.role ?? null,
+      isCulprit: character.is_culprit === true,
       voteCount: counts.get(character.id) ?? 0,
       isTopVoted: topVotedCharacterIds.includes(character.id),
-      isCulprit: culpritCharacterIds.includes(character.id),
     }))
     .sort((a, b) => {
       if (b.voteCount !== a.voteCount) return b.voteCount - a.voteCount;
@@ -272,7 +273,7 @@ export async function joinPlayerSession(input: {
 
   const { data: characters, error: characterError } = await supabase
     .from("characters")
-    .select("id,name,role,information,alibi,motive")
+    .select("id,name,role,is_culprit,information,alibi")
     .eq("scenario_id", session.scenario_id);
 
   if (characterError) throw characterError;

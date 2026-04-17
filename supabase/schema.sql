@@ -17,9 +17,9 @@ create table if not exists public.characters (
   scenario_id uuid,
   name text,
   role text,
+  is_culprit boolean default false,
   information jsonb,
-  alibi text,
-  motive jsonb
+  alibi jsonb,
 );
 
 create table if not exists public.locations (
@@ -58,6 +58,32 @@ create table if not exists public.players (
 
 alter table if exists public.players
   add column if not exists vote_character_id uuid;
+
+alter table if exists public.characters
+  add column if not exists is_culprit boolean default false;
+
+do $$
+begin
+  if exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'characters'
+      and column_name = 'alibi'
+      and udt_name <> 'jsonb'
+  ) then
+    alter table public.characters
+      alter column alibi type jsonb
+      using case
+        when alibi is null or btrim(alibi) = '' then null
+        when left(btrim(alibi), 1) in ('{', '[') then alibi::jsonb
+        else jsonb_build_object('timeline', jsonb_build_array(
+          jsonb_build_object('time', null, 'behavior', alibi, 'location', null)
+        ))
+      end;
+  end if;
+end
+$$;
 
 do $$
 begin

@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ROUTES } from "@/lib/routes";
+import { parseScenarioIncident } from "@/lib/scenario-incident";
 import { hasSupabaseEnv } from "@/lib/supabase";
 
 export default function AdminScenarioCreatePage() {
@@ -46,11 +47,16 @@ export default function AdminScenarioCreatePage() {
 
   const createScenarioMutation = useMutation({
     mutationFn: async () => {
-      const parsedIncident = incident.trim() ? (JSON.parse(incident) as Record<string, unknown>) : null;
+      const parsedIncident = incident.trim()
+        ? parseScenarioIncident(JSON.parse(incident) as Record<string, unknown>)
+        : null;
       const parsedCharacters = characters.trim() ? (JSON.parse(characters) as Record<string, unknown>[]) : [];
       const parsedLocations = locations.trim() ? (JSON.parse(locations) as Record<string, unknown>[]) : [];
       const parsedClues = clues.trim() ? (JSON.parse(clues) as Record<string, unknown>[]) : [];
 
+      if (incident.trim() && !parsedIncident) {
+        throw new Error("Incident must match the expected JSON object shape.");
+      }
       if (!Array.isArray(parsedCharacters)) {
         throw new Error("Characters must be a JSON array.");
       }
@@ -104,7 +110,7 @@ export default function AdminScenarioCreatePage() {
             <Textarea
               value={incident}
               onChange={(event) => setIncident(event.target.value)}
-              placeholder='Incident JSON, e.g. {"summary":"...","victim":"..."}'
+              placeholder={`Incident JSON, e.g. {\n  "victim": {\n    "name": "한지우",\n    "age": 52,\n    "gender": "여성",\n    "occupation": "도서관 사서"\n  },\n  "discovery": {\n    "time": "오후 9시 10분",\n    "location": "본관 2층 도서관 서가 사이",\n    "appearance": "머리에 혈흔을 흘린 채 뒤로 넘어져 있음"\n  },\n  "estimated_death_time": "오후 8시 45분 ~ 9시 05분",\n  "summary": "야간 점검을 나갔던 사서가 연락이 두절된 후, 차갑게 식은 상태로 발견됨."\n}`}
             />
             <Textarea
               value={solution}
@@ -114,7 +120,7 @@ export default function AdminScenarioCreatePage() {
             <Textarea
               value={characters}
               onChange={(event) => setCharacters(event.target.value)}
-              placeholder='Characters JSON array, e.g. [{"name":"Alex","role":"Witness","alibi":"...","information":{},"motive":{}}]'
+              placeholder='Characters JSON array, e.g. [{"name":"한지우","role":"학생회장","is_culprit":true,"alibi":{"timeline":[{"time":"20:35","behavior":"참고서를 가방에 숨기고 나갈 준비를 함","location":"학생회실"}],"fake_alibi":[{"time":"20:35","behavior":"학생회 예산 결산안을 검토하며 서류 정리 중이었음","location":"학생회실"}]},"information":{}}]'
             />
             <Textarea
               value={locations}
