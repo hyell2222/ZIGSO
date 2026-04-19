@@ -2,6 +2,7 @@
 
 import { supabase } from "@/lib/supabase";
 import type { ScenarioRecord } from "@/lib/api/scenarios";
+import { assignTeamsAndCharacters } from "@/lib/api/play";
 
 export type StartedGameSession = {
   sessionId: string;
@@ -11,13 +12,10 @@ export type StartedGameSession = {
 
 export type ScenarioPhase =
   | "waiting"
-  | "role_assignment"
-  | "first_investigation"
   | "briefing"
-  | "second_investigation"
-  | "final_vote"
-  | "arrest_result"
-  | "session_ended";
+  | "investigation"
+  | "resolution"
+  | "session_end";
 
 function generateJoinCode(length: number) {
   return Math.random().toString(36).slice(2, 2 + length).toUpperCase();
@@ -35,7 +33,6 @@ export async function startGameSession(scenario: ScenarioRecord, hostId?: string
     .order("name", { ascending: true });
 
   if (charactersError) throw charactersError;
-
   if (!characters || characters.length === 0) {
     throw new Error("Selected scenario has no characters.");
   }
@@ -48,6 +45,7 @@ export async function startGameSession(scenario: ScenarioRecord, hostId?: string
       host_id: hostId,
       join_code: joinCode,
       phase: "waiting",
+      is_active: true,
     })
     .select("id,join_code")
     .single();
@@ -62,25 +60,23 @@ export async function startGameSession(scenario: ScenarioRecord, hostId?: string
 }
 
 const PHASE_ORDER: ScenarioPhase[] = [
-  "role_assignment",
-  "first_investigation",
   "briefing",
-  "second_investigation",
-  "final_vote",
-  "arrest_result",
+  "investigation",
+  "resolution",
 ];
 
 export function getNextPhase(current: string | null): ScenarioPhase | null {
-  if (current === "waiting" || current === "session_ended") return null;
-  const idx = PHASE_ORDER.indexOf((current as ScenarioPhase) ?? "role_assignment");
+  if (current === "waiting" || current === "session_end") return null;
+  const idx = PHASE_ORDER.indexOf((current as ScenarioPhase) ?? "briefing");
   if (idx < 0 || idx >= PHASE_ORDER.length - 1) return null;
   return PHASE_ORDER[idx + 1];
 }
 
 export async function beginHostingSession(sessionId: string) {
+  await assignTeamsAndCharacters(sessionId);
   const { error } = await supabase
     .from("game_sessions")
-    .update({ phase: "role_assignment" })
+    .update({ phase: "briefing" })
     .eq("id", sessionId);
   if (error) throw error;
 }
@@ -96,7 +92,7 @@ export async function advanceSessionPhase(sessionId: string, nextPhase: Scenario
 export async function endSession(sessionId: string) {
   const { error } = await supabase
     .from("game_sessions")
-    .update({ phase: "session_ended" })
+    .update({ phase: "session_end", is_active: false })
     .eq("id", sessionId);
   if (error) throw error;
 }

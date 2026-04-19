@@ -1,29 +1,34 @@
-import type { CharacterAlibi } from "@/lib/character-alibi";
-
 export type GamePhase =
+  | "waiting"
   | "briefing"
-  | "evidence"
-  | "interrogation"
-  | "deduction"
-  | "verdict";
+  | "investigation"
+  | "resolution"
+  | "session_end";
 
 export type CharacterRecord = {
   id: string;
   scenario_id: string | null;
   name: string | null;
   role: string | null;
-  is_culprit: boolean | null;
-  information: Record<string, unknown> | null;
-  alibi: CharacterAlibi | null;
+};
+
+export type TeamRecord = {
+  id: string;
+  session_id: string | null;
+  name: string | null;
+  found_clue_ids: string[];
+  is_solved: boolean | null;
+  solved_at: string | null;
 };
 
 export type PlayerRecord = {
   id: string;
-  session_id: string | null;
   nickname: string | null;
+  session_id: string | null;
+  team_id: string | null;
   character_id: string | null;
-  vote_character_id: string | null;
-  joined_at: string | null;
+  is_solved: boolean | null;
+  solved_at: string | null;
 };
 
 export type GameSession = {
@@ -31,6 +36,7 @@ export type GameSession = {
   scenario_id: string | null;
   host_id: string | null;
   join_code: string;
-  phase: string | null;
+  phase: GamePhase | string | null;
+  is_active: boolean | null;
   created_at: string | null;
 };

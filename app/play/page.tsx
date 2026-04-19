@@ -2,10 +2,9 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
-import { FormEvent, Suspense, useEffect, useMemo, useState } from "react";
+import { FormEvent, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-import { FinalVoteForm } from "@/components/play/final-vote-form";
 import { InvestigationMapShell } from "@/components/play/investigation-map-shell";
 import { SessionInfoLayout } from "@/components/play/session-info-layout";
 import { TopNav } from "@/components/layout/top-nav";
@@ -13,17 +12,18 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
+  addFoundClueToTeam,
   getCharacterById,
+  getPlayerById,
   getPlaySessionDetails,
-  getPlaySessionVoteOutcome,
   getScenarioMapEntities,
   getSessionByJoinCode,
+  getTeamById,
   joinPlayerSession,
-  listSessionCharacters,
+  markTeamSolved,
 } from "@/lib/api/play";
 import type { ScenarioClueForMap } from "@/lib/api/play";
 import { getSessionRoomChannelName } from "@/lib/realtime/session-presence";
-import { isInvestigationPhase } from "@/lib/play-session-phase";
 import { ROUTES } from "@/lib/routes";
 import { hasSupabaseEnv, supabase } from "@/lib/supabase";
 
@@ -35,17 +35,39 @@ function PlayPageContent() {
   const [nickname, setNickname] = useState("");
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [playerId, setPlayerId] = useState<string | null>(null);
-  const [characterId, setCharacterId] = useState<string | null>(null);
-  const [characterName, setCharacterName] = useState<string | null>(null);
   const [hideRoleReveal, setHideRoleReveal] = useState(false);
   const [discoveredClueIds, setDiscoveredClueIds] = useState<string[]>([]);
   const [message, setMessage] = useState<string | null>(null);
+
+  const playerQuery = useQuery({
+    queryKey: ["play-player", playerId],
+    queryFn: async () => getPlayerById(playerId as string),
+    enabled: Boolean(playerId),
+    refetchInterval: playerId ? 3_000 : false,
+    refetchIntervalInBackground: true,
+  });
+
+  const characterId = playerQuery.data?.character_id ?? null;
+  const teamId = playerQuery.data?.team_id ?? null;
 
   const characterQuery = useQuery({
     queryKey: ["play-character", characterId, sessionId],
     queryFn: async () => getCharacterById(characterId as string),
     enabled: Boolean(characterId && sessionId),
   });
+
+  const characterName = characterQuery.data?.name ?? null;
+
+  const teamQuery = useQuery({
+    queryKey: ["play-team", teamId],
+    queryFn: async () => getTeamById(teamId as string),
+    enabled: Boolean(teamId),
+    refetchInterval: teamId ? 3_000 : false,
+    refetchIntervalInBackground: true,
+  });
+
+  const teamName = teamQuery.data?.name ?? null;
+  const teamSolved = Boolean(teamQuery.data?.is_solved);
 
   const sessionQuery = useQuery({
     queryKey: ["play-session", sessionId],
@@ -77,6 +99,22 @@ function PlayPageContent() {
           void queryClient.invalidateQueries({ queryKey: ["play-session", sessionId] });
         },
       )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "players", filter: `id=eq.${playerId}` },
+        () => {
+          void queryClient.invalidateQueries({ queryKey: ["play-player", playerId] });
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "teams", filter: `session_id=eq.${sessionId}` },
+        () => {
+          if (teamId) {
+            void queryClient.invalidateQueries({ queryKey: ["play-team", teamId] });
+          }
+        },
+      )
       .subscribe((status) => {
         if (status === "SUBSCRIBED") {
           void channel.track({
@@ -97,12 +135,12 @@ function PlayPageContent() {
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [sessionId, playerId, characterId, characterName, nickname, queryClient]);
+  }, [sessionId, playerId, teamId, characterId, characterName, nickname, queryClient]);
 
   const sessionPhase = sessionQuery.data?.phase ?? (sessionId ? "waiting" : null);
 
   useEffect(() => {
-    if (sessionPhase !== "session_ended") return;
+    if (sessionPhase !== "session_end") return;
     router.replace(ROUTES.home);
   }, [sessionPhase, router]);
 
@@ -120,36 +158,41 @@ function PlayPageContent() {
         nickname: nickname.trim(),
       });
       setPlayerId(result.player.id);
-      setCharacterId(result.player.character_id ?? result.character.id);
-      setCharacterName(result.character.name ?? "Character");
       setHideRoleReveal(false);
     },
-    onSuccess: () => setMessage("Joined successfully. Character assigned randomly."),
+    onSuccess: () => setMessage("대기실에 입장했습니다. 교사가 시작할 때까지 기다려 주세요."),
     onError: (error) => setMessage(error.message),
   });
 
+  const hasJoinedSession = Boolean(playerId && sessionId);
+  const hasAssignment = Boolean(characterId && teamId);
+
   const isWaitingLobby =
-    Boolean(characterId && sessionId) &&
-    (sessionQuery.isLoading || sessionPhase === "waiting");
-  const hasJoinedSession = Boolean(characterId && sessionId);
+    hasJoinedSession && (sessionQuery.isLoading || sessionPhase === "waiting" || !hasAssignment);
   const shouldShowCharacterReveal =
-    hasJoinedSession && sessionPhase === "role_assignment" && !hideRoleReveal;
-  const shouldShowSessionDetails =
-    hasJoinedSession && !isWaitingLobby && (hideRoleReveal || sessionPhase !== "role_assignment");
-
-  const showInvestigationMap =
-    isInvestigationPhase(sessionPhase) && Boolean(characterId) && !isWaitingLobby;
-  const showBriefingInfoOnly = sessionPhase === "briefing" && Boolean(characterId) && !isWaitingLobby;
-
-  const showFinalVoteOnly =
-    sessionPhase === "final_vote" && Boolean(characterId) && Boolean(sessionId) && !isWaitingLobby;
-  const showArrestOutcomeOnly =
-    sessionPhase === "arrest_result" && Boolean(characterId) && Boolean(sessionId) && !isWaitingLobby;
+    hasJoinedSession && hasAssignment && sessionPhase === "briefing" && !hideRoleReveal;
+  const shouldShowBriefingInfo =
+    hasJoinedSession && hasAssignment && sessionPhase === "briefing" && hideRoleReveal;
+  const showOwnRoomMap =
+    hasJoinedSession && hasAssignment && sessionPhase === "investigation";
+  const showAllRoomsMap =
+    hasJoinedSession && hasAssignment && sessionPhase === "resolution";
 
   const mapQuery = useQuery({
-    queryKey: ["play-scenario-map", sessionQuery.data?.scenario_id, sessionPhase],
-    queryFn: async () => getScenarioMapEntities(sessionQuery.data!.scenario_id!),
-    enabled: Boolean((showInvestigationMap || showBriefingInfoOnly) && sessionQuery.data?.scenario_id),
+    queryKey: [
+      "play-scenario-map",
+      sessionQuery.data?.scenario_id,
+      sessionPhase,
+      sessionPhase === "investigation" ? characterId : "all",
+    ],
+    queryFn: async () =>
+      getScenarioMapEntities(sessionQuery.data!.scenario_id!, {
+        restrictToCharacterId: sessionPhase === "investigation" ? characterId : null,
+      }),
+    enabled: Boolean(
+      (showOwnRoomMap || showAllRoomsMap || shouldShowBriefingInfo) &&
+        sessionQuery.data?.scenario_id,
+    ),
   });
 
   const discoveredCluesForBriefing = useMemo(() => {
@@ -164,100 +207,47 @@ function PlayPageContent() {
     setDiscoveredClueIds([]);
   }, [sessionId]);
 
-  const voteCharactersQuery = useQuery({
-    queryKey: ["play-session-characters", sessionId],
-    queryFn: async () => listSessionCharacters(sessionId as string),
-    enabled: Boolean(showFinalVoteOnly && sessionId),
-  });
+  // 발견 단서를 팀 found_clue_ids 로 동기화 (이미 동기화한 ID는 건너뜀)
+  const syncedClueIdsRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (!teamId) return;
+    const newlyFound = discoveredClueIds.filter((id) => !syncedClueIdsRef.current.has(id));
+    if (newlyFound.length === 0) return;
+    newlyFound.forEach((id) => syncedClueIdsRef.current.add(id));
+    void Promise.all(newlyFound.map((id) => addFoundClueToTeam(teamId, id))).catch(() => {});
+  }, [discoveredClueIds, teamId]);
 
-  const voteOutcomeQuery = useQuery({
-    queryKey: ["play-session-vote-outcome", sessionId],
-    queryFn: async () => getPlaySessionVoteOutcome(sessionId as string),
-    enabled: Boolean(showArrestOutcomeOnly && sessionId),
-    staleTime: 0,
-    refetchOnMount: "always",
-    refetchOnWindowFocus: true,
-  });
+  const handleClaimSolved = () => {
+    if (!teamId) return;
+    void markTeamSolved(teamId).then(() => {
+      void queryClient.invalidateQueries({ queryKey: ["play-team", teamId] });
+    });
+  };
 
-  if (hasSupabaseEnv && showFinalVoteOnly && sessionId && characterId) {
-    return (
-      <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center overflow-auto bg-[var(--background)] p-4">
-        {voteCharactersQuery.isLoading ? (
-          <div className="flex flex-col items-center gap-3 text-[var(--muted-foreground)]" role="status" aria-live="polite">
-            <Loader2 className="h-8 w-8 animate-spin text-[var(--accent)]" aria-hidden />
-            <p className="text-sm">투표 정보를 불러오는 중…</p>
-          </div>
-        ) : voteCharactersQuery.isError ? (
-          <div className="max-w-md text-center text-sm text-[var(--primary)]">
-            캐릭터 목록을 불러오지 못했습니다.
-            {voteCharactersQuery.error instanceof Error ? ` ${voteCharactersQuery.error.message}` : null}
-          </div>
-        ) : (
-          <FinalVoteForm
-            playerId={playerId}
-            ownCharacterId={characterId}
-            characters={(voteCharactersQuery.data ?? []).map((c) => ({
-              id: c.id,
-              name: c.name,
-              role: c.role,
-            }))}
-          />
-        )}
-      </div>
-    );
-  }
-
-  if (hasSupabaseEnv && showArrestOutcomeOnly) {
-    return (
-      <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center overflow-auto bg-[var(--background)] p-4">
-        {voteOutcomeQuery.isLoading ? (
-          <div className="flex flex-col items-center gap-3 text-[var(--muted-foreground)]" role="status" aria-live="polite">
-            <Loader2 className="h-8 w-8 animate-spin text-[var(--accent)]" aria-hidden />
-            <p className="text-sm">검거 결과를 불러오는 중…</p>
-          </div>
-        ) : voteOutcomeQuery.isError ? (
-          <div className="max-w-md text-center text-sm text-[var(--primary)]">
-            검거 결과를 불러오지 못했습니다.
-            {voteOutcomeQuery.error instanceof Error ? ` ${voteOutcomeQuery.error.message}` : null}
-          </div>
-        ) : (
-          <Card className="mx-auto w-full max-w-md border-[var(--border)] bg-[rgba(36,40,43,0.9)]">
-            <CardHeader>
-              <CardTitle className={voteOutcomeQuery.data?.culpritArrested ? "text-[var(--accent)]" : "text-[var(--primary)]"}>
-                {voteOutcomeQuery.data?.culpritArrested ? "범인 지목 성공" : "범인 지목 실패"}
-              </CardTitle>
-              <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-                {voteOutcomeQuery.data?.culpritArrested
-                  ? "최종 투표 결과, 범인을 정확히 지목했습니다."
-                  : "최종 투표 결과, 실제 범인을 지목하지 못했습니다."}
-              </p>
-            </CardHeader>
-          </Card>
-        )}
-      </div>
-    );
-  }
-
-  if (hasSupabaseEnv && showInvestigationMap && sessionPhase && isInvestigationPhase(sessionPhase)) {
+  if (hasSupabaseEnv && (showOwnRoomMap || showAllRoomsMap) && sessionPhase) {
     return (
       <InvestigationMapShell
-        phase={sessionPhase}
+        phase={sessionPhase as "investigation" | "resolution"}
         mapLoading={mapQuery.isLoading}
         mapError={mapQuery.error as Error | null}
         locations={mapQuery.data?.locations ?? []}
         clues={mapQuery.data?.clues ?? []}
         discoveredClueIds={discoveredClueIds}
         onDiscoveredClueIdsChange={setDiscoveredClueIds}
+        canClaimSolved={sessionPhase === "resolution"}
+        isSolved={teamSolved}
+        onClaimSolved={handleClaimSolved}
       />
     );
   }
 
-  if (hasSupabaseEnv && showBriefingInfoOnly) {
+  if (hasSupabaseEnv && shouldShowBriefingInfo) {
     return (
       <div className="min-h-screen">
         <TopNav />
         <main className="mx-auto w-full max-w-7xl px-4 py-8">
           <div className="space-y-4">
+            <TeamBadge teamName={teamName} />
             <SessionInfoLayout
               characterName={characterName}
               characterQuery={characterQuery}
@@ -286,7 +276,11 @@ function PlayPageContent() {
                         className="rounded-md border border-[var(--border)] bg-[rgba(15,17,19,0.35)] px-3 py-2 text-sm text-[var(--foreground)]"
                       >
                         <p className="font-medium text-[var(--accent)]">{clue.name ?? "이름 없는 증거"}</p>
-                        <p className="text-xs text-[var(--muted-foreground)]">{clue.location_id ?? "위치 정보 없음"}</p>
+                        {clue.content?.trim() ? (
+                          <p className="mt-1 whitespace-pre-wrap text-xs text-[var(--foreground)]">
+                            {clue.content}
+                          </p>
+                        ) : null}
                       </li>
                     ))}
                   </ul>
@@ -326,7 +320,7 @@ function PlayPageContent() {
             <div className="w-full max-w-md rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">
               <h3 className="text-lg font-semibold text-[var(--foreground)]">닉네임 설정 (필수)</h3>
               <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-                닉네임을 입력하면 바로 입장하고 캐릭터가 랜덤 배정됩니다.
+                닉네임을 입력해 대기실에 입장하세요. 캐릭터·팀은 교사가 시작하면 배정됩니다.
               </p>
               <form
                 className="mt-4 space-y-3"
@@ -367,23 +361,27 @@ function PlayPageContent() {
               </div>
             ) : characterQuery.data ? (
               <>
-                <h3 className="text-xl font-semibold text-[var(--accent)]">내 캐릭터 배정 완료</h3>
+                <h3 className="text-xl font-semibold text-[var(--accent)]">팀·캐릭터 배정 완료</h3>
                 <p className="mt-2 text-sm text-[var(--foreground)]">
-                  입장이 완료되었습니다. 당신에게 배정된 캐릭터 정보입니다.
+                  교사가 게임을 시작했습니다. 당신에게 배정된 팀과 캐릭터입니다.
                 </p>
-                <div className="mt-5 rounded-md border border-[var(--border)] bg-[rgba(15,17,19,0.35)] p-4">
-                  <p className="text-xs text-[var(--muted-foreground)]">CHARACTER</p>
-                  <p className="text-lg font-semibold text-[var(--accent)]">
-                    {characterName ?? characterQuery.data.name}
-                  </p>
-                  <p className="mt-2 text-xs text-[var(--muted-foreground)]">ROLE</p>
-                  <p className="text-sm text-[var(--foreground)]">
-                    {characterQuery.data.role ?? "역할 정보 없음"}
-                  </p>
-                  <p className="mt-2 text-xs text-[var(--muted-foreground)]">IDENTITY</p>
-                  <p className="text-sm text-[var(--foreground)]">
-                    {characterQuery.data.is_culprit ? "범인" : "용의자"}
-                  </p>
+                <div className="mt-5 grid gap-3 rounded-md border border-[var(--border)] bg-[rgba(15,17,19,0.35)] p-4 sm:grid-cols-2">
+                  <div>
+                    <p className="text-xs text-[var(--muted-foreground)]">TEAM</p>
+                    <p className="text-2xl font-semibold text-[var(--accent)]">{teamName ?? "?"}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-[var(--muted-foreground)]">CHARACTER</p>
+                    <p className="text-2xl font-semibold text-[var(--accent)]">
+                      {characterName ?? characterQuery.data.name}
+                    </p>
+                  </div>
+                  <div className="sm:col-span-2">
+                    <p className="text-xs text-[var(--muted-foreground)]">ROLE</p>
+                    <p className="text-sm text-[var(--foreground)]">
+                      {characterQuery.data.role ?? "역할 정보 없음"}
+                    </p>
+                  </div>
                 </div>
                 <Button className="mt-5 w-full" onClick={() => setHideRoleReveal(true)}>
                   확인하고 게임 화면으로
@@ -397,22 +395,25 @@ function PlayPageContent() {
           <Card className="mt-4">
             <CardContent className="flex items-center gap-3 py-5 text-[var(--foreground)]">
               <Loader2 className="h-5 w-5 animate-spin text-[var(--accent)]" aria-hidden />
-              <p className="text-sm">교사가 게임을 시작할 때까지 잠시만 기다려 주세요.</p>
+              <p className="text-sm">
+                {sessionPhase === "waiting"
+                  ? "교사가 게임을 시작할 때까지 잠시만 기다려 주세요."
+                  : "팀·캐릭터가 배정되는 중입니다…"}
+              </p>
             </CardContent>
           </Card>
         ) : null}
-
-        {shouldShowSessionDetails ? (
-          <div className="mt-4">
-            <SessionInfoLayout
-              characterName={characterName}
-              characterQuery={characterQuery}
-              sessionQuery={sessionQuery}
-              message={message}
-            />
-          </div>
-        ) : null}
       </main>
+    </div>
+  );
+}
+
+function TeamBadge({ teamName }: { teamName: string | null }) {
+  if (!teamName) return null;
+  return (
+    <div className="flex items-center gap-3 rounded-md border border-[var(--accent)]/40 bg-[rgba(15,17,19,0.5)] px-4 py-3">
+      <span className="text-xs uppercase tracking-[0.16em] text-[var(--muted-foreground)]">My Team</span>
+      <span className="font-mono text-xl font-semibold text-[var(--accent)]">Team {teamName}</span>
     </div>
   );
 }

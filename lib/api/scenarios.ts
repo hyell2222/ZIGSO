@@ -1,10 +1,6 @@
 "use client";
 
-import type { CharacterAlibi } from "@/lib/character-alibi";
 import { supabase } from "@/lib/supabase";
-import type { ScenarioIncident } from "@/lib/scenario-incident";
-
-type JsonObject = Record<string, unknown>;
 
 export type ScenarioRecord = {
   id: string;
@@ -12,30 +8,26 @@ export type ScenarioRecord = {
   description: string | null;
   character_count: number | null;
   difficulty: string | null;
-  incident: ScenarioIncident | null;
-  solution: string | null;
   creator_id?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
 };
 
 export type ScenarioCharacterInput = {
   name?: string | null;
   role?: string | null;
-  is_culprit?: boolean | null;
-  information?: JsonObject | null;
-  alibi?: CharacterAlibi | null;
 };
 
 export type ScenarioLocationInput = {
   name?: string | null;
-  information?: JsonObject | null;
+  character_id?: string | null;
+  character_name?: string | null;
 };
 
 export type ScenarioClueInput = {
   name?: string | null;
-  information?: JsonObject | null;
-  character_id?: string | null;
+  content?: string | null;
   location_id?: string | null;
-  character_name?: string | null;
   location_name?: string | null;
 };
 
@@ -44,13 +36,14 @@ type CreateScenarioInput = {
   description: string | null;
   character_count: number | null;
   difficulty: string | null;
-  incident: ScenarioIncident | null;
-  solution: string | null;
   characters?: ScenarioCharacterInput[];
   locations?: ScenarioLocationInput[];
   clues?: ScenarioClueInput[];
   creator_id?: string | null;
 };
+
+const SCENARIO_SELECT =
+  "id,title,description,character_count,difficulty,creator_id,created_at,updated_at";
 
 function normalizeText(value: string | null | undefined) {
   const trimmed = value?.trim();
@@ -68,7 +61,7 @@ function buildIdMap(rows: Array<{ id: string; name: string | null }>) {
 export async function listScenarios(teacherId: string) {
   const { data, error } = await supabase
     .from("scenarios")
-    .select("id,title,description,character_count,difficulty,incident,solution,creator_id")
+    .select(SCENARIO_SELECT)
     .eq("creator_id", teacherId)
     .order("created_at", { ascending: false });
   if (error) throw error;
@@ -97,8 +90,6 @@ export async function createScenario(input: CreateScenarioInput) {
       description: normalizeText(input.description),
       character_count: characters.length || input.character_count,
       difficulty: normalizeText(input.difficulty),
-      incident: input.incident,
-      solution: normalizeText(input.solution),
       creator_id: input.creator_id ?? null,
     })
     .select("id")
@@ -115,15 +106,16 @@ export async function createScenario(input: CreateScenarioInput) {
               scenario_id: scenario.id,
               name: normalizeText(character.name),
               role: normalizeText(character.role),
-              is_culprit: character.is_culprit ?? false,
-              information: character.information ?? null,
-              alibi: character.alibi ?? null,
             })),
           )
           .select("id,name")
       : { data: [], error: null };
 
     if (charactersError) throw charactersError;
+
+    const characterIdsByName = buildIdMap(
+      (insertedCharacters ?? []) as Array<{ id: string; name: string | null }>,
+    );
 
     const { data: insertedLocations, error: locationsError } = locations.length
       ? await supabase
@@ -132,7 +124,10 @@ export async function createScenario(input: CreateScenarioInput) {
             locations.map((location) => ({
               scenario_id: scenario.id,
               name: normalizeText(location.name),
-              information: location.information ?? null,
+              character_id:
+                normalizeText(location.character_id) ??
+                characterIdsByName.get(location.character_name?.trim().toLowerCase() ?? "") ??
+                null,
             })),
           )
           .select("id,name")
@@ -141,18 +136,15 @@ export async function createScenario(input: CreateScenarioInput) {
     if (locationsError) throw locationsError;
 
     if (clues.length) {
-      const characterIdsByName = buildIdMap((insertedCharacters ?? []) as Array<{ id: string; name: string | null }>);
-      const locationIdsByName = buildIdMap((insertedLocations ?? []) as Array<{ id: string; name: string | null }>);
+      const locationIdsByName = buildIdMap(
+        (insertedLocations ?? []) as Array<{ id: string; name: string | null }>,
+      );
 
       const { error: cluesError } = await supabase.from("clues").insert(
         clues.map((clue) => ({
           scenario_id: scenario.id,
           name: normalizeText(clue.name),
-          information: clue.information ?? null,
-          character_id:
-            normalizeText(clue.character_id) ??
-            characterIdsByName.get(clue.character_name?.trim().toLowerCase() ?? "") ??
-            null,
+          content: normalizeText(clue.content),
           location_id:
             normalizeText(clue.location_id) ??
             locationIdsByName.get(clue.location_name?.trim().toLowerCase() ?? "") ??

@@ -33,43 +33,8 @@ const FONT_KEY = "DungGeunMo";
 /** public 폰트 URL — Turbopack에서 otf 직접 import 대신 정적 경로 사용 */
 const FONT_URL = "/assets/DungGeunMo.otf";
 
-/** JSON 숫자 필드용: 숫자·숫자 문자열만 허용, 그 외는 null */
-function num(v: unknown): number | null {
-  if (typeof v === "number" && Number.isFinite(v)) return v;
-  if (typeof v === "string" && v.trim() !== "") {
-    const n = Number(v);
-    if (Number.isFinite(n)) return n;
-  }
-  return null;
-}
-
 /**
- * 장소 `information` JSON에 좌표가 있으면 사용합니다.
- * 예: `{ "map": { "x": 320, "y": 280, "w": 180, "h": 120 } }`
- * 또는 최상위 `mapX`, `mapY`, `mapW`, `mapH`
- */
-function readMapRectFromInformation(info: Record<string, unknown> | null): {
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-} | null {
-  if (!info) return null;
-  const map = info.map;
-  // map 객체가 있으면 그 안만, 없으면 최상위 information 에서 좌표 읽기
-  const src =
-    map && typeof map === "object" && !Array.isArray(map) ? (map as Record<string, unknown>) : info;
-  const x = num(src.x ?? src.mapX);
-  const y = num(src.y ?? src.mapY);
-  const w = num(src.w ?? src.mapW ?? src.width);
-  const h = num(src.h ?? src.mapH ?? src.height);
-  if (x === null || y === null || w === null || h === null) return null;
-  if (w < 40 || h < 40) return null;
-  return { x, y, w, h };
-}
-
-/**
- * DB에 map 좌표가 없을 때: 격자로 장소 박스를 자동 배치
+ * 장소 박스를 격자로 자동 배치
  * (장소 개수에 맞춰 열·행 수를 잡고, 셀 안에서 중앙 정렬)
  */
 function autoLayoutLocation(index: number, total: number) {
@@ -219,28 +184,13 @@ function placeLocationProps2D(scene: Phaser.Scene, entries: EvidenceEntry[]) {
   return objects;
 }
 
-/** API의 information 이 객체인지 검사 후 Record 로 좁힘 */
-function asInfoRecord(v: ScenarioLocationForMap["information"]): Record<string, unknown> | null {
-  if (!v || typeof v !== "object" || Array.isArray(v)) return null;
-  return v as Record<string, unknown>;
-}
-
-/** 장소 목록 → 각각 map 사각형 또는 autoLayout 결과로 LocationLayout 배열 생성 */
+/** 장소 목록 → autoLayout 으로 LocationLayout 배열 생성 (좌표는 자동 격자 배치) */
 function buildLocationLayouts(locations: ScenarioLocationForMap[]): LocationLayout[] {
   const sorted = [...locations].sort((a, b) => a.id.localeCompare(b.id));
   return sorted.map((loc, i) => {
-    const parsed = readMapRectFromInformation(asInfoRecord(loc.information));
-    if (parsed) return { id: loc.id, name: loc.name, ...parsed };
     const auto = autoLayoutLocation(i, sorted.length);
     return { id: loc.id, name: loc.name, ...auto };
   });
-}
-
-function formatEvidenceValue(value: unknown) {
-  if (value === null || value === undefined) return "없음";
-  if (typeof value === "string") return value;
-  if (typeof value === "number" || typeof value === "boolean") return String(value);
-  return JSON.stringify(value, null, 2);
 }
 
 /** 인벤토리에서 다시 열 때: 원래 소품 정보를 유지하되 본문에는 해당 clue만 표시 */
@@ -785,28 +735,18 @@ export function InvestigationMap({
             </div>
             <div className="max-h-[65vh] space-y-4 overflow-y-auto px-4 py-4">
               {selectedEvidence.clues.length > 0 ? (
-                selectedEvidence.clues.map((clue) => {
-                  const details = Object.entries(clue.information ?? {}).filter(([key]) => key !== "mapProp" && key !== "prop");
-                  return (
-                    <section key={clue.id} className="rounded-md border border-[var(--border)] bg-black/10 p-4">
-                      <h3 className="text-base text-[var(--foreground)]">{clue.name?.trim() || "이름 없는 증거"}</h3>
-                      {details.length > 0 ? (
-                        <div className="mt-3 space-y-3">
-                          {details.map(([key, value]) => (
-                            <div key={key} className="rounded-sm bg-black/10 p-3">
-                              <p className="text-xs uppercase tracking-wide text-[var(--muted-foreground)]">{key}</p>
-                              <pre className="mt-1 whitespace-pre-wrap break-words font-sans text-sm text-[var(--foreground)]">
-                                {formatEvidenceValue(value)}
-                              </pre>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="mt-2 text-sm text-[var(--muted-foreground)]">등록된 증거 정보가 없습니다.</p>
-                      )}
-                    </section>
-                  );
-                })
+                selectedEvidence.clues.map((clue) => (
+                  <section key={clue.id} className="rounded-md border border-[var(--border)] bg-black/10 p-4">
+                    <h3 className="text-base text-[var(--foreground)]">{clue.name?.trim() || "이름 없는 증거"}</h3>
+                    {clue.content?.trim() ? (
+                      <p className="mt-3 whitespace-pre-wrap break-words text-sm text-[var(--foreground)]">
+                        {clue.content}
+                      </p>
+                    ) : (
+                      <p className="mt-2 text-sm text-[var(--muted-foreground)]">등록된 증거 내용이 없습니다.</p>
+                    )}
+                  </section>
+                ))
               ) : (
                 <p className="text-sm text-[var(--muted-foreground)]">이 소품에는 연결된 증거가 없습니다.</p>
               )}

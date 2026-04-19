@@ -6,8 +6,14 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 
 import { getCurrentSession } from "@/lib/api/auth";
+import {
+  getHostSessionDetails,
+  listSessionPlayers,
+  listSessionTeams,
+  type SessionPlayerRow,
+  type TeamRow,
+} from "@/lib/api/play";
 import { advanceSessionPhase, beginHostingSession, endSession, getNextPhase } from "@/lib/api/scenarios";
-import { getHostSessionDetails, getHostSessionVoteSummary } from "@/lib/api/play";
 import { TopNav } from "@/components/layout/top-nav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,26 +27,21 @@ import { hasSupabaseEnv, supabase } from "@/lib/supabase";
 import type { ScenarioPhase } from "@/lib/api/scenarios";
 
 const PHASES: { key: ScenarioPhase; label: string }[] = [
-  { key: "role_assignment", label: "역할 분담 및 사건 인지" },
-  { key: "first_investigation", label: "1차 현장 검증" },
-  { key: "briefing", label: "브리핑" },
-  { key: "second_investigation", label: "2차 현장 검증" },
-  { key: "final_vote", label: "최종 투표" },
-  { key: "arrest_result", label: "검거 결과 발표" },
+  { key: "briefing", label: "사건 파악" },
+  { key: "investigation", label: "단서 수집" },
+  { key: "resolution", label: "사건 해결" },
 ];
 
-type TimedPhase = Exclude<ScenarioPhase, "waiting" | "arrest_result" | "session_ended">;
+type TimedPhase = Exclude<ScenarioPhase, "waiting" | "session_end">;
 
 const PHASE_MINUTES: Record<TimedPhase, number> = {
-  role_assignment: 10,
-  first_investigation: 12,
-  briefing: 8,
-  second_investigation: 12,
-  final_vote: 8,
+  briefing: 10,
+  investigation: 12,
+  resolution: 8,
 };
 
 function isTimedPhase(phase: ScenarioPhase): phase is TimedPhase {
-  return phase !== "waiting" && phase !== "arrest_result" && phase !== "session_ended";
+  return phase !== "waiting" && phase !== "session_end";
 }
 
 function formatHhMmSs(totalSeconds: number) {
@@ -200,6 +201,162 @@ function PhaseTimerCard({ phase }: { phase: TimedPhase }) {
   );
 }
 
+type TeamGroup = {
+  team: TeamRow;
+  members: SessionPlayerRow[];
+};
+
+function groupPlayersByTeam(players: SessionPlayerRow[], teams: TeamRow[]): TeamGroup[] {
+  const playersByTeamId = new Map<string, SessionPlayerRow[]>();
+  for (const p of players) {
+    if (!p.team_id) continue;
+    const list = playersByTeamId.get(p.team_id) ?? [];
+    list.push(p);
+    playersByTeamId.set(p.team_id, list);
+  }
+  return [...teams]
+    .sort((a, b) => (a.name ?? "").localeCompare(b.name ?? ""))
+    .map((team) => ({
+      team,
+      members: (playersByTeamId.get(team.id) ?? []).sort((a, b) =>
+        (a.characters?.name ?? "").localeCompare(b.characters?.name ?? ""),
+      ),
+    }));
+}
+
+function TeamAssignmentDashboard({
+  players,
+  teams,
+  loading,
+}: {
+  players: SessionPlayerRow[];
+  teams: TeamRow[];
+  loading: boolean;
+}) {
+  const groups = useMemo(() => groupPlayersByTeam(players, teams), [players, teams]);
+  return (
+    <section className="space-y-3 rounded-lg border border-[var(--border)] bg-[rgba(36,40,43,0.55)] p-6">
+      <header className="flex items-baseline justify-between">
+        <h2 className="text-sm font-semibold text-[var(--foreground)]">팀·캐릭터 배정</h2>
+        <span className="text-xs text-[var(--muted-foreground)]">총 {players.length}명</span>
+      </header>
+      {loading ? (
+        <p className="text-sm text-[var(--muted-foreground)]">불러오는 중…</p>
+      ) : groups.length === 0 ? (
+        <p className="text-sm text-[var(--muted-foreground)]">배정된 팀이 없습니다.</p>
+      ) : (
+        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+          {groups.map((g) => (
+            <div
+              key={g.team.id}
+              className="rounded-md border border-[var(--border)] bg-[rgba(15,17,19,0.45)] p-3"
+            >
+              <p className="text-xs uppercase tracking-[0.16em] text-[var(--muted-foreground)]">
+                Team
+              </p>
+              <p className="font-mono text-2xl font-semibold text-[var(--accent)]">{g.team.name ?? "—"}</p>
+              <ul className="mt-2 space-y-1">
+                {g.members.length === 0 ? (
+                  <li className="rounded border border-dashed border-[var(--border)] px-2 py-1.5 text-xs text-[var(--muted-foreground)]">
+                    아직 배정된 학생 없음
+                  </li>
+                ) : (
+                  g.members.map((m) => (
+                    <li
+                      key={m.id}
+                      className="flex items-center justify-between gap-2 rounded border border-[var(--border)] bg-[rgba(255,255,255,0.03)] px-2 py-1.5 text-xs"
+                    >
+                      <span className="text-[var(--foreground)]">{m.nickname ?? "Player"}</span>
+                      <span className="text-[var(--accent)]">{m.characters?.name ?? "—"}</span>
+                    </li>
+                  ))
+                )}
+              </ul>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function TeamSuccessDashboard({
+  players,
+  teams,
+  loading,
+}: {
+  players: SessionPlayerRow[];
+  teams: TeamRow[];
+  loading: boolean;
+}) {
+  const groups = useMemo(() => groupPlayersByTeam(players, teams), [players, teams]);
+  const solvedCount = teams.filter((t) => t.is_solved).length;
+
+  return (
+    <section className="space-y-3 rounded-lg border border-[var(--border)] bg-[rgba(36,40,43,0.55)] p-6">
+      <header className="flex items-baseline justify-between">
+        <h2 className="text-sm font-semibold text-[var(--foreground)]">사건 해결 현황</h2>
+        <span className="text-xs text-[var(--muted-foreground)]">
+          성공 {solvedCount} / {teams.length}
+        </span>
+      </header>
+      {loading ? (
+        <p className="text-sm text-[var(--muted-foreground)]">불러오는 중…</p>
+      ) : groups.length === 0 ? (
+        <p className="text-sm text-[var(--muted-foreground)]">학생이 없습니다.</p>
+      ) : (
+        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+          {groups.map((g) => {
+            const solved = Boolean(g.team.is_solved);
+            const solvedAt = g.team.solved_at;
+            return (
+              <div
+                key={g.team.id}
+                className={`rounded-md border p-3 ${
+                  solved
+                    ? "border-[var(--accent)] bg-[rgba(201,209,107,0.12)]"
+                    : "border-[var(--border)] bg-[rgba(15,17,19,0.45)]"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <p className="font-mono text-2xl font-semibold text-[var(--accent)]">
+                    Team {g.team.name ?? "—"}
+                  </p>
+                  <span
+                    className={`rounded px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.12em] ${
+                      solved
+                        ? "bg-[var(--accent)] text-black"
+                        : "border border-[var(--border)] text-[var(--muted-foreground)]"
+                    }`}
+                  >
+                    {solved ? "성공" : "진행 중"}
+                  </span>
+                </div>
+                {solvedAt ? (
+                  <p className="mt-1 text-[11px] text-[var(--muted-foreground)]">
+                    {new Date(solvedAt).toLocaleTimeString()}
+                  </p>
+                ) : null}
+                <ul className="mt-2 space-y-1">
+                  {g.members.map((m) => (
+                    <li
+                      key={m.id}
+                      className="flex items-center justify-between gap-2 rounded border border-[var(--border)] bg-[rgba(255,255,255,0.03)] px-2 py-1.5 text-xs"
+                    >
+                      <span className="text-[var(--foreground)]">{m.nickname ?? "Player"}</span>
+                      <span className="text-[var(--accent)]">{m.characters?.name ?? "—"}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </section>
+  );
+}
+
 function ScenarioSessionHostContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -221,12 +378,20 @@ function ScenarioSessionHostContent() {
     enabled: Boolean(sessionId && authQuery.data),
   });
 
-  const voteSummaryQuery = useQuery({
-    queryKey: ["host-session-vote-summary", sessionId],
-    queryFn: () => getHostSessionVoteSummary(sessionId),
-    enabled: Boolean(sessionId && sessionQuery.data?.phase === "arrest_result"),
-    staleTime: 0,
-    refetchOnMount: "always",
+  const playersQuery = useQuery({
+    queryKey: ["host-session-players", sessionId],
+    queryFn: () => listSessionPlayers(sessionId),
+    enabled: Boolean(sessionId && authQuery.data),
+    refetchInterval: sessionId ? 3_000 : false,
+    refetchIntervalInBackground: true,
+  });
+
+  const teamsQuery = useQuery({
+    queryKey: ["host-session-teams", sessionId],
+    queryFn: () => listSessionTeams(sessionId),
+    enabled: Boolean(sessionId && authQuery.data),
+    refetchInterval: sessionId ? 3_000 : false,
+    refetchIntervalInBackground: true,
   });
 
   const hostUserId = authQuery.data?.user?.id;
@@ -253,6 +418,20 @@ function ScenarioSessionHostContent() {
         { event: "UPDATE", schema: "public", table: "game_sessions", filter: `id=eq.${sessionId}` },
         () => {
           void queryClient.invalidateQueries({ queryKey: ["host-session", sessionId] });
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "players", filter: `session_id=eq.${sessionId}` },
+        () => {
+          void queryClient.invalidateQueries({ queryKey: ["host-session-players", sessionId] });
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "teams", filter: `session_id=eq.${sessionId}` },
+        () => {
+          void queryClient.invalidateQueries({ queryKey: ["host-session-teams", sessionId] });
         },
       )
       .on("presence", { event: "sync" }, () => {
@@ -302,7 +481,6 @@ function ScenarioSessionHostContent() {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["host-session", sessionId] });
-      await queryClient.invalidateQueries({ queryKey: ["host-session-vote-summary", sessionId] });
     },
   });
 
@@ -345,7 +523,7 @@ function ScenarioSessionHostContent() {
   );
   const phaseForLeave = sessionRowForLeave?.phase ?? null;
   const shouldEndOnHostLeave =
-    isHostOfLoadedSession && phaseForLeave !== "session_ended";
+    isHostOfLoadedSession && phaseForLeave !== "session_end";
 
   useEffect(() => {
     hostLeaveRef.current = {
@@ -365,7 +543,7 @@ function ScenarioSessionHostContent() {
   const phase = (sessionQuery.data?.phase as ScenarioPhase) ?? "waiting";
   const nextPhase = getNextPhase(phase);
   const sessionStarted = phase !== "waiting";
-  const sessionEnded = phase === "session_ended";
+  const sessionEnded = phase === "session_end";
   const shouldShowTimer = isTimedPhase(phase);
 
   if (!sessionId) {
@@ -408,7 +586,6 @@ function ScenarioSessionHostContent() {
   }
 
   const row = sessionQuery.data;
-  const voteSummary = voteSummaryQuery.data;
   if (row.host_id !== authQuery.data?.user.id) {
     return (
       <div className="min-h-screen">
@@ -487,15 +664,13 @@ function ScenarioSessionHostContent() {
             <section className="space-y-3">
               <h2 className="text-sm font-semibold text-[var(--foreground)]">Phase</h2>
               <div className="grid gap-2 md:grid-cols-6">
-                {PHASES.map((phase, idx) => {
-                  const currentIdx = PHASES.findIndex(
-                    (p) => p.key === ((row.phase as ScenarioPhase) ?? "role_assignment"),
-                  );
+                {PHASES.map((p, idx) => {
+                  const currentIdx = PHASES.findIndex((x) => x.key === phase);
                   const isCurrent = idx === currentIdx;
                   const isDone = idx < currentIdx;
                   return (
                     <div
-                      key={phase.key}
+                      key={p.key}
                       className={`rounded-md border px-2 py-2 text-center text-xs leading-snug ${
                         isCurrent
                           ? "border-[var(--accent)] bg-[rgba(201,209,107,0.1)] text-[var(--accent)]"
@@ -504,7 +679,7 @@ function ScenarioSessionHostContent() {
                             : "border-[var(--border)] text-[var(--muted-foreground)]"
                       }`}
                     >
-                      {phase.label}
+                      {p.label}
                     </div>
                   );
                 })}
@@ -513,85 +688,20 @@ function ScenarioSessionHostContent() {
 
             {shouldShowTimer ? <PhaseTimerCard key={phase} phase={phase} /> : null}
 
-            {phase === "arrest_result" ? (
-              <section className="space-y-4 rounded-lg border border-[var(--accent)]/40 bg-[rgba(36,40,43,0.55)] p-6">
-                <div>
-                  <h2 className="text-sm font-semibold text-[var(--accent)]">최종 투표 결과</h2>
-                </div>
+            {phase === "briefing" || phase === "investigation" ? (
+              <TeamAssignmentDashboard
+                players={playersQuery.data ?? []}
+                teams={teamsQuery.data ?? []}
+                loading={playersQuery.isLoading || teamsQuery.isLoading}
+              />
+            ) : null}
 
-                {voteSummaryQuery.isLoading ? (
-                  <div className="flex items-center gap-2 text-sm text-[var(--muted-foreground)]">
-                    <Loader2 className="h-4 w-4 animate-spin text-[var(--accent)]" />
-                    결과를 집계하는 중…
-                  </div>
-                ) : voteSummaryQuery.isError ? (
-                  <p className="text-sm text-[var(--primary)]">
-                    {voteSummaryQuery.error instanceof Error
-                      ? voteSummaryQuery.error.message
-                      : "투표 결과를 불러오지 못했습니다."}
-                  </p>
-                ) : !voteSummary ? (
-                  <p className="text-sm text-[var(--muted-foreground)]">투표 결과가 아직 없습니다.</p>
-                ) : (
-                  <>
-                    <div className="grid gap-3 md:grid-cols-3">
-                      <div className="rounded-md border border-[var(--border)] bg-[rgba(15,17,19,0.35)] p-4">
-                        <p className="text-xs uppercase tracking-wide text-[var(--muted-foreground)]">투표 수</p>
-                        <p className="mt-2 text-2xl font-semibold text-[var(--foreground)]">{voteSummary.totalVotes}</p>
-                      </div>
-                      <div className="rounded-md border border-[var(--border)] bg-[rgba(15,17,19,0.35)] p-4">
-                        <p className="text-xs uppercase tracking-wide text-[var(--muted-foreground)]">최다 지목</p>
-                        <p className="mt-2 text-sm font-medium text-[var(--foreground)]">
-                          {voteSummary.topVotedCharacterNames.length > 0
-                            ? voteSummary.topVotedCharacterNames.join(", ")
-                            : "없음"}
-                        </p>
-                      </div>
-                      <div className="rounded-md border border-[var(--border)] bg-[rgba(15,17,19,0.35)] p-4">
-                        <p className="text-xs uppercase tracking-wide text-[var(--muted-foreground)]">검거 결과</p>
-                        <p
-                          className={`mt-2 text-sm font-semibold ${
-                            voteSummary.culpritArrested ? "text-[var(--accent)]" : "text-[var(--primary)]"
-                          }`}
-                        >
-                          {voteSummary.culpritArrested ? "범인 검거 성공" : "범인 검거 실패"}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="rounded-md border border-[var(--border)] bg-[rgba(15,17,19,0.35)] p-4">
-                      <p className="text-xs uppercase tracking-wide text-[var(--muted-foreground)]">시나리오 정답</p>
-                      <p className="mt-2 whitespace-pre-wrap text-sm text-[var(--foreground)]">
-                        {row.scenarios?.solution ?? voteSummary.solution ?? "등록된 정답이 없습니다."}
-                      </p>
-                    </div>
-
-                    <div className="rounded-md border border-[var(--border)] bg-[rgba(15,17,19,0.35)] p-4">
-                      <p className="text-xs uppercase tracking-wide text-[var(--muted-foreground)]">캐릭터별 득표</p>
-                      {voteSummary.results.length === 0 ? (
-                        <p className="mt-2 text-sm text-[var(--muted-foreground)]">집계할 캐릭터가 없습니다.</p>
-                      ) : (
-                        <ul className="mt-3 space-y-2">
-                          {voteSummary.results.map((result) => (
-                            <li
-                              key={result.characterId}
-                              className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-[var(--border)] bg-[rgba(36,40,43,0.35)] px-3 py-2 text-sm"
-                            >
-                              <div>
-                                <span className="font-medium text-[var(--foreground)]">{result.name ?? "이름 없음"}</span>
-                                {result.role ? <span className="ml-2 text-[var(--muted-foreground)]">{result.role}</span> : null}
-                                {result.isCulprit ? <span className="ml-2 text-[var(--primary)]">정답</span> : null}
-                                {result.isTopVoted ? <span className="ml-2 text-[var(--accent)]">최다 지목</span> : null}
-                              </div>
-                              <span className="font-mono text-[var(--foreground)]">{result.voteCount}표</span>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-                  </>
-                )}
-              </section>
+            {phase === "resolution" || phase === "session_end" ? (
+              <TeamSuccessDashboard
+                players={playersQuery.data ?? []}
+                teams={teamsQuery.data ?? []}
+                loading={playersQuery.isLoading || teamsQuery.isLoading}
+              />
             ) : null}
           </>
         ) : null}

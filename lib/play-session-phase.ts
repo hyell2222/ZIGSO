@@ -1,11 +1,18 @@
-/** Player `/play` 화면에서 세션 `phase` 문자열을 어떤 UI로 연결할지 구분합니다. */
+import type { ScenarioPhase } from "@/lib/api/game-sessions";
 
-export type InvestigationPhase = "first_investigation" | "second_investigation";
+/** 플레이어가 맵을 띄우는 단계: 단서 수집(investigation) / 사건 해결(resolution) */
+export type InvestigationPhase = Extract<ScenarioPhase, "investigation" | "resolution">;
 
-export function isInvestigationPhase(phase: string | null): phase is InvestigationPhase {
-  return phase === "first_investigation" || phase === "second_investigation";
-}
-
-export function investigationPhaseLabel(phase: InvestigationPhase): string {
-  return phase === "first_investigation" ? "1차 현장" : "2차 현장";
+/** 풀스크린 맵 상단 라벨에 표시할 단계명 */
+export function investigationPhaseLabel(phase: ScenarioPhase | string | null | undefined) {
+  switch (phase) {
+    case "investigation":
+      return "단서 수집";
+    case "resolution":
+      return "사건 해결";
+    case "briefing":
+      return "사건 파악";
+    default:
+      return "조사";
+  }
 }
