@@ -63,7 +63,8 @@ create table if not exists public.players (
   team_id uuid references public.teams(id) on delete set null,
   character_id uuid references public.characters(id) on delete set null,
   is_solved boolean default false,
-  solved_at timestamptz
+  solved_at timestamptz,
+  is_online boolean default true
 );
 
 -- =====================================================================

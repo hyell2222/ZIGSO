@@ -160,6 +160,7 @@ export type PlayerSelfRow = {
   character_id: string | null;
   is_solved: boolean | null;
   solved_at: string | null;
+  is_online: boolean | null;
 };
 
 export type SessionPlayerRow = PlayerSelfRow & {
@@ -168,7 +169,7 @@ export type SessionPlayerRow = PlayerSelfRow & {
 };
 
 const PLAYER_SELECT =
-  "id,nickname,session_id,team_id,character_id,is_solved,solved_at";
+  "id,nickname,session_id,team_id,character_id,is_solved,solved_at,is_online";
 const PLAYER_SELECT_WITH_REFS =
   `${PLAYER_SELECT},characters(id,name,role),teams(id,name,is_solved,solved_at)`;
 
@@ -205,11 +206,31 @@ export async function joinPlayerSession(input: {
     .insert({
       session_id: input.session_id,
       nickname: input.nickname,
+      is_online: true,
     })
     .select(PLAYER_SELECT)
     .single();
   if (error) throw error;
   return { player: joinedPlayer as PlayerSelfRow };
+}
+
+/** 단일 플레이어 온라인 상태 갱신 (학생이 본인 갱신용) */
+export async function setPlayerOnline(playerId: string, online: boolean) {
+  const { error } = await supabase
+    .from("players")
+    .update({ is_online: online })
+    .eq("id", playerId);
+  if (error) throw error;
+}
+
+/** 다중 플레이어 온라인 상태 일괄 갱신 (호스트가 presence 기반 동기화용) */
+export async function setPlayersOnline(playerIds: string[], online: boolean) {
+  if (playerIds.length === 0) return;
+  const { error } = await supabase
+    .from("players")
+    .update({ is_online: online })
+    .in("id", playerIds);
+  if (error) throw error;
 }
 
 // =====================================================================

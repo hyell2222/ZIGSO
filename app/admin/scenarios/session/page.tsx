@@ -10,6 +10,7 @@ import {
   getHostSessionDetails,
   listSessionPlayers,
   listSessionTeams,
+  setPlayersOnline,
   type SessionPlayerRow,
   type TeamRow,
 } from "@/lib/api/play";
@@ -533,12 +534,54 @@ function ScenarioSessionHostContent() {
     };
   }, [sessionId, shouldEndOnHostLeave, beginMutation.isPending]);
 
-  const presencePlayersOnly = useMemo(
-    () => presenceRows.filter((r) => r.payload.role === "player"),
-    [presenceRows],
+  // 새로 들어온 플레이어가 presence track 을 마칠 때까지의 짧은 유예 시간
+  const PRESENCE_GRACE_MS = 4000;
+  const playerFirstSeenRef = useRef(new Map<string, number>());
+
+  // presence 와 DB is_online 동기화
+  useEffect(() => {
+    const players = playersQuery.data;
+    if (!players || players.length === 0) return;
+
+    const now = Date.now();
+    const seen = playerFirstSeenRef.current;
+    for (const p of players) {
+      if (!seen.has(p.id)) seen.set(p.id, now);
+    }
+
+    const onlinePlayerIds = new Set<string>();
+    for (const r of presenceRows) {
+      if (r.payload.role === "player" && r.payload.player_id) {
+        onlinePlayerIds.add(r.payload.player_id);
+      }
+    }
+
+    const toOnline: string[] = [];
+    const toOffline: string[] = [];
+    for (const p of players) {
+      const dbOnline = p.is_online === true;
+      const presenceOnline = onlinePlayerIds.has(p.id);
+      if (presenceOnline && !dbOnline) {
+        toOnline.push(p.id);
+        continue;
+      }
+      if (!presenceOnline && dbOnline) {
+        const firstSeen = seen.get(p.id) ?? now;
+        if (now - firstSeen < PRESENCE_GRACE_MS) continue;
+        toOffline.push(p.id);
+      }
+    }
+
+    if (toOnline.length > 0) void setPlayersOnline(toOnline, true).catch(() => {});
+    if (toOffline.length > 0) void setPlayersOnline(toOffline, false).catch(() => {});
+  }, [presenceRows, playersQuery.data]);
+
+  const onlinePlayers = useMemo(
+    () => (playersQuery.data ?? []).filter((p) => p.is_online === true),
+    [playersQuery.data],
   );
 
-  const playercount = presencePlayersOnly.length;
+  const playercount = onlinePlayers.length;
 
   const phase = (sessionQuery.data?.phase as ScenarioPhase) ?? "waiting";
   const nextPhase = getNextPhase(phase);
@@ -640,17 +683,17 @@ function ScenarioSessionHostContent() {
         
         {phase === "waiting" ? (
           <section className="space-y-3 p-4">
-            {presencePlayersOnly.length === 0 ? (
+            {onlinePlayers.length === 0 ? (
               <p className="text-sm text-[var(--muted-foreground)]">접속한 학생이 없습니다.</p>
             ) : (
               <ul className="flex flex-wrap w-full gap-2">
-                {presencePlayersOnly.map((pr) => (
+                {onlinePlayers.map((p) => (
                   <li
-                    key={pr.presenceKey}
+                    key={p.id}
                     className="inline-flex items-center gap-2 rounded-md border border-[var(--border)] bg-[rgba(15,17,19,0.35)] px-3 py-2 text-sm w-fit"
                   >
                     <span className="font-medium text-[var(--foreground)]">
-                      {pr.payload.nickname ?? "Player"}
+                      {p.nickname ?? "Player"}
                     </span>
                   </li>
                 ))}
@@ -690,7 +733,7 @@ function ScenarioSessionHostContent() {
 
             {phase === "briefing" || phase === "investigation" ? (
               <TeamAssignmentDashboard
-                players={playersQuery.data ?? []}
+                players={onlinePlayers}
                 teams={teamsQuery.data ?? []}
                 loading={playersQuery.isLoading || teamsQuery.isLoading}
               />
@@ -698,7 +741,7 @@ function ScenarioSessionHostContent() {
 
             {phase === "resolution" || phase === "session_end" ? (
               <TeamSuccessDashboard
-                players={playersQuery.data ?? []}
+                players={onlinePlayers}
                 teams={teamsQuery.data ?? []}
                 loading={playersQuery.isLoading || teamsQuery.isLoading}
               />

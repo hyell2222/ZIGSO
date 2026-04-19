@@ -21,8 +21,15 @@ import {
   getTeamById,
   joinPlayerSession,
   markTeamSolved,
+  setPlayerOnline,
 } from "@/lib/api/play";
 import type { ScenarioClueForMap } from "@/lib/api/play";
+import {
+  clearResumeRecord,
+  getResumeRecord,
+  saveResumeRecord,
+  type ResumeRecord,
+} from "@/lib/play-resume";
 import { getSessionRoomChannelName } from "@/lib/realtime/session-presence";
 import { ROUTES } from "@/lib/routes";
 import { hasSupabaseEnv, supabase } from "@/lib/supabase";
@@ -38,6 +45,7 @@ function PlayPageContent() {
   const [hideRoleReveal, setHideRoleReveal] = useState(false);
   const [discoveredClueIds, setDiscoveredClueIds] = useState<string[]>([]);
   const [message, setMessage] = useState<string | null>(null);
+  const [resumeDecided, setResumeDecided] = useState(false);
 
   const playerQuery = useQuery({
     queryKey: ["play-player", playerId],
@@ -79,6 +87,36 @@ function PlayPageContent() {
     refetchOnReconnect: true,
     refetchInterval: sessionId ? 3_000 : false,
     refetchIntervalInBackground: true,
+  });
+
+  // 동일 join_code 로 다시 들어왔을 때 이전 플레이어로 이어 들어갈지 확인
+  const resumeQuery = useQuery({
+    queryKey: ["play-resume", joinCode],
+    queryFn: async (): Promise<ResumeRecord | null> => {
+      const stored = getResumeRecord(joinCode);
+      if (!stored) return null;
+      try {
+        const session = await getSessionByJoinCode(joinCode);
+        if (session.id !== stored.sessionId) {
+          clearResumeRecord(joinCode);
+          return null;
+        }
+        const player = await getPlayerById(stored.playerId);
+        if (player.session_id !== stored.sessionId) {
+          clearResumeRecord(joinCode);
+          return null;
+        }
+        return stored;
+      } catch {
+        clearResumeRecord(joinCode);
+        return null;
+      }
+    },
+    enabled: Boolean(hasSupabaseEnv && joinCode && !playerId && !resumeDecided),
+    staleTime: 0,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    retry: false,
   });
 
   useEffect(() => {
@@ -141,8 +179,36 @@ function PlayPageContent() {
 
   useEffect(() => {
     if (sessionPhase !== "session_end") return;
+    if (joinCode) clearResumeRecord(joinCode);
     router.replace(ROUTES.home);
-  }, [sessionPhase, router]);
+  }, [sessionPhase, router, joinCode]);
+
+  // is_online 동기화: 입장 시 true, 언마운트/탭 종료 시 false (best-effort)
+  useEffect(() => {
+    if (!playerId) return;
+    void setPlayerOnline(playerId, true).catch(() => {});
+
+    const goOffline = () => {
+      void setPlayerOnline(playerId, false).catch(() => {});
+    };
+    const onPageHide = (e: PageTransitionEvent) => {
+      if (e.persisted) return;
+      goOffline();
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") {
+        void setPlayerOnline(playerId, true).catch(() => {});
+      }
+    };
+
+    window.addEventListener("pagehide", onPageHide);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.removeEventListener("pagehide", onPageHide);
+      document.removeEventListener("visibilitychange", onVisibility);
+      goOffline();
+    };
+  }, [playerId]);
 
   const joinAndRegisterMutation = useMutation({
     mutationFn: async () => {
@@ -159,10 +225,36 @@ function PlayPageContent() {
       });
       setPlayerId(result.player.id);
       setHideRoleReveal(false);
+
+      saveResumeRecord({
+        joinCode: normalizedJoinCode,
+        sessionId: session.id,
+        playerId: result.player.id,
+        nickname: nickname.trim(),
+      });
     },
     onSuccess: () => setMessage("대기실에 입장했습니다. 교사가 시작할 때까지 기다려 주세요."),
     onError: (error) => setMessage(error.message),
   });
+
+  const handleContinueAsPlayer = (rec: ResumeRecord) => {
+    setSessionId(rec.sessionId);
+    setPlayerId(rec.playerId);
+    setNickname(rec.nickname);
+    setHideRoleReveal(false);
+    setResumeDecided(true);
+    saveResumeRecord({
+      joinCode: rec.joinCode,
+      sessionId: rec.sessionId,
+      playerId: rec.playerId,
+      nickname: rec.nickname,
+    });
+  };
+
+  const handleJoinAsNewPlayer = () => {
+    if (joinCode) clearResumeRecord(joinCode);
+    setResumeDecided(true);
+  };
 
   const hasJoinedSession = Boolean(playerId && sessionId);
   const hasAssignment = Boolean(characterId && teamId);
@@ -311,11 +403,23 @@ function PlayPageContent() {
     );
   }
 
+  const showResumeModal = Boolean(
+    !hasJoinedSession && !resumeDecided && resumeQuery.data,
+  );
+
   return (
     <div className="min-h-screen">
       <main className="mx-auto w-full max-w-7xl px-4 py-8">
 
-        {!hasJoinedSession ? (
+        {showResumeModal && resumeQuery.data ? (
+          <ResumeModal
+            record={resumeQuery.data}
+            onContinue={() => handleContinueAsPlayer(resumeQuery.data!)}
+            onNew={handleJoinAsNewPlayer}
+          />
+        ) : null}
+
+        {!hasJoinedSession && !showResumeModal ? (
           <section className="flex items-center justify-center rounded-lg bg-[rgba(15,17,19,0.88)] p-4 backdrop-blur-sm">
             <div className="w-full max-w-md rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">
               <h3 className="text-lg font-semibold text-[var(--foreground)]">닉네임 설정 (필수)</h3>
@@ -404,6 +508,38 @@ function PlayPageContent() {
           </Card>
         ) : null}
       </main>
+    </div>
+  );
+}
+
+function ResumeModal({
+  record,
+  onContinue,
+  onNew,
+}: {
+  record: ResumeRecord;
+  onContinue: () => void;
+  onNew: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-md rounded-lg border border-[var(--border)] bg-[var(--surface)] p-6 shadow-xl">
+        <h3 className="text-lg font-semibold text-[var(--foreground)]">
+          이전 입장 기록이 있어요
+        </h3>
+        <p className="mt-2 text-sm text-[var(--muted-foreground)]">
+          이 입장 코드로 이미 <span className="font-medium text-[var(--accent)]">{record.nickname}</span> 으로 입장한 기록이 있습니다.
+          같은 플레이어로 이어 들어갈까요?
+        </p>
+        <div className="mt-5 flex flex-col gap-2">
+          <Button onClick={onContinue} className="w-full">
+            {record.nickname} 으로 계속하기
+          </Button>
+          <Button onClick={onNew} variant="outline" className="w-full">
+            새로운 플레이어로 입장
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }
