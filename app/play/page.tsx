@@ -171,6 +171,8 @@ function PlayPageContent() {
       });
 
     return () => {
+      // 명시적 untrack 으로 호스트가 'leave' 이벤트를 즉시 받을 수 있게 한다.
+      void channel.untrack().catch(() => {});
       void supabase.removeChannel(channel);
     };
   }, [sessionId, playerId, teamId, characterId, characterName, nickname, queryClient]);
@@ -183,30 +185,21 @@ function PlayPageContent() {
     router.replace(ROUTES.home);
   }, [sessionPhase, router, joinCode]);
 
-  // is_online 동기화: 입장 시 true, 언마운트/탭 종료 시 false (best-effort)
+  // 입장 직후 / 탭 복귀 시 is_online=true 보정.
+  // 오프라인 처리는 호스트 측 presence 동기화에 위임한다 (단일 진리원).
   useEffect(() => {
     if (!playerId) return;
     void setPlayerOnline(playerId, true).catch(() => {});
 
-    const goOffline = () => {
-      void setPlayerOnline(playerId, false).catch(() => {});
-    };
-    const onPageHide = (e: PageTransitionEvent) => {
-      if (e.persisted) return;
-      goOffline();
-    };
     const onVisibility = () => {
       if (document.visibilityState === "visible") {
         void setPlayerOnline(playerId, true).catch(() => {});
       }
     };
 
-    window.addEventListener("pagehide", onPageHide);
     document.addEventListener("visibilitychange", onVisibility);
     return () => {
-      window.removeEventListener("pagehide", onPageHide);
       document.removeEventListener("visibilitychange", onVisibility);
-      goOffline();
     };
   }, [playerId]);
 

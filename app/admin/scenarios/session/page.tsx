@@ -534,17 +534,22 @@ function ScenarioSessionHostContent() {
     };
   }, [sessionId, shouldEndOnHostLeave, beginMutation.isPending]);
 
-  // 새로 들어온 플레이어가 presence track 을 마칠 때까지의 짧은 유예 시간
-  const PRESENCE_GRACE_MS = 4000;
+  // presence 가 단일 진리원. DB.is_online 은 presence 와 양방향 동기화된다.
+  // - presence 에 있는데 DB false → true 로 보정
+  // - presence 에 없는데 DB true → 짧은 유예 후 false 로 보정
+  // 유예는 (a) 새 플레이어가 track() 을 끝낼 시간, (b) presence 가 일시적으로
+  // 비는 짧은 순간을 흡수하기 위함이다. heartbeat 가 10s 라 6s 이면 충분.
+  const PRESENCE_GRACE_MS = 6000;
   const playerFirstSeenRef = useRef(new Map<string, number>());
+  const lastPresenceSeenRef = useRef(new Map<string, number>());
 
-  // presence 와 DB is_online 동기화
   useEffect(() => {
     const players = playersQuery.data;
-    if (!players || players.length === 0) return;
+    if (!players) return;
 
     const now = Date.now();
     const seen = playerFirstSeenRef.current;
+    const lastSeen = lastPresenceSeenRef.current;
     for (const p of players) {
       if (!seen.has(p.id)) seen.set(p.id, now);
     }
@@ -553,6 +558,7 @@ function ScenarioSessionHostContent() {
     for (const r of presenceRows) {
       if (r.payload.role === "player" && r.payload.player_id) {
         onlinePlayerIds.add(r.payload.player_id);
+        lastSeen.set(r.payload.player_id, now);
       }
     }
 
@@ -566,8 +572,9 @@ function ScenarioSessionHostContent() {
         continue;
       }
       if (!presenceOnline && dbOnline) {
-        const firstSeen = seen.get(p.id) ?? now;
-        if (now - firstSeen < PRESENCE_GRACE_MS) continue;
+        // 마지막으로 presence 에 있었던 시점, 또는 처음 본 시점 중 더 늦은 쪽 기준
+        const baseline = Math.max(seen.get(p.id) ?? now, lastSeen.get(p.id) ?? 0);
+        if (now - baseline < PRESENCE_GRACE_MS) continue;
         toOffline.push(p.id);
       }
     }
@@ -575,6 +582,16 @@ function ScenarioSessionHostContent() {
     if (toOnline.length > 0) void setPlayersOnline(toOnline, true).catch(() => {});
     if (toOffline.length > 0) void setPlayersOnline(toOffline, false).catch(() => {});
   }, [presenceRows, playersQuery.data]);
+
+  // presence 가 더 자주 바뀌어도 일정 주기로 재조정 (마지막 본 시각 기반 오프라인 판정용)
+  useEffect(() => {
+    if (!hasSupabaseEnv || !sessionId) return;
+    const id = window.setInterval(() => {
+      // 의존성 배열 트리거를 위한 더미 재설정
+      setPresenceRows((rows) => rows.slice());
+    }, 2000);
+    return () => window.clearInterval(id);
+  }, [sessionId]);
 
   const onlinePlayers = useMemo(
     () => (playersQuery.data ?? []).filter((p) => p.is_online === true),

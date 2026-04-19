@@ -14,5 +14,8 @@ export const supabase = hasSupabaseEnv
         autoRefreshToken: true,
         detectSessionInUrl: true,
       },
+      realtime: {
+        heartbeatIntervalMs: 10_000, // 10s
+      },
     })
   : ({} as ReturnType<typeof createClient>);

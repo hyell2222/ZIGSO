@@ -233,6 +233,7 @@ export async function setPlayersOnline(playerIds: string[], online: boolean) {
   if (error) throw error;
 }
 
+
 // =====================================================================
 // 팀
 // =====================================================================
