@@ -324,3 +324,17 @@ begin
   end if;
 end
 $$;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'storage' and tablename = 'objects' and policyname = 'props_public_read'
+  ) then
+    create policy props_public_read on storage.objects
+      for select
+      to anon, authenticated
+      using (bucket_id = 'props');
+  end if;
+end
+$$;
