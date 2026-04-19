@@ -40,13 +40,36 @@ export default function AdminScenariosPage() {
   });
 
   const startGameMutation = useMutation({
-    mutationFn: (scenario: ScenarioRecord) => startGameSession(scenario, sessionQuery.data?.user.id),
+    mutationFn: async ({
+      scenario,
+    }: {
+      scenario: ScenarioRecord;
+      newTab: Window | null;
+    }) => startGameSession(scenario, sessionQuery.data?.user.id),
     onMutate: () => setErrorMessage(null),
-    onSuccess: (data) => {
-      router.push(ROUTES.admin.scenariosSession(data.sessionId));
+    onSuccess: (data, variables) => {
+      const url = ROUTES.admin.scenariosSession(data.sessionId);
+      if (variables.newTab && !variables.newTab.closed) {
+        variables.newTab.location.href = url;
+      } else {
+        // Popup blocked or closed; fall back to navigating current tab.
+        router.push(url);
+      }
     },
-    onError: (error: Error) => setErrorMessage(error.message),
+    onError: (error: Error, variables) => {
+      if (variables?.newTab && !variables.newTab.closed) {
+        variables.newTab.close();
+      }
+      setErrorMessage(error.message);
+    },
   });
+
+  const handleStartGame = (scenario: ScenarioRecord) => {
+    // window.open must be called synchronously in the click handler, otherwise
+    // browsers' popup blockers will prevent the new tab from opening.
+    const newTab = typeof window !== "undefined" ? window.open("about:blank", "_blank") : null;
+    startGameMutation.mutate({ scenario, newTab });
+  };
 
   return (
     <div className="min-h-screen">
@@ -83,7 +106,7 @@ export default function AdminScenariosPage() {
                       {scenario.description ?? "No description provided yet."}
                     </p>
                     <Button
-                      onClick={() => startGameMutation.mutate(scenario)}
+                      onClick={() => handleStartGame(scenario)}
                       disabled={startGameMutation.isPending || !sessionQuery.data?.user.id}
                     >
                       {startGameMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
