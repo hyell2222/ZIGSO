@@ -100,11 +100,28 @@ export type ScenarioLocationForMap = {
   character_id: string | null;
 };
 
+/**
+ * 시나리오 생성자가 직접 지정하는 단서 prop 정보 (위치 + 사이즈 + 종류).
+ * - x, y: 월드 픽셀 좌표 (0,0 = 좌상단)
+ * - asset: 사용할 prop 에셋 식별자 (예: "drawer", "treasure_chest").
+ *          런타임에 Supabase Storage 또는 `/assets/props/{asset}.svg` 로 로딩됨.
+ *          확장자 포함도 허용. 생략 시 placeholder 그래픽으로 대체.
+ * - w, h: 표시 크기(px). 미지정 시 80×80 기본값.
+ */
+export type ClueMapProps = {
+  x: number;
+  y: number;
+  asset?: string;
+  w?: number;
+  h?: number;
+};
+
 export type ScenarioClueForMap = {
   id: string;
   name: string | null;
   content: string | null;
   location_id: string | null;
+  props: ClueMapProps | null;
 };
 
 /**
@@ -124,7 +141,7 @@ export async function getScenarioMapEntities(
       .order("name", { ascending: true }),
     supabase
       .from("clues")
-      .select("id,name,content,location_id")
+      .select("id,name,content,location_id,props")
       .eq("scenario_id", scenarioId)
       .order("name", { ascending: true }),
   ]);

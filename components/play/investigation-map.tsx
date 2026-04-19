@@ -9,9 +9,8 @@ import * as Phaser from "phaser";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
-  MapPropTextureKey,
-  MAP_PROP_COLLISION_VERTS,
-  MAP_PROP_NATURAL_SIZE,
+  MAP_PROP_DEFAULT_SIZE,
+  mapPropTextureKey,
   preloadMapPropImages,
   setMapPropTexturesNearest,
 } from "@/lib/assets/map-props";
@@ -56,25 +55,22 @@ function autoLayoutLocation(index: number, total: number) {
 /** 화면에 그릴 장소 하나의 사각형 + 메타 */
 type LocationLayout = { id: string; name: string | null; x: number; y: number; w: number; h: number };
 
-type PropType = keyof typeof MapPropTextureKey;
-type PropSlot = { propType: PropType; x: number; y: number; w: number; h: number };
-const PROP_LABELS: Record<PropType, string> = {
-  desk: "책상",
-  drawer: "서랍장",
-  shelf: "책장",
-  chair: "의자",
-  lamp: "스탠드",
-};
+/** placeholder 표시용 텍스처 키 (asset 미지정 단서에 쓰임) */
+const PLACEHOLDER_TEXTURE_KEY = "map_prop:__placeholder__";
+
 type EvidenceEntry = {
   id: string;
   locationId: string;
   locationName: string;
-  propType: PropType;
+  /** 사용할 prop asset 식별자 (없으면 placeholder) */
+  asset: string | null;
+  /** 모달 헤더에 표시할 라벨 (기본 "조사") */
   propLabel: string;
   x: number;
   y: number;
   w: number;
   h: number;
+  /** 한 단서 = 한 엔티티 (props 기반 배치). clues.length 는 항상 1. */
   clues: ScenarioClueForMap[];
 };
 
@@ -96,71 +92,91 @@ type MatterSpritePlayer = Phaser.GameObjects.Sprite & {
   setVelocity(x: number, y: number): void;
 };
 
-function buildPropSlots(d: LocationLayout): PropSlot[] {
-  const { x, y, w, h } = d;
-  const m = Math.min(w, h) * 0.035;
+function resolveSize(override?: { w?: number; h?: number }) {
+  const w =
+    typeof override?.w === "number" && Number.isFinite(override.w) && override.w > 0
+      ? override.w
+      : MAP_PROP_DEFAULT_SIZE.w;
+  const h =
+    typeof override?.h === "number" && Number.isFinite(override.h) && override.h > 0
+      ? override.h
+      : MAP_PROP_DEFAULT_SIZE.h;
+  return { w, h };
+}
 
-  const deskW = w * 0.44;
-  const deskH = Math.max(28, h * 0.09);
-  const deskX = x + (w - deskW) / 2;
-  const deskY = y + h - deskH - m * 1.4;
-
-  const dw = w * 0.17;
-  const dh = h * 0.34;
-  const bw = w * 0.19;
-  const bh = h * 0.4;
-  const cw = w * 0.11;
-  const ch = h * 0.13;
-  const cx = deskX + deskW * 0.58;
-  const cy = deskY - ch * 0.75;
-
-  const lampX = deskX + deskW * 0.22;
-  const lampBaseY = deskY;
-  const lampH = Math.max(h * 0.14, 40);
-  const { w: lampNatW, h: lampNatH } = MAP_PROP_NATURAL_SIZE.lamp;
-  const lampW = lampH * (lampNatW / lampNatH);
-
-  return [
-    { propType: "desk", x: deskX + deskW / 2, y: deskY + deskH / 2, w: deskW, h: deskH },
-    { propType: "drawer", x: x + m + dw / 2, y: y + h * 0.2 + dh / 2, w: dw, h: dh },
-    { propType: "shelf", x: x + w - m - bw / 2, y: y + h * 0.14 + bh / 2, w: bw, h: bh },
-    { propType: "chair", x: cx + cw / 2, y: cy + ch / 2, w: cw, h: ch },
-    { propType: "lamp", x: lampX, y: lampBaseY - lampH * 0.35, w: lampW, h: lampH },
-  ];
+/**
+ * props 가 없는 단서들을 해당 장소 박스 안에 격자로 자동 배치.
+ * (창작 단계에서 props 를 채워 넣지 않은 임시 단서를 위한 폴백)
+ */
+function autoPlaceInsideLocation(
+  L: LocationLayout,
+  index: number,
+  total: number,
+): { x: number; y: number } {
+  const cols = Math.max(1, Math.ceil(Math.sqrt(total)));
+  const rows = Math.max(1, Math.ceil(total / cols));
+  const pad = Math.min(L.w, L.h) * 0.12;
+  const cellW = (L.w - pad * 2) / cols;
+  const cellH = (L.h - pad * 2) / rows;
+  const col = index % cols;
+  const row = Math.floor(index / cols);
+  return {
+    x: L.x + pad + cellW * col + cellW / 2,
+    y: L.y + pad + cellH * row + cellH / 2,
+  };
 }
 
 function buildEvidenceEntries(layouts: LocationLayout[], clues: ScenarioClueForMap[]): EvidenceEntry[] {
-  const cluesByLoc = new Map<string, ScenarioClueForMap[]>();
+  const layoutById = new Map(layouts.map((l) => [l.id, l]));
+
+  const fallbackCounts = new Map<string, number>();
+  const fallbackTotals = new Map<string, number>();
   for (const clue of clues) {
-    if (!clue.location_id) continue;
-    const list = cluesByLoc.get(clue.location_id) ?? [];
-    list.push(clue);
-    cluesByLoc.set(clue.location_id, list);
+    if (clue.props) continue;
+    const key = clue.location_id ?? "__none__";
+    fallbackTotals.set(key, (fallbackTotals.get(key) ?? 0) + 1);
   }
 
   const out: EvidenceEntry[] = [];
-  for (const L of layouts) {
-    const slots = buildPropSlots(L);
-    const localClues = cluesByLoc.get(L.id) ?? [];
-    const buckets: ScenarioClueForMap[][] = slots.map(() => []);
-    localClues.forEach((clue, i) => {
-      buckets[i % slots.length]?.push(clue);
+  clues.forEach((clue) => {
+    const L = clue.location_id ? layoutById.get(clue.location_id) : undefined;
+    const locationName = L?.name?.trim() || "장소";
+
+    const asset = clue.props?.asset?.trim() || null;
+
+    let cx: number;
+    let cy: number;
+    if (clue.props && Number.isFinite(clue.props.x) && Number.isFinite(clue.props.y)) {
+      cx = clue.props.x;
+      cy = clue.props.y;
+    } else if (L) {
+      const key = clue.location_id ?? "__none__";
+      const i = fallbackCounts.get(key) ?? 0;
+      const total = fallbackTotals.get(key) ?? 1;
+      const placed = autoPlaceInsideLocation(L, i, total);
+      fallbackCounts.set(key, i + 1);
+      cx = placed.x;
+      cy = placed.y;
+    } else {
+      cx = DEFAULT_WORLD_W / 2;
+      cy = DEFAULT_WORLD_H / 2;
+    }
+
+    const { w, h } = resolveSize({ w: clue.props?.w, h: clue.props?.h });
+
+    out.push({
+      id: `clue:${clue.id}`,
+      locationId: clue.location_id ?? "",
+      locationName,
+      asset,
+      propLabel: "조사",
+      x: cx,
+      y: cy,
+      w,
+      h,
+      clues: [clue],
     });
-    slots.forEach((slot, i) => {
-      out.push({
-        id: `${L.id}:${slot.propType}:${i}`,
-        locationId: L.id,
-        locationName: L.name?.trim() || "장소",
-        propType: slot.propType,
-        propLabel: PROP_LABELS[slot.propType],
-        x: slot.x,
-        y: slot.y,
-        w: slot.w,
-        h: slot.h,
-        clues: buckets[i] ?? [],
-      });
-    });
-  }
+  });
   return out;
 }
 
@@ -171,10 +187,14 @@ function rectsTouchOrOverlap(a: Phaser.Geom.Rectangle, b: Phaser.Geom.Rectangle)
 function placeLocationProps2D(scene: Phaser.Scene, entries: EvidenceEntry[]) {
   const objects: PlacedEvidenceObject[] = [];
   for (const entry of entries) {
-    const verts = MAP_PROP_COLLISION_VERTS[entry.propType];
-    const image = scene.matter.add.image(entry.x, entry.y, MapPropTextureKey[entry.propType], undefined, {
+    const textureKey = entry.asset ? mapPropTextureKey(entry.asset) : PLACEHOLDER_TEXTURE_KEY;
+    // 텍스처가 로딩되지 않았으면 placeholder 로 대체 (404 에셋 보호)
+    const safeKey = scene.textures.exists(textureKey) ? textureKey : PLACEHOLDER_TEXTURE_KEY;
+
+    // 충돌은 표시 크기 기반 사각형으로 통일 — 새 prop 추가 시 코드 변경 불필요
+    const image = scene.matter.add.image(entry.x, entry.y, safeKey, undefined, {
       isStatic: true,
-      shape: { type: "fromVerts", verts, flagInternal: true },
+      shape: { type: "rectangle", width: entry.w, height: entry.h },
     });
     image.setDisplaySize(entry.w, entry.h);
     image.setDepth(1);
@@ -208,7 +228,7 @@ function evidenceEntryForSingleClue(
     id: `inv:${clue.id}`,
     locationId: clue.location_id ?? "",
     locationName: L?.name?.trim() ?? "장소",
-    propType: "desk",
+    asset: null,
     propLabel: "증거",
     x: 0,
     y: 0,
@@ -218,13 +238,17 @@ function evidenceEntryForSingleClue(
   };
 }
 
-/** 기본 월드보다 장소가 밖으로 나가면 bounds 확장 */
-function computeWorldSize(layouts: LocationLayout[]) {
+/** 기본 월드보다 장소·증거가 밖으로 나가면 bounds 확장 */
+function computeWorldSize(layouts: LocationLayout[], entries: EvidenceEntry[]) {
   let w = DEFAULT_WORLD_W;
   let h = DEFAULT_WORLD_H;
   for (const L of layouts) {
     w = Math.max(w, L.x + L.w + 120);
     h = Math.max(h, L.y + L.h + 120);
+  }
+  for (const e of entries) {
+    w = Math.max(w, e.x + e.w / 2 + 120);
+    h = Math.max(h, e.y + e.h / 2 + 120);
   }
   return { w, h };
 }
@@ -286,7 +310,7 @@ export function InvestigationMap({
   const layoutData = useMemo(() => {
     const layouts = buildLocationLayouts(locations);
     const evidenceEntries = buildEvidenceEntries(layouts, clues);
-    const { w, h } = computeWorldSize(layouts);
+    const { w, h } = computeWorldSize(layouts, evidenceEntries);
     return { layouts, evidenceEntries, worldW: w, worldH: h };
   }, [locations, clues]);
 
@@ -363,12 +387,13 @@ export function InvestigationMap({
     if (!parent) return;
 
     const { layouts, evidenceEntries, worldW, worldH } = layoutData;
-    const entriesByLocation = new Map<string, EvidenceEntry[]>();
-    for (const entry of evidenceEntries) {
-      const list = entriesByLocation.get(entry.locationId) ?? [];
-      list.push(entry);
-      entriesByLocation.set(entry.locationId, list);
-    }
+    const assetIdsInUse: string[] = Array.from(
+      new Set(
+        evidenceEntries
+          .map((e) => e.asset)
+          .filter((a): a is string => typeof a === "string" && a.length > 0),
+      ),
+    );
 
     class InvestigationScene extends Phaser.Scene {
       private player!: MatterSpritePlayer;
@@ -421,9 +446,10 @@ export function InvestigationMap({
         });
       }
 
-      /** 웹폰트 + 플레이어용 작은 텍스처(둥근 사각형) 생성 */
+      /** 웹폰트 + 플레이어용 작은 텍스처(둥근 사각형) + asset 미지정 시 쓸 placeholder 생성 */
       preload() {
         this.load.font(FONT_KEY, FONT_URL, "opentype");
+
         const g = this.make.graphics({ x: 0, y: 0 });
         g.fillStyle(0x22d3ee, 1);
         g.fillRoundedRect(0, 0, PLAYER_SIZE, PLAYER_SIZE, 6);
@@ -432,11 +458,32 @@ export function InvestigationMap({
         g.generateTexture("player", PLAYER_SIZE, PLAYER_SIZE);
         g.destroy();
 
-        preloadMapPropImages(this);
+        // asset 미지정 / 로딩 실패 시 폴백 — 노란 다이아몬드
+        if (!this.textures.exists(PLACEHOLDER_TEXTURE_KEY)) {
+          const PH = 64;
+          const ph = this.make.graphics({ x: 0, y: 0 });
+          ph.fillStyle(0xfacc15, 1);
+          ph.fillTriangle(PH / 2, 0, PH, PH / 2, PH / 2, PH);
+          ph.fillTriangle(PH / 2, 0, 0, PH / 2, PH / 2, PH);
+          ph.lineStyle(2, 0x713f12, 1);
+          ph.strokeTriangle(PH / 2, 0, PH, PH / 2, PH / 2, PH);
+          ph.strokeTriangle(PH / 2, 0, 0, PH / 2, PH / 2, PH);
+          ph.generateTexture(PLACEHOLDER_TEXTURE_KEY, PH, PH);
+          ph.destroy();
+        }
+
+        // 시나리오에서 실제로 쓰이는 asset 만 동적으로 로딩
+        preloadMapPropImages(this, assetIdsInUse);
+
+        // 누락된 asset 은 무시하고 placeholder 로 폴백 (Phaser 가 게임 정지하지 않도록)
+        this.load.on("loaderror", (file: Phaser.Loader.File) => {
+          // eslint-disable-next-line no-console
+          console.warn(`[map] failed to load prop asset: ${file.key} (${file.src})`);
+        });
       }
 
       create() {
-        setMapPropTexturesNearest(this);
+        setMapPropTexturesNearest(this, assetIdsInUse);
 
         this.matter.world.setBounds(0, 0, worldW, worldH, 64, true, true, true, true);
 
@@ -458,13 +505,12 @@ export function InvestigationMap({
           grid.lineBetween(0, gy, worldW, gy);
         }
 
-        // 장소 영역 + 소품 + 이름 라벨
+        // 장소 박스(배경) + 이름 라벨
         layouts.forEach((d) => {
           const gfx = this.add.graphics();
           gfx.setDepth(0);
           gfx.fillStyle(0x164e63, 0.45);
           gfx.fillRoundedRect(d.x, d.y, d.w, d.h, 8);
-          this.evidenceObjects.push(...placeLocationProps2D(this, entriesByLocation.get(d.id) ?? []));
           gfx.lineStyle(2, 0x22d3ee, 0.35);
           gfx.strokeRoundedRect(d.x, d.y, d.w, d.h, 8);
           const title = d.name?.trim() || "장소";
@@ -477,6 +523,9 @@ export function InvestigationMap({
             })
             .setDepth(2);
         });
+
+        // 단서(증거) 에셋 — 각 단서의 props 로 배치
+        this.evidenceObjects.push(...placeLocationProps2D(this, evidenceEntries));
 
         // 첫 번째 장소 중앙에서 시작 (장소 없으면 월드 중앙)
         const startX =

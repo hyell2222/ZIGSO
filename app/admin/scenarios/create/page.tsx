@@ -108,7 +108,10 @@ export default function AdminScenarioCreatePage() {
             <Textarea
               value={clues}
               onChange={(event) => setClues(event.target.value)}
-              placeholder={`Clues JSON array, e.g. [{"name":"열쇠","content":"오래된 열쇠. 끝에 'S' 각인.","location_name":"Sally의 방"}]`}
+              placeholder={`Clues JSON array, e.g. [{"name":"열쇠","content":"오래된 열쇠. 끝에 'S' 각인.","location_name":"Sally의 방","props":{"x":420,"y":680,"asset":"drawer","w":80,"h":120}}]
+props.x, props.y: 월드 픽셀 좌표 (좌상단 0,0). 
+props.asset: prop 에셋 파일명 (확장자 생략 가능, 기본 .svg). Supabase Storage 또는 public/assets/props/ 에서 로딩. 미지정 시 placeholder 표시. 
+props.w, props.h: 표시 크기(px). 미지정 시 80x80.`}
             />
             <Button
               onClick={() => createScenarioMutation.mutate()}

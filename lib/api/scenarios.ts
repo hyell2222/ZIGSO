@@ -24,11 +24,21 @@ export type ScenarioLocationInput = {
   character_name?: string | null;
 };
 
+export type ScenarioClueProps = {
+  x: number;
+  y: number;
+  /** prop 에셋 파일명(확장자 생략 시 .svg). Supabase Storage / public/assets/props/ 에서 로딩 */
+  asset?: string;
+  w?: number;
+  h?: number;
+};
+
 export type ScenarioClueInput = {
   name?: string | null;
   content?: string | null;
   location_id?: string | null;
   location_name?: string | null;
+  props?: ScenarioClueProps | null;
 };
 
 type CreateScenarioInput = {
@@ -149,6 +159,7 @@ export async function createScenario(input: CreateScenarioInput) {
             normalizeText(clue.location_id) ??
             locationIdsByName.get(clue.location_name?.trim().toLowerCase() ?? "") ??
             null,
+          props: clue.props ?? null,
         })),
       );
 

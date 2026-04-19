@@ -34,7 +34,8 @@ create table if not exists public.clues (
   scenario_id uuid references public.scenarios(id) on delete cascade,
   location_id uuid references public.locations(id) on delete set null,
   name text,
-  content text
+  content text,
+  props jsonb
 );
 
 create table if not exists public.game_sessions (
