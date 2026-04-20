@@ -213,17 +213,15 @@ function KebabMenu({
 
   return (
     <div ref={containerRef} className="relative">
-      <button
-        type="button"
-        aria-label="더 보기"
+      <Button
         aria-haspopup="menu"
         aria-expanded={open}
         disabled={disabled}
         onClick={() => setOpen((v) => !v)}
-        className="rounded p-1 text-[var(--muted-foreground,#94a3b8)] transition-colors hover:bg-[rgba(148,163,184,0.12)] hover:text-[var(--foreground)] disabled:opacity-50"
+        variant="ghost"
       >
         <MoreVertical className="h-4 w-4" />
-      </button>
+      </Button>
       {open ? (
         <div
           role="menu"

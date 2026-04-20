@@ -31,6 +31,14 @@ export const MAP_PROP_LOCAL_BASE = "/assets/props";
 /** 기본 표시 크기 (asset 의 w/h 가 모두 비어있을 때 사용) */
 export const MAP_PROP_DEFAULT_SIZE = { w: 80, h: 80 };
 
+/**
+ * 어드민 맵 에디터 1장(=캐릭터 1명분)이 사용하는 좌표 공간.
+ * 단서의 `props.x/y/w/h` 값은 이 공간(0..w, 0..h) 기준으로 저장된다.
+ * 학생 맵은 여러 장소를 한 월드에 배치하므로, 이 좌표를 각 장소 박스 크기로
+ * 변환해 써야 한다 (`investigation-map.tsx` 의 `buildEvidenceEntries` 참고).
+ */
+export const MAP_EDITOR_SPACE = { w: 800, h: 600 } as const;
+
 /** asset 문자열에서 안전한 Phaser 텍스처 키를 만든다 */
 export function mapPropTextureKey(asset: string): string {
   return `map_prop:${asset}`;

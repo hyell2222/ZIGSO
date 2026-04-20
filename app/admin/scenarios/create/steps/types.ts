@@ -13,7 +13,10 @@ export type DraftCharacter = {
 
 export type DraftClue = {
   tempId: string;
-  /** 어느 캐릭터의 방에 배치된 단서인지 */
+  /**
+   * 어느 캐릭터의 장소에 배치된 단서인지.
+   * 사건 해결 정답 장소의 단서는 RESOLUTION_LOCATION_TEMP_ID 를 사용한다.
+   */
   characterTempId: string;
   /** prop 에셋 식별자 (예: "blackboard") */
   asset: string;
@@ -26,10 +29,33 @@ export type DraftClue = {
   /** 단서 이름/설명 — 학생에게 노출됨 */
   name: string;
   content: string;
+  /**
+   * 사건 해결 2단계 정답 prop 표식.
+   * - 학생이 정답 장소 맵에서 이 prop 을 조사하면 발견 성공.
+   * - 시나리오 전체에서 1개만 의미 있다 (정답 장소의 clue 권장).
+   */
+  isResolutionTarget?: boolean;
+  /**
+   * 사건 해결 3단계 잠금 해제 아이템 표식.
+   * - 학생이 모달에서 이 표식이 달린 clue 들을 정확히 골라 제출해야 한다.
+   * - 정확히 3개 권장 (UI 가 강제).
+   */
+  isResolutionUnlockItem?: boolean;
 };
 
-/** 맵 에디터에서 캐릭터마다 보여주는 월드 사이즈 */
-export const MAP_EDITOR_WORLD = { w: 800, h: 600 } as const;
+/**
+ * 사건 해결 단계 정답 장소를 가리키는 sentinel tempId.
+ * MapEditorStep 의 탭과 DraftClue.characterTempId 모두에서 동일하게 사용된다.
+ * (DB 의 character_id 와 충돌하지 않도록 일반 Math.random 결과와 다른 형태를 쓴다)
+ */
+export const RESOLUTION_LOCATION_TEMP_ID = "__resolution_location__" as const;
+
+/**
+ * 맵 에디터에서 캐릭터마다 보여주는 월드 사이즈.
+ * 학생 맵도 같은 좌표 공간으로 해석하므로(lib/assets/map-props.ts 의 MAP_EDITOR_SPACE)
+ * 여기선 단일 진리원을 재-export 한다.
+ */
+export { MAP_EDITOR_SPACE as MAP_EDITOR_WORLD } from "@/lib/assets/map-props";
 
 /** prop 기본 표시 크기 (드롭 시 폴백) */
 export const PROP_DEFAULT_DROP_SIZE = { w: 80, h: 80 } as const;

@@ -126,14 +126,33 @@ export type ScenarioClueForMap = {
 
 /**
  * 플레이어 맵용 장소·단서 조회.
- * `restrictToCharacterId` 가 지정되면 해당 캐릭터의 방(=character_id 매칭 location)만 반환.
- * (조사 단계: 자기 캐릭터의 방만 / 사건 해결 단계: 모든 방)
+ *
+ * 옵션:
+ * - `restrictToCharacterId`: 지정 시 해당 캐릭터의 장소(=character_id 매칭 location)만 반환.
+ *   조사 단계에서 자기 캐릭터의 장소만 보여주는 용도.
+ * - `restrictToLocationId`: 지정 시 정확히 그 location 만 반환.
+ *   사건 해결 단계에서 학생이 정답을 맞힌 뒤 정답 장소만 띄우는 용도.
+ *
+ * 두 옵션이 모두 비어 있으면 시나리오의 모든 장소/단서를 반환한다.
+ *
+ * 참고: 항상 정답 장소(scenarios.resolution_location_id 가 가리키는 location)는
+ * 조사 단계 / 전체 보기에서 노출되지 않도록 자동 제외한다 — 학생이 사전에 보면
+ * 정답 입력의 의미가 사라지기 때문이다. `restrictToLocationId` 가 그 정답 장소를
+ * 가리킬 때만 명시적으로 노출된다.
  */
 export async function getScenarioMapEntities(
   scenarioId: string,
-  options?: { restrictToCharacterId?: string | null },
+  options?: {
+    restrictToCharacterId?: string | null;
+    restrictToLocationId?: string | null;
+  },
 ) {
-  const [locRes, clueRes] = await Promise.all([
+  const [scenarioRes, locRes, clueRes] = await Promise.all([
+    supabase
+      .from("scenarios")
+      .select("id,resolution_location_id")
+      .eq("id", scenarioId)
+      .single(),
     supabase
       .from("locations")
       .select("id,name,character_id")
@@ -145,15 +164,20 @@ export async function getScenarioMapEntities(
       .eq("scenario_id", scenarioId)
       .order("name", { ascending: true }),
   ]);
+  if (scenarioRes.error) throw scenarioRes.error;
   if (locRes.error) throw locRes.error;
   if (clueRes.error) throw clueRes.error;
 
+  const resolutionLocationId =
+    (scenarioRes.data as { resolution_location_id: string | null } | null)
+      ?.resolution_location_id ?? null;
   const allLocations = (locRes.data ?? []) as ScenarioLocationForMap[];
   const allClues = (clueRes.data ?? []) as ScenarioClueForMap[];
 
-  if (options?.restrictToCharacterId) {
+  // 정답 장소로 직접 조회한 경우만 정답 장소를 그대로 노출한다.
+  if (options?.restrictToLocationId) {
     const filteredLocations = allLocations.filter(
-      (loc) => loc.character_id === options.restrictToCharacterId,
+      (loc) => loc.id === options.restrictToLocationId,
     );
     const allowedLocationIds = new Set(filteredLocations.map((loc) => loc.id));
     const filteredClues = allClues.filter((clue) =>
@@ -162,7 +186,104 @@ export async function getScenarioMapEntities(
     return { locations: filteredLocations, clues: filteredClues };
   }
 
-  return { locations: allLocations, clues: allClues };
+  // 그 외 모든 경우에는 정답 장소를 결과에서 제거 (스포 방지)
+  const visibleLocations = resolutionLocationId
+    ? allLocations.filter((loc) => loc.id !== resolutionLocationId)
+    : allLocations;
+  const visibleClues = resolutionLocationId
+    ? allClues.filter((clue) => clue.location_id !== resolutionLocationId)
+    : allClues;
+
+  if (options?.restrictToCharacterId) {
+    const filteredLocations = visibleLocations.filter(
+      (loc) => loc.character_id === options.restrictToCharacterId,
+    );
+    const allowedLocationIds = new Set(filteredLocations.map((loc) => loc.id));
+    const filteredClues = visibleClues.filter((clue) =>
+      clue.location_id ? allowedLocationIds.has(clue.location_id) : false,
+    );
+    return { locations: filteredLocations, clues: filteredClues };
+  }
+
+  return { locations: visibleLocations, clues: visibleClues };
+}
+
+/**
+ * 사건 해결 단계 정답 장소 + 미션/타깃/잠금 정답 정보 조회.
+ *
+ * 반환 구조:
+ * - `id`/`name`/`character_id`: 정답 장소 location 행 (1단계: 장소 이름 정답)
+ * - `mission`: 학생에게 보여줄 미션 설명 (예: "보물상자 열기")
+ * - `target_clue_id`: 2단계 정답 prop(clue) ID — 학생이 맵에서 조사해 찾을 prop
+ * - `unlock_clue_ids`: 3단계 잠금 해제 정답 — 학생이 모달에서 정확히 골라야 할 clue id 집합
+ *
+ * 시나리오에 정답 장소가 설정되지 않았으면 `null` 을 반환한다.
+ * target_clue_id 는 미설정 시 null, unlock_clue_ids 는 미설정 시 빈 배열.
+ */
+export type ScenarioResolutionInfo = ScenarioLocationForMap & {
+  mission: string | null;
+  target_clue_id: string | null;
+  unlock_clue_ids: string[];
+};
+
+export async function getScenarioResolutionLocation(
+  scenarioId: string,
+): Promise<ScenarioResolutionInfo | null> {
+  const { data: scenario, error: scenarioError } = await supabase
+    .from("scenarios")
+    .select(
+      "resolution_location_id,resolution_mission,resolution_target_clue_id,resolution_unlock_clue_ids",
+    )
+    .eq("id", scenarioId)
+    .single();
+  if (scenarioError) throw scenarioError;
+
+  const scenarioRow = scenario as {
+    resolution_location_id: string | null;
+    resolution_mission: string | null;
+    resolution_target_clue_id: string | null;
+    resolution_unlock_clue_ids: string[] | null;
+  } | null;
+  const resolutionLocationId = scenarioRow?.resolution_location_id ?? null;
+  if (!resolutionLocationId) return null;
+
+  const { data, error } = await supabase
+    .from("locations")
+    .select("id,name,character_id")
+    .eq("id", resolutionLocationId)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) return null;
+  const loc = data as ScenarioLocationForMap;
+  return {
+    ...loc,
+    mission: scenarioRow?.resolution_mission ?? null,
+    target_clue_id: scenarioRow?.resolution_target_clue_id ?? null,
+    unlock_clue_ids: scenarioRow?.resolution_unlock_clue_ids ?? [],
+  };
+}
+
+/**
+ * 잠금 해제 모달용: 학생이 수집한 clue id 들을 받아 이름/내용 메타를 돌려준다.
+ * 캐릭터 장소 / 정답 장소 어디든 가능 — 정답 장소 clue 도 노출된다(이미 발견했어야 하므로 스포 아님).
+ */
+export type ScenarioClueMeta = {
+  id: string;
+  name: string | null;
+  content: string | null;
+  location_id: string | null;
+};
+
+export async function getScenarioCluesByIds(
+  clueIds: string[],
+): Promise<ScenarioClueMeta[]> {
+  if (clueIds.length === 0) return [];
+  const { data, error } = await supabase
+    .from("clues")
+    .select("id,name,content,location_id")
+    .in("id", clueIds);
+  if (error) throw error;
+  return (data ?? []) as ScenarioClueMeta[];
 }
 
 // =====================================================================

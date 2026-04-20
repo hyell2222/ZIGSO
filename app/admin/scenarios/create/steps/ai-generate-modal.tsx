@@ -123,15 +123,12 @@ export function AIGenerateModal({
             <Sparkles className="h-4 w-4 text-[var(--accent)]" />
             <h2 className="text-sm font-semibold text-[var(--foreground)]">AI로 시나리오 생성</h2>
           </div>
-          <button
-            type="button"
+          <Button
             onClick={onClose}
-            disabled={isLoading}
-            className="rounded p-1 text-[var(--muted-foreground,#94a3b8)] hover:bg-[rgba(148,163,184,0.1)] disabled:opacity-50"
-            aria-label="닫기"
+            variant="ghost"
           >
             <X className="h-4 w-4" />
-          </button>
+          </Button>
         </header>
 
         <div className="space-y-4 px-4 py-4">

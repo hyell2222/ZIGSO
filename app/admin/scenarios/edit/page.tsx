@@ -23,6 +23,7 @@ import type { Difficulty } from "../create/steps/basic-info-step";
 import {
   MAP_EDITOR_WORLD,
   PROP_DEFAULT_DROP_SIZE,
+  RESOLUTION_LOCATION_TEMP_ID,
   type DraftCharacter,
   type DraftClue,
 } from "../create/steps/types";
@@ -71,7 +72,8 @@ function ScenarioEditContent() {
 
   const initialDraft = useMemo<ScenarioDraft | null>(() => {
     if (!dataQuery.data) return null;
-    const { scenario, characters, locations, clues } = dataQuery.data;
+    const { scenario, characters, locations, clues, resolutionLocation, resolutionClues } =
+      dataQuery.data;
 
     // DB id → tempId 매핑. DraftClue.characterTempId 는 client 임시 ID 라
     // location → character → tempId 순서로 다리를 놓아 단서를 알맞은 캐릭터에 연결한다.
@@ -85,34 +87,52 @@ function ScenarioEditContent() {
     const characterIdByLocationId = new Map<string, string | null>();
     for (const loc of locations) characterIdByLocationId.set(loc.id, loc.character_id);
 
-    const draftClues: DraftClue[] = clues
+    const targetClueId = scenario.resolution_target_clue_id ?? null;
+    const unlockClueIdSet = new Set(scenario.resolution_unlock_clue_ids ?? []);
+
+    const toDraftClue = (
+      cl: (typeof clues)[number],
+      characterTempId: string,
+    ): DraftClue => {
+      const props = cl.props ?? null;
+      return {
+        tempId: makeTempId(),
+        characterTempId,
+        asset: typeof props?.asset === "string" ? props.asset : "",
+        x: Number.isFinite(props?.x) ? Number(props?.x) : MAP_EDITOR_WORLD.w / 2,
+        y: Number.isFinite(props?.y) ? Number(props?.y) : MAP_EDITOR_WORLD.h / 2,
+        w: Number.isFinite(props?.w) ? Number(props?.w) : PROP_DEFAULT_DROP_SIZE.w,
+        h: Number.isFinite(props?.h) ? Number(props?.h) : PROP_DEFAULT_DROP_SIZE.h,
+        name: cl.name ?? "",
+        content: cl.content ?? "",
+        isResolutionTarget: targetClueId !== null && cl.id === targetClueId,
+        isResolutionUnlockItem: unlockClueIdSet.has(cl.id),
+      } satisfies DraftClue;
+    };
+
+    const characterDraftClues: DraftClue[] = clues
       .map((cl) => {
         const charId = cl.location_id
           ? characterIdByLocationId.get(cl.location_id) ?? null
           : null;
         const characterTempId = charId ? tempIdByCharacterId.get(charId) ?? "" : "";
         if (!characterTempId) return null;
-        const props = cl.props ?? null;
-        return {
-          tempId: makeTempId(),
-          characterTempId,
-          asset: typeof props?.asset === "string" ? props.asset : "",
-          x: Number.isFinite(props?.x) ? Number(props?.x) : MAP_EDITOR_WORLD.w / 2,
-          y: Number.isFinite(props?.y) ? Number(props?.y) : MAP_EDITOR_WORLD.h / 2,
-          w: Number.isFinite(props?.w) ? Number(props?.w) : PROP_DEFAULT_DROP_SIZE.w,
-          h: Number.isFinite(props?.h) ? Number(props?.h) : PROP_DEFAULT_DROP_SIZE.h,
-          name: cl.name ?? "",
-          content: cl.content ?? "",
-        } satisfies DraftClue;
+        return toDraftClue(cl, characterTempId);
       })
       .filter((v): v is DraftClue => v !== null);
+
+    const resolutionDraftClues: DraftClue[] = resolutionClues.map((cl) =>
+      toDraftClue(cl, RESOLUTION_LOCATION_TEMP_ID),
+    );
 
     return {
       title: scenario.title ?? "",
       description: scenario.description ?? "",
       difficulty: toDifficulty(scenario.difficulty),
       characters: draftCharacters,
-      clues: draftClues,
+      clues: [...characterDraftClues, ...resolutionDraftClues],
+      resolutionLocationName: resolutionLocation?.name ?? "",
+      resolutionMission: scenario.resolution_mission ?? "",
     };
   }, [dataQuery.data]);
 

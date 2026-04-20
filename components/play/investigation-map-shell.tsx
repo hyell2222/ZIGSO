@@ -2,7 +2,9 @@
 
 import dynamic from "next/dynamic";
 import { Loader2 } from "lucide-react";
+import type { ReactNode } from "react";
 
+import { Button } from "@/components/ui/button";
 import type { ScenarioClueForMap, ScenarioLocationForMap } from "@/lib/api/play";
 import type { InvestigationPhase } from "@/lib/play-session-phase";
 import { investigationPhaseLabel } from "@/lib/play-session-phase";
@@ -12,6 +14,11 @@ const InvestigationMap = dynamic(
   { ssr: false, loading: () => <p className="text-sm text-[var(--muted-foreground)]">맵 로딩 중…</p> },
 );
 
+type InvestigateModeProp = {
+  topBarLabel?: string;
+  onInvestigate: (clueIds: string[]) => void;
+};
+
 type InvestigationMapShellProps = {
   phase: InvestigationPhase;
   mapLoading: boolean;
@@ -20,10 +27,23 @@ type InvestigationMapShellProps = {
   clues: ScenarioClueForMap[];
   discoveredClueIds?: string[];
   onDiscoveredClueIdsChange?: (ids: string[]) => void;
-  /** "사건 해결" 단계에서만 노출되는 보물 발견 버튼 */
+  /** "사건 해결" 단계에서만 노출되는 fallback 보물 발견 버튼 (overlay 가 우선). */
   canClaimSolved?: boolean;
   isSolved?: boolean;
   onClaimSolved?: () => void;
+  /**
+   * 맵 위에 띄울 오버레이 (미션 카드, 모달 등).
+   * 지정 시 `canClaimSolved` 버튼은 숨겨진다 (overlay 가 진행 흐름을 책임짐).
+   */
+  overlay?: ReactNode;
+  /** 사건 해결 정답 prop 찾기 모드 — InvestigationMap 의 F 키 동작을 가로챈다 */
+  investigateMode?: InvestigateModeProp;
+  /**
+   * 인벤토리 패널을 외부 데이터로 채울 때 전달.
+   * - investigation phase: 미지정 → 내가 발견한 단서만 노출.
+   * - resolution phase: 팀이 모은 단서 전체를 전달해 표시.
+   */
+  inventoryClues?: ScenarioClueForMap[];
 };
 
 export function InvestigationMapShell({
@@ -37,6 +57,9 @@ export function InvestigationMapShell({
   canClaimSolved,
   isSolved,
   onClaimSolved,
+  overlay,
+  investigateMode,
+  inventoryClues,
 }: InvestigationMapShellProps) {
   const label = investigationPhaseLabel(phase);
 
@@ -66,21 +89,23 @@ export function InvestigationMapShell({
             clues={clues}
             initialDiscoveredClueIds={discoveredClueIds}
             onDiscoveredClueIdsChange={onDiscoveredClueIdsChange}
+            investigateMode={investigateMode}
+            inventoryClues={inventoryClues}
           />
-          {canClaimSolved ? (
+          {overlay ? (
+            <div className="pointer-events-none absolute inset-0 z-[110]">{overlay}</div>
+          ) : canClaimSolved ? (
             <div className="pointer-events-none absolute right-4 top-4 z-[110]">
-              <button
+              <Button
                 type="button"
+                variant={isSolved ? "secondary" : "default"}
+                size="sm"
                 disabled={isSolved}
                 onClick={onClaimSolved}
-                className={`pointer-events-auto rounded-md border px-4 py-2 text-sm font-semibold shadow-lg transition ${
-                  isSolved
-                    ? "cursor-default border-[var(--border)] bg-[rgba(15,17,19,0.95)] text-[var(--muted-foreground)]"
-                    : "border-[var(--accent)] bg-[var(--accent)] text-black hover:opacity-90"
-                }`}
+                className="pointer-events-auto border px-4 py-2"
               >
                 {isSolved ? "사건 해결됨" : "사건 해결"}
-              </button>
+              </Button>
             </div>
           ) : null}
         </>

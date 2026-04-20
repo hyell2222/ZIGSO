@@ -30,7 +30,11 @@ import { AIGenerateModal } from "../create/steps/ai-generate-modal";
 import { BasicInfoStep, type Difficulty } from "../create/steps/basic-info-step";
 import { CharactersStep } from "../create/steps/characters-step";
 import { MapEditorStep } from "../create/steps/map-editor-step";
-import type { DraftCharacter, DraftClue } from "../create/steps/types";
+import {
+  RESOLUTION_LOCATION_TEMP_ID,
+  type DraftCharacter,
+  type DraftClue,
+} from "../create/steps/types";
 
 type StepIndex = 0 | 1 | 2;
 
@@ -40,8 +44,8 @@ function makeTempId() {
   return Math.random().toString(36).slice(2, 10);
 }
 
-function roomNameFor(character: DraftCharacter) {
-  return `${character.name}의 방`;
+function locationNameFor(character: DraftCharacter) {
+  return `${character.name}의 장소`;
 }
 
 export type ScenarioDraft = {
@@ -49,7 +53,19 @@ export type ScenarioDraft = {
   description: string;
   difficulty: Difficulty;
   characters: DraftCharacter[];
+  /**
+   * 캐릭터 장소 단서 + 사건 해결 정답 장소 단서를 한 배열에 담는다.
+   * 정답 장소 단서는 characterTempId === RESOLUTION_LOCATION_TEMP_ID 로 구분된다.
+   */
   clues: DraftClue[];
+  /**
+   * 사건 해결 단계 정답 장소 이름 (학생이 정확히 입력해야 맵이 열림).
+   * 빈 문자열이면 정답 장소 없음 — 미션/타깃/잠금 정보도 의미 없음.
+   */
+  resolutionLocationName: string;
+  /** 미션 설명 (예: "보물상자 열기") — 학생에게 목표로 표시된다 */
+  resolutionMission: string;
+  // 2단계 정답(prop) / 3단계 잠금 해제 아이템 표식은 DraftClue 자체의 플래그로 관리한다.
 };
 
 type Props =
@@ -81,6 +97,8 @@ export function ScenarioWizard(props: Props) {
           difficulty: "Normal",
           characters: [],
           clues: [],
+          resolutionLocationName: "",
+          resolutionMission: "",
         };
 
   const [title, setTitle] = useState(initial.title);
@@ -88,6 +106,10 @@ export function ScenarioWizard(props: Props) {
   const [difficulty, setDifficulty] = useState<Difficulty>(initial.difficulty);
   const [characters, setCharacters] = useState<DraftCharacter[]>(initial.characters);
   const [clues, setClues] = useState<DraftClue[]>(initial.clues);
+  const [resolutionLocationName, setResolutionLocationName] = useState(
+    initial.resolutionLocationName,
+  );
+  const [resolutionMission, setResolutionMission] = useState(initial.resolutionMission);
 
   const sessionQuery = useQuery({
     queryKey: ["auth-session"],
@@ -120,6 +142,7 @@ export function ScenarioWizard(props: Props) {
 
   const handleRemoveCharacter = useCallback((tempId: string) => {
     setCharacters((prev) => prev.filter((c) => c.tempId !== tempId));
+    // 정답 장소 단서(RESOLUTION_LOCATION_TEMP_ID)는 캐릭터 삭제와 무관하게 유지된다.
     setClues((prev) => prev.filter((c) => c.characterTempId !== tempId));
   }, []);
 
@@ -136,6 +159,39 @@ export function ScenarioWizard(props: Props) {
   const handleRemoveClue = useCallback((tempId: string) => {
     setClues((prev) => prev.filter((c) => c.tempId !== tempId));
   }, []);
+
+  /**
+   * 시나리오 전체에서 단 하나의 clue 만 정답 prop 표식을 갖도록 토글한다.
+   * tempId 가 null 이면 모든 clue 의 표식을 끈다.
+   */
+  const handleSetResolutionTarget = useCallback((tempId: string | null) => {
+    setClues((prev) =>
+      prev.map((c) => ({
+        ...c,
+        isResolutionTarget: c.tempId === tempId,
+      })),
+    );
+  }, []);
+
+  /**
+   * 잠금 해제 아이템 표식 토글. 켜기 시도 시 이미 3개가 켜져 있으면 무시한다 (UI 가 강제).
+   */
+  const handleToggleResolutionUnlockItem = useCallback(
+    (tempId: string, value: boolean) => {
+      setClues((prev) => {
+        if (value) {
+          const currentlyOn = prev.filter((c) => c.isResolutionUnlockItem).length;
+          const target = prev.find((c) => c.tempId === tempId);
+          if (target?.isResolutionUnlockItem) return prev;
+          if (currentlyOn >= 3) return prev;
+        }
+        return prev.map((c) =>
+          c.tempId === tempId ? { ...c, isResolutionUnlockItem: value } : c,
+        );
+      });
+    },
+    [],
+  );
 
   /* ---------------- AI generate ---------------- */
 
@@ -171,6 +227,9 @@ export function ScenarioWizard(props: Props) {
       setDifficulty(result.difficulty);
       setCharacters(result.characters);
       setClues(result.clues);
+      // AI 결과는 정답 장소 정보를 포함하지 않으므로 비워둔다.
+      setResolutionLocationName("");
+      setResolutionMission("");
       setStep(0);
     },
     [],
@@ -185,18 +244,19 @@ export function ScenarioWizard(props: Props) {
     }));
 
     const locationsInput: ScenarioLocationInput[] = characters.map((c) => ({
-      name: roomNameFor(c),
+      name: locationNameFor(c),
       character_name: c.name,
     }));
 
     const charactersByTempId = new Map(characters.map((c) => [c.tempId, c]));
 
-    const cluesInput: ScenarioClueInput[] = clues.map((cl) => {
+    const toClueInput = (cl: DraftClue): ScenarioClueInput => {
       const owner = charactersByTempId.get(cl.characterTempId);
       return {
         name: cl.name,
         content: cl.content,
-        location_name: owner ? roomNameFor(owner) : undefined,
+        // 정답 장소 단서는 location_name 을 비워두면 API 가 resolution_location_id 로 매칭한다.
+        location_name: owner ? locationNameFor(owner) : undefined,
         props: {
           x: Math.round(cl.x),
           y: Math.round(cl.y),
@@ -204,8 +264,27 @@ export function ScenarioWizard(props: Props) {
           w: Math.round(cl.w),
           h: Math.round(cl.h),
         },
+        is_resolution_target: cl.isResolutionTarget === true,
+        is_resolution_unlock_item: cl.isResolutionUnlockItem === true,
       };
-    });
+    };
+
+    const characterClues = clues.filter(
+      (cl) => cl.characterTempId !== RESOLUTION_LOCATION_TEMP_ID,
+    );
+    const resolutionClues = clues.filter(
+      (cl) => cl.characterTempId === RESOLUTION_LOCATION_TEMP_ID,
+    );
+
+    const cluesInput: ScenarioClueInput[] = characterClues.map(toClueInput);
+    const trimmedResolutionName = resolutionLocationName.trim();
+    const resolutionLocation = trimmedResolutionName
+      ? {
+          name: trimmedResolutionName,
+          mission: resolutionMission.trim() || null,
+          clues: resolutionClues.map(toClueInput),
+        }
+      : null;
 
     return {
       title,
@@ -215,8 +294,17 @@ export function ScenarioWizard(props: Props) {
       characters: charactersInput,
       locations: locationsInput,
       clues: cluesInput,
+      resolution_location: resolutionLocation,
     };
-  }, [title, description, difficulty, characters, clues]);
+  }, [
+    title,
+    description,
+    difficulty,
+    characters,
+    clues,
+    resolutionLocationName,
+    resolutionMission,
+  ]);
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -330,6 +418,12 @@ export function ScenarioWizard(props: Props) {
             onAddClue={handleAddClue}
             onUpdateClue={handleUpdateClue}
             onRemoveClue={handleRemoveClue}
+            resolutionLocationName={resolutionLocationName}
+            onChangeResolutionLocationName={setResolutionLocationName}
+            resolutionMission={resolutionMission}
+            onChangeResolutionMission={setResolutionMission}
+            onSetResolutionTarget={handleSetResolutionTarget}
+            onToggleResolutionUnlockItem={handleToggleResolutionUnlockItem}
           />
         ) : null}
 

@@ -12,6 +12,7 @@ import {
   DRAG_TYPE_PROP,
   MAP_EDITOR_WORLD,
   PROP_DEFAULT_DROP_SIZE,
+  RESOLUTION_LOCATION_TEMP_ID,
   type DraftCharacter,
   type DraftClue,
 } from "./types";
@@ -24,6 +25,14 @@ type Props = {
   onUpdateClue: (tempId: string, patch: Partial<DraftClue>) => void;
   onAddClue: (clue: Omit<DraftClue, "tempId">) => string;
   onRemoveClue: (tempId: string) => void;
+  resolutionLocationName: string;
+  onChangeResolutionLocationName: (value: string) => void;
+  resolutionMission: string;
+  onChangeResolutionMission: (value: string) => void;
+  /** 정답 prop 표식 토글 (전체 시나리오에서 1개만). null = 모두 해제 */
+  onSetResolutionTarget: (tempId: string | null) => void;
+  /** 잠금 해제 아이템 표식 토글 (전체 시나리오에서 정확히 3개) */
+  onToggleResolutionUnlockItem: (tempId: string, value: boolean) => void;
 };
 
 export function MapEditorStep({
@@ -34,19 +43,34 @@ export function MapEditorStep({
   onAddClue,
   onUpdateClue,
   onRemoveClue,
+  resolutionLocationName,
+  onChangeResolutionLocationName,
+  resolutionMission,
+  onChangeResolutionMission,
+  onSetResolutionTarget,
+  onToggleResolutionUnlockItem,
 }: Props) {
-  const [activeCharacterId, setActiveCharacterId] = useState<string>(
-    () => characters[0]?.tempId ?? "",
+  /**
+   * 활성 탭 식별자.
+   * - 캐릭터 tempId 인 경우: 해당 캐릭터의 장소
+   * - RESOLUTION_LOCATION_TEMP_ID 인 경우: 사건 해결 정답 장소
+   */
+  const [activeTabId, setActiveTabId] = useState<string>(
+    () => characters[0]?.tempId ?? RESOLUTION_LOCATION_TEMP_ID,
   );
   const [selectedClueId, setSelectedClueId] = useState<string | null>(null);
 
+  const isResolutionTab = activeTabId === RESOLUTION_LOCATION_TEMP_ID;
+
   useEffect(() => {
-    if (!activeCharacterId && characters[0]) {
-      setActiveCharacterId(characters[0].tempId);
-    } else if (activeCharacterId && !characters.find((c) => c.tempId === activeCharacterId)) {
-      setActiveCharacterId(characters[0]?.tempId ?? "");
+    if (isResolutionTab) return;
+    if (!activeTabId && characters[0]) {
+      setActiveTabId(characters[0].tempId);
+    } else if (activeTabId && !characters.find((c) => c.tempId === activeTabId)) {
+      // 활성화돼 있던 캐릭터가 사라지면 다른 캐릭터(없으면 정답 장소)로 이동
+      setActiveTabId(characters[0]?.tempId ?? RESOLUTION_LOCATION_TEMP_ID);
     }
-  }, [characters, activeCharacterId]);
+  }, [characters, activeTabId, isResolutionTab]);
 
   useEffect(() => {
     if (selectedClueId && !clues.find((c) => c.tempId === selectedClueId)) {
@@ -55,13 +79,13 @@ export function MapEditorStep({
   }, [clues, selectedClueId]);
 
   const activeCharacter = useMemo(
-    () => characters.find((c) => c.tempId === activeCharacterId) ?? null,
-    [characters, activeCharacterId],
+    () => characters.find((c) => c.tempId === activeTabId) ?? null,
+    [characters, activeTabId],
   );
 
-  const cluesInRoom = useMemo(
-    () => clues.filter((c) => c.characterTempId === activeCharacterId),
-    [clues, activeCharacterId],
+  const cluesInLocation = useMemo(
+    () => clues.filter((c) => c.characterTempId === activeTabId),
+    [clues, activeTabId],
   );
 
   const selectedClue = useMemo(
@@ -69,10 +93,29 @@ export function MapEditorStep({
     [clues, selectedClueId],
   );
 
+  const trimmedResolutionName = resolutionLocationName.trim();
+  const resolutionLocationLabel = trimmedResolutionName
+    ? `${trimmedResolutionName} (사건 해결의 장소)`
+    : "사건 해결의 장소";
+
+  const resolutionTargetClueId = useMemo(
+    () => clues.find((c) => c.isResolutionTarget)?.tempId ?? null,
+    [clues],
+  );
+  const resolutionTargetClue = useMemo(
+    () => clues.find((c) => c.tempId === resolutionTargetClueId) ?? null,
+    [clues, resolutionTargetClueId],
+  );
+  const unlockItemTempIds = useMemo(
+    () => clues.filter((c) => c.isResolutionUnlockItem).map((c) => c.tempId),
+    [clues],
+  );
+  const unlockItemCount = unlockItemTempIds.length;
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>3. 캐릭터별 맵에 prop 배치하기</CardTitle>
+        <CardTitle>3. 장소마다 prop 배치하기</CardTitle>
       </CardHeader>
       <CardContent>
         {characters.length === 0 ? (
@@ -81,28 +124,46 @@ export function MapEditorStep({
           </p>
         ) : (
           <>
-            <CharacterTabs
+            <LocationTabs
               characters={characters}
-              cluesByCharacter={clues}
-              activeId={activeCharacterId}
+              clues={clues}
+              activeId={activeTabId}
               onSelect={(id) => {
-                setActiveCharacterId(id);
+                setActiveTabId(id);
                 setSelectedClueId(null);
               }}
             />
+
+            {isResolutionTab ? (
+              <ResolutionMissionFields
+                locationName={resolutionLocationName}
+                onChangeLocationName={onChangeResolutionLocationName}
+                mission={resolutionMission}
+                onChangeMission={onChangeResolutionMission}
+                targetClueName={resolutionTargetClue?.name ?? null}
+                hasTarget={resolutionTargetClueId !== null}
+                unlockItemCount={unlockItemCount}
+              />
+            ) : null}
 
             <div className="mt-4 grid gap-4 lg:grid-cols-[260px_1fr_300px]">
               <PropSidebar assets={propAssets} isLoading={isLoadingAssets} />
 
               <MapCanvas
-                roomLabel={activeCharacter ? `${activeCharacter.name}의 방` : "방"}
-                clues={cluesInRoom}
+                locationLabel={
+                  isResolutionTab
+                    ? resolutionLocationLabel
+                    : activeCharacter
+                      ? `${activeCharacter.name}의 장소`
+                      : "장소"
+                }
+                clues={cluesInLocation}
                 selectedClueId={selectedClueId}
                 onSelectClue={setSelectedClueId}
                 onDropAsset={(asset, x, y) => {
-                  if (!activeCharacterId) return;
+                  if (!activeTabId) return;
                   const newId = onAddClue({
-                    characterTempId: activeCharacterId,
+                    characterTempId: activeTabId,
                     asset,
                     x,
                     y,
@@ -120,6 +181,8 @@ export function MapEditorStep({
 
               <ClueEditorPanel
                 clue={selectedClue}
+                isInResolutionLocation={isResolutionTab}
+                unlockItemCount={unlockItemCount}
                 onChange={(patch) => {
                   if (!selectedClue) return;
                   onUpdateClue(selectedClue.tempId, patch);
@@ -127,6 +190,14 @@ export function MapEditorStep({
                 onRemove={() => {
                   if (!selectedClue) return;
                   onRemoveClue(selectedClue.tempId);
+                }}
+                onSetAsTarget={(value) => {
+                  if (!selectedClue) return;
+                  onSetResolutionTarget(value ? selectedClue.tempId : null);
+                }}
+                onToggleUnlockItem={(value) => {
+                  if (!selectedClue) return;
+                  onToggleResolutionUnlockItem(selectedClue.tempId, value);
                 }}
               />
             </div>
@@ -139,21 +210,26 @@ export function MapEditorStep({
 
 /* ---------------- Sub components ---------------- */
 
-function CharacterTabs({
+function LocationTabs({
   characters,
-  cluesByCharacter,
+  clues,
   activeId,
   onSelect,
 }: {
   characters: DraftCharacter[];
-  cluesByCharacter: DraftClue[];
+  clues: DraftClue[];
   activeId: string;
   onSelect: (id: string) => void;
 }) {
+  const resolutionCount = clues.filter(
+    (cl) => cl.characterTempId === RESOLUTION_LOCATION_TEMP_ID,
+  ).length;
+  const resolutionActive = activeId === RESOLUTION_LOCATION_TEMP_ID;
+
   return (
     <div className="flex flex-wrap gap-2 border-b border-[var(--border)] pb-2">
       {characters.map((c) => {
-        const count = cluesByCharacter.filter((cl) => cl.characterTempId === c.tempId).length;
+        const count = clues.filter((cl) => cl.characterTempId === c.tempId).length;
         const active = c.tempId === activeId;
         return (
           <button
@@ -174,6 +250,139 @@ function CharacterTabs({
           </button>
         );
       })}
+      <button
+        type="button"
+        onClick={() => onSelect(RESOLUTION_LOCATION_TEMP_ID)}
+        className={
+          "rounded-t-md border-b-2 px-3 py-1.5 text-sm transition-colors " +
+          (resolutionActive
+            ? "border-[var(--accent)] text-[var(--accent)]"
+            : "border-transparent text-[var(--foreground)] hover:text-[var(--accent)]")
+        }
+        title="사건 해결 단계에서 학생이 이름을 맞히면 열리는 정답 장소"
+      >
+        <span className="font-semibold">사건 해결의 장소</span>
+        <span className="ml-1 text-xs text-[var(--muted-foreground,#94a3b8)]">
+          ({resolutionCount})
+        </span>
+      </button>
+    </div>
+  );
+}
+
+function ResolutionMissionFields({
+  locationName,
+  onChangeLocationName,
+  mission,
+  onChangeMission,
+  targetClueName,
+  hasTarget,
+  unlockItemCount,
+}: {
+  locationName: string;
+  onChangeLocationName: (value: string) => void;
+  mission: string;
+  onChangeMission: (value: string) => void;
+  /** 현재 정답 prop 으로 표시된 단서 이름 (없으면 null) */
+  targetClueName: string | null;
+  hasTarget: boolean;
+  /** 잠금 해제 아이템으로 표시된 단서 개수 */
+  unlockItemCount: number;
+}) {
+  return (
+    <div className="mt-3 space-y-3 rounded-md border border-[var(--accent)]/40 bg-[rgba(201,209,107,0.08)] p-4">
+      <p className="text-[11px] leading-snug text-[var(--muted-foreground,#94a3b8)]">
+        사건 해결 단계의 정답 정보입니다. 학생은 <b>장소 이름 입력 → 정답
+        prop 조사 → 잠금 해제 아이템 3개 제출</b> 순서로 미션을 완료합니다.
+        <b> 장소</b>를 비우면 정답 장소 없이 저장됩니다.
+      </p>
+
+      <ResolutionField
+        label="장소 (1단계 정답)"
+        value={locationName}
+        onChange={onChangeLocationName}
+        placeholder="예) 학교 지하실"
+        hint="학생이 정확히 입력하면 정답 장소의 맵이 열립니다."
+      />
+      <ResolutionField
+        label="미션"
+        value={mission}
+        onChange={onChangeMission}
+        placeholder="예) 보물상자 열기"
+        hint="맵 상단에 미션 목표로 표시됩니다."
+      />
+
+      <div className="grid gap-2 rounded border border-dashed border-[var(--border)] p-2 text-[11px] sm:grid-cols-2">
+        <div>
+          <p className="text-[10px] uppercase tracking-wider text-[var(--accent)]">
+            정답 prop (2단계)
+          </p>
+          <p
+            className={
+              hasTarget
+                ? "mt-1 font-semibold text-[var(--foreground)]"
+                : "mt-1 text-red-300"
+            }
+          >
+            {hasTarget
+              ? targetClueName?.trim() || "(이름 없는 prop)"
+              : "정답 장소 단서 중 1개를 골라 표시하세요"}
+          </p>
+          <p className="mt-0.5 text-[10px] text-[var(--muted-foreground,#94a3b8)]">
+            정답 장소 맵에서 학생이 직접 조사해 찾아냅니다 (3번의 기회).
+          </p>
+        </div>
+        <div>
+          <p className="text-[10px] uppercase tracking-wider text-[var(--accent)]">
+            잠금 해제 아이템 (3단계)
+          </p>
+          <p
+            className={
+              unlockItemCount === 3
+                ? "mt-1 font-semibold text-[var(--foreground)]"
+                : "mt-1 text-red-300"
+            }
+          >
+            {unlockItemCount} / 3 개 표시됨
+          </p>
+          <p className="mt-0.5 text-[10px] text-[var(--muted-foreground,#94a3b8)]">
+            어느 장소의 단서든 정확히 3개를 골라 표시하면, 학생이 모달에서
+            제출해 잠금을 해제합니다 (3번의 기회).
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ResolutionField({
+  label,
+  value,
+  onChange,
+  placeholder,
+  hint,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  hint?: string;
+}) {
+  return (
+    <div className="space-y-1">
+      <label className="text-[11px] uppercase tracking-wider text-[var(--accent)]">
+        {label}
+      </label>
+      <Input
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+      />
+      {hint ? (
+        <p className="text-[11px] leading-snug text-[var(--muted-foreground,#94a3b8)]">
+          {hint}
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -269,7 +478,7 @@ const MIN_PROP_SIZE = 16;
 const DRAG_THRESHOLD = 4; // px
 
 function MapCanvas({
-  roomLabel,
+  locationLabel,
   clues,
   selectedClueId,
   propAssets,
@@ -278,7 +487,7 @@ function MapCanvas({
   onMoveClue,
   onResizeClue,
 }: {
-  roomLabel: string;
+  locationLabel: string;
   clues: DraftClue[];
   selectedClueId: string | null;
   propAssets: PropAsset[];
@@ -417,7 +626,7 @@ function MapCanvas({
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between text-xs text-[var(--muted-foreground,#94a3b8)]">
-        <span className="font-medium text-[var(--foreground)]">{roomLabel}</span>
+        <span className="font-medium text-[var(--foreground)]">{locationLabel}</span>
         <span>
           월드 {MAP_EDITOR_WORLD.w}×{MAP_EDITOR_WORLD.h}
         </span>
@@ -593,12 +802,22 @@ function ResizeHandle({
 
 function ClueEditorPanel({
   clue,
+  isInResolutionLocation,
+  unlockItemCount,
   onChange,
   onRemove,
+  onSetAsTarget,
+  onToggleUnlockItem,
 }: {
   clue: DraftClue | null;
+  /** 현재 활성 탭이 "사건 해결의 장소" 인지 — 정답 prop 토글은 여기서만 의미 있음 */
+  isInResolutionLocation: boolean;
+  /** 시나리오 전체의 잠금 해제 아이템 개수 (3 도달 시 새 토글 차단) */
+  unlockItemCount: number;
   onChange: (patch: Partial<DraftClue>) => void;
   onRemove: () => void;
+  onSetAsTarget: (value: boolean) => void;
+  onToggleUnlockItem: (value: boolean) => void;
 }) {
   if (!clue) {
     return (
@@ -607,6 +826,9 @@ function ClueEditorPanel({
       </aside>
     );
   }
+  const isTarget = clue.isResolutionTarget === true;
+  const isUnlock = clue.isResolutionUnlockItem === true;
+  const unlockToggleDisabled = !isUnlock && unlockItemCount >= 3;
   return (
     <aside className="space-y-3 rounded-md border border-[var(--border)] bg-[rgba(15,23,42,0.45)] p-3">
       <div className="flex items-center justify-between">
@@ -624,6 +846,56 @@ function ClueEditorPanel({
       </div>
       <div className="text-[11px] text-[var(--muted-foreground,#94a3b8)]">
         에셋: <span className="text-[var(--foreground)]">{clue.asset}</span>
+      </div>
+
+      <div className="space-y-2 rounded border border-[var(--accent)]/30 bg-[rgba(201,209,107,0.06)] p-2">
+        <label
+          className={
+            "flex items-start gap-2 text-[11px] " +
+            (isInResolutionLocation
+              ? "text-[var(--foreground)]"
+              : "cursor-not-allowed text-[var(--muted-foreground,#94a3b8)]")
+          }
+        >
+          <input
+            type="checkbox"
+            checked={isTarget}
+            disabled={!isInResolutionLocation}
+            onChange={(event) => onSetAsTarget(event.target.checked)}
+            className="mt-0.5"
+          />
+          <span>
+            <b>정답 prop (2단계)</b>
+            <span className="ml-1 text-[10px] text-[var(--muted-foreground,#94a3b8)]">
+              {isInResolutionLocation
+                ? "정답 장소에서 1개만"
+                : "정답 장소 단서에서만 설정 가능"}
+            </span>
+          </span>
+        </label>
+        <label
+          className={
+            "flex items-start gap-2 text-[11px] " +
+            (unlockToggleDisabled
+              ? "cursor-not-allowed text-[var(--muted-foreground,#94a3b8)]"
+              : "text-[var(--foreground)]")
+          }
+        >
+          <input
+            type="checkbox"
+            checked={isUnlock}
+            disabled={unlockToggleDisabled}
+            onChange={(event) => onToggleUnlockItem(event.target.checked)}
+            className="mt-0.5"
+          />
+          <span>
+            <b>잠금 해제 아이템 (3단계)</b>
+            <span className="ml-1 text-[10px] text-[var(--muted-foreground,#94a3b8)]">
+              현재 {unlockItemCount}/3
+              {unlockToggleDisabled ? " · 다른 표시를 해제 후 가능" : ""}
+            </span>
+          </span>
+        </label>
       </div>
 
       <div className="space-y-1">

@@ -11,9 +11,36 @@ create table if not exists public.scenarios (
   character_count integer,
   difficulty text check (difficulty in ('Easy', 'Normal', 'Hard')),
   creator_id uuid,
+  resolution_mission text,
+  resolution_location_id uuid,
+  resolution_target_clue_id uuid,
+  resolution_unlock_clue_ids uuid[] not null default '{}',
   created_at timestamptz default timezone('utc', now()),
   updated_at timestamptz default timezone('utc', now())
 );
+
+alter table public.scenarios
+  add column if not exists resolution_mission text,
+  add column if not exists resolution_target_clue_id uuid,
+  add column if not exists resolution_unlock_clue_ids uuid[] not null default '{}';
+
+do $$
+begin
+  if not exists (
+    select 1 from information_schema.table_constraints
+    where table_schema = 'public'
+      and table_name = 'scenarios'
+      and constraint_name = 'scenarios_resolution_location_id_fkey'
+  ) then
+    alter table public.scenarios
+      add constraint scenarios_resolution_location_id_fkey
+      foreign key (resolution_location_id)
+      references public.locations(id)
+      on delete set null;
+  end if;
+
+end
+$$;
 
 create table if not exists public.characters (
   id uuid primary key default gen_random_uuid(),
@@ -37,6 +64,24 @@ create table if not exists public.clues (
   content text,
   props jsonb
 );
+
+-- 사건 해결 정답 prop FK: clues 테이블이 만들어진 뒤에 부착
+do $$
+begin
+  if not exists (
+    select 1 from information_schema.table_constraints
+    where table_schema = 'public'
+      and table_name = 'scenarios'
+      and constraint_name = 'scenarios_resolution_target_clue_id_fkey'
+  ) then
+    alter table public.scenarios
+      add constraint scenarios_resolution_target_clue_id_fkey
+      foreign key (resolution_target_clue_id)
+      references public.clues(id)
+      on delete set null;
+  end if;
+end
+$$;
 
 create table if not exists public.game_sessions (
   id uuid primary key default gen_random_uuid(),
@@ -95,6 +140,8 @@ create index if not exists locations_scenario_id_idx on public.locations (scenar
 create index if not exists locations_character_id_idx on public.locations (character_id);
 create index if not exists clues_scenario_id_idx on public.clues (scenario_id);
 create index if not exists clues_location_id_idx on public.clues (location_id);
+create index if not exists scenarios_resolution_location_id_idx on public.scenarios (resolution_location_id);
+create index if not exists scenarios_resolution_target_clue_id_idx on public.scenarios (resolution_target_clue_id);
 create index if not exists game_sessions_scenario_id_idx on public.game_sessions (scenario_id);
 create index if not exists game_sessions_host_id_idx on public.game_sessions (host_id);
 create index if not exists game_sessions_active_idx on public.game_sessions (is_active);
