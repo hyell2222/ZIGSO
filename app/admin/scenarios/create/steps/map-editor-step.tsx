@@ -38,19 +38,13 @@ type Props = {
   onToggleResolutionUnlockItem: (tempId: string, value: boolean) => void;
 };
 
-const DEFAULT_PROP_MIN_TILE_WIDTH = 1;
-const DEFAULT_PROP_MAX_TILE_WIDTH = 2;
-
-function defaultSizeFromNaturalSize(size: { w: number; h: number }) {
-  const tileW = Math.min(
-    DEFAULT_PROP_MAX_TILE_WIDTH,
-    Math.max(DEFAULT_PROP_MIN_TILE_WIDTH, Math.round(size.w / MAP_GRID_STEP_PX)),
-  );
-  const w = tileW * MAP_GRID_STEP_PX;
-  const proportionalH = (Math.max(1, size.h) / Math.max(1, size.w)) * w;
-  const tileH = Math.max(1, Math.round(proportionalH / MAP_GRID_STEP_PX));
-  const h = tileH * MAP_GRID_STEP_PX;
-  return { w, h };
+function sizeFromAssetMetadata(asset: PropAsset): { w: number; h: number } | null {
+  if (!asset.tileW || !asset.tileH) return null;
+  if (asset.tileW <= 0 || asset.tileH <= 0) return null;
+  return {
+    w: asset.tileW * MAP_GRID_STEP_PX,
+    h: asset.tileH * MAP_GRID_STEP_PX,
+  };
 }
 
 export function MapEditorStep({
@@ -78,9 +72,6 @@ export function MapEditorStep({
   );
   const [selectedClueId, setSelectedClueId] = useState<string | null>(null);
   const [draggingAsset, setDraggingAsset] = useState<string | null>(null);
-  const [assetDefaultSizeByName, setAssetDefaultSizeByName] = useState<Record<string, { w: number; h: number }>>(
-    {},
-  );
 
   const isResolutionTab = activeTabId === RESOLUTION_LOCATION_TEMP_ID;
 
@@ -133,49 +124,14 @@ export function MapEditorStep({
     [clues],
   );
   const unlockItemCount = unlockItemTempIds.length;
-  const propAssetUrlByName = useMemo(
-    () => new Map(propAssets.map((a) => [a.asset, a.url])),
-    [propAssets],
-  );
-  const naturalSizePromiseCacheRef = useRef<Map<string, Promise<{ w: number; h: number } | null>>>(
-    new Map(),
-  );
-  const readAssetNaturalSize = useCallback(
-    (asset: string): Promise<{ w: number; h: number } | null> => {
-      const cached = naturalSizePromiseCacheRef.current.get(asset);
-      if (cached) return cached;
-      const url = propAssetUrlByName.get(asset);
-      if (!url) return Promise.resolve(null);
-
-      const task = new Promise<{ w: number; h: number } | null>((resolve) => {
-        const image = new Image();
-        image.onload = () => {
-          const w = Math.max(1, Math.round(image.naturalWidth));
-          const h = Math.max(1, Math.round(image.naturalHeight));
-          resolve({ w, h });
-        };
-        image.onerror = () => resolve(null);
-        image.src = url;
-      });
-      naturalSizePromiseCacheRef.current.set(asset, task);
-      return task;
-    },
-    [propAssetUrlByName],
-  );
-  const ensureAssetDefaultSize = useCallback(
-    (asset: string) => {
-      if (!asset || assetDefaultSizeByName[asset]) return;
-      void readAssetNaturalSize(asset).then((size) => {
-        if (!size) return;
-        const next = defaultSizeFromNaturalSize(size);
-        setAssetDefaultSizeByName((prev) => {
-          if (prev[asset]) return prev;
-          return { ...prev, [asset]: next };
-        });
-      });
-    },
-    [assetDefaultSizeByName, readAssetNaturalSize],
-  );
+  const metadataSizeByAsset = useMemo(() => {
+    const map = new Map<string, { w: number; h: number }>();
+    for (const asset of propAssets) {
+      const size = sizeFromAssetMetadata(asset);
+      if (size) map.set(asset.asset, size);
+    }
+    return map;
+  }, [propAssets]);
 
   return (
     <Card>
@@ -217,7 +173,6 @@ export function MapEditorStep({
                 isLoading={isLoadingAssets}
                 onDragStartAsset={(asset) => {
                   setDraggingAsset(asset);
-                  ensureAssetDefaultSize(asset);
                 }}
                 onDragEndAsset={() => setDraggingAsset(null)}
               />
@@ -235,7 +190,8 @@ export function MapEditorStep({
                 onSelectClue={setSelectedClueId}
                 onDropAsset={(asset, x, y) => {
                   if (!activeTabId) return;
-                  const preferred = assetDefaultSizeByName[asset] ?? PROP_DEFAULT_DROP_SIZE;
+                  const metadataSize = metadataSizeByAsset.get(asset) ?? null;
+                  const preferred = metadataSize ?? PROP_DEFAULT_DROP_SIZE;
                   const fallbackW = preferred.w;
                   const fallbackH = preferred.h;
                   const fallbackRect = snapClueRectToGrid(
@@ -258,34 +214,11 @@ export function MapEditorStep({
                     content: "",
                   });
                   setSelectedClueId(newId);
-                  // 기본은 즉시 배치하고, 로드 완료 후 타일 경계에 맞춰 크기/위치를 갱신한다.
-                  void readAssetNaturalSize(asset).then((size) => {
-                    if (!size) return;
-                    const nextSize = defaultSizeFromNaturalSize(size);
-                    const nextRect = snapClueRectToGrid(
-                      fallbackRect.x,
-                      fallbackRect.y,
-                      nextSize.w,
-                      nextSize.h,
-                      MAP_EDITOR_WORLD.w,
-                      MAP_EDITOR_WORLD.h,
-                      MAP_GRID_STEP_PX,
-                    );
-                    if (
-                      nextRect.x === fallbackRect.x &&
-                      nextRect.y === fallbackRect.y &&
-                      nextRect.w === fallbackRect.w &&
-                      nextRect.h === fallbackRect.h
-                    )
-                      return;
-                    onUpdateClue(newId, nextRect);
-                  });
                 }}
                 onMoveClue={(id, x, y) => onUpdateClue(id, { x, y })}
                 propAssets={propAssets}
                 draggingAsset={draggingAsset}
-                assetDefaultSizeByName={assetDefaultSizeByName}
-                onNeedAssetDefaultSize={ensureAssetDefaultSize}
+                metadataSizeByAsset={metadataSizeByAsset}
               />
 
               <ClueEditorPanel
@@ -621,8 +554,7 @@ function MapCanvas({
   selectedClueId,
   propAssets,
   draggingAsset,
-  assetDefaultSizeByName,
-  onNeedAssetDefaultSize,
+  metadataSizeByAsset,
   onSelectClue,
   onDropAsset,
   onMoveClue,
@@ -632,8 +564,7 @@ function MapCanvas({
   selectedClueId: string | null;
   propAssets: PropAsset[];
   draggingAsset: string | null;
-  assetDefaultSizeByName: Record<string, { w: number; h: number }>;
-  onNeedAssetDefaultSize: (asset: string) => void;
+  metadataSizeByAsset: Map<string, { w: number; h: number }>;
   onSelectClue: (id: string | null) => void;
   onDropAsset: (asset: string, x: number, y: number) => void;
   onMoveClue: (id: string, x: number, y: number) => void;
@@ -664,14 +595,17 @@ function MapCanvas({
         event.dataTransfer.getData(DRAG_TYPE_PROP) ||
         event.dataTransfer.getData("text/plain");
       if (!asset) return;
+      const previewSize = metadataSizeByAsset.get(asset);
+      const previewW = previewSize?.w ?? PROP_DEFAULT_DROP_SIZE.w;
+      const previewH = previewSize?.h ?? PROP_DEFAULT_DROP_SIZE.h;
       const rect = event.currentTarget.getBoundingClientRect();
       const rawX = clampWithin(event.clientX - rect.left, MAP_EDITOR_WORLD.w, rect.width);
       const rawY = clampWithin(event.clientY - rect.top, MAP_EDITOR_WORLD.h, rect.height);
       const rectOnGrid = snapClueRectToGrid(
         rawX,
         rawY,
-        PROP_DEFAULT_DROP_SIZE.w,
-        PROP_DEFAULT_DROP_SIZE.h,
+        previewW,
+        previewH,
         MAP_EDITOR_WORLD.w,
         MAP_EDITOR_WORLD.h,
         MAP_GRID_STEP_PX,
@@ -679,7 +613,7 @@ function MapCanvas({
       onDropAsset(asset, rectOnGrid.x, rectOnGrid.y);
       setPlacementPreview(null);
     },
-    [onDropAsset],
+    [metadataSizeByAsset, onDropAsset],
   );
 
   const handlePointerMove = useCallback(
@@ -762,8 +696,7 @@ function MapCanvas({
             event.dataTransfer.getData(DRAG_TYPE_PROP) ||
             event.dataTransfer.getData("text/plain");
           const asset = draggingAsset ?? assetFromData;
-          if (asset) onNeedAssetDefaultSize(asset);
-          const previewSize = asset ? assetDefaultSizeByName[asset] : undefined;
+          const previewSize = asset ? metadataSizeByAsset.get(asset) : undefined;
           const previewW = previewSize?.w ?? PROP_DEFAULT_DROP_SIZE.w;
           const previewH = previewSize?.h ?? PROP_DEFAULT_DROP_SIZE.h;
 
