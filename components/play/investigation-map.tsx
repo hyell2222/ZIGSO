@@ -10,6 +10,15 @@ import {
   preloadMapPropImages,
   setMapPropTexturesNearest,
 } from "@/lib/assets/map-props";
+import {
+  MAP_GRID_LINE,
+  MAP_GRID_STEP_PX,
+  MAP_LOCATION_CORNER_RADIUS,
+  MAP_LOCATION_FILL,
+  MAP_LOCATION_STROKE,
+  MAP_WORLD_BACKGROUND,
+  MAP_WORLD_OUTER_STROKE,
+} from "@/lib/map-location-style";
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Package, X } from "lucide-react";
 
 import type { ScenarioClueForMap, ScenarioLocationForMap } from "@/lib/api/play";
@@ -605,19 +614,22 @@ export function InvestigationMap({
 
         // 배경색 + 바깥 테두리
         const bg = this.add.graphics();
-        bg.fillStyle(0x0f172a, 1);
+        bg.fillStyle(MAP_WORLD_BACKGROUND, 1);
         bg.fillRect(0, 0, worldW, worldH);
-        bg.lineStyle(2, 0x334155, 0.6);
+        bg.lineStyle(
+          MAP_WORLD_OUTER_STROKE.width,
+          MAP_WORLD_OUTER_STROKE.color,
+          MAP_WORLD_OUTER_STROKE.alpha,
+        );
         bg.strokeRect(2, 2, worldW - 4, worldH - 4);
 
         // 격자 (월드 좌표 기준)
-        const gridStep = 40;
         const grid = this.add.graphics();
-        grid.lineStyle(1, 0x1e293b, 0.85);
-        for (let gx = 0; gx <= worldW; gx += gridStep) {
+        grid.lineStyle(MAP_GRID_LINE.width, MAP_GRID_LINE.color, MAP_GRID_LINE.alpha);
+        for (let gx = 0; gx <= worldW; gx += MAP_GRID_STEP_PX) {
           grid.lineBetween(gx, 0, gx, worldH);
         }
-        for (let gy = 0; gy <= worldH; gy += gridStep) {
+        for (let gy = 0; gy <= worldH; gy += MAP_GRID_STEP_PX) {
           grid.lineBetween(0, gy, worldW, gy);
         }
 
@@ -625,10 +637,14 @@ export function InvestigationMap({
         layouts.forEach((d) => {
           const gfx = this.add.graphics();
           gfx.setDepth(0);
-          gfx.fillStyle(0x164e63, 0.45);
-          gfx.fillRoundedRect(d.x, d.y, d.w, d.h, 8);
-          gfx.lineStyle(2, 0x22d3ee, 0.35);
-          gfx.strokeRoundedRect(d.x, d.y, d.w, d.h, 8);
+          gfx.fillStyle(MAP_LOCATION_FILL.color, MAP_LOCATION_FILL.alpha);
+          gfx.fillRoundedRect(d.x, d.y, d.w, d.h, MAP_LOCATION_CORNER_RADIUS);
+          gfx.lineStyle(
+            MAP_LOCATION_STROKE.width,
+            MAP_LOCATION_STROKE.color,
+            MAP_LOCATION_STROKE.alpha,
+          );
+          gfx.strokeRoundedRect(d.x, d.y, d.w, d.h, MAP_LOCATION_CORNER_RADIUS);
           const title = d.name?.trim() || "장소";
           const pad = 12;
           this.add

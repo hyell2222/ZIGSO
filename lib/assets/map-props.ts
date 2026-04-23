@@ -1,4 +1,4 @@
-import * as Phaser from "phaser";
+import type { Scene } from "phaser";
 
 import { hasSupabaseEnv, supabase } from "@/lib/supabase";
 
@@ -8,7 +8,7 @@ import { hasSupabaseEnv, supabase } from "@/lib/supabase";
  * 어떤 prop 이 사용 가능한지 코드에 박지 않는다.
  * - 시나리오의 단서(`clues.props.asset`) 가 가리키는 파일을 런타임에 로딩한다.
  * - 충돌 모양은 표시 크기 기반 사각형으로 자동 계산한다 (별도 vertex 정의 불필요).
- * - asset 식별자에 확장자가 포함되어 있으면 그대로, 없으면 기본 `.svg` 를 붙인다.
+ * - asset 식별자에 확장자가 포함되어 있으면 그대로, 없으면 기본 `.png` 를 붙인다.
  *
  * URL 우선순위:
  *   1) Supabase Storage public URL (env 가 있을 때)
@@ -44,11 +44,11 @@ export function mapPropTextureKey(asset: string): string {
   return `map_prop:${asset}`;
 }
 
-/** 확장자 보정 — 없으면 기본 `.svg` */
+/** 확장자 보정 — 없으면 기본 `.png` */
 function normalizeAssetFilename(asset: string): string {
   const trimmed = asset.replace(/^\/+/, "");
   const hasExt = /\.[a-zA-Z0-9]+$/.test(trimmed);
-  return hasExt ? trimmed : `${trimmed}.svg`;
+  return hasExt ? trimmed : `${trimmed}.png`;
 }
 
 /** bucket 내부의 object key (prefix + filename) */
@@ -73,7 +73,7 @@ export function mapPropAssetUrl(asset: string): string {
  * 실제 사용되는 asset 들의 키 집합만 받아 로딩한다.
  * (수백 개 prop 이 있어도 시나리오에서 쓰는 것만 다운로드)
  */
-export function preloadMapPropImages(scene: Phaser.Scene, assets: Iterable<string>): void {
+export function preloadMapPropImages(scene: Scene, assets: Iterable<string>): void {
   const seen = new Set<string>();
   for (const asset of assets) {
     if (!asset || seen.has(asset)) continue;
@@ -86,14 +86,16 @@ export function preloadMapPropImages(scene: Phaser.Scene, assets: Iterable<strin
 
 /** create 첫머리 등에서 호출 — 확대 시 도트 느낌 유지 */
 export function setMapPropTexturesNearest(
-  scene: Phaser.Scene,
+  scene: Scene,
   assets: Iterable<string>,
 ): void {
+  // Phaser.Textures.FilterMode.NEAREST 와 동일 값(1).
+  const FILTER_NEAREST = 1;
   for (const asset of assets) {
     if (!asset) continue;
     const key = mapPropTextureKey(asset);
     if (scene.textures.exists(key)) {
-      scene.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST);
+      scene.textures.get(key).setFilter(FILTER_NEAREST);
     }
   }
 }
