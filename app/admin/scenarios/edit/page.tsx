@@ -27,7 +27,7 @@ import {
   type DraftCharacter,
   type DraftClue,
 } from "../create/steps/types";
-import { ScenarioWizard, type ScenarioDraft } from "../_wizard/scenario-wizard";
+import { ScenarioWizard, type ScenarioDraft } from "../wizard/scenario-wizard";
 
 function makeTempId() {
   return Math.random().toString(36).slice(2, 10);

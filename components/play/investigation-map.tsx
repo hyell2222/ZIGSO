@@ -42,8 +42,8 @@ function autoLayoutLocation(index: number, total: number) {
   const col = index % cols;
   const row = Math.floor(index / cols);
   const gap = 32;
-  const w = Math.min(800, cellW - gap);
-  const h = Math.min(460, cellH - gap);
+  const w = Math.min(800, Math.max(320, cellW - gap));
+  const h = Math.min(460, Math.max(240, cellH - gap));
   const x = pad + col * cellW + (cellW - w) / 2;
   const y = pad + row * cellH + (cellH - h) / 2;
   return { x, y, w, h };
@@ -273,6 +273,22 @@ function evidenceEntryForSingleClue(
   };
 }
 
+/** 모든 장소 사각형을 감싼 축정렬 경계 (플레이 이동 제한·Matter 월드 벽에 사용) */
+function layoutClusterBounds(layouts: LocationLayout[]): { x: number; y: number; w: number; h: number } | null {
+  if (layouts.length === 0) return null;
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const L of layouts) {
+    minX = Math.min(minX, L.x);
+    minY = Math.min(minY, L.y);
+    maxX = Math.max(maxX, L.x + L.w);
+    maxY = Math.max(maxY, L.y + L.h);
+  }
+  return { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
+}
+
 /** 기본 월드보다 장소·증거가 밖으로 나가면 bounds 확장 */
 function computeWorldSize(layouts: LocationLayout[], entries: EvidenceEntry[]) {
   let w = DEFAULT_WORLD_W;
@@ -365,7 +381,6 @@ export function InvestigationMap({
   const [selectedEvidence, setSelectedEvidence] = useState<EvidenceEntry | null>(null);
   /** F로 조사해 획득한 clue id (인벤토리 표시용) */
   const [discoveredClueIds, setDiscoveredClueIds] = useState<string[]>(initialDiscoveredClueIds ?? []);
-  const [inventoryOpen, setInventoryOpen] = useState(true);
   const registerDiscoveriesRef = useRef<(ids: string[]) => void>(() => {});
   /** investigateMode 의 최신 참조를 Phaser scene 에서 쓰기 위해 ref 로 유지 */
   const investigateModeRef = useRef<InvestigateMode | undefined>(investigateMode);
@@ -483,6 +498,8 @@ export function InvestigationMap({
       private activeEvidenceId: string | null = null;
       /** 강조 중인 소품 스프라이트 — 별도 사각형이 아니라 텍스처 경계 기준 postFX */
       private highlightedPropImage: Phaser.GameObjects.Image | null = null;
+      /** 장소 박스들을 감싼 영역 안에서만 플레이어 중심이 움직이도록 제한 */
+      private playerCenterClamp: { cxMin: number; cxMax: number; cyMin: number; cyMax: number } | null = null;
 
       constructor() {
         super({ key: "InvestigationScene" });
@@ -565,7 +582,26 @@ export function InvestigationMap({
       create() {
         setMapPropTexturesNearest(this, assetIdsInUse);
 
-        this.matter.world.setBounds(0, 0, worldW, worldH, 64, true, true, true, true);
+        const cluster = layoutClusterBounds(layouts);
+        if (cluster && cluster.w > 0 && cluster.h > 0) {
+          this.matter.world.setBounds(cluster.x, cluster.y, cluster.w, cluster.h, 64, true, true, true, true);
+          const half = PLAYER_SIZE / 2;
+          const cxMin = cluster.x + Math.min(half, cluster.w / 2);
+          const cxMax = cluster.x + cluster.w - Math.min(half, cluster.w / 2);
+          const cyMin = cluster.y + Math.min(half, cluster.h / 2);
+          const cyMax = cluster.y + cluster.h - Math.min(half, cluster.h / 2);
+          this.playerCenterClamp =
+            cxMax >= cxMin && cyMax >= cyMin ? { cxMin, cxMax, cyMin, cyMax } : null;
+        } else {
+          this.matter.world.setBounds(0, 0, worldW, worldH, 64, true, true, true, true);
+          const half = PLAYER_SIZE / 2;
+          this.playerCenterClamp = {
+            cxMin: half,
+            cxMax: worldW - half,
+            cyMin: half,
+            cyMax: worldH - half,
+          };
+        }
 
         // 배경색 + 바깥 테두리
         const bg = this.add.graphics();
@@ -622,6 +658,7 @@ export function InvestigationMap({
         this.player.setFixedRotation();
         /** 물리 스텝 후에도 입력으로 정한 최대 속도를 넘지 않게(충돌로 튀는 속도 제한) */
         this.events.on("postupdate", this.clampPlayerSpeed, this);
+        this.events.on("postupdate", this.clampPlayerInsideLocationCluster, this);
 
         this.cursors = this.input.keyboard!.createCursorKeys();
         this.interactKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.F);
@@ -642,6 +679,18 @@ export function InvestigationMap({
         if (m <= SPEED + 0.5) return;
         const s = SPEED / m;
         this.player.setVelocity(v.x * s, v.y * s);
+      }
+
+      private clampPlayerInsideLocationCluster() {
+        if (modalOpenRef.current) return;
+        const c = this.playerCenterClamp;
+        if (!c) return;
+        const nx = Phaser.Math.Clamp(this.player.x, c.cxMin, c.cxMax);
+        const ny = Phaser.Math.Clamp(this.player.y, c.cyMin, c.cyMax);
+        if (nx !== this.player.x || ny !== this.player.y) {
+          this.player.setPosition(nx, ny);
+          this.player.setVelocity(0, 0);
+        }
       }
 
       /** 방향키 입력 → 대각선 이동 시 속도 정규화(√2) */
@@ -795,71 +844,41 @@ export function InvestigationMap({
             isFull ? "min-h-0" : "min-h-[420px] rounded-md border border-[var(--border)]",
           )}
         />
-        {/* 발견 증거 인벤토리 — 접기/펼치기 */}
-        {inventoryOpen ? (
-          <aside
-            className={cn(
-              "flex min-h-0 shrink-0 flex-col border-[var(--border)] bg-[rgba(15,23,42,0.85)]",
-              isFull
-                ? "w-[220px] border-l"
-                : "max-h-[200px] w-full border-t md:max-h-none md:w-[200px] md:border-l md:border-t-0",
-            )}
-          >
-            <div className="flex items-center gap-2 border-b border-[var(--border)] px-2 py-2 pl-3">
-              <Package className="h-4 w-4 shrink-0 text-[var(--accent)]" aria-hidden />
-              <span className="min-w-0 flex-1 text-xs font-medium text-[var(--foreground)]">발견한 증거</span>
-              <Button
-                type="button"
-                onClick={() => setInventoryOpen(false)}
-                variant="ghost"
-                size="sm"
-                className="h-6 px-1"
-                aria-label="인벤토리 접기"
-              >
-                <ChevronRight className="hidden h-4 w-4 md:block" aria-hidden />
-                <ChevronUp className="h-4 w-4 md:hidden" aria-hidden />
-              </Button>
-            </div>
-            <ul className="min-h-0 flex-1 list-none overflow-y-auto overscroll-contain p-2">
-              {inventoryDisplayClues.length === 0 ? (
-                <li className="rounded-md border border-dashed border-[var(--border)] px-2 py-6 text-center text-[11px] text-[var(--muted-foreground)]">
-                  소품을 조사하면 증거가 여기에 쌓입니다.
-                </li>
-              ) : (
-                inventoryDisplayClues.map((clue) => (
-                  <li key={clue.id} className="mb-1.5 last:mb-0">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => openEvidenceFromInventory(clue)}
-                      className="h-auto w-full justify-start rounded border border-[var(--border)] bg-black/20 px-2.5 py-2 text-left text-xs text-[var(--foreground)] transition-colors hover:border-[var(--accent)] hover:bg-black/35"
-                    >
-                      <span className="line-clamp-2">{clue.name?.trim() || "이름 없음"}</span>
-                    </Button>
-                  </li>
-                ))
-              )}
-            </ul>
-          </aside>
-        ) : (
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={() => setInventoryOpen(true)}
-            className={cn(
-              "flex shrink-0 items-center justify-center gap-2 border-[var(--border)] bg-[rgba(15,23,42,0.85)] text-[var(--foreground)] transition-colors hover:bg-black/30",
-              isFull
-                ? "w-10 flex-col border-l py-2"
-                : "h-10 w-full border-t md:h-auto md:w-10 md:flex-col md:border-l md:border-t-0 md:py-2",
-            )}
-            aria-label="인벤토리 열기"
-          >
+        {/* 발견 증거 인벤토리 */}
+        <aside
+          className={cn(
+            "flex min-h-0 shrink-0 flex-col border-[var(--border)] bg-[rgba(15,23,42,0.85)]",
+            isFull
+              ? "w-[220px] border-l"
+              : "max-h-[200px] w-full border-t md:max-h-none md:w-[200px] md:border-l md:border-t-0",
+          )}
+        >
+          <div className="flex items-center gap-2 border-b border-[var(--border)] px-2 py-2 pl-3">
             <Package className="h-4 w-4 shrink-0 text-[var(--accent)]" aria-hidden />
-            <ChevronLeft className="hidden h-4 w-4 md:block" aria-hidden />
-            <ChevronDown className="h-4 w-4 md:hidden" aria-hidden />
-          </Button>
-        )}
+            <span className="min-w-0 flex-1 text-xs font-medium text-[var(--foreground)]">발견한 증거</span>
+          </div>
+          <ul className="min-h-0 flex-1 list-none overflow-y-auto overscroll-contain p-2">
+            {inventoryDisplayClues.length === 0 ? (
+              <li className="rounded-md border border-dashed border-[var(--border)] px-2 py-6 text-center text-[11px] text-[var(--muted-foreground)]">
+                소품을 조사하면 증거가 여기에 쌓입니다.
+              </li>
+            ) : (
+              inventoryDisplayClues.map((clue) => (
+                <li key={clue.id} className="mb-1.5 last:mb-0">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => openEvidenceFromInventory(clue)}
+                    className="h-auto w-full justify-start rounded border border-[var(--border)] bg-black/20 px-2.5 py-2 text-left text-xs text-[var(--foreground)] transition-colors hover:border-[var(--accent)] hover:bg-black/35"
+                  >
+                    <span className="line-clamp-2">{clue.name?.trim() || "이름 없음"}</span>
+                  </Button>
+                </li>
+              ))
+            )}
+          </ul>
+        </aside>
       </div>
       {selectedEvidence ? (
         <div className="absolute inset-0 z-[120] flex items-center justify-center bg-black/70 p-4">
