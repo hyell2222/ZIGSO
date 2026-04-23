@@ -140,6 +140,13 @@ export function ScenarioWizard(props: Props) {
     setCharacters((prev) => [...prev, { tempId: makeTempId(), ...input }]);
   }, []);
 
+  const handleUpdateCharacter = useCallback(
+    (tempId: string, patch: Partial<Omit<DraftCharacter, "tempId">>) => {
+      setCharacters((prev) => prev.map((c) => (c.tempId === tempId ? { ...c, ...patch } : c)));
+    },
+    [],
+  );
+
   const handleRemoveCharacter = useCallback((tempId: string) => {
     setCharacters((prev) => prev.filter((c) => c.tempId !== tempId));
     // 정답 장소 단서(RESOLUTION_LOCATION_TEMP_ID)는 캐릭터 삭제와 무관하게 유지된다.
@@ -310,7 +317,15 @@ export function ScenarioWizard(props: Props) {
     mutationFn: async () => {
       if (!title.trim()) throw new Error("제목을 입력해주세요.");
       if (!description.trim()) throw new Error("설명을 입력해주세요.");
+      if (!resolutionMission.trim()) throw new Error("미션을 입력해주세요.");
       if (characters.length === 0) throw new Error("캐릭터를 한 명 이상 추가해주세요.");
+      if (characters.some((c) => !c.name.trim() || !c.role.trim())) {
+        throw new Error("캐릭터의 이름과 역할을 모두 입력해주세요.");
+      }
+      const normalizedNames = characters.map((c) => c.name.trim().toLocaleLowerCase());
+      if (new Set(normalizedNames).size !== normalizedNames.length) {
+        throw new Error("캐릭터 이름이 중복되었습니다. 서로 다른 이름을 입력해주세요.");
+      }
 
       const payload = buildPayload();
 
@@ -333,15 +348,45 @@ export function ScenarioWizard(props: Props) {
 
   /* ---------------- step navigation ---------------- */
 
+  const isBasicInfoValid = useMemo(
+    () =>
+      title.trim().length > 0 &&
+      description.trim().length > 0 &&
+      resolutionMission.trim().length > 0,
+    [title, description, resolutionMission],
+  );
+
+  const hasValidCharacter = useMemo(() => {
+    const completeCount = characters.filter((c) => c.name.trim() && c.role.trim()).length;
+    const hasPartial = characters.some(
+      (c) => (c.name.trim() && !c.role.trim()) || (!c.name.trim() && c.role.trim()),
+    );
+    const normalizedNames = characters
+      .map((c) => c.name.trim().toLocaleLowerCase())
+      .filter((name) => name.length > 0);
+    const hasDuplicateName = new Set(normalizedNames).size !== normalizedNames.length;
+    return completeCount > 0 && !hasPartial && !hasDuplicateName;
+  }, [characters]);
+
+  const maxReachableStep = useMemo<StepIndex>(() => {
+    if (!isBasicInfoValid) return 0;
+    if (!hasValidCharacter) return 1;
+    return 2;
+  }, [isBasicInfoValid, hasValidCharacter]);
+
   const canGoNext = useMemo(() => {
-    if (step === 0) return title.trim().length > 0 && description.trim().length > 0;
-    if (step === 1) return characters.length > 0;
+    if (step === 0) return isBasicInfoValid;
+    if (step === 1) return hasValidCharacter;
     return false;
-  }, [step, title, description, characters.length]);
+  }, [step, isBasicInfoValid, hasValidCharacter]);
 
   const goNext = () => {
     if (!canGoNext) return;
     setErrorMessage(null);
+    if (step === 1) {
+      // 마지막 Enter 자동 추가로 생긴 빈 폼은 다음 단계 진입 전에 정리한다.
+      setCharacters((prev) => prev.filter((c) => c.name.trim() || c.role.trim()));
+    }
     setStep((s) => (Math.min(2, s + 1) as StepIndex));
   };
 
@@ -373,7 +418,9 @@ export function ScenarioWizard(props: Props) {
             <h1 className="text-2xl font-bold text-[var(--foreground)]">{pageTitle}</h1>
             <Stepper
               current={step}
+              maxReachableStep={maxReachableStep}
               onSelect={(idx) => {
+                if (idx > maxReachableStep) return;
                 setErrorMessage(null);
                 setStep(idx);
               }}
@@ -394,9 +441,11 @@ export function ScenarioWizard(props: Props) {
           <BasicInfoStep
             title={title}
             description={description}
+            resolutionMission={resolutionMission}
             difficulty={difficulty}
             onChangeTitle={setTitle}
             onChangeDescription={setDescription}
+            onChangeResolutionMission={setResolutionMission}
             onChangeDifficulty={setDifficulty}
           />
         ) : null}
@@ -405,6 +454,7 @@ export function ScenarioWizard(props: Props) {
           <CharactersStep
             characters={characters}
             onAdd={handleAddCharacter}
+            onUpdate={handleUpdateCharacter}
             onRemove={handleRemoveCharacter}
           />
         ) : null}
@@ -420,8 +470,6 @@ export function ScenarioWizard(props: Props) {
             onRemoveClue={handleRemoveClue}
             resolutionLocationName={resolutionLocationName}
             onChangeResolutionLocationName={setResolutionLocationName}
-            resolutionMission={resolutionMission}
-            onChangeResolutionMission={setResolutionMission}
             onSetResolutionTarget={handleSetResolutionTarget}
             onToggleResolutionUnlockItem={handleToggleResolutionUnlockItem}
           />
@@ -484,28 +532,36 @@ export function ScenarioWizard(props: Props) {
 
 function Stepper({
   current,
+  maxReachableStep,
   onSelect,
 }: {
   current: StepIndex;
+  maxReachableStep: StepIndex;
   onSelect: (idx: StepIndex) => void;
 }) {
   return (
     <ol
       role="tablist"
-      aria-label="시나리오 단계"
       className="flex items-center gap-3 text-xs text-[var(--muted-foreground,#94a3b8)]"
     >
       {STEP_LABELS.map((label, idx) => {
         const active = idx === current;
         const done = idx < current;
+        const disabled = idx > maxReachableStep;
         return (
           <li key={label} className="flex items-center gap-2">
-            <button
+            <Button
               type="button"
+              variant="tab"
               role="tab"
-              aria-selected={active}
+              disabled={disabled}
               onClick={() => onSelect(idx as StepIndex)}
-              className="group flex cursor-pointer items-center gap-2 rounded-md px-1.5 py-1 transition-colors hover:bg-[rgba(36,40,43,0.85)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:ring-offset-0"
+              className={
+                "group flex items-center gap-2 rounded-md px-1.5 py-1 transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:ring-offset-0 " +
+                (disabled
+                  ? "opacity-45"
+                  : "cursor-pointer hover:bg-[rgba(36,40,43,0.85)]")
+              }
             >
               <span
                 className={
@@ -514,7 +570,9 @@ function Stepper({
                     ? "border-[var(--accent)] bg-[var(--accent)] text-[#0f172a]"
                     : done
                       ? "border-[var(--accent)] text-[var(--accent)]"
-                      : "border-[var(--border)] text-[var(--muted-foreground,#94a3b8)] group-hover:border-[var(--accent)]/60")
+                      : disabled
+                        ? "border-[var(--border)] text-[var(--muted-foreground,#94a3b8)]"
+                        : "border-[var(--border)] text-[var(--muted-foreground,#94a3b8)] group-hover:border-[var(--accent)]/60")
                 }
               >
                 {idx + 1}
@@ -525,12 +583,14 @@ function Stepper({
                     ? "text-[var(--foreground)]"
                     : done
                       ? "text-[var(--accent)]"
-                      : "group-hover:text-[var(--foreground)]"
+                      : disabled
+                        ? "text-[var(--muted-foreground,#94a3b8)]"
+                        : "group-hover:text-[var(--foreground)]"
                 }
               >
                 {label}
               </span>
-            </button>
+            </Button>
             {idx < STEP_LABELS.length - 1 ? (
               <span className="mx-1 h-px w-6 bg-[var(--border)]" />
             ) : null}

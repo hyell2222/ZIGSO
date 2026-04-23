@@ -209,7 +209,7 @@ function FoundModal({
           이제 수집한 아이템 3개를 골라 잠금을 해제해보세요.
         </p>
       </div>
-      <Button onClick={onContinue} className="w-full">
+      <Button type="button" onClick={onContinue} className="w-full">
         잠금 해제하기
       </Button>
     </ModalShell>
@@ -420,7 +420,6 @@ function ModalShell({
               variant="ghost"
               size="sm"
               className="h-8 px-2"
-              aria-label="닫기"
             >
               <X className="h-4 w-4" />
             </Button>

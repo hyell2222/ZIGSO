@@ -124,8 +124,10 @@ export function AIGenerateModal({
             <h2 className="text-sm font-semibold text-[var(--foreground)]">AI로 시나리오 생성</h2>
           </div>
           <Button
+            type="button"
             onClick={onClose}
             variant="ghost"
+            size="icon"
           >
             <X className="h-4 w-4" />
           </Button>
@@ -155,9 +157,10 @@ export function AIGenerateModal({
                 {(["Easy", "Normal", "Hard"] as const).map((d) => {
                   const active = difficulty === d;
                   return (
-                    <button
+                    <Button
                       key={d}
                       type="button"
+                      variant="tab"
                       onClick={() => setDifficulty(d)}
                       disabled={isLoading}
                       className={
@@ -168,7 +171,7 @@ export function AIGenerateModal({
                       }
                     >
                       {d}
-                    </button>
+                    </Button>
                   );
                 })}
               </div>

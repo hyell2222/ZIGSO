@@ -910,7 +910,6 @@ export function InvestigationMap({
                 variant="ghost"
                 size="sm"
                 className="h-8 px-2"
-                aria-label="증거 모달 닫기"
               >
                 <X className="h-4 w-4" />
               </Button>

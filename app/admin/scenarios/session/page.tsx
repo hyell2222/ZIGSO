@@ -166,11 +166,11 @@ function PhaseTimerCard({ phase }: { phase: TimedPhase }) {
               e.preventDefault();
             }}
             className="h-20 !w-[9ch] border-none px-0 text-center font-mono text-5xl tabular-nums text-[var(--muted-foreground)] sm:text-6xl"
-            aria-label="타이머 시간 입력"
           />
         ) : (
-          <button
+          <Button
             type="button"
+            variant="ghost"
             onClick={() => {
               setTimerInputDigits("");
               setIsEditing(true);
@@ -178,13 +178,14 @@ function PhaseTimerCard({ phase }: { phase: TimedPhase }) {
             className="h-20 text-center font-mono text-5xl tabular-nums text-[var(--accent)] transition hover:text-[#dce48a] sm:text-6xl"
           >
             {formatTimerDisplay(timerRemainingSec)}
-          </button>
+          </Button>
         )}
         <div className="flex flex-wrap items-center justify-center gap-2">
-          <Button size="sm" onClick={() => setIsTimerRunning((v) => !v)}>
+          <Button type="button" size="sm" onClick={() => setIsTimerRunning((v) => !v)}>
             {isTimerRunning ? "일시정지" : "시작"}
           </Button>
           <Button
+            type="button"
             variant="ghost"
             size="sm"
             onClick={() => {
@@ -612,7 +613,7 @@ function ScenarioSessionHostContent() {
         <TopNav />
         <main className="mx-auto w-full max-w-7xl px-4 py-8">
           <p className="text-sm text-[var(--muted-foreground)]">세션 ID가 없습니다.</p>
-          <Button className="mt-4" variant="secondary" onClick={() => router.push(ROUTES.admin.scenarios)}>
+          <Button type="button" className="mt-4" variant="secondary" onClick={() => router.push(ROUTES.admin.scenarios)}>
             목록으로
           </Button>
         </main>
@@ -637,7 +638,7 @@ function ScenarioSessionHostContent() {
         <TopNav />
         <main className="mx-auto w-full max-w-7xl px-4 py-8">
           <p className="text-sm text-[var(--primary)]">세션을 불러올 수 없습니다.</p>
-          <Button className="mt-4" variant="secondary" onClick={() => router.push(ROUTES.admin.scenarios)}>
+          <Button type="button" className="mt-4" variant="secondary" onClick={() => router.push(ROUTES.admin.scenarios)}>
             목록으로
           </Button>
         </main>
@@ -679,13 +680,14 @@ function ScenarioSessionHostContent() {
           </div>
           <div className="flex shrink-0 flex-col items-end gap-2 sm:flex-row sm:items-center">
             {!sessionStarted ? (
-              <Button onClick={() => beginMutation.mutate()} disabled={beginMutation.isPending}>
+              <Button type="button" onClick={() => beginMutation.mutate()} disabled={beginMutation.isPending}>
                 {beginMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                 Start
               </Button>
             ) : null}
             {sessionStarted && !sessionEnded && nextPhase ? (
                 <Button
+                  type="button"
                   variant="secondary"
                   onClick={() => nextPhaseMutation.mutate()}
                   disabled={nextPhaseMutation.isPending}

@@ -117,14 +117,18 @@ export default function AdminScenariosPage() {
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-semibold text-[var(--foreground)]">Scenario List</h2>
               {(scenariosQuery.data?.length ?? 0) > 0 ? (
-                <Button onClick={() => router.push(ROUTES.admin.scenariosCreate)}>Create</Button>
+                <Button type="button" onClick={() => router.push(ROUTES.admin.scenariosCreate)}>
+                  Create
+                </Button>
               ) : null}
             </div>
             {scenariosQuery.isLoading ? (
               <p className="text-sm text-[var(--muted-foreground)]">Loading scenarios...</p>
             ) : (scenariosQuery.data?.length ?? 0) === 0 ? (
               <div className="flex justify-center py-10">
-                <Button onClick={() => router.push(ROUTES.admin.scenariosCreate)}>Create</Button>
+                <Button type="button" onClick={() => router.push(ROUTES.admin.scenariosCreate)}>
+                  Create
+                </Button>
               </div>
             ) : (
               <div className="grid gap-3 md:grid-cols-2">
@@ -153,6 +157,7 @@ export default function AdminScenariosPage() {
                         {scenario.description ?? "No description provided yet."}
                       </p>
                       <Button
+                        type="button"
                         onClick={() => handleStartGame(scenario)}
                         disabled={
                           startGameMutation.isPending ||
@@ -214,11 +219,13 @@ function KebabMenu({
   return (
     <div ref={containerRef} className="relative">
       <Button
+        type="button"
         aria-haspopup="menu"
         aria-expanded={open}
         disabled={disabled}
         onClick={() => setOpen((v) => !v)}
         variant="ghost"
+        size="icon"
       >
         <MoreVertical className="h-4 w-4" />
       </Button>
@@ -264,9 +271,9 @@ function MenuItem({
   danger?: boolean;
 }) {
   return (
-    <button
+    <Button
       type="button"
-      role="menuitem"
+      variant="menu"
       onClick={onClick}
       className={
         "flex w-full items-center gap-2 px-3 py-2 text-left text-xs transition-colors " +
@@ -277,6 +284,6 @@ function MenuItem({
     >
       {icon}
       {children}
-    </button>
+    </Button>
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,18 +11,22 @@ export type Difficulty = (typeof DIFFICULTIES)[number];
 type Props = {
   title: string;
   description: string;
+  resolutionMission: string;
   difficulty: Difficulty;
   onChangeTitle: (value: string) => void;
   onChangeDescription: (value: string) => void;
+  onChangeResolutionMission: (value: string) => void;
   onChangeDifficulty: (value: Difficulty) => void;
 };
 
 export function BasicInfoStep({
   title,
   description,
+  resolutionMission,
   difficulty,
   onChangeTitle,
   onChangeDescription,
+  onChangeResolutionMission,
   onChangeDifficulty,
 }: Props) {
   return (
@@ -31,7 +36,9 @@ export function BasicInfoStep({
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
-          <label className="text-xs font-medium text-[var(--accent)]">제목</label>
+          <label className="text-xs font-medium text-[var(--accent)]">
+            제목<span className="ml-0.5 text-red-400">*</span>
+          </label>
           <Input
             value={title}
             onChange={(event) => onChangeTitle(event.target.value)}
@@ -39,7 +46,9 @@ export function BasicInfoStep({
           />
         </div>
         <div className="space-y-2">
-          <label className="text-xs font-medium text-[var(--accent)]">설명</label>
+          <label className="text-xs font-medium text-[var(--accent)]">
+            설명<span className="ml-0.5 text-red-400">*</span>
+          </label>
           <Textarea
             value={description}
             onChange={(event) => onChangeDescription(event.target.value)}
@@ -48,14 +57,25 @@ export function BasicInfoStep({
           />
         </div>
         <div className="space-y-2">
+          <label className="text-xs font-medium text-[var(--accent)]">
+            미션<span className="ml-0.5 text-red-400">*</span>
+          </label>
+          <Input
+            value={resolutionMission}
+            onChange={(event) => onChangeResolutionMission(event.target.value)}
+            placeholder="예) 보물상자 열기"
+          />
+        </div>
+        <div className="space-y-2">
           <label className="text-xs font-medium text-[var(--accent)]">난이도</label>
           <div className="flex flex-wrap gap-2">
             {DIFFICULTIES.map((d) => {
               const active = difficulty === d;
               return (
-                <button
+                <Button
                   key={d}
                   type="button"
+                  variant="tab"
                   onClick={() => onChangeDifficulty(d)}
                   className={
                     "rounded-md border px-3 py-1.5 text-sm transition-colors " +
@@ -65,7 +85,7 @@ export function BasicInfoStep({
                   }
                 >
                   {d}
-                </button>
+                </Button>
               );
             })}
           </div>
