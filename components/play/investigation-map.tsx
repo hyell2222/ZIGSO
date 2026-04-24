@@ -314,16 +314,16 @@ function computeWorldSize(layouts: LocationLayout[], entries: EvidenceEntry[]) {
 }
 
 /**
- * "조사 모드": 사건 해결 단계에서 정답 prop 을 지목하는 별도 입력 경로.
+ * "조사 모드": 최종 미션 단계에서 미션 타겟을 지목하는 별도 입력 경로.
  *
  * - F 키는 investigateMode 와 **무관하게 항상 단서 수집**(evidence 모달 + 인벤토리 추가).
  * - E 키는 investigateMode 가 활성일 때만 동작하며
  *   호버 중인 prop 의 clue id 들로 `onInvestigate(clueIds)` 를 호출한다
- *   (정답·오답 판정은 부모가 책임).
+ *   (성공·실패 판정은 부모가 책임).
  * - 호버 중인 prop 이 없으면 E 입력은 무시된다.
  */
 type InvestigateMode = {
-  /** 상단 안내 텍스트 (예: "정답 prop 찾기 · 남은 기회 3") */
+  /** 상단 안내 텍스트 (예: "미션 타겟 조사 · 남은 기회 3") */
   topBarLabel?: string;
   /** E 키 입력 시 호출. 보통 1개의 clue id 가 들어온다. */
   onInvestigate: (clueIds: string[]) => void;
@@ -349,7 +349,7 @@ type InvestigationMapProps = {
    *   배열이 빈 배열이면 "수집한 단서 없음" 안내가 뜬다.
    */
   inventoryClues?: ScenarioClueForMap[];
-  /** 사건 해결 단계의 "정답 prop 찾기" 모드 — 지정 시 F 키 동작이 바뀐다 */
+  /** 최종 미션: 미션 타겟 조사 모드 — 지정 시 E 키로 타겟 제출 */
   investigateMode?: InvestigateMode;
 };
 

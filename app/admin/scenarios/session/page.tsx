@@ -30,7 +30,7 @@ import type { ScenarioPhase } from "@/lib/api/scenarios";
 const PHASES: { key: ScenarioPhase; label: string }[] = [
   { key: "briefing", label: "사건 파악" },
   { key: "investigation", label: "단서 수집" },
-  { key: "resolution", label: "사건 해결" },
+  { key: "resolution", label: "최종 미션" },
 ];
 
 type TimedPhase = Exclude<ScenarioPhase, "waiting" | "session_end">;
@@ -297,7 +297,7 @@ function TeamSuccessDashboard({
   return (
     <section className="space-y-3 rounded-lg border border-[var(--border)] bg-[rgba(36,40,43,0.55)] p-6">
       <header className="flex items-baseline justify-between">
-        <h2 className="text-sm font-semibold text-[var(--foreground)]">사건 해결 현황</h2>
+        <h2 className="text-sm font-semibold text-[var(--foreground)]">최종 미션 현황</h2>
         <span className="text-xs text-[var(--muted-foreground)]">
           성공 {solvedCount} / {teams.length}
         </span>

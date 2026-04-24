@@ -27,7 +27,7 @@ type InvestigationMapShellProps = {
   clues: ScenarioClueForMap[];
   discoveredClueIds?: string[];
   onDiscoveredClueIdsChange?: (ids: string[]) => void;
-  /** "사건 해결" 단계에서만 노출되는 fallback 보물 발견 버튼 (overlay 가 우선). */
+  /** 최종 미션 단계에서만 노출되는 fallback 완료 버튼 (overlay 가 우선). */
   canClaimSolved?: boolean;
   isSolved?: boolean;
   onClaimSolved?: () => void;
@@ -36,7 +36,7 @@ type InvestigationMapShellProps = {
    * 지정 시 `canClaimSolved` 버튼은 숨겨진다 (overlay 가 진행 흐름을 책임짐).
    */
   overlay?: ReactNode;
-  /** 사건 해결 정답 prop 찾기 모드 — InvestigationMap 의 F 키 동작을 가로챈다 */
+  /** 최종 미션: 미션 타겟 조사 모드 — InvestigationMap 의 F 키 동작을 가로챈다 */
   investigateMode?: InvestigateModeProp;
   /**
    * 인벤토리 패널을 외부 데이터로 채울 때 전달.
@@ -104,7 +104,7 @@ export function InvestigationMapShell({
                 onClick={onClaimSolved}
                 className="pointer-events-auto border px-4 py-2"
               >
-                {isSolved ? "사건 해결됨" : "사건 해결"}
+                {isSolved ? "미션 완료" : "미션 완료하기"}
               </Button>
             </div>
           ) : null}

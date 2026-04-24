@@ -1,17 +1,17 @@
 "use client";
 
 /**
- * 사건 해결 단계의 미션 진행 UI (controlled view).
+ * 최종 미션(Final Mission) 단계의 진행 UI (controlled view).
  *
- * 학생이 정답 장소(=resolutionLocation)에 입장한 뒤, 맵 위에 떠 있는 미션 카드와
+ * 학생이 최종 미션 맵(=resolutionLocation)에 입장한 뒤, 맵 위에 떠 있는 미션 카드와
  * 단계별 모달을 통해 다음 흐름을 진행한다:
  *
- *   1단계 (이미 완료): 장소 이름 맞히기  ← `app/play/page.tsx` 의 진입 폼
+ *   1단계 (이미 완료): 미션 진입 코드 입력  ← `app/play/page.tsx` 의 진입 폼
  *   2단계 (이 컴포넌트 + InvestigationMap):
- *     정답 장소 맵에서 정답 prop 을 골라 E 키로 조사 — 3번의 기회.
+ *     최종 미션 맵에서 미션 타겟을 골라 E 키로 조사 — 3번의 기회.
  *     맞히면: "[단서이름]을(를) 발견하는 데 성공했습니다!"
  *   3단계 (이 컴포넌트):
- *     수집한 아이템 중 정답 3개를 선택해 제출 — 3번의 기회.
+ *     수집한 아이템 중 필수 3개를 선택해 제출 — 3번의 기회.
  *     맞히면: "미션 완료!" + onMissionComplete()
  *
  * 모든 게임 상태(stage / 시도 횟수 / 에러)는 부모(`app/play/page.tsx`)가 소유한다.
@@ -53,26 +53,26 @@ type ResolutionMissionFlowProps = {
   findAttemptsUsed: number;
   /** 마지막 조사 결과 메시지 (오답 안내 등) — null 이면 표시 없음 */
   findError: string | null;
-  /** "발견 성공" 모달에 보여줄 단서 이름 (정답 prop 의 단서 이름) */
+  /** "발견 성공" 모달에 보여줄 단서 이름 (미션 타겟 단서 이름) */
   foundClueName: string | null;
 
-  // 3단계: 잠금 해제 아이템 선택 ----------------------------------------------
+  // 3단계: 제출 아이템(Required Items) 선택 ------------------------------
   /**
    * 학생이 선택할 수 있는 후보 아이템 목록 (= 팀이 수집한 단서들).
-   * 정답이 이 목록에 없으면 선택 자체가 불가능하므로, 부모가 적어도 정답 3개를
-   * 포함하도록 보장하는 게 좋다 (보통 admin 이 이미 수집된 단서를 정답으로 지정).
+   * 필수 3개가 이 목록에 없으면 제출이 불가능하므로, 부모가 적어도 그 3개를
+   * 포함하도록 보장하는 게 좋다 (보통 제작자가 이미 수집된 단서를 필수 아이템으로 지정).
    */
   collectedItems: CollectedItem[];
-  /** 사용한 잠금 해제 시도 횟수 (0..3) */
+  /** 사용한 제출 시도 횟수 (0..3) */
   unlockAttemptsUsed: number;
-  /** 마지막 잠금 해제 결과 메시지 — null 이면 표시 없음 */
+  /** 마지막 제출 결과 메시지 — null 이면 표시 없음 */
   unlockError: string | null;
 
   // 콜백 -----------------------------------------------------------------------
   onResetFind: () => void;
-  /** 발견 성공 모달의 "잠금 해제하기" 누름 — stage 를 "unlock" 으로 전환 */
+  /** 발견 성공 모달의 다음 단계 버튼 — stage 를 "unlock" 으로 전환 */
   onContinueToUnlock: () => void;
-  /** 잠금 해제 시도 — 정확히 3개 선택해 제출 */
+  /** 필수 아이템 제출 시도 — 정확히 3개 선택해 제출 */
   onSubmitUnlock: (selectedIds: string[]) => void;
   onResetUnlock: () => void;
 };
@@ -179,7 +179,7 @@ function MissionCard({
 
       {stage === "found" || stage === "unlock" ? (
         <p className="text-xs text-[var(--muted-foreground)]">
-          잠금 해제 단계로 진행하세요.
+          다음 단계(필수 아이템 제출)로 진행하세요.
         </p>
       ) : null}
     </div>
@@ -206,11 +206,11 @@ function FoundModal({
           {`${withObjectParticle(trimmed)} 발견하는 데 성공했습니다!`}
         </p>
         <p className="text-xs text-[var(--muted-foreground)]">
-          이제 수집한 아이템 3개를 골라 잠금을 해제해보세요.
+          이제 수집한 단서 중 필수 아이템 3개를 골라 제출하세요.
         </p>
       </div>
       <Button type="button" onClick={onContinue} className="w-full">
-        잠금 해제하기
+        필수 아이템 제출하기
       </Button>
     </ModalShell>
   );
@@ -274,7 +274,7 @@ function UnlockModal({
   const submittable = selected.size === RESOLUTION_UNLOCK_PICK_COUNT;
 
   return (
-    <ModalShell title="잠금 해제 — 아이템 3개 제출" closable={false}>
+    <ModalShell title="제출 아이템 — 3개 제출" closable={false}>
       <p className="text-sm text-[var(--muted-foreground)]">
         {mission ? `'${mission}'를 위해 ` : ""}
         수집한 아이템 중 정확한 <b>3개</b>를 선택해 제출하세요.

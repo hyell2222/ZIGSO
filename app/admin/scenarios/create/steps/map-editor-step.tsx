@@ -1,6 +1,6 @@
 "use client";
 
-import { Trash2 } from "lucide-react";
+import { CheckCircle2, Circle, KeyRound, MapPin, Target, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,13 +29,23 @@ type Props = {
   onUpdateClue: (tempId: string, patch: Partial<DraftClue>) => void;
   onAddClue: (clue: Omit<DraftClue, "tempId">) => string;
   onRemoveClue: (tempId: string) => void;
+  /** 최종 미션 맵 캔버스 상단 라벨용 (진입 코드 미리보기) */
   resolutionLocationName: string;
-  onChangeResolutionLocationName: (value: string) => void;
-  /** 정답 prop 표식 토글 (전체 시나리오에서 1개만). null = 모두 해제 */
+  /** 미션 타겟(Mission Target) 표식 토글 — 시나리오 전체 1개만. null = 모두 해제 */
   onSetResolutionTarget: (tempId: string | null) => void;
-  /** 잠금 해제 아이템 표식 토글 (전체 시나리오에서 정확히 3개) */
+  /** 제출 아이템(Required Items) 표식 토글 — 시나리오 전체 정확히 3개 */
   onToggleResolutionUnlockItem: (tempId: string, value: boolean) => void;
 };
+
+function initialCharacterLocationTabId(
+  characters: DraftCharacter[],
+  clues: DraftClue[],
+): string {
+  const first = characters[0]?.tempId;
+  if (first) return first;
+  const clue = clues.find((c) => c.characterTempId !== RESOLUTION_LOCATION_TEMP_ID);
+  return clue?.characterTempId ?? "";
+}
 
 type LocationTabItem = {
   id: string;
@@ -62,20 +72,16 @@ export function MapEditorStep({
   onUpdateClue,
   onRemoveClue,
   resolutionLocationName,
-  onChangeResolutionLocationName,
   onSetResolutionTarget,
   onToggleResolutionUnlockItem,
 }: Props) {
   /**
    * 활성 탭 식별자.
    * - 캐릭터 tempId 인 경우: 해당 캐릭터의 장소
-   * - RESOLUTION_LOCATION_TEMP_ID 인 경우: 사건 해결 정답 장소
+   * - RESOLUTION_LOCATION_TEMP_ID 인 경우: 최종 미션(Final Mission) 전용 맵
    */
-  const [activeTabId, setActiveTabId] = useState<string>(
-    () =>
-      characters[0]?.tempId ??
-      clues.find((clue) => clue.characterTempId !== RESOLUTION_LOCATION_TEMP_ID)?.characterTempId ??
-      RESOLUTION_LOCATION_TEMP_ID,
+  const [activeTabId, setActiveTabId] = useState<string>(() =>
+    initialCharacterLocationTabId(characters, clues),
   );
   const [selectedClueId, setSelectedClueId] = useState<string | null>(null);
   const [draggingAsset, setDraggingAsset] = useState<string | null>(null);
@@ -155,17 +161,9 @@ export function MapEditorStep({
 
   const trimmedResolutionName = resolutionLocationName.trim();
   const resolutionLocationLabel = trimmedResolutionName
-    ? `${trimmedResolutionName} (사건 해결의 장소)`
-    : "사건 해결의 장소";
+    ? `${trimmedResolutionName} · 최종 미션 맵`
+    : "최종 미션 맵";
 
-  const resolutionTargetClueId = useMemo(
-    () => clues.find((c) => c.isResolutionTarget)?.tempId ?? null,
-    [clues],
-  );
-  const resolutionTargetClue = useMemo(
-    () => clues.find((c) => c.tempId === resolutionTargetClueId) ?? null,
-    [clues, resolutionTargetClueId],
-  );
   const unlockItemTempIds = useMemo(
     () => clues.filter((c) => c.isResolutionUnlockItem).map((c) => c.tempId),
     [clues],
@@ -187,8 +185,8 @@ export function MapEditorStep({
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>3. 장소마다 prop 배치하기</CardTitle>
+      <CardHeader className="space-y-1.5">
+        <CardTitle>3. 맵 에디터</CardTitle>
       </CardHeader>
       <CardContent>
         {characters.length === 0 ? (
@@ -206,16 +204,6 @@ export function MapEditorStep({
             setSelectedClueId(null);
           }}
         />
-
-        {isResolutionTab ? (
-          <ResolutionMissionFields
-            locationName={resolutionLocationName}
-            onChangeLocationName={onChangeResolutionLocationName}
-            targetClueName={resolutionTargetClue?.name ?? null}
-            hasTarget={resolutionTargetClueId !== null}
-            unlockItemCount={unlockItemCount}
-          />
-        ) : null}
 
         <div className="mt-4 grid gap-4 lg:grid-cols-[260px_1fr_300px]">
           <PropSidebar
@@ -270,6 +258,7 @@ export function MapEditorStep({
           <ClueEditorPanel
             clue={selectedClue}
             isInResolutionLocation={isResolutionTab}
+            showMissionRoleControls={false}
             unlockItemCount={unlockItemCount}
             onChange={(patch) => {
               if (!selectedClue) return;
@@ -333,7 +322,7 @@ function LocationTabs({
           </Button>
         );
       })}
-      
+
       <Button
         type="button"
         variant="tab"
@@ -344,119 +333,14 @@ function LocationTabs({
             ? "border-b-2 !border-[var(--accent)] text-[var(--accent)]"
             : "border-transparent hover:border-b-2 hover:border-[var(--border)]"
         )}
-        title="사건 해결 단계 정답 장소"
+        title="1단계: 진입 코드 → 2단계: 미션 타겟 조사 → 3단계: 제출 아이템 3개 (규칙은 4단계에서 설정)"
       >
-        <span className="font-semibold text-[var(--primary-foreground)]">🕵️ 사건 해결의 장소</span>
-        <span className="ml-1 text-xs opacity-60">
-          ({resolutionCount})
+        <span className="inline-flex items-center gap-1 font-semibold text-[var(--primary-foreground)]">
+          <MapPin className="h-3.5 w-3.5 opacity-90" aria-hidden />
+          최종 미션
         </span>
+        <span className="ml-1 text-xs opacity-60">({resolutionCount})</span>
       </Button>
-    </div>
-  );
-}
-
-function ResolutionMissionFields({
-  locationName,
-  onChangeLocationName,
-  targetClueName,
-  hasTarget,
-  unlockItemCount,
-}: {
-  locationName: string;
-  onChangeLocationName: (value: string) => void;
-  /** 현재 정답 prop 으로 표시된 단서 이름 (없으면 null) */
-  targetClueName: string | null;
-  hasTarget: boolean;
-  /** 잠금 해제 아이템으로 표시된 단서 개수 */
-  unlockItemCount: number;
-}) {
-  return (
-    <div className="mt-3 space-y-3 rounded-md border border-[var(--accent)]/40 bg-[rgba(201,209,107,0.08)] p-4">
-      <p className="text-[11px] leading-snug text-[var(--muted-foreground,#94a3b8)]">
-        사건 해결 단계의 정답 정보입니다. 학생은 <b>장소 이름 입력 → 정답
-        prop 조사 → 잠금 해제 아이템 3개 제출</b> 순서로 미션을 완료합니다.
-        <b> 장소</b>를 비우면 정답 장소 없이 저장됩니다.
-      </p>
-
-      <ResolutionField
-        label="장소 (1단계 정답)"
-        value={locationName}
-        onChange={onChangeLocationName}
-        placeholder="예) 학교 지하실"
-        hint="학생이 정확히 입력하면 정답 장소의 맵이 열립니다."
-      />
-
-      <div className="grid gap-2 rounded border border-dashed border-[var(--border)] p-2 text-[11px] sm:grid-cols-2">
-        <div>
-          <p className="text-[10px] uppercase tracking-wider text-[var(--accent)]">
-            정답 prop (2단계)
-          </p>
-          <p
-            className={
-              hasTarget
-                ? "mt-1 font-semibold text-[var(--foreground)]"
-                : "mt-1 text-red-300"
-            }
-          >
-            {hasTarget
-              ? targetClueName?.trim() || "(이름 없는 prop)"
-              : "정답 장소 단서 중 1개를 골라 표시하세요"}
-          </p>
-          <p className="mt-0.5 text-[10px] text-[var(--muted-foreground,#94a3b8)]">
-            정답 장소 맵에서 학생이 직접 조사해 찾아냅니다 (3번의 기회).
-          </p>
-        </div>
-        <div>
-          <p className="text-[10px] uppercase tracking-wider text-[var(--accent)]">
-            잠금 해제 아이템 (3단계)
-          </p>
-          <p
-            className={
-              unlockItemCount === 3
-                ? "mt-1 font-semibold text-[var(--foreground)]"
-                : "mt-1 text-red-300"
-            }
-          >
-            {unlockItemCount} / 3 개 표시됨
-          </p>
-          <p className="mt-0.5 text-[10px] text-[var(--muted-foreground,#94a3b8)]">
-            어느 장소의 단서든 정확히 3개를 골라 표시하면, 학생이 모달에서
-            제출해 잠금을 해제합니다 (3번의 기회).
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ResolutionField({
-  label,
-  value,
-  onChange,
-  placeholder,
-  hint,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  placeholder?: string;
-  hint?: string;
-}) {
-  return (
-    <div className="space-y-1">
-      <label className="text-[11px] uppercase tracking-wider text-[var(--accent)]">
-        {label}
-      </label>
-      <Input
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        placeholder={placeholder}
-      />
-      {hint ? (
-        <p className="text-[11px] leading-snug text-[var(--muted-foreground,#94a3b8)]">
-          {hint}
-        </p>
-      ) : null}
     </div>
   );
 }
@@ -474,10 +358,13 @@ function PropSidebar({
 }) {
   return (
     <aside className="rounded-md border border-[var(--border)] bg-[rgba(15,23,42,0.45)] p-3">
-      <div className="mb-2 flex items-center justify-between">
+      <div className="mb-4 flex flex-col gap-2">
         <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--accent)]">
           소품 ({assets.length})
         </h3>
+        <p className="text-[11px] leading-snug text-[var(--muted-foreground,#94a3b8)]">
+          소품을 맵 위로 드래그해서 놓으세요.
+        </p>
       </div>
       {isLoading ? (
         <p className="text-xs text-[var(--muted-foreground,#94a3b8)]">불러오는 중…</p>
@@ -498,9 +385,6 @@ function PropSidebar({
           ))}
         </ul>
       )}
-      <p className="mt-3 text-[11px] leading-snug text-[var(--muted-foreground,#94a3b8)]">
-        썸네일을 맵 위로 드래그해서 놓으면 단서가 생성돼요.
-      </p>
     </aside>
   );
 }
@@ -845,11 +729,6 @@ function MapCanvas({
                   ?
                 </div>
               )}
-              {clue.name ? (
-                <div className="pointer-events-none absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-[rgba(15,23,42,0.85)] px-1.5 py-0.5 text-[10px] text-[var(--foreground)]">
-                  {clue.name}
-                </div>
-              ) : null}
             </div>
           );
         })}
@@ -861,6 +740,7 @@ function MapCanvas({
 function ClueEditorPanel({
   clue,
   isInResolutionLocation,
+  showMissionRoleControls = true,
   unlockItemCount,
   onChange,
   onRemove,
@@ -868,9 +748,11 @@ function ClueEditorPanel({
   onToggleUnlockItem,
 }: {
   clue: DraftClue | null;
-  /** 현재 활성 탭이 "사건 해결의 장소" 인지 — 정답 prop 토글은 여기서만 의미 있음 */
+  /** 현재 활성 탭이 최종 미션 맵인지 */
   isInResolutionLocation: boolean;
-  /** 시나리오 전체의 잠금 해제 아이템 개수 (3 도달 시 새 토글 차단) */
+  /** false면 미션 타겟·필수 아이템 토글 숨김 (4단계 전용 설정과 분리) */
+  showMissionRoleControls?: boolean;
+  /** 시나리오 전체의 제출 아이템 개수 (3 도달 시 새 토글 차단) */
   unlockItemCount: number;
   onChange: (patch: Partial<DraftClue>) => void;
   onRemove: () => void;
@@ -906,67 +788,115 @@ function ClueEditorPanel({
         </Button>
       </div>
   
-      {/* 정답 장소일 때만 노출되는 특별 설정 (2, 3단계) */}
-      {isInResolutionLocation && (
-        <div className="space-y-2 rounded border border-[var(--accent)]/30 bg-[rgba(201,209,107,0.06)] p-2">
-          {/* 정답 prop 설정 */}
-          <label
-            className={cn(
-              "flex items-start gap-2 text-[11px] transition-opacity",
-              isInResolutionLocation ? "text-[var(--foreground)]" : "cursor-not-allowed opacity-50"
-            )}
-          >
-            <input
-              type="checkbox"
-              checked={isTarget}
-              disabled={!isInResolutionLocation}
-              onChange={(e) => onSetAsTarget(e.target.checked)}
-              className="mt-0.5"
-            />
-            <div className="flex flex-col">
-              <b className="leading-none">정답 prop (2단계)</b>
-              <span className="mt-1 text-[10px] text-[var(--muted-foreground,#94a3b8)]">
-                {isInResolutionLocation ? "정답 장소에서 1개만" : "정답 장소 단서에서만 설정 가능"}
+      {/* 최종 미션 맵 + 설정 UI를 맵 단계와 나눌 때는 4단계에서만 토글 */}
+      {isInResolutionLocation && showMissionRoleControls ? (
+        <div className="space-y-2 rounded-lg border border-[var(--accent)]/35 bg-[rgba(201,209,107,0.08)] p-2.5">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--accent)]">
+            최종 미션에서 이 소품의 역할
+          </p>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <label
+              className={cn(
+                "flex cursor-pointer gap-2.5 rounded-md border p-2.5 transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-[var(--accent)]/50",
+                isTarget
+                  ? "border-emerald-500/45 bg-emerald-500/10"
+                  : "border-[var(--border)] bg-[rgba(15,23,42,0.4)] hover:border-[var(--accent)]/40",
+              )}
+            >
+              <input
+                type="checkbox"
+                checked={isTarget}
+                onChange={(e) => onSetAsTarget(e.target.checked)}
+                className="sr-only"
+                aria-label="이 단서를 미션 타겟 Mission Target(2단계)으로 지정"
+              />
+              <span
+                className={cn(
+                  "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[11px] font-bold tabular-nums",
+                  isTarget ? "bg-emerald-500/25 text-emerald-100" : "bg-[var(--accent)]/20 text-[var(--accent)]",
+                )}
+              >
+                2
               </span>
-            </div>
-          </label>
-  
-          {/* 잠금 해제 아이템 설정 */}
-          <label
-            className={cn(
-              "flex items-start gap-2 text-[11px] transition-opacity",
-              unlockToggleDisabled ? "cursor-not-allowed opacity-50" : "text-[var(--foreground)]"
-            )}
-          >
-            <input
-              type="checkbox"
-              checked={isUnlock}
-              disabled={unlockToggleDisabled}
-              onChange={(e) => onToggleUnlockItem(e.target.checked)}
-              className="mt-0.5"
-            />
-            <div className="flex flex-col">
-              <b className="leading-none">잠금 해제 아이템 (3단계)</b>
-              <span className="mt-1 text-[10px] text-[var(--muted-foreground,#94a3b8)]">
-                현재 {unlockItemCount}/3
-                {unlockToggleDisabled && " · 다른 표시를 해제 후 가능"}
+              <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                <span className="flex items-center gap-1 text-xs font-semibold text-[var(--foreground)]">
+                  <Target className="h-3.5 w-3.5 shrink-0 text-[var(--accent)]" aria-hidden />
+                  미션 타겟
+                </span>
+                <span className="text-[10px] leading-snug text-[var(--muted-foreground,#94a3b8)]">
+                  시나리오 전체 1개. 학생이 맵에서 조사합니다.
+                </span>
               </span>
-            </div>
-          </label>
+              {isTarget ? (
+                <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" aria-hidden />
+              ) : (
+                <Circle className="h-4 w-4 shrink-0 text-[var(--border)]" aria-hidden />
+              )}
+            </label>
+
+            <label
+              className={cn(
+                "flex cursor-pointer gap-2.5 rounded-md border p-2.5 transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-[var(--accent)]/50",
+                isUnlock
+                  ? "border-emerald-500/45 bg-emerald-500/10"
+                  : "border-[var(--border)] bg-[rgba(15,23,42,0.4)] hover:border-[var(--accent)]/40",
+                unlockToggleDisabled && "cursor-not-allowed opacity-45 hover:border-[var(--border)]",
+              )}
+            >
+              <input
+                type="checkbox"
+                checked={isUnlock}
+                disabled={unlockToggleDisabled}
+                onChange={(e) => onToggleUnlockItem(e.target.checked)}
+                className="sr-only"
+                aria-label="이 단서를 제출 아이템 Required Items(3단계)으로 표시"
+              />
+              <span
+                className={cn(
+                  "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[11px] font-bold tabular-nums",
+                  isUnlock ? "bg-emerald-500/25 text-emerald-100" : "bg-[var(--accent)]/20 text-[var(--accent)]",
+                )}
+              >
+                3
+              </span>
+              <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                <span className="flex items-center gap-1 text-xs font-semibold text-[var(--foreground)]">
+                  <KeyRound className="h-3.5 w-3.5 shrink-0 text-[var(--accent)]" aria-hidden />
+                  제출 아이템
+                </span>
+                <span className="text-[10px] leading-snug text-[var(--muted-foreground,#94a3b8)]">
+                  전체 {unlockItemCount}/3
+                  {unlockToggleDisabled ? " · 다른 단서 표시를 끄면 추가 가능" : ""}
+                </span>
+              </span>
+              {isUnlock ? (
+                <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" aria-hidden />
+              ) : (
+                <Circle className="h-4 w-4 shrink-0 text-[var(--border)]" aria-hidden />
+              )}
+            </label>
+          </div>
         </div>
-      )}
-  
+      ) : null}
+
       {/* 기본 정보 입력 */}
       <div className="space-y-1.5">
         <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--accent)] opacity-80">
-          단서 이름
+          단서 이름<span className="ml-0.5 text-red-400">*</span>
         </label>
         <Input
           value={clue.name}
           onChange={(e) => onChange({ name: e.target.value })}
           placeholder="예) 낡은 열쇠"
-          className="h-8 text-xs"
+          aria-required
+          className={cn(
+            "h-8 text-xs",
+            !clue.name.trim() ? "border-red-500/50 focus-visible:ring-red-500/30" : "",
+          )}
         />
+        {!clue.name.trim() ? (
+          <p className="text-[10px] text-red-300/90">이름을 입력해야 다음 단계로 진행할 수 있어요.</p>
+        ) : null}
       </div>
   
       <div className="space-y-1.5">

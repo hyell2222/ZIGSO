@@ -379,18 +379,18 @@ function PlayPageContent() {
     const target = resolutionLocationQuery.data;
     if (!target) {
       setResolutionGuessError(
-        "이 시나리오에는 정답 장소가 설정되어 있지 않아 잠시 후 다시 시도해주세요.",
+        "이 시나리오에는 최종 미션이 설정되어 있지 않아 잠시 후 다시 시도해주세요.",
       );
       return;
     }
     const normalizedAnswer = (target.name ?? "").trim().toLowerCase();
     const normalizedGuess = resolutionGuessInput.trim().toLowerCase();
     if (!normalizedGuess) {
-      setResolutionGuessError("장소 이름을 입력해주세요.");
+      setResolutionGuessError("미션 진입 코드를 입력해주세요.");
       return;
     }
     if (normalizedGuess !== normalizedAnswer) {
-      setResolutionGuessError("정답이 아닙니다. 단서를 다시 살펴보세요.");
+      setResolutionGuessError("코드가 일치하지 않습니다. 단서를 다시 살펴보세요.");
       return;
     }
     setResolutionGuessedLocationId(target.id);
@@ -526,7 +526,7 @@ function PlayPageContent() {
       setUnlockError("기회를 모두 사용했습니다. 다시 도전하기로 기회를 리셋하세요.");
     } else {
       setUnlockError(
-        `정답 조합이 아닙니다. 남은 기회: ${RESOLUTION_UNLOCK_MAX_ATTEMPTS - next}`,
+        `선택한 조합이 맞지 않습니다. 남은 기회: ${RESOLUTION_UNLOCK_MAX_ATTEMPTS - next}`,
       );
     }
   };
@@ -551,7 +551,7 @@ function PlayPageContent() {
     const investigateModeForMap =
       isResolutionMap && resolutionStage === "find"
         ? {
-            topBarLabel: `Find: F로 단서 수집, E로 target 조사 · 남은 기회 ${Math.max(
+            topBarLabel: `최종 미션: F로 단서 수집, E로 미션 타겟 조사 · 남은 기회 ${Math.max(
               0,
               RESOLUTION_FIND_MAX_ATTEMPTS - findAttemptsUsed,
             )}/${RESOLUTION_FIND_MAX_ATTEMPTS}`,
@@ -604,33 +604,34 @@ function PlayPageContent() {
           <TeamBadge teamName={teamName} />
           <Card className="mt-4">
             <CardHeader>
-              <CardTitle>사건 해결 — 새로운 장소를 찾으세요</CardTitle>
+              <CardTitle>최종 미션 — 진입 코드를 입력하세요</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-sm text-[var(--foreground)]">
-                지금까지 모은 단서로 추리한 <span className="text-[var(--accent)]">새로운 장소의 이름</span>
-                을 입력하세요. 정확히 맞히면 그 장소의 맵이 열립니다.
+                지금까지 모은 단서를 바탕으로{" "}
+                <span className="text-[var(--accent)]">미션 진입 코드(Access Code)</span>를
+                입력하세요. 정확히 일치하면 최종 미션 맵이 열립니다.
               </p>
               {resolutionLocationQuery.isLoading ? (
                 <div className="flex items-center gap-2 text-[var(--muted-foreground)]">
                   <Loader2 className="h-4 w-4 animate-spin text-[var(--accent)]" aria-hidden />
-                  <span className="text-sm">정답 정보를 불러오는 중…</span>
+                  <span className="text-sm">미션 정보를 불러오는 중…</span>
                 </div>
               ) : resolutionLocationQuery.isError ? (
                 <p className="text-sm text-[var(--primary)]">
-                  정답 정보를 불러오지 못했습니다.{" "}
+                  미션 정보를 불러오지 못했습니다.{" "}
                   {resolutionLocationQuery.error instanceof Error
                     ? resolutionLocationQuery.error.message
                     : null}
                 </p>
               ) : !resolutionLocationQuery.data ? (
                 <p className="text-sm text-[var(--accent)]">
-                  이 시나리오에는 정답 장소가 설정되어 있지 않습니다. 교사에게 문의해주세요.
+                  이 시나리오에는 최종 미션이 설정되어 있지 않습니다. 교사에게 문의해주세요.
                 </p>
               ) : (
                 <form className="space-y-3" onSubmit={handleResolutionGuessSubmit}>
                   <Input
-                    placeholder="예) 도서관, 옥상"
+                    placeholder="예) BLUE-774, 지하 통로"
                     value={resolutionGuessInput}
                     onChange={(event) => {
                       setResolutionGuessInput(event.target.value);
@@ -639,7 +640,7 @@ function PlayPageContent() {
                     autoFocus
                   />
                   <Button type="submit" className="w-full">
-                    이 장소로 입장
+                    맵 열기
                   </Button>
                   {resolutionGuessError ? (
                     <p className="text-xs text-[var(--primary)]">{resolutionGuessError}</p>

@@ -29,6 +29,7 @@ import { hasSupabaseEnv } from "@/lib/supabase";
 import { AIGenerateModal } from "../create/steps/ai-generate-modal";
 import { BasicInfoStep, type Difficulty } from "../create/steps/basic-info-step";
 import { CharactersStep } from "../create/steps/characters-step";
+import { FinalMissionSettingsStep } from "../create/steps/final-mission-settings-step";
 import { MapEditorStep } from "../create/steps/map-editor-step";
 import {
   RESOLUTION_LOCATION_TEMP_ID,
@@ -36,9 +37,9 @@ import {
   type DraftClue,
 } from "../create/steps/types";
 
-type StepIndex = 0 | 1 | 2;
+type StepIndex = 0 | 1 | 2 | 3;
 
-const STEP_LABELS = ["기본 정보", "캐릭터", "맵 에디터"] as const;
+const STEP_LABELS = ["기본 정보", "캐릭터", "맵 에디터", "최종 미션 설정"] as const;
 
 function makeTempId() {
   return Math.random().toString(36).slice(2, 10);
@@ -54,18 +55,18 @@ export type ScenarioDraft = {
   difficulty: Difficulty;
   characters: DraftCharacter[];
   /**
-   * 캐릭터 장소 단서 + 사건 해결 정답 장소 단서를 한 배열에 담는다.
-   * 정답 장소 단서는 characterTempId === RESOLUTION_LOCATION_TEMP_ID 로 구분된다.
+   * 캐릭터 장소 단서 + 최종 미션(Final Mission) 맵 단서를 한 배열에 담는다.
+   * 최종 미션 맵 단서는 characterTempId === RESOLUTION_LOCATION_TEMP_ID 로 구분된다.
    */
   clues: DraftClue[];
   /**
-   * 사건 해결 단계 정답 장소 이름 (학생이 정확히 입력해야 맵이 열림).
-   * 빈 문자열이면 정답 장소 없음 — 미션/타깃/잠금 정보도 의미 없음.
+   * 최종 미션 1단계: 미션 진입 코드(Access Code). 학생이 정확히 입력해야 맵이 열림.
+   * 빈 문자열이면 최종 미션 없음 — 미션 설명·미션 타겟·제출 아이템 정보도 의미 없음.
    */
   resolutionLocationName: string;
-  /** 미션 설명 (예: "보물상자 열기") — 학생에게 목표로 표시된다 */
+  /** 최종 미션 설명 — 학생에게 목표로 표시된다 */
   resolutionMission: string;
-  // 2단계 정답(prop) / 3단계 잠금 해제 아이템 표식은 DraftClue 자체의 플래그로 관리한다.
+  // 2단계 미션 타겟 / 3단계 제출 아이템 표식은 DraftClue 자체의 플래그로 관리한다.
 };
 
 type Props =
@@ -149,7 +150,7 @@ export function ScenarioWizard(props: Props) {
 
   const handleRemoveCharacter = useCallback((tempId: string) => {
     setCharacters((prev) => prev.filter((c) => c.tempId !== tempId));
-    // 정답 장소 단서(RESOLUTION_LOCATION_TEMP_ID)는 캐릭터 삭제와 무관하게 유지된다.
+    // 최종 미션 맵 단서(RESOLUTION_LOCATION_TEMP_ID)는 캐릭터 삭제와 무관하게 유지된다.
     setClues((prev) => prev.filter((c) => c.characterTempId !== tempId));
   }, []);
 
@@ -168,7 +169,7 @@ export function ScenarioWizard(props: Props) {
   }, []);
 
   /**
-   * 시나리오 전체에서 단 하나의 clue 만 정답 prop 표식을 갖도록 토글한다.
+   * 시나리오 전체에서 단 하나의 clue 만 미션 타겟(Mission Target) 표식을 갖도록 토글한다.
    * tempId 가 null 이면 모든 clue 의 표식을 끈다.
    */
   const handleSetResolutionTarget = useCallback((tempId: string | null) => {
@@ -181,7 +182,7 @@ export function ScenarioWizard(props: Props) {
   }, []);
 
   /**
-   * 잠금 해제 아이템 표식 토글. 켜기 시도 시 이미 3개가 켜져 있으면 무시한다 (UI 가 강제).
+   * 제출 아이템(Required Items) 표식 토글. 켜기 시도 시 이미 3개가 켜져 있으면 무시한다 (UI 가 강제).
    */
   const handleToggleResolutionUnlockItem = useCallback(
     (tempId: string, value: boolean) => {
@@ -237,7 +238,7 @@ export function ScenarioWizard(props: Props) {
       setDifficulty(result.difficulty);
       setCharacters(result.characters);
       setClues(result.clues);
-      // AI 결과는 정답 장소 정보를 포함하지 않으므로 비워둔다.
+      // AI 결과는 최종 미션(진입 코드 등) 정보를 포함하지 않으므로 비워둔다.
       setResolutionLocationName("");
       setResolutionMission("");
       setStep(0);
@@ -265,7 +266,7 @@ export function ScenarioWizard(props: Props) {
       return {
         name: cl.name,
         content: cl.content,
-        // 정답 장소 단서는 location_name 을 비워두면 API 가 resolution_location_id 로 매칭한다.
+        // 최종 미션 맵 단서는 location_name 을 비워두면 API 가 resolution_location_id 로 매칭한다.
         location_name: owner ? locationNameFor(owner) : undefined,
         props: {
           x: Math.round(cl.x),
@@ -320,7 +321,7 @@ export function ScenarioWizard(props: Props) {
     mutationFn: async () => {
       if (!title.trim()) throw new Error("제목을 입력해주세요.");
       if (!description.trim()) throw new Error("설명을 입력해주세요.");
-      if (!resolutionMission.trim()) throw new Error("미션을 입력해주세요.");
+      if (!resolutionMission.trim()) throw new Error("최종 미션 설명을 입력해주세요.");
       if (characters.length === 0) throw new Error("캐릭터를 한 명 이상 추가해주세요.");
       if (characters.some((c) => !c.name.trim() || !c.role.trim())) {
         throw new Error("캐릭터의 이름과 역할을 모두 입력해주세요.");
@@ -328,6 +329,17 @@ export function ScenarioWizard(props: Props) {
       const normalizedNames = characters.map((c) => c.name.trim().toLocaleLowerCase());
       if (new Set(normalizedNames).size !== normalizedNames.length) {
         throw new Error("캐릭터 이름이 중복되었습니다. 서로 다른 이름을 입력해주세요.");
+      }
+      if (clues.length > 0 && clues.some((c) => !c.name.trim())) {
+        throw new Error("맵에 있는 모든 단서에 이름을 입력해주세요. (맵 에디터 3단계)");
+      }
+      const resolutionClueCount = clues.filter(
+        (c) => c.characterTempId === RESOLUTION_LOCATION_TEMP_ID,
+      ).length;
+      if (resolutionLocationName.trim() && resolutionClueCount === 0) {
+        throw new Error(
+          "미션 진입 코드가 있으면 최종 미션 맵에 소품을 1개 이상 두어야 합니다. (맵 에디터 3단계)",
+        );
       }
 
       const payload = buildPayload();
@@ -371,17 +383,38 @@ export function ScenarioWizard(props: Props) {
     return completeCount > 0 && !hasPartial && !hasDuplicateName;
   }, [characters]);
 
+  /** 맵 에디터(3단계) 완료 조건: 모든 단서 이름 필수, 최종 미션 맵에 소품 1개 이상 */
+  const isMapEditorValid = useMemo(() => {
+    if (clues.length === 0) return false;
+    if (!clues.every((c) => c.name.trim().length > 0)) return false;
+    const resolutionClueCount = clues.filter(
+      (c) => c.characterTempId === RESOLUTION_LOCATION_TEMP_ID,
+    ).length;
+    return resolutionClueCount >= 1;
+  }, [clues]);
+
   const maxReachableStep = useMemo<StepIndex>(() => {
     if (!isBasicInfoValid) return 0;
     if (!hasValidCharacter) return 1;
-    return 2;
-  }, [isBasicInfoValid, hasValidCharacter]);
+    if (!isMapEditorValid) return 2;
+    return 3;
+  }, [isBasicInfoValid, hasValidCharacter, isMapEditorValid]);
 
   const canGoNext = useMemo(() => {
     if (step === 0) return isBasicInfoValid;
     if (step === 1) return hasValidCharacter;
+    if (step === 2) return isMapEditorValid;
     return false;
-  }, [step, isBasicInfoValid, hasValidCharacter]);
+  }, [step, isBasicInfoValid, hasValidCharacter, isMapEditorValid]);
+
+  useEffect(() => {
+    if (step === 3 && !isMapEditorValid) {
+      setStep(2);
+      setErrorMessage(
+        "맵 에디터 조건이 맞지 않아 이 단계로 돌아왔습니다. 모든 단서에 이름을 쓰고, 최종 미션 맵에 소품을 1개 이상 두세요.",
+      );
+    }
+  }, [step, isMapEditorValid]);
 
   const goNext = () => {
     if (!canGoNext) return;
@@ -390,7 +423,7 @@ export function ScenarioWizard(props: Props) {
       // 마지막 Enter 자동 추가로 생긴 빈 폼은 다음 단계 진입 전에 정리한다.
       setCharacters((prev) => prev.filter((c) => c.name.trim() || c.role.trim()));
     }
-    setStep((s) => (Math.min(2, s + 1) as StepIndex));
+    setStep((s) => (Math.min(3, s + 1) as StepIndex));
   };
 
   const goPrev = () => {
@@ -463,14 +496,47 @@ export function ScenarioWizard(props: Props) {
         ) : null}
 
         {step === 2 ? (
-          <MapEditorStep
+          <>
+            <MapEditorStep
+              characters={characters}
+              clues={clues}
+              propAssets={propAssetsQuery.data ?? []}
+              isLoadingAssets={propAssetsQuery.isLoading}
+              onAddClue={handleAddClue}
+              onUpdateClue={handleUpdateClue}
+              onRemoveClue={handleRemoveClue}
+              resolutionLocationName={resolutionLocationName}
+              onSetResolutionTarget={handleSetResolutionTarget}
+              onToggleResolutionUnlockItem={handleToggleResolutionUnlockItem}
+            />
+            {!isMapEditorValid ? (
+              <p className="rounded-md border border-amber-500/35 bg-amber-500/10 px-3 py-2 text-xs text-amber-100/95">
+                {clues.length === 0 ? (
+                  <>
+                    <span className="font-semibold">다음 단계로 가려면:</span> 캐릭터 장소 또는{" "}
+                    <b>최종 미션</b> 탭에 소품을 올려주세요.
+                  </>
+                ) : clues.some((c) => !c.name.trim()) ? (
+                  <>
+                    <span className="font-semibold">다음 단계로 가려면:</span> 맵에 올린{" "}
+                    <b>모든 단서</b>에 이름을 입력해주세요.
+                  </>
+                ) : (
+                  <>
+                    <span className="font-semibold">다음 단계로 가려면:</span> 상단{" "}
+                    <b>최종 미션</b> 탭에서 소품을 1개 이상 배치해주세요.
+                  </>
+                )}
+              </p>
+            ) : null}
+          </>
+        ) : null}
+
+        {step === 3 ? (
+          <FinalMissionSettingsStep
             characters={characters}
             clues={clues}
             propAssets={propAssetsQuery.data ?? []}
-            isLoadingAssets={propAssetsQuery.isLoading}
-            onAddClue={handleAddClue}
-            onUpdateClue={handleUpdateClue}
-            onRemoveClue={handleRemoveClue}
             resolutionLocationName={resolutionLocationName}
             onChangeResolutionLocationName={setResolutionLocationName}
             onSetResolutionTarget={handleSetResolutionTarget}
@@ -495,7 +561,7 @@ export function ScenarioWizard(props: Props) {
             이전
           </Button>
 
-          {step < 2 ? (
+          {step < 3 ? (
             <Button
               type="button"
               onClick={goNext}
@@ -545,7 +611,7 @@ function Stepper({
   return (
     <ol
       role="tablist"
-      className="flex items-center gap-3 text-xs text-[var(--muted-foreground,#94a3b8)]"
+      className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-[var(--muted-foreground,#94a3b8)]"
     >
       {STEP_LABELS.map((label, idx) => {
         const active = idx === current;

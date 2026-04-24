@@ -58,12 +58,15 @@ export function BasicInfoStep({
         </div>
         <div className="space-y-2">
           <label className="text-xs font-medium text-[var(--accent)]">
-            미션<span className="ml-0.5 text-red-400">*</span>
+            최종 미션 설명<span className="ml-0.5 text-red-400">*</span>
           </label>
+          <p className="text-[11px] leading-snug text-[var(--muted-foreground,#94a3b8)]">
+            학생에게 보이는 목표 문구입니다. (추리·탐험·보물찾기 등 어떤 테마에도 사용할 수 있어요.)
+          </p>
           <Input
             value={resolutionMission}
             onChange={(event) => onChangeResolutionMission(event.target.value)}
-            placeholder="예) 보물상자 열기"
+            placeholder="예) 최종 보관함을 여는 열쇠를 모으세요"
           />
         </div>
         <div className="space-y-2">
