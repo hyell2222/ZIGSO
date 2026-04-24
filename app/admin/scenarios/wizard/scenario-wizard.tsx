@@ -95,7 +95,7 @@ export function ScenarioWizard(props: Props) {
           title: "",
           description: "",
           difficulty: "Normal",
-          characters: [],
+          characters: [{ tempId: makeTempId(), name: "", role: "" }],
           clues: [],
           resolutionLocationName: "",
           resolutionMission: "",
@@ -202,10 +202,13 @@ export function ScenarioWizard(props: Props) {
 
   /* ---------------- AI generate ---------------- */
 
+  const hasMeaningfulCharacterInput = characters.some(
+    (c) => c.name.trim().length > 0 || c.role.trim().length > 0,
+  );
   const hasExistingDraft =
     title.trim().length > 0 ||
     description.trim().length > 0 ||
-    characters.length > 0 ||
+    hasMeaningfulCharacterInput ||
     clues.length > 0;
 
   const handleOpenAiModal = useCallback(() => {
@@ -552,12 +555,12 @@ function Stepper({
           <li key={label} className="flex items-center gap-2">
             <Button
               type="button"
-              variant="tab"
+              variant="ghost"
               role="tab"
               disabled={disabled}
               onClick={() => onSelect(idx as StepIndex)}
               className={
-                "group flex items-center gap-2 rounded-md px-1.5 py-1 transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:ring-offset-0 " +
+                "group flex items-center gap-2 rounded-md px-1.5 py-1" +
                 (disabled
                   ? "opacity-45"
                   : "cursor-pointer hover:bg-[rgba(36,40,43,0.85)]")

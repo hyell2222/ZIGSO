@@ -14,7 +14,7 @@ const buttonVariants = cva(
           "cursor-pointer border border-[var(--accent)]/60 text-[var(--accent)] hover:bg-[rgba(201,209,107,0.1)]",
         ghost: "cursor-pointer text-[var(--foreground)] hover:bg-[rgba(36,40,43,0.85)]",
         tab:
-          "cursor-pointer rounded-none border-b-2 border-transparent bg-transparent text-[var(--muted-foreground,#94a3b8)] hover:bg-[rgba(36,40,43,0.85)] hover:text-[var(--foreground)]",
+          "cursor-pointer rounded-none border-b-2 bg-transparent text-[var(--muted-foreground,#94a3b8)]",
         danger: "cursor-pointer bg-[var(--primary)] text-[var(--foreground)] hover:bg-[#5a0909]",
       },
       size: {

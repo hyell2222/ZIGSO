@@ -1,7 +1,7 @@
 "use client";
 
 import { Trash2 } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,8 +17,14 @@ type Props = {
 };
 
 export function CharactersStep({ characters, onAdd, onUpdate, onRemove }: Props) {
+  const didSeedEmptyList = useRef(false);
   useEffect(() => {
-    if (characters.length > 0) return;
+    if (characters.length > 0) {
+      didSeedEmptyList.current = false;
+      return;
+    }
+    if (didSeedEmptyList.current) return;
+    didSeedEmptyList.current = true;
     onAdd({ name: "", role: "" });
   }, [characters.length, onAdd]);
 

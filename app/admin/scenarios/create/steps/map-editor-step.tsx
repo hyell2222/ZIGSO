@@ -193,7 +193,7 @@ export function MapEditorStep({
       <CardContent>
         {characters.length === 0 ? (
           <p className="mb-4 rounded-md border border-dashed border-[var(--border)] px-3 py-2 text-xs text-[var(--muted-foreground,#94a3b8)]">
-            현재 등록된 캐릭터가 없어도 맵 편집은 가능하지만, 저장 시에는 캐릭터가 1명 이상 필요합니다.
+            캐릭터가 1명 이상 필요합니다.
           </p>
         ) : null}
 
@@ -310,7 +310,7 @@ function LocationTabs({
   const resolutionActive = activeId === RESOLUTION_LOCATION_TEMP_ID;
 
   return (
-    <div className="flex flex-wrap gap-2 border-b border-[var(--border)] pb-2">
+    <div className="flex flex-wrap gap-1 border-b border-[var(--border)]/40">
       {locations.map((location) => {
         const active = location.id === activeId;
         return (
@@ -319,34 +319,35 @@ function LocationTabs({
             type="button"
             variant="tab"
             onClick={() => onSelect(location.id)}
-            className={
-              "rounded-t-md border-b-2 px-3 py-1.5 text-sm transition-colors " +
-              (active
-                ? "border-[var(--accent)] text-[var(--accent)]"
-                : "border-transparent text-[var(--foreground)] hover:text-[var(--accent)]")
-            }
+            className={cn(
+              "relative -mb-px px-4 py-2.5 text-sm",
+              active
+                ? "border-b-2 !border-[var(--accent)] text-[var(--accent)]"
+                : "border-transparent hover:border-b-2 hover:border-[var(--border)]"
+            )}
           >
             <span className="font-semibold">{location.tabLabel}</span>
-            <span className="ml-1 text-xs text-[var(--muted-foreground,#94a3b8)]">
+            <span className="ml-1 text-xs opacity-60">
               ({location.clueCount})
             </span>
           </Button>
         );
       })}
+      
       <Button
         type="button"
         variant="tab"
         onClick={() => onSelect(RESOLUTION_LOCATION_TEMP_ID)}
-        className={
-          "rounded-t-md border-b-2 px-3 py-1.5 text-sm transition-colors " +
-          (resolutionActive
-            ? "border-[var(--accent)] text-[var(--accent)]"
-            : "border-transparent text-[var(--foreground)] hover:text-[var(--accent)]")
-        }
-        title="사건 해결 단계에서 학생이 이름을 맞히면 열리는 정답 장소"
+        className={cn(
+          "relative -mb-px px-4 py-2.5 text-sm",
+          resolutionActive
+            ? "border-b-2 !border-[var(--accent)] text-[var(--accent)]"
+            : "border-transparent hover:border-b-2 hover:border-[var(--border)]"
+        )}
+        title="사건 해결 단계 정답 장소"
       >
-        <span className="font-semibold">사건 해결의 장소</span>
-        <span className="ml-1 text-xs text-[var(--muted-foreground,#94a3b8)]">
+        <span className="font-semibold text-[var(--primary-foreground)]">🕵️ 사건 해결의 장소</span>
+        <span className="ml-1 text-xs opacity-60">
           ({resolutionCount})
         </span>
       </Button>
@@ -712,12 +713,6 @@ function MapCanvas({
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between text-xs text-[var(--muted-foreground,#94a3b8)]">
-        <span className="font-medium text-[var(--foreground)]">{locationLabel}</span>
-        <span>
-          월드 {MAP_EDITOR_WORLD.w}×{MAP_EDITOR_WORLD.h} · 격자 {MAP_GRID_STEP_PX}px
-        </span>
-      </div>
       <div
         ref={containerRef}
         onDragOver={(event) => {
