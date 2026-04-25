@@ -19,9 +19,9 @@ import {
   MAP_WORLD_BACKGROUND,
   MAP_WORLD_OUTER_STROKE,
 } from "@/lib/map-location-style";
-import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Package, X } from "lucide-react";
+import { Package, X } from "lucide-react";
 
-import type { ScenarioClueForMap, ScenarioLocationForMap } from "@/lib/api/play";
+import type { CaseClueForMap, CaseLocationForMap } from "@/lib/api/play";
 import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
 
@@ -77,7 +77,7 @@ type EvidenceEntry = {
   w: number;
   h: number;
   /** 한 단서 = 한 엔티티 (props 기반 배치). clues.length 는 항상 1. */
-  clues: ScenarioClueForMap[];
+  clues: CaseClueForMap[];
 };
 
 type ActiveEvidenceState = {
@@ -132,7 +132,7 @@ function autoPlaceInsideLocation(
   };
 }
 
-function buildEvidenceEntries(layouts: LocationLayout[], clues: ScenarioClueForMap[]): EvidenceEntry[] {
+function buildEvidenceEntries(layouts: LocationLayout[], clues: CaseClueForMap[]): EvidenceEntry[] {
   const layoutById = new Map(layouts.map((l) => [l.id, l]));
 
   const fallbackCounts = new Map<string, number>();
@@ -249,7 +249,7 @@ function placeLocationProps2D(scene: Phaser.Scene, entries: EvidenceEntry[]) {
 }
 
 /** 장소 목록 → autoLayout 으로 LocationLayout 배열 생성 (좌표는 자동 격자 배치) */
-function buildLocationLayouts(locations: ScenarioLocationForMap[]): LocationLayout[] {
+function buildLocationLayouts(locations: CaseLocationForMap[]): LocationLayout[] {
   const sorted = [...locations].sort((a, b) => a.id.localeCompare(b.id));
   return sorted.map((loc, i) => {
     const auto = autoLayoutLocation(i, sorted.length);
@@ -259,7 +259,7 @@ function buildLocationLayouts(locations: ScenarioLocationForMap[]): LocationLayo
 
 /** 인벤토리에서 다시 열 때: 원래 소품 정보를 유지하되 본문에는 해당 clue만 표시 */
 function evidenceEntryForSingleClue(
-  clue: ScenarioClueForMap,
+  clue: CaseClueForMap,
   evidenceEntries: EvidenceEntry[],
   layouts: LocationLayout[],
 ): EvidenceEntry {
@@ -335,8 +335,8 @@ type InvestigationMapProps = {
   variant?: "embedded" | "fullscreen";
   /** 상단 상태줄에 표시 (예: 1차 현장 / 2차 현장) */
   phaseLabel?: string;
-  locations?: ScenarioLocationForMap[];
-  clues?: ScenarioClueForMap[];
+  locations?: CaseLocationForMap[];
+  clues?: CaseClueForMap[];
   onEvidenceProgress?: (found: number, total: number) => void;
   /** 부모에서 단서 인벤토리 상태를 유지하고 싶을 때 초기값으로 전달 */
   initialDiscoveredClueIds?: string[];
@@ -345,10 +345,10 @@ type InvestigationMapProps = {
   /**
    * 우측 인벤토리 패널에 표시할 단서를 외부에서 제어한다.
    * - 미지정(undefined): F 로 직접 발견한 단서들(`discoveredClueIds`)만 노출 (investigation phase 기본).
-   * - 지정 시: 해당 배열을 그대로 노출 (resolution phase 에서 팀 전체 수집 단서를 보여주기 위함).
+   * - 지정 시: 해당 배열을 그대로 노출 (호스트/특수 UI에서 팀 전체 단서를 모아 보여줄 때).
    *   배열이 빈 배열이면 "수집한 단서 없음" 안내가 뜬다.
    */
-  inventoryClues?: ScenarioClueForMap[];
+  inventoryClues?: CaseClueForMap[];
   /** 최종 미션: 미션 타겟 조사 모드 — 지정 시 E 키로 타겟 제출 */
   investigateMode?: InvestigateMode;
 };
@@ -378,8 +378,8 @@ export function InvestigationMap({
   inventoryClues,
   investigateMode,
 }: InvestigationMapProps) {
-  const locations = locationsProp ?? [];
-  const clues = cluesProp ?? [];
+  const locations = useMemo(() => locationsProp ?? [], [locationsProp]);
+  const clues = useMemo(() => cluesProp ?? [], [cluesProp]);
 
   /** Phaser Game 이 붙는 DOM (고정 높이 embedded / flex-1 fullscreen) */
   const hostRef = useRef<HTMLDivElement>(null);
@@ -411,13 +411,13 @@ export function InvestigationMap({
     const byId = new Map(clues.map((c) => [c.id, c]));
     return discoveredClueIds
       .map((id) => byId.get(id))
-      .filter((c): c is ScenarioClueForMap => c != null)
+      .filter((c): c is CaseClueForMap => c != null)
       .sort((a, b) => (a.name ?? "").localeCompare(b.name ?? ""));
   }, [clues, discoveredClueIds]);
 
   /**
    * 인벤토리 패널에 실제로 그려질 단서 목록.
-   * `inventoryClues` 가 명시되면(=resolution phase 에서 팀 전체 단서 표시) 그 값을 우선,
+   * `inventoryClues` 가 명시되면 그 값을 우선,
    * 아니면 내가 직접 발견한 `discoveredClues` 만 노출.
    */
   const inventoryDisplayClues = useMemo(() => {
@@ -472,7 +472,7 @@ export function InvestigationMap({
   }, []);
 
   const openEvidenceFromInventory = useCallback(
-    (clue: ScenarioClueForMap) => {
+    (clue: CaseClueForMap) => {
       setSelectedEvidence(evidenceEntryForSingleClue(clue, layoutData.evidenceEntries, layoutData.layouts));
     },
     [layoutData.evidenceEntries, layoutData.layouts],
@@ -496,6 +496,8 @@ export function InvestigationMap({
       ),
     );
 
+    // Phaser Scene 은 effect 내부에서만 closure 로 캡처되며, 모듈 최상위로 옮기면 의존성이 과도해진다.
+    /* eslint-disable-next-line react-hooks/unsupported-syntax -- Phaser.Scene subclass lives in effect scope */
     class InvestigationScene extends Phaser.Scene {
       private player!: MatterSpritePlayer;
       private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
@@ -583,7 +585,6 @@ export function InvestigationMap({
 
         // 누락된 asset 은 무시하고 placeholder 로 폴백 (Phaser 가 게임 정지하지 않도록)
         this.load.on("loaderror", (file: Phaser.Loader.File) => {
-          // eslint-disable-next-line no-console
           console.warn(`[map] failed to load prop asset: ${file.key} (${file.src})`);
         });
       }
@@ -730,7 +731,7 @@ export function InvestigationMap({
 
         if (hovered && !modalOpenRef.current) {
           const clueIds = hovered.entry.clues.map((c) => c.id);
-          // F: 항상 단서 수집 (investigation / resolution 동일).
+          // F: 항상 단서 수집
           if (Phaser.Input.Keyboard.JustDown(this.interactKey)) {
             setSelectedEvidence(hovered.entry);
             registerDiscoveriesRef.current(clueIds);

@@ -30,7 +30,7 @@ export default function AdminPage() {
       router.replace(ROUTES.admin.signIn);
       return;
     }
-    router.replace(ROUTES.admin.scenarios);
+    router.replace(ROUTES.admin.cases);
   }, [router, sessionQuery.data, sessionQuery.isLoading]);
 
   return (

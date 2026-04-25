@@ -2,23 +2,19 @@ export type GamePhase =
   | "waiting"
   | "briefing"
   | "investigation"
-  | "resolution"
+  | "final_report"
   | "session_end";
-
-export type CharacterRecord = {
-  id: string;
-  scenario_id: string | null;
-  name: string | null;
-  role: string | null;
-};
 
 export type TeamRecord = {
   id: string;
   session_id: string | null;
   name: string | null;
   found_clue_ids: string[];
-  is_solved: boolean | null;
-  solved_at: string | null;
+  report_suspect_id: string | null;
+  report_method: string | null;
+  report_motive: string | null;
+  report_decisive_clue: string | null;
+  report_submitted_at: string | null;
 };
 
 export type PlayerRecord = {
@@ -26,14 +22,15 @@ export type PlayerRecord = {
   nickname: string | null;
   session_id: string | null;
   team_id: string | null;
-  character_id: string | null;
-  is_solved: boolean | null;
-  solved_at: string | null;
+  /** 세션 호스트가 시작한 뒤: 부장/차장/부원 */
+  club_role: string | null;
+  /** 조사 맵(장소) id — `locations` */
+  patrol_location_id: string | null;
 };
 
 export type GameSession = {
   id: string;
-  scenario_id: string | null;
+  case_id: string | null;
   host_id: string | null;
   join_code: string;
   phase: GamePhase | string | null;

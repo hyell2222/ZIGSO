@@ -4,9 +4,9 @@ import type { CSSProperties } from "react";
  * 시나리오 장소(location) 영역 — 플레이 Phaser 맵과 어드민 맵 에디터에서 동일하게 사용.
  */
 
-export const MAP_WORLD_BACKGROUND = 0x0f172a as const;
+export const MAP_WORLD_BACKGROUND = 0x16110e as const;
 /** CSS `background-color` (Phaser `MAP_WORLD_BACKGROUND` 와 동일) */
-export const MAP_WORLD_BACKGROUND_HEX = "#0f172a" as const;
+export const MAP_WORLD_BACKGROUND_HEX = "#16110e" as const;
 
 /** 월드 전체 격자 (장소 박스 아래에 그려짐) */
 export const MAP_GRID_STEP_PX = 40 as const;

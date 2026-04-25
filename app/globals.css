@@ -1,14 +1,54 @@
 @import "tailwindcss";
 
 :root {
-  color-scheme: dark;
-  --background: #0f1113;
-  --surface: #24282b;
-  --primary: #7b0e0e;
-  --accent: #c9d16b;
-  --foreground: #e2ded0;
-  --muted-foreground: #848d95;
-  --border: rgba(132, 141, 149, 0.35);
+  color-scheme: light;
+  /* 사건서·다이어리질 용지 / 잉크 */
+  --background: #f3ede3;
+  --surface: #e4d9c9;
+  --foreground: #1d1814;
+  --muted-foreground: #5a5147;
+
+  /* 만년필 / 동판 라벨 */
+  --accent: #76583c;
+  /* 먹물·봉투 안쪽(미스터리/타이틀) — 따뜻한 차콜 */
+  --mystery: #2a2225;
+  /* 잠금·야간 패널용 짙은 갈흑 */
+  --ink: #16110e;
+
+  /* 칠판 초록(주요 CTA·포인트) */
+  --primary: #1b4a3a;
+  --on-primary: #f0f6f2;
+  /* 위험/삭제(버튼) — warm brick */
+  --danger: #5c2a25;
+  --on-danger: #f7f0ed;
+  /* 본문 오류 메시지 */
+  --error: #5e2f28;
+
+  --border: color-mix(in srgb, var(--accent) 32%, var(--mystery));
+
+  /* 칩·배지·선택 배경(라임 대신) */
+  --tint-accent-weak: color-mix(in srgb, var(--accent) 6%, transparent);
+  --tint-accent: color-mix(in srgb, var(--accent) 11%, transparent);
+  --tint-accent-medium: color-mix(in srgb, var(--accent) 15%, transparent);
+  --tint-accent-strong: color-mix(in srgb, var(--accent) 20%, transparent);
+  /* 외곽선 버튼 호버 */
+  --tint-mystery: color-mix(in srgb, var(--mystery) 8%, transparent);
+  /* 타이머·링크 강조 */
+  --highlight: #b58a4a;
+
+  --ink-35: color-mix(in srgb, var(--ink) 35%, transparent);
+  --ink-45: color-mix(in srgb, var(--ink) 45%, transparent);
+  --ink-50: color-mix(in srgb, var(--ink) 50%, transparent);
+  --ink-88: color-mix(in srgb, var(--ink) 88%, transparent);
+  --ink-95: color-mix(in srgb, var(--ink) 95%, transparent);
+
+  --mystery-glow: color-mix(in srgb, var(--mystery) 14%, transparent);
+  /* 카드·입력 톤 (배경과 구분) */
+  --card-bg: color-mix(in srgb, var(--surface) 92%, var(--background));
+  --elevation-sm: 0 4px 20px color-mix(in srgb, var(--mystery) 7%, transparent);
+  --ring-focus: color-mix(in srgb, var(--mystery) 25%, transparent);
+  /* 입력란: 용지 얕은 압힘 */
+  --input-inset: inset 0 1px 0 color-mix(in srgb, var(--mystery) 4%, transparent);
 }
 
 html {
@@ -34,6 +74,6 @@ body {
 }
 
 ::selection {
-  background-color: rgba(201, 209, 107, 0.35);
+  background-color: color-mix(in srgb, var(--mystery) 20%, transparent);
   color: var(--foreground);
 }

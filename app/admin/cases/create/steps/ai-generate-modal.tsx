@@ -5,16 +5,17 @@ import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { generateScenarioWithAI } from "@/lib/api/ai-scenario";
+import { generateCaseWithAI } from "@/lib/api/ai-case";
 
 import type { Difficulty } from "./basic-info-step";
-import type { DraftCharacter, DraftClue } from "./types";
+import type { DraftInvestigationZone, DraftClue } from "./types";
 
 export type AIGenerateResult = {
   title: string;
   description: string;
+  suspectProfiles: string;
   difficulty: Difficulty;
-  characters: DraftCharacter[];
+  investigationZones: DraftInvestigationZone[];
   clues: DraftClue[];
 };
 
@@ -61,27 +62,25 @@ export function AIGenerateModal({
     setIsLoading(true);
     setError(null);
     try {
-      const data = await generateScenarioWithAI({
+      const data = await generateCaseWithAI({
         prompt: theme,
         propAssets,
         difficulty,
         targetClueCount,
       });
 
-      // index 기반 캐릭터를 tempId 가 있는 DraftCharacter 로 변환
-      const characters: DraftCharacter[] = data.characters.map((c) => ({
+      const investigationZones: DraftInvestigationZone[] = data.investigation_zones.map((c) => ({
         tempId: makeTempId(),
-        name: c.name,
-        role: c.role,
+        zoneName: c.zone_name,
       }));
 
       const clues: DraftClue[] = data.clues
         .map((c) => {
-          const owner = characters[c.character_index];
+          const owner = investigationZones[c.assignment_index];
           if (!owner) return null;
           return {
             tempId: makeTempId(),
-            characterTempId: owner.tempId,
+            assignmentTempId: owner.tempId,
             asset: c.asset,
             x: c.x,
             y: c.y,
@@ -96,8 +95,9 @@ export function AIGenerateModal({
       onApply({
         title: data.title,
         description: data.description,
+        suspectProfiles: data.suspect_profiles,
         difficulty: data.difficulty,
-        characters,
+        investigationZones,
         clues,
       });
       onClose();
@@ -166,8 +166,8 @@ export function AIGenerateModal({
                       className={
                         "rounded-md border px-2.5 py-1 text-xs " +
                         (active
-                          ? "border-[var(--accent)] bg-[rgba(201,209,107,0.18)] text-[var(--accent)]"
-                          : "border-[var(--border)] text-[var(--foreground)] hover:bg-[rgba(36,40,43,0.85)]")
+                          ? "border-[var(--accent)] bg-[var(--tint-accent-strong)] text-[var(--accent)]"
+                          : "border-[var(--border)] text-[var(--foreground)] hover:bg-[var(--tint-mystery)]")
                       }
                     >
                       {d}

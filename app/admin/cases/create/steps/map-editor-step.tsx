@@ -1,7 +1,7 @@
 "use client";
 
-import { CheckCircle2, Circle, KeyRound, MapPin, Target, Trash2 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Trash2 } from "lucide-react";
+import { useCallback, useMemo, useRef, useState } from "react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -15,36 +15,28 @@ import {
   DRAG_TYPE_PROP,
   MAP_EDITOR_WORLD,
   PROP_DEFAULT_DROP_SIZE,
-  RESOLUTION_LOCATION_TEMP_ID,
-  type DraftCharacter,
+  type DraftInvestigationZone,
   type DraftClue,
 } from "./types";
 import { Button } from "@/components/ui/button";
 
 type Props = {
-  characters: DraftCharacter[];
+  investigationZones: DraftInvestigationZone[];
   clues: DraftClue[];
   propAssets: PropAsset[];
   isLoadingAssets: boolean;
   onUpdateClue: (tempId: string, patch: Partial<DraftClue>) => void;
   onAddClue: (clue: Omit<DraftClue, "tempId">) => string;
   onRemoveClue: (tempId: string) => void;
-  /** 최종 미션 맵 캔버스 상단 라벨용 (진입 코드 미리보기) */
-  resolutionLocationName: string;
-  /** 미션 타겟(Mission Target) 표식 토글 — 시나리오 전체 1개만. null = 모두 해제 */
-  onSetResolutionTarget: (tempId: string | null) => void;
-  /** 제출 아이템(Required Items) 표식 토글 — 시나리오 전체 정확히 3개 */
-  onToggleResolutionUnlockItem: (tempId: string, value: boolean) => void;
 };
 
-function initialCharacterLocationTabId(
-  characters: DraftCharacter[],
+function initialAssignmentLocationTabId(
+  investigationZones: DraftInvestigationZone[],
   clues: DraftClue[],
 ): string {
-  const first = characters[0]?.tempId;
+  const first = investigationZones[0]?.tempId;
   if (first) return first;
-  const clue = clues.find((c) => c.characterTempId !== RESOLUTION_LOCATION_TEMP_ID);
-  return clue?.characterTempId ?? "";
+  return clues[0]?.assignmentTempId ?? "";
 }
 
 type LocationTabItem = {
@@ -64,53 +56,41 @@ function sizeFromAssetMetadata(asset: PropAsset): { w: number; h: number } | nul
 }
 
 export function MapEditorStep({
-  characters,
+  investigationZones,
   clues,
   propAssets,
   isLoadingAssets,
   onAddClue,
   onUpdateClue,
   onRemoveClue,
-  resolutionLocationName,
-  onSetResolutionTarget,
-  onToggleResolutionUnlockItem,
 }: Props) {
-  /**
-   * 활성 탭 식별자.
-   * - 캐릭터 tempId 인 경우: 해당 캐릭터의 장소
-   * - RESOLUTION_LOCATION_TEMP_ID 인 경우: 최종 미션(Final Mission) 전용 맵
-   */
   const [activeTabId, setActiveTabId] = useState<string>(() =>
-    initialCharacterLocationTabId(characters, clues),
+    initialAssignmentLocationTabId(investigationZones, clues),
   );
   const [selectedClueId, setSelectedClueId] = useState<string | null>(null);
   const [draggingAsset, setDraggingAsset] = useState<string | null>(null);
 
-  const isResolutionTab = activeTabId === RESOLUTION_LOCATION_TEMP_ID;
-
   const locationTabs = useMemo<LocationTabItem[]>(() => {
     const countByLocation = new Map<string, number>();
     for (const clue of clues) {
-      if (clue.characterTempId === RESOLUTION_LOCATION_TEMP_ID) continue;
       countByLocation.set(
-        clue.characterTempId,
-        (countByLocation.get(clue.characterTempId) ?? 0) + 1,
+        clue.assignmentTempId,
+        (countByLocation.get(clue.assignmentTempId) ?? 0) + 1,
       );
     }
 
-    const tabs: LocationTabItem[] = characters.map((character) => ({
-      id: character.tempId,
-      tabLabel: character.name,
-      canvasLabel: `${character.name}의 장소`,
-      clueCount: countByLocation.get(character.tempId) ?? 0,
+    const tabs: LocationTabItem[] = investigationZones.map((z) => ({
+      id: z.tempId,
+      tabLabel: z.zoneName.trim() || "미정 구역",
+      canvasLabel: `${z.zoneName.trim() || "미정 구역"} (조사 구역)`,
+      clueCount: countByLocation.get(z.tempId) ?? 0,
     }));
 
-    const knownCharacterIds = new Set(characters.map((character) => character.tempId));
+    const knownSlotIds = new Set(investigationZones.map((m) => m.tempId));
     const orphanLocationIds: string[] = [];
     for (const clue of clues) {
-      const locationId = clue.characterTempId;
-      if (locationId === RESOLUTION_LOCATION_TEMP_ID) continue;
-      if (knownCharacterIds.has(locationId)) continue;
+      const locationId = clue.assignmentTempId;
+      if (knownSlotIds.has(locationId)) continue;
       if (!orphanLocationIds.includes(locationId)) orphanLocationIds.push(locationId);
     }
 
@@ -125,55 +105,32 @@ export function MapEditorStep({
     });
 
     return tabs;
-  }, [characters, clues]);
+  }, [investigationZones, clues]);
 
-  const selectableTabIds = useMemo(() => {
-    const ids = new Set(locationTabs.map((tab) => tab.id));
-    ids.add(RESOLUTION_LOCATION_TEMP_ID);
-    return ids;
-  }, [locationTabs]);
+  const selectableTabIds = useMemo(() => new Set(locationTabs.map((tab) => tab.id)), [locationTabs]);
 
-  useEffect(() => {
-    if (selectableTabIds.has(activeTabId)) return;
-    setActiveTabId(locationTabs[0]?.id ?? RESOLUTION_LOCATION_TEMP_ID);
-  }, [activeTabId, locationTabs, selectableTabIds]);
-
-  useEffect(() => {
-    if (selectedClueId && !clues.find((c) => c.tempId === selectedClueId)) {
-      setSelectedClueId(null);
-    }
-  }, [clues, selectedClueId]);
-
-  const activeLocation = useMemo(
-    () => locationTabs.find((location) => location.id === activeTabId) ?? null,
-    [locationTabs, activeTabId],
+  const effectiveTabId = useMemo(
+    () =>
+      selectableTabIds.has(activeTabId) ? activeTabId : (locationTabs[0]?.id ?? ""),
+    [activeTabId, locationTabs, selectableTabIds],
   );
 
-  const cluesInLocation = useMemo(
-    () => clues.filter((c) => c.characterTempId === activeTabId),
-    [clues, activeTabId],
-  );
-
-  const selectedClue = useMemo(
-    () => clues.find((c) => c.tempId === selectedClueId) ?? null,
+  const validSelectedClueId = useMemo(
+    () =>
+      selectedClueId && clues.some((c) => c.tempId === selectedClueId) ? selectedClueId : null,
     [clues, selectedClueId],
   );
 
-  const trimmedResolutionName = resolutionLocationName.trim();
-  const resolutionLocationLabel = trimmedResolutionName
-    ? `${trimmedResolutionName} · 최종 미션 맵`
-    : "최종 미션 맵";
+  const cluesInLocation = useMemo(
+    () => clues.filter((c) => c.assignmentTempId === effectiveTabId),
+    [clues, effectiveTabId],
+  );
 
-  const unlockItemTempIds = useMemo(
-    () => clues.filter((c) => c.isResolutionUnlockItem).map((c) => c.tempId),
-    [clues],
+  const selectedClue = useMemo(
+    () => clues.find((c) => c.tempId === validSelectedClueId) ?? null,
+    [clues, validSelectedClueId],
   );
-  const unlockItemCount = unlockItemTempIds.length;
-  const resolutionCount = useMemo(
-    () =>
-      clues.filter((clue) => clue.characterTempId === RESOLUTION_LOCATION_TEMP_ID).length,
-    [clues],
-  );
+
   const metadataSizeByAsset = useMemo(() => {
     const map = new Map<string, { w: number; h: number }>();
     for (const asset of propAssets) {
@@ -189,16 +146,15 @@ export function MapEditorStep({
         <CardTitle>3. 맵 에디터</CardTitle>
       </CardHeader>
       <CardContent>
-        {characters.length === 0 ? (
-          <p className="mb-4 rounded-md border border-dashed border-[var(--border)] px-3 py-2 text-xs text-[var(--muted-foreground,#94a3b8)]">
-            캐릭터가 1명 이상 필요합니다.
+        {investigationZones.length === 0 ? (
+          <p className="mb-4 rounded-md border border-dashed border-[var(--border)] px-3 py-2 text-xs text-[var(--muted-foreground)]">
+            조사 구역이 1곳 이상 필요합니다. (2단계에서 추가)
           </p>
         ) : null}
 
         <LocationTabs
           locations={locationTabs}
-          resolutionCount={resolutionCount}
-          activeId={activeTabId}
+          activeId={effectiveTabId}
           onSelect={(id) => {
             setActiveTabId(id);
             setSelectedClueId(null);
@@ -216,14 +172,11 @@ export function MapEditorStep({
           />
 
           <MapCanvas
-            locationLabel={
-              isResolutionTab ? resolutionLocationLabel : (activeLocation?.canvasLabel ?? "장소")
-            }
             clues={cluesInLocation}
-            selectedClueId={selectedClueId}
+            selectedClueId={validSelectedClueId}
             onSelectClue={setSelectedClueId}
             onDropAsset={(asset, x, y) => {
-              if (!activeTabId) return;
+              if (!effectiveTabId) return;
               const metadataSize = metadataSizeByAsset.get(asset) ?? null;
               const preferred = metadataSize ?? PROP_DEFAULT_DROP_SIZE;
               const fallbackW = preferred.w;
@@ -238,7 +191,7 @@ export function MapEditorStep({
                 MAP_GRID_STEP_PX,
               );
               const newId = onAddClue({
-                characterTempId: activeTabId,
+                assignmentTempId: effectiveTabId,
                 asset,
                 x: fallbackRect.x,
                 y: fallbackRect.y,
@@ -257,9 +210,6 @@ export function MapEditorStep({
 
           <ClueEditorPanel
             clue={selectedClue}
-            isInResolutionLocation={isResolutionTab}
-            showMissionRoleControls={false}
-            unlockItemCount={unlockItemCount}
             onChange={(patch) => {
               if (!selectedClue) return;
               onUpdateClue(selectedClue.tempId, patch);
@@ -267,14 +217,6 @@ export function MapEditorStep({
             onRemove={() => {
               if (!selectedClue) return;
               onRemoveClue(selectedClue.tempId);
-            }}
-            onSetAsTarget={(value) => {
-              if (!selectedClue) return;
-              onSetResolutionTarget(value ? selectedClue.tempId : null);
-            }}
-            onToggleUnlockItem={(value) => {
-              if (!selectedClue) return;
-              onToggleResolutionUnlockItem(selectedClue.tempId, value);
             }}
           />
         </div>
@@ -287,17 +229,13 @@ export function MapEditorStep({
 
 function LocationTabs({
   locations,
-  resolutionCount,
   activeId,
   onSelect,
 }: {
   locations: LocationTabItem[];
-  resolutionCount: number;
   activeId: string;
   onSelect: (id: string) => void;
 }) {
-  const resolutionActive = activeId === RESOLUTION_LOCATION_TEMP_ID;
-
   return (
     <div className="flex flex-wrap gap-1 border-b border-[var(--border)]/40">
       {locations.map((location) => {
@@ -322,25 +260,6 @@ function LocationTabs({
           </Button>
         );
       })}
-
-      <Button
-        type="button"
-        variant="tab"
-        onClick={() => onSelect(RESOLUTION_LOCATION_TEMP_ID)}
-        className={cn(
-          "relative -mb-px px-4 py-2.5 text-sm",
-          resolutionActive
-            ? "border-b-2 !border-[var(--accent)] text-[var(--accent)]"
-            : "border-transparent hover:border-b-2 hover:border-[var(--border)]"
-        )}
-        title="1단계: 진입 코드 → 2단계: 미션 타겟 조사 → 3단계: 제출 아이템 3개 (규칙은 4단계에서 설정)"
-      >
-        <span className="inline-flex items-center gap-1 font-semibold text-[var(--primary-foreground)]">
-          <MapPin className="h-3.5 w-3.5 opacity-90" aria-hidden />
-          최종 미션
-        </span>
-        <span className="ml-1 text-xs opacity-60">({resolutionCount})</span>
-      </Button>
     </div>
   );
 }
@@ -357,7 +276,7 @@ function PropSidebar({
   onDragEndAsset?: () => void;
 }) {
   return (
-    <aside className="rounded-md border border-[var(--border)] bg-[rgba(15,23,42,0.45)] p-3">
+    <aside className="rounded-md border border-[var(--border)] bg-[var(--card-bg)] p-3 shadow-[var(--elevation-sm)]">
       <div className="mb-4 flex flex-col gap-2">
         <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--accent)]">
           소품 ({assets.length})
@@ -410,6 +329,7 @@ function PropDraggable({
       onDragEnd={() => onDragEndAsset?.()}
       className="cursor-grab"
     >
+      {/* eslint-disable-next-line @next/next/no-img-element -- dynamic storage URLs; pixelated props */}
       <img
         src={asset.url}
         alt={asset.asset}
@@ -465,7 +385,6 @@ function snapClueRectToGrid(
 }
 
 function MapCanvas({
-  locationLabel,
   clues,
   selectedClueId,
   propAssets,
@@ -475,7 +394,6 @@ function MapCanvas({
   onDropAsset,
   onMoveClue,
 }: {
-  locationLabel: string;
   clues: DraftClue[];
   selectedClueId: string | null;
   propAssets: PropAsset[];
@@ -717,13 +635,15 @@ function MapCanvas({
               style={{ left, top, width: widthPct, height: heightPct }}
             >
               {url ? (
-                <img
-                  src={url}
-                  alt={clue.asset}
-                  draggable={false}
-                  className="h-full w-full"
-                  style={{ imageRendering: "pixelated" }}
-                />
+                <>
+                  <img
+                    src={url}
+                    alt={clue.asset}
+                    draggable={false}
+                    className="h-full w-full"
+                    style={{ imageRendering: "pixelated" }}
+                  />
+                </>
               ) : (
                 <div className="flex h-full w-full items-center justify-center rounded bg-yellow-300/80 text-[10px] text-yellow-900">
                   ?
@@ -739,39 +659,22 @@ function MapCanvas({
 
 function ClueEditorPanel({
   clue,
-  isInResolutionLocation,
-  showMissionRoleControls = true,
-  unlockItemCount,
   onChange,
   onRemove,
-  onSetAsTarget,
-  onToggleUnlockItem,
 }: {
   clue: DraftClue | null;
-  /** 현재 활성 탭이 최종 미션 맵인지 */
-  isInResolutionLocation: boolean;
-  /** false면 미션 타겟·필수 아이템 토글 숨김 (4단계 전용 설정과 분리) */
-  showMissionRoleControls?: boolean;
-  /** 시나리오 전체의 제출 아이템 개수 (3 도달 시 새 토글 차단) */
-  unlockItemCount: number;
   onChange: (patch: Partial<DraftClue>) => void;
   onRemove: () => void;
-  onSetAsTarget: (value: boolean) => void;
-  onToggleUnlockItem: (value: boolean) => void;
 }) {
   if (!clue) {
     return (
-      <aside className="rounded-md border border-dashed border-[var(--border)] bg-[rgba(15,23,42,0.45)] p-4 text-center text-xs text-[var(--muted-foreground,#94a3b8)]">
+      <aside className="rounded-md border border-dashed border-[var(--border)] bg-[var(--card-bg)] p-4 text-center text-xs text-[var(--muted-foreground,#94a3b8)]">
         맵에 배치된 prop 을 클릭하면 여기서 단서 이름과 내용을 편집할 수 있어요.
       </aside>
     );
   }
-  const isTarget = clue.isResolutionTarget === true;
-  const isUnlock = clue.isResolutionUnlockItem === true;
-  const unlockToggleDisabled = !isUnlock && unlockItemCount >= 3;
   return (
-    <aside className="space-y-3 rounded-md border border-[var(--border)] bg-[rgba(15,23,42,0.45)] p-3">
-      {/* 헤더: 타이틀 및 삭제 버튼 */}
+    <aside className="space-y-3 rounded-md border border-[var(--border)] bg-[var(--card-bg)] p-3 shadow-[var(--elevation-sm)]">
       <div className="flex items-center justify-between">
         <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--accent)]">
           단서 편집
@@ -787,99 +690,7 @@ function ClueEditorPanel({
           <Trash2 className="h-4 w-4" />
         </Button>
       </div>
-  
-      {/* 최종 미션 맵 + 설정 UI를 맵 단계와 나눌 때는 4단계에서만 토글 */}
-      {isInResolutionLocation && showMissionRoleControls ? (
-        <div className="space-y-2 rounded-lg border border-[var(--accent)]/35 bg-[rgba(201,209,107,0.08)] p-2.5">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--accent)]">
-            최종 미션에서 이 소품의 역할
-          </p>
-          <div className="grid gap-2 sm:grid-cols-2">
-            <label
-              className={cn(
-                "flex cursor-pointer gap-2.5 rounded-md border p-2.5 transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-[var(--accent)]/50",
-                isTarget
-                  ? "border-emerald-500/45 bg-emerald-500/10"
-                  : "border-[var(--border)] bg-[rgba(15,23,42,0.4)] hover:border-[var(--accent)]/40",
-              )}
-            >
-              <input
-                type="checkbox"
-                checked={isTarget}
-                onChange={(e) => onSetAsTarget(e.target.checked)}
-                className="sr-only"
-                aria-label="이 단서를 미션 타겟 Mission Target(2단계)으로 지정"
-              />
-              <span
-                className={cn(
-                  "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[11px] font-bold tabular-nums",
-                  isTarget ? "bg-emerald-500/25 text-emerald-100" : "bg-[var(--accent)]/20 text-[var(--accent)]",
-                )}
-              >
-                2
-              </span>
-              <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                <span className="flex items-center gap-1 text-xs font-semibold text-[var(--foreground)]">
-                  <Target className="h-3.5 w-3.5 shrink-0 text-[var(--accent)]" aria-hidden />
-                  미션 타겟
-                </span>
-                <span className="text-[10px] leading-snug text-[var(--muted-foreground,#94a3b8)]">
-                  시나리오 전체 1개. 학생이 맵에서 조사합니다.
-                </span>
-              </span>
-              {isTarget ? (
-                <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" aria-hidden />
-              ) : (
-                <Circle className="h-4 w-4 shrink-0 text-[var(--border)]" aria-hidden />
-              )}
-            </label>
 
-            <label
-              className={cn(
-                "flex cursor-pointer gap-2.5 rounded-md border p-2.5 transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-[var(--accent)]/50",
-                isUnlock
-                  ? "border-emerald-500/45 bg-emerald-500/10"
-                  : "border-[var(--border)] bg-[rgba(15,23,42,0.4)] hover:border-[var(--accent)]/40",
-                unlockToggleDisabled && "cursor-not-allowed opacity-45 hover:border-[var(--border)]",
-              )}
-            >
-              <input
-                type="checkbox"
-                checked={isUnlock}
-                disabled={unlockToggleDisabled}
-                onChange={(e) => onToggleUnlockItem(e.target.checked)}
-                className="sr-only"
-                aria-label="이 단서를 제출 아이템 Required Items(3단계)으로 표시"
-              />
-              <span
-                className={cn(
-                  "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[11px] font-bold tabular-nums",
-                  isUnlock ? "bg-emerald-500/25 text-emerald-100" : "bg-[var(--accent)]/20 text-[var(--accent)]",
-                )}
-              >
-                3
-              </span>
-              <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                <span className="flex items-center gap-1 text-xs font-semibold text-[var(--foreground)]">
-                  <KeyRound className="h-3.5 w-3.5 shrink-0 text-[var(--accent)]" aria-hidden />
-                  제출 아이템
-                </span>
-                <span className="text-[10px] leading-snug text-[var(--muted-foreground,#94a3b8)]">
-                  전체 {unlockItemCount}/3
-                  {unlockToggleDisabled ? " · 다른 단서 표시를 끄면 추가 가능" : ""}
-                </span>
-              </span>
-              {isUnlock ? (
-                <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" aria-hidden />
-              ) : (
-                <Circle className="h-4 w-4 shrink-0 text-[var(--border)]" aria-hidden />
-              )}
-            </label>
-          </div>
-        </div>
-      ) : null}
-
-      {/* 기본 정보 입력 */}
       <div className="space-y-1.5">
         <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--accent)] opacity-80">
           단서 이름<span className="ml-0.5 text-red-400">*</span>

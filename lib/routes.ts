@@ -3,14 +3,14 @@ export const ROUTES = {
   play: "/play",
   admin: {
     root: "/admin",
-    scenarios: "/admin/scenarios",
+    cases: "/admin/cases",
     /** Static export: use query param, not a dynamic segment. */
-    scenariosSession: (sessionId: string) =>
-      `/admin/scenarios/session/?id=${encodeURIComponent(sessionId)}`,
-    scenariosCreate: "/admin/scenarios/create",
+    casesSession: (sessionId: string) =>
+      `/admin/cases/session/?id=${encodeURIComponent(sessionId)}`,
+    casesCreate: "/admin/cases/create",
     /** Static export: edit 페이지도 query param 으로 시나리오 ID 전달. */
-    scenariosEdit: (scenarioId: string) =>
-      `/admin/scenarios/edit/?id=${encodeURIComponent(scenarioId)}`,
+    casesEdit: (caseId: string) =>
+      `/admin/cases/edit/?id=${encodeURIComponent(caseId)}`,
     signIn: "/admin/sign-in",
     signUp: "/admin/sign-up",
   },

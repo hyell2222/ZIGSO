@@ -67,7 +67,7 @@ export function AdminAuthForm({
           </div>
           <p className="pt-3 text-center text-xs text-[var(--foreground)]">
             {switchPrompt}{" "}
-            <Link href={switchHref} className="text-[var(--accent)] hover:text-[#dce48a]">
+            <Link href={switchHref} className="text-[var(--accent)] hover:text-[var(--highlight)]">
               {switchLabel}
             </Link>
           </p>

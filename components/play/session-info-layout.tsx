@@ -3,63 +3,79 @@
 import type { UseQueryResult } from "@tanstack/react-query";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { CharacterRow, SessionDetailsRow } from "@/lib/api/play";
+import { clubRoleLabelKr } from "@/lib/club-role";
+import type { PlayerWithPatrolRow, SessionDetailsRow } from "@/lib/api/play";
+import { parseSuspectRosterFromCase } from "@/lib/suspects";
 
 type SessionInfoLayoutProps = {
-  characterName: string | null;
-  characterQuery: UseQueryResult<CharacterRow, Error>;
+  zoneName: string | null;
+  playerQuery: UseQueryResult<PlayerWithPatrolRow, Error>;
   sessionQuery: UseQueryResult<SessionDetailsRow, Error>;
   message: string | null;
 };
 
+/**
+ * 1단계(브리핑): 부원 증(역할·구역) + 사건 개요 + 용의자 프로필
+ */
 export function SessionInfoLayout({
-  characterName,
-  characterQuery,
+  zoneName,
+  playerQuery,
   sessionQuery,
   message,
 }: SessionInfoLayoutProps) {
-  const data = characterQuery.data;
+  const data = playerQuery.data;
+  const cases = sessionQuery.data?.cases;
+  const roster = parseSuspectRosterFromCase(cases?.suspect_roster);
+  const legacyText =
+    typeof cases?.suspect_profiles === "string"
+      ? cases.suspect_profiles.trim()
+      : cases?.suspect_profiles != null
+        ? JSON.stringify(cases.suspect_profiles).trim()
+        : "";
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[1fr_1.2fr]">
+    <div className="grid gap-4 lg:grid-cols-3">
       <Card>
         <CardHeader>
-          <CardTitle>내 캐릭터</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {data ? (
-            <div className="rounded-md border border-[var(--border)] bg-[rgba(15,17,19,0.35)] p-3 text-sm text-[var(--foreground)]">
-              <p className="font-semibold text-[var(--accent)]">{characterName ?? data.name}</p>
-              <p className="text-xs text-[var(--muted-foreground)]">
-                직책: {data.role ?? "정보 없음"}
-              </p>
-            </div>
-          ) : (
-            <p className="text-sm text-[var(--muted-foreground)]">
-              닉네임 설정 후 입장하면 캐릭터 정보가 표시됩니다.
-            </p>
-          )}
-          {message ? <p className="text-xs text-[var(--foreground)]">{message}</p> : null}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>시나리오 브리핑</CardTitle>
+          <CardTitle>사건 개요</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           {sessionQuery.data ? (
             <>
-              <p className="rounded-md border border-[var(--border)] bg-[rgba(15,17,19,0.35)] p-3 text-sm text-[var(--foreground)]">
-                {sessionQuery.data.scenarios?.title ?? "제목 없음"}
+              <p className="text-sm font-medium text-[var(--foreground)]">
+                {sessionQuery.data.cases?.title ?? "제목 없음"}
               </p>
-              <p className="rounded-md border border-[var(--border)] bg-[rgba(15,17,19,0.35)] p-3 text-sm whitespace-pre-wrap text-[var(--foreground)]">
-                {sessionQuery.data.scenarios?.description ?? "시나리오 설명이 없습니다."}
+              <p className="rounded-md border border-[var(--border)] bg-[var(--surface)] p-3 text-sm whitespace-pre-wrap text-[var(--foreground)]">
+                {sessionQuery.data.cases?.description ?? "설명이 없습니다."}
               </p>
             </>
           ) : (
-            <p className="rounded-md border border-dashed border-[var(--border)] p-3 text-xs text-[var(--muted-foreground)]">
-              세션 코드로 입장하면 시나리오 정보가 표시됩니다.
+            <p className="text-xs text-[var(--muted-foreground)]">불러오는 중…</p>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="lg:col-span-1">
+        <CardHeader>
+          <CardTitle>용의자</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {roster.length > 0 ? (
+            <ul className="space-y-3 text-sm text-[var(--foreground)]">
+              {roster.map((s) => (
+                <li key={s.id} className="rounded-md border border-[var(--border)] bg-[var(--surface)] p-2">
+                  <p className="font-medium text-[var(--mystery)]">{s.name || "(이름 없음)"}</p>
+                  {s.detail ? (
+                    <p className="mt-1 whitespace-pre-wrap text-xs text-[var(--muted-foreground)]">{s.detail}</p>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          ) : legacyText ? (
+            <p className="whitespace-pre-wrap text-sm text-[var(--foreground)]">{legacyText}</p>
+          ) : (
+            <p className="text-sm text-[var(--muted-foreground)]">
+              (교사가 시나리오에 용의자 정보를 넣지 않았습니다.)
             </p>
           )}
         </CardContent>

@@ -8,14 +8,16 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "cursor-pointer bg-[var(--primary)] text-[var(--foreground)] hover:bg-[#651010]",
-        secondary: "cursor-pointer bg-[var(--surface)] text-[var(--foreground)] hover:bg-[#2d3134]",
+        default:
+          "cursor-pointer bg-[var(--primary)] text-[var(--on-primary)] hover:brightness-95",
+        secondary:
+          "cursor-pointer border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] hover:bg-[var(--surface)]",
         outline:
-          "cursor-pointer border border-[var(--accent)]/60 text-[var(--accent)] hover:bg-[rgba(201,209,107,0.1)]",
-        ghost: "cursor-pointer text-[var(--foreground)] hover:bg-[rgba(36,40,43,0.85)]",
+          "cursor-pointer border border-[var(--mystery)]/45 text-[var(--mystery)] hover:bg-[var(--tint-mystery)]",
+        ghost: "cursor-pointer text-[var(--foreground)] hover:bg-[var(--tint-accent)]",
         tab:
           "cursor-pointer rounded-none border-b-2 bg-transparent text-[var(--muted-foreground,#94a3b8)]",
-        danger: "cursor-pointer bg-[var(--primary)] text-[var(--foreground)] hover:bg-[#5a0909]",
+        danger: "cursor-pointer bg-[var(--danger)] text-[var(--on-danger)] hover:brightness-90",
       },
       size: {
         default: "h-10 px-4 py-2",

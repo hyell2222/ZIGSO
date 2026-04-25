@@ -10,8 +10,8 @@ const dungGeunMo = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "CODEZERO",
-  description: "Team-based classroom cyber mystery platform",
+  title: "Mystery Club",
+  description: "비밀 탐정 동아리 협동 추리 — 팀 기반 미스터리",
   icons: {
     icon: "/window.svg",
   },
@@ -24,7 +24,7 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
+      lang="ko"
       className={`${dungGeunMo.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-[var(--background)] text-[var(--foreground)]">

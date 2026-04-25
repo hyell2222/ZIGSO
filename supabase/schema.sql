@@ -1,94 +1,49 @@
 create extension if not exists pgcrypto;
 
 -- =====================================================================
--- Tables (구조 확정 - 컬럼 추가/변경 금지)
+-- Tables
+-- =====================================================================
+-- 3단계 게임: briefing → investigation → final_report
+-- 역할(부장/차장/부원)·순찰 구역: 세션 시작 시 랜덤 (assignTeamsAndPatrol)
 -- =====================================================================
 
-create table if not exists public.scenarios (
+create table if not exists public.cases (
   id uuid primary key default gen_random_uuid(),
   title text not null,
   description text,
-  character_count integer,
+  -- 레거시: 이전에 한 덩어리로 넣은 용의자 문구(선택)
+  suspect_profiles jsonb,
+  -- [{ "id", "name", "detail" }] — 브리핑·범인 선택·정답 id 기준
+  suspect_roster jsonb not null default '[]'::jsonb,
+  -- 용의자 id 중 범인 1명 (suspect_roster[].id)
+  answer_suspect_id text,
   difficulty text check (difficulty in ('Easy', 'Normal', 'Hard')),
   creator_id uuid,
-  resolution_mission text,
-  resolution_location_id uuid,
-  resolution_target_clue_id uuid,
-  resolution_unlock_clue_ids uuid[] not null default '{}',
   created_at timestamptz default timezone('utc', now()),
   updated_at timestamptz default timezone('utc', now())
 );
 
-alter table public.scenarios
-  add column if not exists resolution_mission text,
-  add column if not exists resolution_target_clue_id uuid,
-  add column if not exists resolution_unlock_clue_ids uuid[] not null default '{}';
-
-do $$
-begin
-  if not exists (
-    select 1 from information_schema.table_constraints
-    where table_schema = 'public'
-      and table_name = 'scenarios'
-      and constraint_name = 'scenarios_resolution_location_id_fkey'
-  ) then
-    alter table public.scenarios
-      add constraint scenarios_resolution_location_id_fkey
-      foreign key (resolution_location_id)
-      references public.locations(id)
-      on delete set null;
-  end if;
-
-end
-$$;
-
-create table if not exists public.characters (
-  id uuid primary key default gen_random_uuid(),
-  scenario_id uuid references public.scenarios(id) on delete cascade,
-  name text,
-  role text
-);
-
 create table if not exists public.locations (
   id uuid primary key default gen_random_uuid(),
-  scenario_id uuid references public.scenarios(id) on delete cascade,
-  name text,
-  character_id uuid references public.characters(id) on delete set null
+  case_id uuid references public.cases(id) on delete cascade,
+  name text
 );
 
 create table if not exists public.clues (
   id uuid primary key default gen_random_uuid(),
-  scenario_id uuid references public.scenarios(id) on delete cascade,
+  case_id uuid references public.cases(id) on delete cascade,
   location_id uuid references public.locations(id) on delete set null,
   name text,
   content text,
   props jsonb
 );
 
--- 사건 해결 정답 prop FK: clues 테이블이 만들어진 뒤에 부착
-do $$
-begin
-  if not exists (
-    select 1 from information_schema.table_constraints
-    where table_schema = 'public'
-      and table_name = 'scenarios'
-      and constraint_name = 'scenarios_resolution_target_clue_id_fkey'
-  ) then
-    alter table public.scenarios
-      add constraint scenarios_resolution_target_clue_id_fkey
-      foreign key (resolution_target_clue_id)
-      references public.clues(id)
-      on delete set null;
-  end if;
-end
-$$;
-
 create table if not exists public.game_sessions (
   id uuid primary key default gen_random_uuid(),
-  scenario_id uuid references public.scenarios(id) on delete set null,
+  case_id uuid references public.cases(id) on delete set null,
   host_id uuid references auth.users(id) on delete set null,
   join_code text unique not null,
-  phase text default 'waiting' check (phase in ('waiting', 'briefing', 'investigation', 'resolution', 'session_end')),
+  phase text default 'waiting' check (phase in ('waiting', 'briefing', 'investigation', 'final_report', 'session_end')),
   is_active boolean default true,
   created_at timestamptz default timezone('utc', now())
 );
@@ -98,8 +53,12 @@ create table if not exists public.teams (
   session_id uuid references public.game_sessions(id) on delete cascade,
   name text,
   found_clue_ids uuid[] not null default '{}',
-  is_solved boolean default false,
-  solved_at timestamptz
+  -- cases.suspect_roster[].id 중 선택
+  report_suspect_id text,
+  report_method text,
+  report_motive text,
+  report_decisive_clue text,
+  report_submitted_at timestamptz
 );
 
 create table if not exists public.players (
@@ -107,14 +66,31 @@ create table if not exists public.players (
   nickname text,
   session_id uuid references public.game_sessions(id) on delete cascade,
   team_id uuid references public.teams(id) on delete set null,
-  character_id uuid references public.characters(id) on delete set null,
-  is_solved boolean default false,
-  solved_at timestamptz,
+  club_role text
+    check (club_role is null or club_role in ('president', 'vice_president', 'member')),
+  patrol_location_id uuid,
   is_online boolean default true
 );
 
+do $$
+begin
+  if not exists (
+    select 1 from information_schema.table_constraints
+    where table_schema = 'public'
+      and table_name = 'players'
+      and constraint_name = 'players_patrol_location_id_fkey'
+  ) then
+    alter table public.players
+      add constraint players_patrol_location_id_fkey
+      foreign key (patrol_location_id)
+      references public.locations(id)
+      on delete set null;
+  end if;
+end
+$$;
+
 -- =====================================================================
--- updated_at 자동 갱신 트리거 (scenarios)
+-- updated_at (cases)
 -- =====================================================================
 
 create or replace function public.touch_updated_at() returns trigger as $$
@@ -124,9 +100,9 @@ begin
 end;
 $$ language plpgsql;
 
-drop trigger if exists scenarios_touch_updated_at on public.scenarios;
-create trigger scenarios_touch_updated_at
-  before update on public.scenarios
+drop trigger if exists cases_touch_updated_at on public.cases;
+create trigger cases_touch_updated_at
+  before update on public.cases
   for each row execute function public.touch_updated_at();
 
 -- =====================================================================
@@ -134,73 +110,48 @@ create trigger scenarios_touch_updated_at
 -- =====================================================================
 
 create unique index if not exists game_sessions_join_code_key on public.game_sessions (join_code);
-create index if not exists scenarios_creator_id_idx on public.scenarios (creator_id);
-create index if not exists characters_scenario_id_idx on public.characters (scenario_id);
-create index if not exists locations_scenario_id_idx on public.locations (scenario_id);
-create index if not exists locations_character_id_idx on public.locations (character_id);
-create index if not exists clues_scenario_id_idx on public.clues (scenario_id);
+create index if not exists cases_creator_id_idx on public.cases (creator_id);
+create index if not exists locations_case_id_idx on public.locations (case_id);
+create index if not exists clues_case_id_idx on public.clues (case_id);
 create index if not exists clues_location_id_idx on public.clues (location_id);
-create index if not exists scenarios_resolution_location_id_idx on public.scenarios (resolution_location_id);
-create index if not exists scenarios_resolution_target_clue_id_idx on public.scenarios (resolution_target_clue_id);
-create index if not exists game_sessions_scenario_id_idx on public.game_sessions (scenario_id);
+create index if not exists game_sessions_case_id_idx on public.game_sessions (case_id);
 create index if not exists game_sessions_host_id_idx on public.game_sessions (host_id);
 create index if not exists game_sessions_active_idx on public.game_sessions (is_active);
 create index if not exists teams_session_id_idx on public.teams (session_id);
 create index if not exists players_session_id_idx on public.players (session_id);
 create index if not exists players_team_id_idx on public.players (team_id);
-create index if not exists players_character_id_idx on public.players (character_id);
+create index if not exists players_patrol_location_id_idx on public.players (patrol_location_id);
+create index if not exists players_club_role_idx on public.players (club_role);
+create index if not exists teams_report_submitted_at_idx on public.teams (report_submitted_at);
 
 -- =====================================================================
 -- Row Level Security
 -- =====================================================================
 
-alter table if exists public.scenarios enable row level security;
-alter table if exists public.characters enable row level security;
+alter table if exists public.cases enable row level security;
 alter table if exists public.locations enable row level security;
 alter table if exists public.clues enable row level security;
 alter table if exists public.game_sessions enable row level security;
 alter table if exists public.teams enable row level security;
 alter table if exists public.players enable row level security;
 
--- ---------- scenarios ----------
-drop policy if exists "scenarios are publicly readable" on public.scenarios;
-drop policy if exists "teachers insert own scenarios" on public.scenarios;
-drop policy if exists "teachers update own scenarios" on public.scenarios;
-drop policy if exists "teachers delete own scenarios" on public.scenarios;
+drop policy if exists "cases are publicly readable" on public.cases;
+drop policy if exists "teachers insert own cases" on public.cases;
+drop policy if exists "teachers update own cases" on public.cases;
+drop policy if exists "teachers delete own cases" on public.cases;
 
-create policy "scenarios are publicly readable" on public.scenarios
+create policy "cases are publicly readable" on public.cases
   for select using (true);
-create policy "teachers insert own scenarios" on public.scenarios
+create policy "teachers insert own cases" on public.cases
   for insert to authenticated
   with check (creator_id = auth.uid());
-create policy "teachers update own scenarios" on public.scenarios
+create policy "teachers update own cases" on public.cases
   for update to authenticated
   using (creator_id = auth.uid())
   with check (creator_id = auth.uid());
-create policy "teachers delete own scenarios" on public.scenarios
+create policy "teachers delete own cases" on public.cases
   for delete to authenticated
   using (creator_id = auth.uid());
-
--- ---------- characters / locations / clues (시나리오 소유자만 관리, 모두 읽기 가능) ----------
-drop policy if exists "characters are publicly readable" on public.characters;
-drop policy if exists "owners manage characters" on public.characters;
-
-create policy "characters are publicly readable" on public.characters
-  for select using (true);
-create policy "owners manage characters" on public.characters
-  for all to authenticated
-  using (
-    exists (
-      select 1 from public.scenarios s
-      where s.id = characters.scenario_id and s.creator_id = auth.uid()
-    )
-  )
-  with check (
-    exists (
-      select 1 from public.scenarios s
-      where s.id = characters.scenario_id and s.creator_id = auth.uid()
-    )
-  );
 
 drop policy if exists "locations are publicly readable" on public.locations;
 drop policy if exists "owners manage locations" on public.locations;
@@ -211,14 +162,14 @@ create policy "owners manage locations" on public.locations
   for all to authenticated
   using (
     exists (
-      select 1 from public.scenarios s
-      where s.id = locations.scenario_id and s.creator_id = auth.uid()
+      select 1 from public.cases s
+      where s.id = locations.case_id and s.creator_id = auth.uid()
     )
   )
   with check (
     exists (
-      select 1 from public.scenarios s
-      where s.id = locations.scenario_id and s.creator_id = auth.uid()
+      select 1 from public.cases s
+      where s.id = locations.case_id and s.creator_id = auth.uid()
     )
   );
 
@@ -231,18 +182,17 @@ create policy "owners manage clues" on public.clues
   for all to authenticated
   using (
     exists (
-      select 1 from public.scenarios s
-      where s.id = clues.scenario_id and s.creator_id = auth.uid()
+      select 1 from public.cases s
+      where s.id = clues.case_id and s.creator_id = auth.uid()
     )
   )
   with check (
     exists (
-      select 1 from public.scenarios s
-      where s.id = clues.scenario_id and s.creator_id = auth.uid()
+      select 1 from public.cases s
+      where s.id = clues.case_id and s.creator_id = auth.uid()
     )
   );
 
--- ---------- game_sessions ----------
 drop policy if exists "sessions are publicly readable" on public.game_sessions;
 drop policy if exists "hosts insert own sessions" on public.game_sessions;
 drop policy if exists "hosts update own sessions" on public.game_sessions;
@@ -261,9 +211,6 @@ create policy "hosts delete own sessions" on public.game_sessions
   for delete to authenticated
   using (host_id = auth.uid());
 
--- ---------- teams ----------
--- 호스트가 팀을 생성하고, 누구나(익명 학생 포함) 팀 상태를 갱신할 수 있음
--- (sb-anon 키로 학생이 보물 발견 시 is_solved 갱신해야 하므로 update 는 public 허용)
 drop policy if exists "teams are publicly readable" on public.teams;
 drop policy if exists "anyone can create team" on public.teams;
 drop policy if exists "anyone can update team" on public.teams;
@@ -291,7 +238,6 @@ create policy "host can delete team" on public.teams
     )
   );
 
--- ---------- players ----------
 drop policy if exists "players are publicly readable" on public.players;
 drop policy if exists "anyone can join as player" on public.players;
 drop policy if exists "anyone can update player" on public.players;
@@ -319,16 +265,14 @@ create policy "anyone can leave player" on public.players
 
 grant usage on schema public to anon, authenticated;
 
-grant select on public.scenarios to anon, authenticated;
-grant select on public.characters to anon, authenticated;
+grant select on public.cases to anon, authenticated;
 grant select on public.locations to anon, authenticated;
 grant select on public.clues to anon, authenticated;
 grant select on public.game_sessions to anon, authenticated;
 grant select on public.teams to anon, authenticated;
 grant select on public.players to anon, authenticated;
 
-grant insert, update, delete on public.scenarios to authenticated;
-grant insert, update, delete on public.characters to authenticated;
+grant insert, update, delete on public.cases to authenticated;
 grant insert, update, delete on public.locations to authenticated;
 grant insert, update, delete on public.clues to authenticated;
 grant insert, update, delete on public.game_sessions to authenticated;

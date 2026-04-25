@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 
@@ -11,10 +11,13 @@ import {
   listSessionPlayers,
   listSessionTeams,
   setPlayersOnline,
+  type SessionDetailsRow,
   type SessionPlayerRow,
   type TeamRow,
 } from "@/lib/api/play";
-import { advanceSessionPhase, beginHostingSession, endSession, getNextPhase } from "@/lib/api/scenarios";
+import { isCulpritCorrect } from "@/lib/report-compare";
+import { findSuspectName, parseSuspectRosterFromCase } from "@/lib/suspects";
+import { advanceSessionPhase, beginHostingSession, endSession, getNextPhase } from "@/lib/api/cases";
 import { TopNav } from "@/components/layout/top-nav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,24 +27,25 @@ import {
   getSessionRoomChannelName,
   type SessionPresenceRow,
 } from "@/lib/realtime/session-presence";
+import { clubRoleLabelKr, clubRoleSortKey } from "@/lib/club-role";
 import { hasSupabaseEnv, supabase } from "@/lib/supabase";
-import type { ScenarioPhase } from "@/lib/api/scenarios";
+import type { CasePhase } from "@/lib/api/cases";
 
-const PHASES: { key: ScenarioPhase; label: string }[] = [
-  { key: "briefing", label: "사건 파악" },
-  { key: "investigation", label: "단서 수집" },
-  { key: "resolution", label: "최종 미션" },
+const PHASES: { key: CasePhase; label: string }[] = [
+  { key: "briefing", label: "1. 브리핑" },
+  { key: "investigation", label: "2. 조사" },
+  { key: "final_report", label: "3. 최종 보고" },
 ];
 
-type TimedPhase = Exclude<ScenarioPhase, "waiting" | "session_end">;
+type TimedPhase = Exclude<CasePhase, "waiting" | "session_end">;
 
 const PHASE_MINUTES: Record<TimedPhase, number> = {
   briefing: 10,
   investigation: 12,
-  resolution: 8,
+  final_report: 10,
 };
 
-function isTimedPhase(phase: ScenarioPhase): phase is TimedPhase {
+function isTimedPhase(phase: CasePhase): phase is TimedPhase {
   return phase !== "waiting" && phase !== "session_end";
 }
 
@@ -175,7 +179,7 @@ function PhaseTimerCard({ phase }: { phase: TimedPhase }) {
               setTimerInputDigits("");
               setIsEditing(true);
             }}
-            className="h-20 text-center font-mono text-5xl tabular-nums text-[var(--accent)] transition hover:text-[#dce48a] sm:text-6xl"
+            className="h-20 text-center font-mono text-5xl tabular-nums text-[var(--accent)] transition hover:text-[var(--highlight)] sm:text-6xl"
           >
             {formatTimerDisplay(timerRemainingSec)}
           </Button>
@@ -220,9 +224,12 @@ function groupPlayersByTeam(players: SessionPlayerRow[], teams: TeamRow[]): Team
     .sort((a, b) => (a.name ?? "").localeCompare(b.name ?? ""))
     .map((team) => ({
       team,
-      members: (playersByTeamId.get(team.id) ?? []).sort((a, b) =>
-        (a.characters?.name ?? "").localeCompare(b.characters?.name ?? ""),
-      ),
+      members: (playersByTeamId.get(team.id) ?? []).sort((a, b) => {
+        const ra = clubRoleSortKey(a.club_role);
+        const rb = clubRoleSortKey(b.club_role);
+        if (ra !== rb) return ra - rb;
+        return (a.patrol_zone?.name ?? "").localeCompare(b.patrol_zone?.name ?? "", "ko");
+      }),
     }));
 }
 
@@ -239,7 +246,7 @@ function TeamAssignmentDashboard({
   return (
     <section className="space-y-3 rounded-lg border border-[var(--border)] bg-[rgba(36,40,43,0.55)] p-6">
       <header className="flex items-baseline justify-between">
-        <h2 className="text-sm font-semibold text-[var(--foreground)]">팀·캐릭터 배정</h2>
+        <h2 className="text-sm font-semibold text-[var(--foreground)]">팀·역할·순찰 구역</h2>
         <span className="text-xs text-[var(--muted-foreground)]">총 {players.length}명</span>
       </header>
       {loading ? (
@@ -251,7 +258,7 @@ function TeamAssignmentDashboard({
           {groups.map((g) => (
             <div
               key={g.team.id}
-              className="rounded-md border border-[var(--border)] bg-[rgba(15,17,19,0.45)] p-3"
+              className="rounded-md border border-[var(--border)] bg-[var(--ink-45)] p-3"
             >
               <p className="text-xs uppercase tracking-[0.16em] text-[var(--muted-foreground)]">
                 Team
@@ -268,8 +275,15 @@ function TeamAssignmentDashboard({
                       key={m.id}
                       className="flex items-center justify-between gap-2 rounded border border-[var(--border)] bg-[rgba(255,255,255,0.03)] px-2 py-1.5 text-xs"
                     >
-                      <span className="text-[var(--foreground)]">{m.nickname ?? "Player"}</span>
-                      <span className="text-[var(--accent)]">{m.characters?.name ?? "—"}</span>
+                      <span className="min-w-0 flex-1 text-[var(--foreground)]">
+                        {m.nickname ?? "Player"}
+                        <span className="ml-1 text-[10px] text-[var(--muted-foreground)]">
+                          {clubRoleLabelKr(m.club_role)}
+                        </span>
+                      </span>
+                      <span className="shrink-0 text-[var(--accent)]">
+                        {m.patrol_zone?.name ?? "—"}
+                      </span>
                     </li>
                   ))
                 )}
@@ -282,26 +296,45 @@ function TeamAssignmentDashboard({
   );
 }
 
-function TeamSuccessDashboard({
+function TeamReportDashboard({
+  reportKey,
   players,
   teams,
   loading,
 }: {
+  reportKey: SessionDetailsRow["cases"];
   players: SessionPlayerRow[];
   teams: TeamRow[];
   loading: boolean;
 }) {
   const groups = useMemo(() => groupPlayersByTeam(players, teams), [players, teams]);
-  const solvedCount = teams.filter((t) => t.is_solved).length;
+  const submittedCount = teams.filter((t) => t.report_submitted_at).length;
+  const answerRoster = useMemo(
+    () => parseSuspectRosterFromCase(reportKey?.suspect_roster),
+    [reportKey?.suspect_roster],
+  );
+  const answerId = reportKey?.answer_suspect_id;
+  const trueName = findSuspectName(answerRoster, answerId);
+  const hasAnswer = Boolean(answerId?.trim() && trueName);
 
   return (
     <section className="space-y-3 rounded-lg border border-[var(--border)] bg-[rgba(36,40,43,0.55)] p-6">
       <header className="flex items-baseline justify-between">
-        <h2 className="text-sm font-semibold text-[var(--foreground)]">최종 미션 현황</h2>
+        <h2 className="text-sm font-semibold text-[var(--foreground)]">최종 보고서</h2>
         <span className="text-xs text-[var(--muted-foreground)]">
-          성공 {solvedCount} / {teams.length}
+          제출 {submittedCount} / {teams.length}
         </span>
       </header>
+      {hasAnswer ? (
+        <div className="mb-2 rounded-md border border-[var(--mystery)]/35 bg-[var(--tint-accent)] p-3 text-xs text-[var(--foreground)]">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--mystery)]">등록된 정답(범인)</p>
+          <p className="mt-1 font-medium">{trueName}</p>
+        </div>
+      ) : (
+        <p className="mb-2 text-xs text-amber-200/80">
+          시나리오에「범인(정답) 용의자」가 지정되지 않았습니다. 시나리오 편집에서 선택해 주세요.
+        </p>
+      )}
       {loading ? (
         <p className="text-sm text-[var(--muted-foreground)]">불러오는 중…</p>
       ) : groups.length === 0 ? (
@@ -309,15 +342,17 @@ function TeamSuccessDashboard({
       ) : (
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
           {groups.map((g) => {
-            const solved = Boolean(g.team.is_solved);
-            const solvedAt = g.team.solved_at;
+            const t = g.team;
+            const submitted = Boolean(t.report_submitted_at);
+            const subName = findSuspectName(answerRoster, t.report_suspect_id);
+            const ok = isCulpritCorrect(answerId, t.report_suspect_id);
             return (
               <div
                 key={g.team.id}
                 className={`rounded-md border p-3 ${
-                  solved
-                    ? "border-[var(--accent)] bg-[rgba(201,209,107,0.12)]"
-                    : "border-[var(--border)] bg-[rgba(15,17,19,0.45)]"
+                  submitted
+                    ? "border-[var(--accent)] bg-[var(--tint-accent-medium)]"
+                    : "border-[var(--border)] bg-[var(--ink-45)]"
                 }`}
               >
                 <div className="flex items-center justify-between">
@@ -326,18 +361,47 @@ function TeamSuccessDashboard({
                   </p>
                   <span
                     className={`rounded px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.12em] ${
-                      solved
+                      submitted
                         ? "bg-[var(--accent)] text-black"
                         : "border border-[var(--border)] text-[var(--muted-foreground)]"
                     }`}
                   >
-                    {solved ? "성공" : "진행 중"}
+                    {submitted ? "제출됨" : "대기"}
                   </span>
                 </div>
-                {solvedAt ? (
+                {t.report_submitted_at ? (
                   <p className="mt-1 text-[11px] text-[var(--muted-foreground)]">
-                    {new Date(solvedAt).toLocaleTimeString()}
+                    {new Date(t.report_submitted_at).toLocaleString("ko-KR")}
                   </p>
+                ) : null}
+                {submitted && hasAnswer ? (
+                  <p
+                    className={
+                      "mt-2 text-[11px] font-semibold " + (ok ? "text-[var(--accent)]" : "text-amber-200/90")
+                    }
+                  >
+                    범인 검거: {ok ? "성공" : "실패"} — 제출: {subName ?? "—"}
+                  </p>
+                ) : null}
+                {submitted ? (
+                  <dl className="mt-3 space-y-2 text-xs text-[var(--foreground)]">
+                    <div>
+                      <dt className="text-[10px] uppercase tracking-wide text-[var(--muted-foreground)]">지목한 범인</dt>
+                      <dd className="whitespace-pre-wrap break-words">{subName ?? t.report_suspect_id ?? "—"}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-[10px] uppercase tracking-wide text-[var(--muted-foreground)]">도구·방법</dt>
+                      <dd className="whitespace-pre-wrap break-words">{t.report_method ?? "—"}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-[10px] uppercase tracking-wide text-[var(--muted-foreground)]">동기</dt>
+                      <dd className="whitespace-pre-wrap break-words">{t.report_motive ?? "—"}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-[10px] uppercase tracking-wide text-[var(--muted-foreground)]">결정적 단서</dt>
+                      <dd className="whitespace-pre-wrap break-words">{t.report_decisive_clue ?? "—"}</dd>
+                    </div>
+                  </dl>
                 ) : null}
                 <ul className="mt-2 space-y-1">
                   {g.members.map((m) => (
@@ -345,8 +409,15 @@ function TeamSuccessDashboard({
                       key={m.id}
                       className="flex items-center justify-between gap-2 rounded border border-[var(--border)] bg-[rgba(255,255,255,0.03)] px-2 py-1.5 text-xs"
                     >
-                      <span className="text-[var(--foreground)]">{m.nickname ?? "Player"}</span>
-                      <span className="text-[var(--accent)]">{m.characters?.name ?? "—"}</span>
+                      <span className="min-w-0 flex-1 text-[var(--foreground)]">
+                        {m.nickname ?? "Player"}
+                        <span className="ml-1 text-[10px] text-[var(--muted-foreground)]">
+                          {clubRoleLabelKr(m.club_role)}
+                        </span>
+                      </span>
+                      <span className="shrink-0 text-[var(--accent)]">
+                        {m.patrol_zone?.name ?? "—"}
+                      </span>
                     </li>
                   ))}
                 </ul>
@@ -359,7 +430,7 @@ function TeamSuccessDashboard({
   );
 }
 
-function ScenarioSessionHostContent() {
+function CaseSessionHostContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const sessionId = searchParams.get("id")?.trim() ?? "";
@@ -480,9 +551,13 @@ function ScenarioSessionHostContent() {
       const next = getNextPhase(current);
       if (!next) throw new Error("Already at final phase.");
       await advanceSessionPhase(sessionId, next);
+      return next;
     },
-    onSuccess: async () => {
+    onSuccess: async (endedPhase) => {
       await queryClient.invalidateQueries({ queryKey: ["host-session", sessionId] });
+      if (endedPhase === "session_end") {
+        router.push(ROUTES.admin.cases);
+      }
     },
   });
 
@@ -601,8 +676,9 @@ function ScenarioSessionHostContent() {
 
   const playercount = onlinePlayers.length;
 
-  const phase = (sessionQuery.data?.phase as ScenarioPhase) ?? "waiting";
+  const phase = (sessionQuery.data?.phase as CasePhase) ?? "waiting";
   const nextPhase = getNextPhase(phase);
+  const nextPhaseLabel = nextPhase === "session_end" ? "세션 종료" : "다음 단계";
   const sessionStarted = phase !== "waiting";
   const sessionEnded = phase === "session_end";
   const shouldShowTimer = isTimedPhase(phase);
@@ -613,7 +689,7 @@ function ScenarioSessionHostContent() {
         <TopNav />
         <main className="mx-auto w-full max-w-7xl px-4 py-8">
           <p className="text-sm text-[var(--muted-foreground)]">세션 ID가 없습니다.</p>
-          <Button type="button" className="mt-4" variant="secondary" onClick={() => router.push(ROUTES.admin.scenarios)}>
+          <Button type="button" className="mt-4" variant="secondary" onClick={() => router.push(ROUTES.admin.cases)}>
             목록으로
           </Button>
         </main>
@@ -637,8 +713,8 @@ function ScenarioSessionHostContent() {
       <div className="min-h-screen">
         <TopNav />
         <main className="mx-auto w-full max-w-7xl px-4 py-8">
-          <p className="text-sm text-[var(--primary)]">세션을 불러올 수 없습니다.</p>
-          <Button type="button" className="mt-4" variant="secondary" onClick={() => router.push(ROUTES.admin.scenarios)}>
+          <p className="text-sm text-[var(--error)]">세션을 불러올 수 없습니다.</p>
+          <Button type="button" className="mt-4" variant="secondary" onClick={() => router.push(ROUTES.admin.cases)}>
             목록으로
           </Button>
         </main>
@@ -668,7 +744,7 @@ function ScenarioSessionHostContent() {
           <div className="min-w-0 flex-1 space-y-3">
             <div>
               <p className="font-mono text-3xl font-semibold tracking-[0.2em] text-[var(--accent)] sm:text-4xl">
-                {row.scenarios?.title}
+                {row.cases?.title}
               </p>
             </div>
             <div>
@@ -693,7 +769,7 @@ function ScenarioSessionHostContent() {
                   disabled={nextPhaseMutation.isPending}
                 >
                   {nextPhaseMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                  Next
+                  {nextPhaseLabel}
                 </Button>
             ) : null}
             {sessionEnded ? <span className="text-xs text-[var(--muted-foreground)]">종료됨</span> : null}
@@ -709,7 +785,7 @@ function ScenarioSessionHostContent() {
                 {onlinePlayers.map((p) => (
                   <li
                     key={p.id}
-                    className="inline-flex items-center gap-2 rounded-md border border-[var(--border)] bg-[rgba(15,17,19,0.35)] px-3 py-2 text-sm w-fit"
+                    className="inline-flex items-center gap-2 rounded-md border border-[var(--border)] bg-[var(--ink-35)] px-3 py-2 text-sm w-fit"
                   >
                     <span className="font-medium text-[var(--foreground)]">
                       {p.nickname ?? "Player"}
@@ -725,7 +801,7 @@ function ScenarioSessionHostContent() {
           <>
             <section className="space-y-3">
               <h2 className="text-sm font-semibold text-[var(--foreground)]">Phase</h2>
-              <div className="grid gap-2 md:grid-cols-6">
+              <div className="grid gap-2 md:grid-cols-3">
                 {PHASES.map((p, idx) => {
                   const currentIdx = PHASES.findIndex((x) => x.key === phase);
                   const isCurrent = idx === currentIdx;
@@ -735,7 +811,7 @@ function ScenarioSessionHostContent() {
                       key={p.key}
                       className={`rounded-md border px-2 py-2 text-center text-xs leading-snug ${
                         isCurrent
-                          ? "border-[var(--accent)] bg-[rgba(201,209,107,0.1)] text-[var(--accent)]"
+                          ? "border-[var(--accent)] bg-[var(--tint-accent)] text-[var(--accent)]"
                           : isDone
                             ? "border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)]"
                             : "border-[var(--border)] text-[var(--muted-foreground)]"
@@ -758,8 +834,9 @@ function ScenarioSessionHostContent() {
               />
             ) : null}
 
-            {phase === "resolution" || phase === "session_end" ? (
-              <TeamSuccessDashboard
+            {phase === "final_report" || phase === "session_end" ? (
+              <TeamReportDashboard
+                reportKey={row.cases}
                 players={onlinePlayers}
                 teams={teamsQuery.data ?? []}
                 loading={playersQuery.isLoading || teamsQuery.isLoading}
@@ -770,7 +847,7 @@ function ScenarioSessionHostContent() {
       </main>
 
       <div className="pointer-events-none fixed bottom-4 right-4 z-40">
-        <div className="pointer-events-auto rounded-md border border-[var(--border)] bg-[rgba(15,17,19,0.95)] px-3 py-2 text-sm text-[var(--foreground)] shadow-lg backdrop-blur">
+        <div className="pointer-events-auto rounded-md border border-[var(--border)] bg-[var(--ink-95)] px-3 py-2 text-sm text-[var(--foreground)] shadow-lg backdrop-blur">
           플레이어 <span className="font-semibold text-[var(--accent)]">{playercount}</span>명
         </div>
       </div>
@@ -778,7 +855,7 @@ function ScenarioSessionHostContent() {
   );
 }
 
-export default function ScenarioSessionHostPage() {
+export default function CaseSessionHostPage() {
   return (
     <Suspense
       fallback={
@@ -790,7 +867,7 @@ export default function ScenarioSessionHostPage() {
         </div>
       }
     >
-      <ScenarioSessionHostContent />
+      <CaseSessionHostContent />
     </Suspense>
   );
 }

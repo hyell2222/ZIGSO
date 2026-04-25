@@ -6,18 +6,18 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import {
-  deleteScenario,
-  listScenarios,
+  deleteCase,
+  listCases,
   startGameSession,
-  type ScenarioRecord,
-} from "@/lib/api/scenarios";
+  type CaseListRow,
+} from "@/lib/api/cases";
 import { getCurrentSession } from "@/lib/api/auth";
 import { TopNav } from "@/components/layout/top-nav";
 import { Button } from "@/components/ui/button";
 import { ROUTES } from "@/lib/routes";
 import { hasSupabaseEnv } from "@/lib/supabase";
 
-export default function AdminScenariosPage() {
+export default function AdminCasesPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -40,22 +40,22 @@ export default function AdminScenariosPage() {
     if (!sessionQuery.data) router.replace(ROUTES.admin.signIn);
   }, [router, sessionQuery.data, sessionQuery.isLoading]);
 
-  const scenariosQuery = useQuery({
-    queryKey: ["admin-scenarios", sessionQuery.data?.user.id],
-    queryFn: () => listScenarios(sessionQuery.data!.user.id),
+  const casesQuery = useQuery({
+    queryKey: ["admin-cases", sessionQuery.data?.user.id],
+    queryFn: () => listCases(sessionQuery.data!.user.id),
     enabled: Boolean(sessionQuery.data?.user.id),
   });
 
   const startGameMutation = useMutation({
     mutationFn: async ({
-      scenario,
+      caseRow,
     }: {
-      scenario: ScenarioRecord;
+      caseRow: CaseListRow;
       newTab: Window | null;
-    }) => startGameSession(scenario, sessionQuery.data?.user.id),
+    }) => startGameSession(caseRow, sessionQuery.data?.user.id),
     onMutate: () => setErrorMessage(null),
     onSuccess: (data, variables) => {
-      const url = ROUTES.admin.scenariosSession(data.sessionId);
+      const url = ROUTES.admin.casesSession(data.sessionId);
       if (variables.newTab && !variables.newTab.closed) {
         variables.newTab.location.href = url;
       } else {
@@ -71,40 +71,40 @@ export default function AdminScenariosPage() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (scenarioId: string) => {
-      setPendingDeleteId(scenarioId);
+    mutationFn: async (caseId: string) => {
+      setPendingDeleteId(caseId);
       try {
-        await deleteScenario(scenarioId);
+        await deleteCase(caseId);
       } finally {
         setPendingDeleteId(null);
       }
     },
     onMutate: () => setErrorMessage(null),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["admin-scenarios"] });
+      await queryClient.invalidateQueries({ queryKey: ["admin-cases"] });
     },
     onError: (error: Error) => setErrorMessage(error.message),
   });
 
-  const handleStartGame = (scenario: ScenarioRecord) => {
+  const handleStartGame = (caseRow: CaseListRow) => {
     const newTab = typeof window !== "undefined" ? window.open("about:blank", "_blank") : null;
-    startGameMutation.mutate({ scenario, newTab });
+    startGameMutation.mutate({ caseRow, newTab });
   };
 
-  const handleEdit = (scenario: ScenarioRecord) => {
-    router.push(ROUTES.admin.scenariosEdit(scenario.id));
+  const handleEdit = (row: CaseListRow) => {
+    router.push(ROUTES.admin.casesEdit(row.id));
   };
 
-  const handleDelete = (scenario: ScenarioRecord) => {
-    const title = scenario.title?.trim() || "Untitled scenario";
+  const handleDelete = (row: CaseListRow) => {
+    const title = row.title?.trim() || "Untitled case";
     if (
       !window.confirm(
-        `"${title}" 시나리오를 삭제할까요?\n캐릭터/단서 등 연결된 데이터도 모두 함께 삭제됩니다.`,
+        `"${title}" 시나리오를 삭제할까요?\n담당 구역·단서 등 연결된 데이터도 모두 함께 삭제됩니다.`,
       )
     ) {
       return;
     }
-    deleteMutation.mutate(scenario.id);
+    deleteMutation.mutate(row.id);
   };
 
   return (
@@ -115,50 +115,52 @@ export default function AdminScenariosPage() {
         {sessionQuery.data ? (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-[var(--foreground)]">Scenario List</h2>
-              {(scenariosQuery.data?.length ?? 0) > 0 ? (
-                <Button type="button" onClick={() => router.push(ROUTES.admin.scenariosCreate)}>
+              <h2 className="text-xl font-semibold text-[var(--foreground)]">시나리오 목록</h2>
+              {(casesQuery.data?.length ?? 0) > 0 ? (
+                <Button type="button" onClick={() => router.push(ROUTES.admin.casesCreate)}>
                   Create
                 </Button>
               ) : null}
             </div>
-            {scenariosQuery.isLoading ? (
-              <p className="text-sm text-[var(--muted-foreground)]">Loading scenarios...</p>
-            ) : (scenariosQuery.data?.length ?? 0) === 0 ? (
+            {casesQuery.isLoading ? (
+              <p className="text-sm text-[var(--muted-foreground)]">Loading cases...</p>
+            ) : (casesQuery.data?.length ?? 0) === 0 ? (
               <div className="flex justify-center py-10">
-                <Button type="button" onClick={() => router.push(ROUTES.admin.scenariosCreate)}>
+                <Button type="button" onClick={() => router.push(ROUTES.admin.casesCreate)}>
                   Create
                 </Button>
               </div>
             ) : (
               <div className="grid gap-3 md:grid-cols-2">
-                {scenariosQuery.data?.map((scenario) => {
-                  const isDeleting = pendingDeleteId === scenario.id;
+                {casesQuery.data?.map((row) => {
+                  const isDeleting = pendingDeleteId === row.id;
                   return (
                     <div
-                      key={scenario.id}
-                      className="relative space-y-3 rounded-md border border-[var(--border)] bg-[rgba(15,17,19,0.45)] p-3 text-left transition hover:border-[var(--accent)]"
+                      key={row.id}
+                      className="relative space-y-3 rounded-md border border-[var(--border)] bg-[var(--surface)] p-3 text-left transition hover:border-[var(--mystery)]/50"
                     >
                       <div className="flex items-start justify-between gap-2">
                         <p className="font-semibold text-[var(--foreground)]">
-                          {scenario.title ?? "Untitled scenario"}
+                          {row.title ?? "Untitled case"}
                         </p>
                         <KebabMenu
                           disabled={isDeleting}
-                          onEdit={() => handleEdit(scenario)}
-                          onDelete={() => handleDelete(scenario)}
+                          onEdit={() => handleEdit(row)}
+                          onDelete={() => handleDelete(row)}
                         />
                       </div>
                       <p className="text-xs text-[var(--muted-foreground)]">
-                        Difficulty: {scenario.difficulty ?? "Unspecified"} · Players:{" "}
-                        {scenario.character_count ?? "TBD"}
+                        난이도: {row.difficulty ?? "—"} · 조사 맵(장소):{" "}
+                        {typeof row.locations?.[0]?.count === "number"
+                          ? row.locations[0].count
+                          : "—"}
                       </p>
                       <p className="mt-1 line-clamp-2 text-xs text-[var(--foreground)]">
-                        {scenario.description ?? "No description provided yet."}
+                        {row.description ?? "No description provided yet."}
                       </p>
                       <Button
                         type="button"
-                        onClick={() => handleStartGame(scenario)}
+                        onClick={() => handleStartGame(row)}
                         disabled={
                           startGameMutation.isPending ||
                           isDeleting ||
@@ -176,7 +178,7 @@ export default function AdminScenariosPage() {
               </div>
             )}
             {errorMessage ? (
-              <p className="text-sm text-[var(--primary)]">{errorMessage}</p>
+              <p className="text-sm text-[var(--error)]">{errorMessage}</p>
             ) : null}
           </div>
         ) : null}
@@ -273,13 +275,13 @@ function MenuItem({
   return (
     <Button
       type="button"
-      variant="menu"
+      variant="ghost"
       onClick={onClick}
       className={
         "flex w-full items-center gap-2 px-3 py-2 text-left text-xs transition-colors " +
         (danger
           ? "text-red-300 hover:bg-red-500/10"
-          : "text-[var(--foreground)] hover:bg-[rgba(36,40,43,0.85)]")
+          : "text-[var(--foreground)] hover:bg-[var(--tint-mystery)]")
       }
     >
       {icon}

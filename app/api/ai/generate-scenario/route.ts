@@ -28,20 +28,20 @@ const WORLD_H = 600;
 const SCENARIO_SCHEMA = {
   type: "object",
   additionalProperties: false,
-  required: ["title", "description", "difficulty", "characters", "clues"],
+  required: ["title", "description", "suspect_profiles", "difficulty", "investigation_zones", "clues"],
   properties: {
     title: { type: "string" },
     description: { type: "string" },
+    suspect_profiles: { type: "string" },
     difficulty: { type: "string", enum: ["Easy", "Normal", "Hard"] },
-    characters: {
+    investigation_zones: {
       type: "array",
       items: {
         type: "object",
         additionalProperties: false,
-        required: ["name", "role"],
+        required: ["zone_name"],
         properties: {
-          name: { type: "string" },
-          role: { type: "string" },
+          zone_name: { type: "string" },
         },
       },
     },
@@ -50,9 +50,9 @@ const SCENARIO_SCHEMA = {
       items: {
         type: "object",
         additionalProperties: false,
-        required: ["character_index", "asset", "name", "content", "x", "y", "w", "h"],
+        required: ["assignment_index", "asset", "name", "content", "x", "y", "w", "h"],
         properties: {
-          character_index: { type: "integer" },
+          assignment_index: { type: "integer" },
           asset: { type: "string" },
           name: { type: "string" },
           content: { type: "string" },
@@ -66,13 +66,14 @@ const SCENARIO_SCHEMA = {
   },
 } as const;
 
-type AIScenarioResponse = {
+type AICaseResponse = {
   title: string;
   description: string;
+  suspect_profiles: string;
   difficulty: "Easy" | "Normal" | "Hard";
-  characters: Array<{ name: string; role: string }>;
+  investigation_zones: Array<{ zone_name: string }>;
   clues: Array<{
-    character_index: number;
+    assignment_index: number;
     asset: string;
     name: string;
     content: string;
@@ -85,29 +86,26 @@ type AIScenarioResponse = {
 
 function buildSystemPrompt(propAssets: string[]): string {
   return [
-    "너는 초·중등 교실에서 사용할 협동 추리 게임 시나리오를 한국어로 만드는 전문 작가야.",
+    "너는 초·중등 교실에서 사용할 '비밀 탐정 동아리(Mystery Club)' 사건·의뢰 협동 추리 시나리오를 한국어로 만드는 전문 작가야.",
     "",
     "[게임 구조]",
-    "- 학생들은 팀별로 캐릭터에 배정되어 각 캐릭터의 '장소'를 조사한다.",
-    "- 각 캐릭터의 장소는 가로 800px × 세로 600px 의 탑다운 2D 맵이다.",
-    "- 단서(clue) 는 장소 안의 prop(가구/소품)에 부착되며, 학생이 prop 을 클릭해 단서 내용을 확인한다.",
-    "- 팀은 모든 단서를 모아 진실(=시나리오의 결말)을 추리한다.",
+    "- 사건이 벌어진 '조사 구역'(예: 음악준비실, 옥상)마다 맵이 하나씩 있고, 선생님이 둔 단서(prop)는 그 맵에만 붙는다.",
+    "- 실제로 플레이어의 부장·차장·부원 역할과 어느 맵을 순찰할지는 나중에 게임 세션에서 랜덤 배정된다. 여기서는 조사 맵(구역) 목록과 단서만 만든다.",
+    "- 맵 캔버스는 가로 800px × 세로 600px 탑다운 2D.",
+    "- 팀이 단서를 모아 사건(의뢰)의 진실을 찾는다.",
     "",
     "[출력 규칙 — 반드시 지킬 것]",
     "- difficulty: \"Easy\" | \"Normal\" | \"Hard\" 중 하나.",
-    "- characters: 2~5명. 각 캐릭터는 한국어 이름(name) 과 역할/직업(role) 을 가진다.",
-    "  · role 예시: \"체육 선생님\", \"도서부장\", \"전학생\" 등 캐릭터 성격이 드러나게.",
-    "- clues: 캐릭터당 3~6개씩 골고루 분포. 너무 한쪽에 몰리지 않게.",
-    "  · character_index: characters 배열의 0-based 인덱스 (반드시 유효한 범위).",
-    `  · asset: 아래 [사용 가능한 prop asset 목록] 중에서만 골라야 한다. 목록에 없는 값을 출력하면 안 됨.`,
-    `  · x, y: prop 의 중심 좌표. 월드 ${WORLD_W}×${WORLD_H} 픽셀 안에서 60 ≤ x ≤ ${WORLD_W - 60}, 60 ≤ y ≤ ${WORLD_H - 60} 권장.`,
-    "  · w, h: 표시 크기(px). 보통 60~120 사이. 너무 크게 잡지 말 것.",
-    "  · 같은 장소의 prop 끼리는 80px 이상 떨어뜨려서 시각적으로 겹치지 않게 배치.",
-    "  · 같은 prop asset 을 한 장소에서 여러 번 사용해도 됨 (단, 좌표는 다르게).",
-    "- title: 8~25자 이내의 흥미로운 제목.",
-    "- description: 학생들에게 보여줄 시나리오 배경/목표. 150~250자, 도입부와 미션이 드러나게.",
-    "- 각 단서의 content: 1~2문장의 자연스러운 한국어. 추리에 도움이 되는 구체적 정보를 담아라.",
-    "- 모든 캐릭터/단서/제목은 시나리오 전체가 일관된 하나의 사건을 이루도록 작성.",
+    "- investigation_zones: 2~5개. 각 항목은 zone_name(한국어)만. 서로 다른 장소명, 겹치지 않게.",
+    "- clues: 구역(assignment)당 3~6개씩 골고루. assignment_index는 investigation_zones 배열의 0-based 인덱스.",
+    `  · asset: 아래 [사용 가능한 prop asset 목록] 중에서만. 목록에 없는 값 금지.`,
+    `  · x, y: 중심 좌표. 월드 ${WORLD_W}×${WORLD_H} 내 60 ≤ x ≤ ${WORLD_W - 60}, 60 ≤ y ≤ ${WORLD_H - 60} 권장.`,
+    "  · w, h: 60~120 정도. 같은 구역 prop은 80px 이상 떨어뜨릴 것.",
+    "- title: 8~25자, 미스터리 느낌.",
+    "- description: 150~250자, 비밀 탐정 동아리가 맡은 의뢰·사건이 드러나게.",
+    "- suspect_profiles: 용의자 2~4명. 각각 이름·역할·알리바이 한 줄씩. 줄바꿈으로 구분.",
+    "- 단서 content: 추리에 도움 되는 1~2문장.",
+    "- 제목·구역·단서가 하나의 사건으로 일관되게.",
     "",
     "[사용 가능한 prop asset 목록]",
     propAssets.join(", "),
@@ -192,7 +190,7 @@ export async function POST(req: NextRequest) {
       response_format: {
         type: "json_schema",
         json_schema: {
-          name: "scenario",
+          name: "case",
           strict: true,
           schema: SCENARIO_SCHEMA,
         },
@@ -220,9 +218,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "OpenAI 응답이 비어있습니다." }, { status: 502 });
   }
 
-  let parsed: AIScenarioResponse;
+  let parsed: AICaseResponse;
   try {
-    parsed = JSON.parse(content) as AIScenarioResponse;
+    parsed = JSON.parse(content) as AICaseResponse;
   } catch {
     return NextResponse.json(
       { error: "OpenAI 응답을 JSON 으로 파싱할 수 없습니다.", raw: content },
@@ -232,17 +230,23 @@ export async function POST(req: NextRequest) {
 
   // 후처리: 좌표/크기 안전 클램프 + 알 수 없는 asset 제거
   const assetSet = new Set(propAssets);
-  const charCount = parsed.characters.length;
+  const slotCount = parsed.investigation_zones.length;
 
-  const sanitized: AIScenarioResponse = {
+  const suspect =
+    typeof parsed.suspect_profiles === "string" && parsed.suspect_profiles.trim()
+      ? parsed.suspect_profiles.trim()
+      : "용의자 A — 학생\n용의자 B — 학생";
+
+  const sanitized: AICaseResponse = {
     ...parsed,
+    suspect_profiles: suspect,
     clues: parsed.clues
       .filter(
         (c) =>
           assetSet.has(c.asset) &&
-          Number.isFinite(c.character_index) &&
-          c.character_index >= 0 &&
-          c.character_index < charCount,
+          Number.isFinite(c.assignment_index) &&
+          c.assignment_index >= 0 &&
+          c.assignment_index < slotCount,
       )
       .map((c) => {
         const w = clamp(Math.round(c.w || 80), 24, WORLD_W);
