@@ -24,10 +24,10 @@ export function DetectiveIdCard({ nickname, teamName, zoneName, roleKey, classNa
       }
     >
       <div className="border-b border-[var(--mystery)]/20 bg-[var(--mystery)]/9 px-4 py-2">
-        <p className="text-center text-[10px] font-semibold tracking-[0.25em] text-[var(--mystery)]">
-          MYSTERY CLUB
+        <p className="text-center text-[10px] font-semibold tracking-[0.2em] text-[var(--mystery)]">
+          Mystery Club
         </p>
-        <p className="text-center text-[9px] text-[var(--muted-foreground)]">confidential — field agent</p>
+        <p className="text-center text-[9px] text-[var(--muted-foreground)]">대외비 · 현장 요원</p>
       </div>
       <div className="space-y-3 px-4 py-4">
         <div className="flex justify-between gap-2 text-sm">
@@ -36,7 +36,7 @@ export function DetectiveIdCard({ nickname, teamName, zoneName, roleKey, classNa
         </div>
         <div className="flex justify-between gap-2 text-sm">
           <span className="text-[var(--muted-foreground)]">팀</span>
-          <span className="font-mono font-semibold text-[var(--primary)]">Team {teamName ?? "?"}</span>
+          <span className="font-mono font-semibold text-[var(--primary)]">{teamName?.trim() || "미배정"}</span>
         </div>
         <div className="h-px bg-[var(--border)]" />
         <div>

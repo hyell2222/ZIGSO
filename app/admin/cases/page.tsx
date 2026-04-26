@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, MoreVertical, Pencil, Trash2 } from "lucide-react";
+import { Loader2, MoreVertical, Pencil, PlusIcon, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
@@ -96,10 +96,10 @@ export default function AdminCasesPage() {
   };
 
   const handleDelete = (row: CaseListRow) => {
-    const title = row.title?.trim() || "Untitled case";
+    const title = row.title?.trim() || "제목 없는 사건";
     if (
       !window.confirm(
-        `"${title}" 시나리오를 삭제할까요?\n담당 구역·단서 등 연결된 데이터도 모두 함께 삭제됩니다.`,
+        `"${title}" 사건을 삭제할까요?\n담당 구역·단서 등 연결된 데이터도 모두 함께 삭제됩니다.`,
       )
     ) {
       return;
@@ -115,19 +115,19 @@ export default function AdminCasesPage() {
         {sessionQuery.data ? (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-[var(--foreground)]">시나리오 목록</h2>
+              <h2 className="text-xl font-semibold text-[var(--foreground)]">사건 목록</h2>
               {(casesQuery.data?.length ?? 0) > 0 ? (
-                <Button type="button" onClick={() => router.push(ROUTES.admin.casesCreate)}>
-                  Create
+                <Button type="button" onClick={() => router.push(ROUTES.admin.casesCreate)} className="flex items-center gap-2">
+                  <PlusIcon className="h-4 w-4" />새 사건 만들기
                 </Button>
               ) : null}
             </div>
             {casesQuery.isLoading ? (
-              <p className="text-sm text-[var(--muted-foreground)]">Loading cases...</p>
+              <p className="text-sm text-[var(--muted-foreground)]">사건을 불러오는 중…</p>
             ) : (casesQuery.data?.length ?? 0) === 0 ? (
               <div className="flex justify-center py-10">
                 <Button type="button" onClick={() => router.push(ROUTES.admin.casesCreate)}>
-                  Create
+                  새 사건
                 </Button>
               </div>
             ) : (
@@ -141,7 +141,7 @@ export default function AdminCasesPage() {
                     >
                       <div className="flex items-start justify-between gap-2">
                         <p className="font-semibold text-[var(--foreground)]">
-                          {row.title ?? "Untitled case"}
+                          {row.title ?? "제목 없는 사건"}
                         </p>
                         <KebabMenu
                           disabled={isDeleting}
@@ -170,7 +170,7 @@ export default function AdminCasesPage() {
                         {startGameMutation.isPending ? (
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         ) : null}
-                        Start Game
+                        수사 세션 시작
                       </Button>
                     </div>
                   );

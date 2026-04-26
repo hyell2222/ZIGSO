@@ -23,7 +23,7 @@ function generateJoinCode(length: number) {
 
 export async function startGameSession(caseRecord: CaseRecord, hostId?: string | null) {
   if (!hostId) {
-    throw new Error("You must be signed in to start a game.");
+    throw new Error("세션을 시작하려면 로그인해 주세요.");
   }
 
   const { data: locRows, error: locError } = await supabase
@@ -33,7 +33,7 @@ export async function startGameSession(caseRecord: CaseRecord, hostId?: string |
 
   if (locError) throw locError;
   if (!locRows?.length) {
-    throw new Error("이 시나리오에 조사 구역(맵)이 없습니다. 맵 에디터에서 구역을 추가하세요.");
+    throw new Error("이 사건에 조사 구역(맵)이 없습니다. 맵 에디터에서 구역을 추가하세요.");
   }
 
   const joinCode = generateJoinCode(6);

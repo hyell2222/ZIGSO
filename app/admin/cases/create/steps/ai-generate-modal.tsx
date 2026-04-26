@@ -121,7 +121,7 @@ export function AIGenerateModal({
         <header className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3">
           <div className="flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-[var(--accent)]" />
-            <h2 className="text-sm font-semibold text-[var(--foreground)]">AI로 시나리오 생성</h2>
+            <h2 className="text-sm font-semibold text-[var(--foreground)]">AI로 사건 생성</h2>
           </div>
           <Button
             type="button"
@@ -146,7 +146,7 @@ export function AIGenerateModal({
               disabled={isLoading}
             />
             <p className="text-[11px] text-[var(--muted-foreground,#94a3b8)]">
-              비워두면 AI 가 알아서 학교를 배경으로 한 시나리오를 만들어요.
+              비워두면 AI 가 알아서 학교를 배경으로 한 사건을 만들어요.
             </p>
           </div>
 

@@ -125,7 +125,7 @@ function CaseEditContent() {
         <TopNav />
         <main className="mx-auto flex w-full max-w-7xl items-center gap-2 px-4 py-8 text-sm text-[var(--muted-foreground,#94a3b8)]">
           <Loader2 className="h-4 w-4 animate-spin" />
-          시나리오를 불러오는 중...
+          사건을 불러오는 중...
         </main>
       </div>
     );
@@ -137,7 +137,7 @@ function CaseEditContent() {
         <TopNav />
         <main className="mx-auto w-full max-w-7xl px-4 py-8">
           <p className="rounded-md border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-300">
-            시나리오를 불러오지 못했습니다: {(dataQuery.error as Error).message}
+            사건을 불러오지 못했습니다: {(dataQuery.error as Error).message}
           </p>
         </main>
       </div>

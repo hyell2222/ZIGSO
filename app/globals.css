@@ -49,6 +49,27 @@
   --ring-focus: color-mix(in srgb, var(--mystery) 25%, transparent);
   /* 입력란: 용지 얕은 압힘 */
   --input-inset: inset 0 1px 0 color-mix(in srgb, var(--mystery) 4%, transparent);
+
+  /* 야간 입장·보안 화면 — 칠판·용지·갈색 악센트와 동일 계열 */
+  --entry-shell: color-mix(in srgb, var(--ink) 78%, var(--mystery));
+  --entry-shell-deep: color-mix(in srgb, var(--ink) 92%, var(--mystery));
+  --entry-parchment: color-mix(in srgb, var(--background) 88%, var(--surface));
+  --entry-parchment-muted: color-mix(in srgb, var(--muted-foreground) 52%, var(--surface));
+  --entry-accent: var(--primary);
+  --entry-accent-soft: color-mix(in srgb, var(--on-primary) 78%, var(--primary));
+  --entry-accent-glow: color-mix(in srgb, var(--highlight) 28%, var(--primary));
+  --entry-warm: var(--highlight);
+  /* 입장 화면 — 권한·경고 안내(어두운 배경용 붉은·주의 톤) */
+  --entry-auth-notice: color-mix(in srgb, var(--error) 22%, #f0d0c8);
+  --entry-warn-ink: color-mix(in srgb, var(--error) 55%, #2a1512);
+  --entry-warn-glow: color-mix(in srgb, var(--danger) 45%, var(--highlight) 20%);
+  --entry-grid: color-mix(in srgb, var(--primary) 9%, transparent);
+  --entry-bar-track: color-mix(in srgb, var(--ink) 55%, black);
+  --overlay-scrim: color-mix(in srgb, var(--ink) 68%, transparent);
+  --panel-warn-border: color-mix(in srgb, var(--highlight) 42%, var(--accent));
+  --panel-warn-bg: color-mix(in srgb, var(--highlight) 14%, var(--surface));
+  /* 조사 맵 우측 패널 등 짙은 보조면 */
+  --depth-panel: color-mix(in srgb, var(--mystery) 82%, var(--ink));
 }
 
 html {

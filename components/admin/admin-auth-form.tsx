@@ -42,27 +42,27 @@ export function AdminAuthForm({
   return (
     <Card className="max-w-md">
       <CardHeader>
-        <CardTitle>{mode === "sign-in" ? "Sign In" : "Sign Up"}</CardTitle>
+        <CardTitle>{mode === "sign-in" ? "로그인" : "회원가입"}</CardTitle>
       </CardHeader>
       <CardContent>
         <form className="space-y-2" onSubmit={(event) => void handleSubmit(event)}>
           <Input
             type="email"
-            placeholder="email"
+            placeholder="이메일"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             required
           />
           <Input
             type="password"
-            placeholder="password"
+            placeholder="비밀번호"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             required
           />
           <div className="flex justify-center pt-6">
             <Button type="submit" disabled={isLoading}>
-              {mode === "sign-in" ? "Sign In" : "Sign Up"}
+              {mode === "sign-in" ? "로그인" : "회원가입"}
             </Button>
           </div>
           <p className="pt-3 text-center text-xs text-[var(--foreground)]">

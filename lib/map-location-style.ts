@@ -1,7 +1,7 @@
 import type { CSSProperties } from "react";
 
 /**
- * 시나리오 장소(location) 영역 — 플레이 Phaser 맵과 어드민 맵 에디터에서 동일하게 사용.
+ * 사건 장소(location) 영역 — 플레이 Phaser 맵과 어드민 맵 에디터에서 동일하게 사용.
  */
 
 export const MAP_WORLD_BACKGROUND = 0x16110e as const;

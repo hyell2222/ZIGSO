@@ -5,7 +5,6 @@ import { Loader2 } from "lucide-react";
 import { FormEvent, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-import { CaseAcceptanceOverlay } from "@/components/play/case-acceptance-overlay";
 import { InvestigationMapShell } from "@/components/play/investigation-map-shell";
 import { DetectiveIdCard } from "@/components/play/detective-id-card";
 import { SessionInfoLayout } from "@/components/play/session-info-layout";
@@ -70,7 +69,6 @@ function PlaySessionShell({
   const [reportMethod, setReportMethod] = useState("");
   const [reportMotive, setReportMotive] = useState("");
   const [reportDecisive, setReportDecisive] = useState("");
-  const [briefingEntranceDone, setBriefingEntranceDone] = useState(false);
 
   const playerQuery = useQuery({
     queryKey: ["play-player", playerId],
@@ -179,7 +177,7 @@ function PlaySessionShell({
           void channel.track({
             role: "player",
             player_id: playerId,
-            nickname: nickname.trim() || "Player",
+            nickname: nickname.trim() || "탐정원",
             patrol_location_id: patrolLocationId ?? undefined,
             zone_name: zoneName ?? undefined,
           });
@@ -205,14 +203,6 @@ function PlaySessionShell({
   }, [sessionPhase, router, joinCode]);
 
   useEffect(() => {
-    const reduce =
-      typeof window !== "undefined" &&
-      typeof window.matchMedia === "function" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    setBriefingEntranceDone(reduce);
-  }, [sessionId]);
-
-  useEffect(() => {
     if (!playerId) return;
     void setPlayerOnline(playerId, true).catch(() => {});
     const onVisibility = () => {
@@ -228,7 +218,7 @@ function PlaySessionShell({
     mutationFn: async (args?: { nickname?: string }) => {
       const normalizedJoinCode = joinCode.trim().toUpperCase();
       const nick = (args?.nickname ?? nickname).trim();
-      if (!normalizedJoinCode) throw new Error("/play 에서 입장 코드를 입력해 주세요.");
+      if (!normalizedJoinCode) throw new Error("사건 코드를 입력해 주세요.");
       if (!nick) throw new Error("닉네임을 입력해 주세요.");
       const session = await getSessionByJoinCode(normalizedJoinCode);
       setSessionId(session.id);
@@ -381,7 +371,7 @@ function PlaySessionShell({
                         "rounded-md border p-3 " +
                         (culpritCorrect
                           ? "border-[var(--accent)] bg-[var(--tint-accent)]"
-                          : "border-amber-500/40 bg-amber-500/10")
+                          : "border-[var(--panel-warn-border)] bg-[var(--panel-warn-bg)]")
                       }
                     >
                       <p className="text-xs font-semibold text-[var(--accent)]">범인 검거 결과</p>
@@ -394,7 +384,7 @@ function PlaySessionShell({
                     </div>
                   ) : (
                     <p className="text-xs text-[var(--muted-foreground)]">
-                      이 시나리오에는 정답 범인이 등록되지 않아 검거 여부를 표시하지 않습니다.
+                      이 사건에는 정답 범인이 등록되지 않아 검거 여부를 표시하지 않습니다.
                     </p>
                   )}
                   <p className="text-[var(--muted-foreground)]">
@@ -407,8 +397,8 @@ function PlaySessionShell({
                     팀이 논의한 끝에 제출하세요. 범인은 용의자 중에서만 선택할 수 있습니다. (한 팀당 1회)
                   </p>
                   {caseRoster.length === 0 ? (
-                    <p className="text-sm text-amber-200/90">
-                      이 시나리오에 용의자 목록이 없습니다. 교사에게 문의하세요.
+                    <p className="text-sm text-[color-mix(in_srgb,var(--highlight)_88%,var(--foreground))]">
+                      이 사건에 용의자 목록이 없습니다. 교사에게 문의하세요.
                     </p>
                   ) : (
                     <div className="space-y-1">
@@ -479,15 +469,6 @@ function PlaySessionShell({
   }
 
   if (hasSupabaseEnv && isBriefing) {
-    if (!briefingEntranceDone) {
-      return (
-        <CaseAcceptanceOverlay
-          title={sessionQuery.data?.cases?.title ?? "사건 파일"}
-          description={sessionQuery.data?.cases?.description ?? ""}
-          onComplete={() => setBriefingEntranceDone(true)}
-        />
-      );
-    }
     return (
       <div className="min-h-screen">
         <main className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8">
@@ -500,7 +481,7 @@ function PlaySessionShell({
           ) : playerQuery.data?.club_role && patrolLocationId ? (
             <div className="flex flex-col items-center">
               <DetectiveIdCard
-                nickname={nickname.trim() || "Player"}
+                nickname={nickname.trim() || "탐정원"}
                 teamName={teamName}
                 zoneName={zoneName ?? ""}
                 roleKey={playerQuery.data.club_role}
@@ -524,10 +505,10 @@ function PlaySessionShell({
         <main className="mx-auto w-full max-w-7xl px-4 py-8">
           <Card className="max-w-3xl">
             <CardHeader>
-              <CardTitle>Setup Required</CardTitle>
+              <CardTitle>환경 설정 필요</CardTitle>
             </CardHeader>
             <CardContent className="text-sm text-[var(--foreground)]">
-              Add Supabase environment variables to run multiplayer classroom mode.
+              교실 멀티플레이 모드를 쓰려면 Supabase 환경 변수를 .env에 설정해 주세요.
             </CardContent>
           </Card>
         </main>
@@ -585,9 +566,9 @@ function PlaySessionShell({
               {!joinCode.trim() ? (
                 <p className="mt-3 text-xs text-[var(--accent)]">
                   <a className="underline hover:text-[var(--foreground)]" href={ROUTES.play}>
-                    /play
+                    입장 화면
                   </a>
-                  에서 입장 코드를 입력해 주세요.
+                  에서 사건 코드를 입력해 주세요.
                 </p>
               ) : null}
               {message ? <p className="mt-3 text-xs text-[var(--foreground)]">{message}</p> : null}
@@ -598,7 +579,7 @@ function PlaySessionShell({
         {hasJoinedSession && isWaitingLobby ? (
           <Card className="mt-4">
             <CardContent className="flex items-center gap-3 py-5 text-[var(--foreground)]">
-              <Loader2 className="h-5 w-5 animate-spin text-[var(--accent)]" aria-hidden />
+              <Loader2 className="h-5 w-5 animate-spin text-[var(--primary)]" aria-hidden />
               <p className="text-sm">
                 {sessionPhase === "waiting"
                   ? "교사가 세션을 시작할 때까지 잠시만 기다려 주세요."
@@ -622,12 +603,13 @@ function ResumeModal({
   onNew: () => void;
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--overlay-scrim)] p-4 backdrop-blur-sm">
       <div className="w-full max-w-md rounded-lg border border-[var(--border)] bg-[var(--surface)] p-6 shadow-xl">
         <h3 className="text-lg font-semibold text-[var(--foreground)]">이전 입장 기록</h3>
         <p className="mt-2 text-sm text-[var(--muted-foreground)]">
-          이 코드로 <span className="font-medium text-[var(--accent)]">{record.nickname}</span> 으로
-          입장한 기록이 있어요. 이어갈까요?
+          이 사건 코드로{" "}
+          <span className="font-medium text-[var(--accent)]">{record.nickname}</span> 닉네임으로 입장한 기록이
+          있어요. 이어갈까요?
         </p>
         <div className="mt-5 flex flex-col gap-2">
           <Button onClick={onContinue} className="w-full">
@@ -647,7 +629,7 @@ function TeamBadge({ teamName }: { teamName: string | null }) {
   return (
     <div className="flex items-center gap-3 rounded-md border border-[var(--accent)]/40 bg-[var(--ink-50)] px-4 py-3">
       <span className="text-xs uppercase tracking-[0.16em] text-[var(--muted-foreground)]">팀</span>
-      <span className="font-mono text-xl font-semibold text-[var(--accent)]">Team {teamName}</span>
+      <span className="font-mono text-xl font-semibold text-[var(--accent)]">{teamName}</span>
     </div>
   );
 }
@@ -656,8 +638,8 @@ export default function PlayPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-black" aria-hidden>
-          <span className="sr-only">Loading</span>
+        <div className="min-h-screen bg-[var(--entry-shell-deep)]" aria-hidden>
+          <span className="sr-only">불러오는 중</span>
         </div>
       }
     >

@@ -26,7 +26,7 @@ export default function HomePage() {
     mutationFn: async ({ email, password }: { email: string; password: string }) => {
       if (!hasSupabaseEnv) {
         throw new Error(
-          "Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.",
+          "Supabase가 설정되지 않았습니다. .env에 NEXT_PUBLIC_SUPABASE_URL과 NEXT_PUBLIC_SUPABASE_ANON_KEY를 넣어 주세요.",
         );
       }
       await signInTeacher(email, password);
@@ -56,7 +56,7 @@ export default function HomePage() {
           message={
             signInMutation.error?.message ??
             (!hasSupabaseEnv
-              ? "Supabase is not configured. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to .env."
+              ? "Supabase가 설정되지 않았습니다. .env에 NEXT_PUBLIC_SUPABASE_URL과 NEXT_PUBLIC_SUPABASE_ANON_KEY를 추가하세요."
               : null)
           }
           switchHref={ROUTES.admin.signUp}

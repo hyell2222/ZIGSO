@@ -75,7 +75,7 @@ export function SessionInfoLayout({
             <p className="whitespace-pre-wrap text-sm text-[var(--foreground)]">{legacyText}</p>
           ) : (
             <p className="text-sm text-[var(--muted-foreground)]">
-              (교사가 시나리오에 용의자 정보를 넣지 않았습니다.)
+              (교사가 사건에 용의자 정보를 넣지 않았습니다.)
             </p>
           )}
         </CardContent>

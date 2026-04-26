@@ -312,7 +312,7 @@ export function CaseWizard(props: Props) {
     setStep((s) => (Math.max(0, s - 1) as StepIndex));
   };
 
-  const pageTitle = props.pageTitle ?? (props.mode === "edit" ? "시나리오 수정" : "시나리오 만들기");
+  const pageTitle = props.pageTitle ?? (props.mode === "edit" ? "사건 수정" : "사건 만들기");
 
   if (!sessionQuery.data) {
     return (

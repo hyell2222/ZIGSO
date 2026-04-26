@@ -1,8 +1,8 @@
 /**
- * AI 시나리오 생성 라우트.
+ * AI 사건 생성 라우트.
  *
  * 클라이언트가 사용 가능한 prop asset 목록과 (선택적) 주제 키워드를 보내면,
- * OpenAI structured outputs 를 이용해 시나리오 한 벌 (제목/설명/난이도/캐릭터/단서) 을 생성한다.
+ * OpenAI structured outputs 를 이용해 사건 한 벌 (제목/설명/난이도/캐릭터/단서) 을 생성한다.
  *
  * 요구 환경변수:
  * - OPENAI_API_KEY  (필수)
@@ -86,7 +86,7 @@ type AICaseResponse = {
 
 function buildSystemPrompt(propAssets: string[]): string {
   return [
-    "너는 초·중등 교실에서 사용할 '비밀 탐정 동아리(Mystery Club)' 사건·의뢰 협동 추리 시나리오를 한국어로 만드는 전문 작가야.",
+    "너는 초·중등 교실에서 사용할 '비밀 탐정 동아리(Mystery Club)' 사건·의뢰 협동 추리 사건을 한국어로 만드는 전문 작가야.",
     "",
     "[게임 구조]",
     "- 사건이 벌어진 '조사 구역'(예: 음악준비실, 옥상)마다 맵이 하나씩 있고, 선생님이 둔 단서(prop)는 그 맵에만 붙는다.",
@@ -114,7 +114,7 @@ function buildSystemPrompt(propAssets: string[]): string {
 
 function buildUserPrompt(theme: string, difficulty?: string, propCountTarget?: number): string {
   const lines: string[] = [];
-  lines.push("아래 요청에 맞춰 시나리오 한 벌을 JSON 으로 생성해줘.");
+  lines.push("아래 요청에 맞춰 사건 한 벌을 JSON 으로 생성해줘.");
   if (theme.trim()) {
     lines.push("");
     lines.push("[사용자 요청 주제/키워드]");

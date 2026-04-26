@@ -61,7 +61,7 @@ export function BasicInfoStep({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>1. 시나리오 기본 정보</CardTitle>
+        <CardTitle>1. 사건 기본 정보</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="rounded-md border border-[var(--mystery)]/25 bg-[var(--mystery)]/8 px-3 py-2 text-[11px] leading-relaxed text-[var(--foreground)]">

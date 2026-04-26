@@ -5,7 +5,7 @@ import type { SuspectEntry } from "@/lib/suspects";
 import { supabase } from "@/lib/supabase";
 
 // =====================================================================
-// 세션 / 시나리오
+// 세션 / 사건
 // =====================================================================
 
 export async function getSessionByJoinCode(joinCode: string) {
@@ -346,7 +346,7 @@ function roleForMemberIndex(i: number): ClubRole {
 }
 
 /**
- * 세션 시작 시: 팀 편성 + 팀마다 부장1·차장1·나머지 부원 + 조사 구역(시나리오 장소) 랜덤.
+ * 세션 시작 시: 팀 편성 + 팀마다 부장1·차장1·나머지 부원 + 조사 구역(사건 장소) 랜덤.
  */
 export async function assignTeamsAndPatrol(sessionId: string) {
   const { data: session, error: sessionError } = await supabase
@@ -356,7 +356,7 @@ export async function assignTeamsAndPatrol(sessionId: string) {
     .single();
   if (sessionError) throw sessionError;
   if (!session?.case_id) {
-    throw new Error("This session is not linked to a case.");
+    throw new Error("이 세션이 사건과 연결되어 있지 않습니다.");
   }
   const caseId = session.case_id;
 
@@ -367,7 +367,7 @@ export async function assignTeamsAndPatrol(sessionId: string) {
   if (locErr) throw locErr;
   const investigationIds = (locRows ?? []).map((r) => r.id as string);
   if (investigationIds.length === 0) {
-    throw new Error("No investigation areas in this case. Add zones in the map step.");
+    throw new Error("이 사건에 조사 구역이 없습니다. 맵 단계에서 구역을 추가해 주세요.");
   }
 
   const { data: allPlayers, error: pErr } = await supabase

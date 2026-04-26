@@ -11,19 +11,20 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
-const ARCHIVE_BG = "#0A0E17";
+const MYSTERY_CLUB_TAG = "MYSTERY CLUB";
+const LINE_CONNECTING_REST = "서버에 접속 중입니다…";
+const LINE_AUTH_REQUIRED = "[WARNING] 접근 권한이 필요합니다.";
+const ACCESS_PROMPT = "인증을 시작하려면 Y 키를 누르세요.";
 
-const LINE_CONNECTING = "Connecting to Mystery Club Server...";
-const LINE_AUTH_REQUIRED = "Authentication Required.";
+const LOAD_BAR_DURATION_MS = 2200;
+const LOAD_BAR_STEPS = 28;
 
-const LOAD_BAR_DURATION_MS = 4200;
-const LOAD_BAR_STEPS = 48;
-
-/** 로딩 완료 후 — Y 입력 전까지 모달 미표시 */
-const ACCESS_PROMPT = "Press Y to access.";
+const PRELUDE_DWELL_MS = 420;
+const PRELUDE_FADE_MS = 380;
+const POST_BEAT_MS = 140;
 
 const HARDBOILED =
-  "수사할 사건의 케이스 코드와 닉네임을 입력하십시오. Mystery Club의 보안 프로토콜에 따라 승인된 동아리원만 접근 가능합니다.";
+  "사건 코드와 닉네임을 입력하세요. 보안 규정에 따라 승인된 동아리원만 사건 파일에 접근할 수 있습니다.";
 
 async function typeChars(
   text: string,
@@ -38,11 +39,30 @@ async function typeChars(
   }
 }
 
+function EntryLedRow({ className }: { className?: string }) {
+  return (
+    <div
+      className={cn(
+        "pointer-events-none flex justify-center gap-5 opacity-80",
+        className,
+      )}
+      aria-hidden
+    >
+      <span className="motion-safe:animate-[ledPulse_2.8s_ease-in-out_infinite] h-1 w-1 rounded-full bg-[var(--entry-parchment)] shadow-[0_0_10px_color-mix(in_srgb,var(--entry-accent)_65%,transparent)]" />
+      <span className="motion-safe:animate-[ledPulse_2.8s_ease-in-out_infinite_0.35s] h-1 w-1 rounded-full bg-[var(--entry-parchment)] shadow-[0_0_10px_color-mix(in_srgb,var(--entry-accent)_65%,transparent)]" />
+      <span className="motion-safe:animate-[ledPulse_2.8s_ease-in-out_infinite_0.7s] h-1 w-1 rounded-full bg-[var(--entry-parchment)] shadow-[0_0_8px_color-mix(in_srgb,var(--entry-accent)_55%,transparent)]" />
+    </div>
+  );
+}
+
 export function StudentBlackoutLanding() {
   const router = useRouter();
+  const [clubTitle, setClubTitle] = useState("");
   const [connectLine, setConnectLine] = useState("");
   const [authLine, setAuthLine] = useState("");
   const [loadPercent, setLoadPercent] = useState<number | null>(null);
+  const [showPrelude, setShowPrelude] = useState(true);
+  const [preludeFadingOut, setPreludeFadingOut] = useState(false);
   const [accessPromptText, setAccessPromptText] = useState("");
   const [awaitingAccessKey, setAwaitingAccessKey] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
@@ -60,33 +80,53 @@ export function StudentBlackoutLanding() {
 
     void (async () => {
       if (reduce) {
-        setConnectLine(LINE_CONNECTING);
+        setShowPrelude(false);
+        setLoadPercent(null);
+        setClubTitle("");
+        setConnectLine("");
         setAuthLine(LINE_AUTH_REQUIRED);
-        setLoadPercent(100);
         setAccessPromptText(ACCESS_PROMPT);
         setAwaitingAccessKey(true);
         return;
       }
-      await typeChars(LINE_CONNECTING, setConnectLine, 22, done);
+      await typeChars(MYSTERY_CLUB_TAG, setClubTitle, 18, done);
       if (cancelled) return;
-      await new Promise((r) => setTimeout(r, 280));
+      await new Promise((r) => setTimeout(r, 200));
       if (cancelled) return;
-      await typeChars(LINE_AUTH_REQUIRED, setAuthLine, 18, done);
+      await typeChars(LINE_CONNECTING_REST, setConnectLine, 20, done);
       if (cancelled) return;
-      await new Promise((r) => setTimeout(r, 400));
+      await new Promise((r) => setTimeout(r, 240));
       if (cancelled) return;
 
       setLoadPercent(0);
       for (let s = 0; s <= LOAD_BAR_STEPS; s++) {
         if (cancelled) return;
-        setLoadPercent(Math.round((s / LOAD_BAR_STEPS) * 100));
+        const t = s === LOAD_BAR_STEPS ? 1 : s / LOAD_BAR_STEPS;
+        setLoadPercent(t * 100);
         await new Promise((r) => setTimeout(r, LOAD_BAR_DURATION_MS / LOAD_BAR_STEPS));
       }
       if (cancelled) return;
-      await new Promise((r) => setTimeout(r, 200));
+      await new Promise((r) => setTimeout(r, PRELUDE_DWELL_MS));
       if (cancelled) return;
 
-      await typeChars(ACCESS_PROMPT, (chunk) => setAccessPromptText(chunk), 12, done);
+      setPreludeFadingOut(true);
+      await new Promise((r) => setTimeout(r, PRELUDE_FADE_MS));
+      if (cancelled) return;
+
+      setLoadPercent(null);
+      setConnectLine("");
+      setClubTitle(MYSTERY_CLUB_TAG);
+      setShowPrelude(false);
+      setPreludeFadingOut(false);
+      await new Promise((r) => setTimeout(r, POST_BEAT_MS));
+      if (cancelled) return;
+
+      await typeChars(LINE_AUTH_REQUIRED, setAuthLine, 16, done);
+      if (cancelled) return;
+      await new Promise((r) => setTimeout(r, 380));
+      if (cancelled) return;
+
+      await typeChars(ACCESS_PROMPT, (chunk) => setAccessPromptText(chunk), 11, done);
       if (cancelled) return;
       setAwaitingAccessKey(true);
     })();
@@ -162,7 +202,7 @@ export function StudentBlackoutLanding() {
         `${ROUTES.play}?code=${encodeURIComponent(code)}&nickname=${encodeURIComponent(nick)}`,
       );
     } catch {
-      setError("케이스 코드를 확인할 수 없습니다.");
+      setError("사건 코드를 확인할 수 없습니다. 교사에게 문의하세요.");
     } finally {
       setBusy(false);
     }
@@ -170,76 +210,124 @@ export function StudentBlackoutLanding() {
 
   return (
     <div
-      className="fixed inset-0 z-0 flex min-h-dvh flex-col overflow-hidden font-mono text-[#c8dbd4]"
+      className="font-sans fixed inset-0 z-0 flex min-h-dvh flex-col overflow-hidden text-[color:var(--entry-parchment)]"
       style={{
-        backgroundColor: ARCHIVE_BG,
+        backgroundColor: "var(--entry-shell-deep)",
         backgroundImage: `
-          linear-gradient(180deg, rgba(10,14,23,0.98) 0%, rgba(5,8,12,1) 100%),
-          repeating-linear-gradient(0deg, transparent, transparent 1px, rgba(94, 234, 212, 0.045) 1px, rgba(94, 234, 212, 0.045) 2px),
-          repeating-linear-gradient(90deg, transparent, transparent 1px, rgba(94, 234, 212, 0.035) 1px, rgba(94, 234, 212, 0.035) 2px)
+          linear-gradient(180deg, color-mix(in srgb, var(--entry-shell) 96%, transparent) 0%, var(--entry-shell-deep) 100%),
+          repeating-linear-gradient(0deg, transparent, transparent 1px, var(--entry-grid) 1px, var(--entry-grid) 2px),
+          repeating-linear-gradient(90deg, transparent, transparent 1px, var(--entry-grid) 1px, var(--entry-grid) 2px)
         `,
       }}
     >
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-[rgba(45,212,191,0.09)] to-transparent" />
-      <div className="pointer-events-none absolute bottom-5 left-0 right-0 flex justify-center gap-5 opacity-70">
-        <span className="motion-safe:animate-[ledPulse_2.8s_ease-in-out_infinite] h-1 w-1 rounded-full bg-[#5eead4] shadow-[0_0_10px_#5eead4]" />
-        <span className="motion-safe:animate-[ledPulse_2.8s_ease-in-out_infinite_0.35s] h-1 w-1 rounded-full bg-[#5eead4] shadow-[0_0_10px_#5eead4]" />
-        <span className="motion-safe:animate-[ledPulse_2.8s_ease-in-out_infinite_0.7s] h-1 w-1 rounded-full bg-[#5eead4] shadow-[0_0_8px_#5eead4]" />
-      </div>
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-[color-mix(in_srgb,var(--primary)_12%,transparent)] to-transparent" />
 
       <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-6 py-10">
-        <div className="w-full max-w-md space-y-6 text-center font-mono text-[13px] leading-relaxed tracking-[0.04em] md:text-[15px]">
-          <div className="space-y-3">
-            <p className="text-[#e8f0ec]">
-              {connectLine}
-              {!modalOpen &&
+        <div className="flex w-full max-w-md flex-col items-center gap-7 md:gap-8">
+          <div className="w-full text-center">
+            <p
+              className="text-2xl font-bold tracking-[0.12em] text-[color:var(--entry-accent-soft)] drop-shadow-[0_0_18px_color-mix(in_srgb,var(--entry-accent)_40%,transparent)] md:text-3xl md:tracking-[0.14em]"
+            >
+              {showPrelude ? clubTitle : MYSTERY_CLUB_TAG}
+              {showPrelude &&
+              !modalOpen &&
               !awaitingAccessKey &&
-              loadPercent === null &&
-              connectLine.length < LINE_CONNECTING.length ? (
-                <span className="ml-px inline-block h-3.5 w-1 translate-y-px animate-pulse bg-[#5eead4] align-middle md:h-4" />
-              ) : null}
-            </p>
-            <p className="text-[#9fb5ad]">
-              {authLine}
-              {!modalOpen &&
-              !awaitingAccessKey &&
-              loadPercent === null &&
-              connectLine.length >= LINE_CONNECTING.length &&
-              authLine.length < LINE_AUTH_REQUIRED.length ? (
-                <span className="ml-px inline-block h-3.5 w-1 translate-y-px animate-pulse bg-[#5eead4] align-middle md:h-4" />
+              clubTitle.length < MYSTERY_CLUB_TAG.length ? (
+                <span className="ml-px inline-block h-5 w-0.5 translate-y-1 animate-pulse bg-[var(--entry-accent)] align-middle md:h-6" />
               ) : null}
             </p>
           </div>
-          {loadPercent !== null ? (
-            <div className="mx-auto w-full max-w-[20rem] text-left text-[#b8d0c8]">
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-                <span className="relative h-2 min-w-[10rem] flex-1 overflow-hidden rounded-sm bg-black/60 ring-1 ring-[#5eead4]/25">
-                  <span
-                    className="absolute inset-y-0 left-0 rounded-sm bg-gradient-to-r from-[#2dd4bf] to-[#5eead4] motion-safe:transition-[width] motion-safe:duration-75 motion-safe:ease-out"
-                    style={{ width: `${loadPercent}%` }}
-                  />
-                </span>
-                <span className="shrink-0 tabular-nums text-[#7fffd4]">{loadPercent}%</span>
+
+          <div className="relative w-full min-h-[8rem] text-center text-base leading-relaxed tracking-[0.03em] motion-safe:transition-[min-height] motion-safe:duration-300 md:min-h-[9rem] md:text-lg">
+            {showPrelude ? (
+              <div
+                className={cn(
+                  "space-y-5 motion-safe:transition-[opacity,transform] motion-safe:duration-300 motion-safe:ease-out",
+                  preludeFadingOut
+                    ? "pointer-events-none opacity-0 motion-safe:-translate-y-1"
+                    : "opacity-100",
+                )}
+              >
+                <p className="text-[color:var(--entry-parchment)]">
+                  {connectLine}
+                  {!modalOpen &&
+                  !awaitingAccessKey &&
+                  loadPercent === null &&
+                  clubTitle.length >= MYSTERY_CLUB_TAG.length &&
+                  connectLine.length < LINE_CONNECTING_REST.length ? (
+                    <span className="ml-px inline-block h-4 w-0.5 translate-y-0.5 animate-pulse bg-[var(--entry-accent)] align-middle md:h-5" />
+                  ) : null}
+                </p>
+                {loadPercent !== null ? (
+                  <div className="mx-auto w-full max-w-[19rem] text-left text-[color:var(--entry-parchment-muted)]">
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                      <span className="relative h-1.5 min-w-[9rem] flex-1 overflow-hidden rounded-sm bg-[var(--entry-bar-track)] ring-1 ring-[color-mix(in_srgb,var(--entry-accent)_28%,transparent)]">
+                        <span
+                          className={cn(
+                            "absolute inset-y-0 left-0 rounded-sm bg-gradient-to-r from-[var(--entry-accent)] to-[var(--entry-accent-glow)]",
+                            loadPercent != null && loadPercent >= 100 && "right-0 w-full",
+                          )}
+                          style={
+                            loadPercent != null && loadPercent >= 100
+                              ? undefined
+                              : { width: `${loadPercent ?? 0}%` }
+                          }
+                        />
+                      </span>
+                      <span className="shrink-0 tabular-nums text-[color:var(--entry-accent-soft)]">
+                        {Math.min(100, Math.round(loadPercent))}%
+                      </span>
+                    </div>
+                  </div>
+                ) : null}
               </div>
-            </div>
-          ) : null}
-          {loadPercent === 100 && (accessPromptText.length > 0 || awaitingAccessKey) ? (
-            <p className="break-all text-[#b8d0c8]">
-              {accessPromptText}
-              {!awaitingAccessKey && accessPromptText.length < ACCESS_PROMPT.length ? (
-                <span className="ml-px inline-block h-3.5 w-1 translate-y-px animate-pulse bg-[#5eead4] align-middle md:h-4" />
-              ) : null}
-              {awaitingAccessKey ? (
-                <span className="ml-2 inline text-[#7fffd4] motion-safe:animate-pulse">[Y]</span>
-              ) : null}
-            </p>
-          ) : null}
+            ) : (
+              <div className="motion-safe:animate-[revealPost_0.48s_cubic-bezier(0.22,1,0.36,1)_both] space-y-5">
+                <p
+                  className={cn(
+                    "mx-auto w-fit max-w-full text-balance rounded-md border px-2 py-1.5 text-left text-sm font-semibold leading-snug tracking-[0.05em]",
+                    "border-[color-mix(in_srgb,var(--entry-warn-glow)_55%,transparent)]",
+                    "bg-[color-mix(in_srgb,var(--entry-warn-ink)_72%,transparent)]",
+                    "text-[color:var(--entry-auth-notice)]",
+                    "shadow-[0_0_0_1px_color-mix(in_srgb,var(--entry-warn-glow)_22%,transparent),0_0_28px_color-mix(in_srgb,var(--danger)_26%,transparent),inset_0_1px_0_color-mix(in_srgb,var(--highlight)_12%,transparent)]",
+                    "motion-safe:animate-[warnPulse_2.4s_ease-in-out_infinite]",
+                    "md:px-2.5 md:py-2 md:text-base md:tracking-[0.06em]",
+                  )}
+                >
+                  {authLine}
+                  {!modalOpen &&
+                  !awaitingAccessKey &&
+                  accessPromptText.length === 0 &&
+                  authLine.length < LINE_AUTH_REQUIRED.length ? (
+                    <span className="ml-px inline-block h-3 w-0.5 translate-y-px animate-pulse bg-[color-mix(in_srgb,var(--highlight)_55%,#f0e0d4)] align-middle shadow-[0_0_10px_color-mix(in_srgb,var(--danger)_40%,transparent)] md:h-3.5" />
+                  ) : null}
+                </p>
+                {authLine.length >= LINE_AUTH_REQUIRED.length ||
+                accessPromptText.length > 0 ||
+                awaitingAccessKey ? (
+                  <p className="text-balance text-[color:var(--entry-parchment-muted)]">
+                    {accessPromptText}
+                    {!awaitingAccessKey && accessPromptText.length < ACCESS_PROMPT.length ? (
+                      <span className="ml-px inline-block h-3 w-0.5 translate-y-px animate-pulse bg-[var(--entry-accent)] align-middle md:h-3.5" />
+                    ) : null}
+                    {awaitingAccessKey ? (
+                      <span className="ml-2 inline font-medium text-[color:var(--entry-accent-soft)] motion-safe:animate-pulse">
+                        [ Y ]
+                      </span>
+                    ) : null}
+                  </p>
+                ) : null}
+              </div>
+            )}
+          </div>
+
+          <EntryLedRow />
         </div>
       </div>
 
       {modalOpen ? (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--ink)]/55 p-4 backdrop-blur-[2px]"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--overlay-scrim)] p-4 backdrop-blur-[2px]"
           aria-hidden={false}
         >
           <Card
@@ -254,23 +342,31 @@ export function StudentBlackoutLanding() {
           >
             <CardHeader className="space-y-1 pb-3">
               <CardTitle id="landing-auth-title" className="text-lg">
-                Mystery Club · 입장
+                사건 파일 접근 인증
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4 pt-0">
-              <p className="min-h-[4.5em] text-left text-sm leading-relaxed text-[var(--foreground)]">
-                {hardboiled}
-                {hardboiled.length < HARDBOILED.length ? (
-                  <span className="ml-0.5 inline-block h-[1em] w-px animate-pulse bg-[var(--primary)] align-[-0.05em]" />
-                ) : null}
-              </p>
+            <CardContent className="space-y-4">
+              <div className="relative w-full">
+                <p
+                  className="invisible text-balance text-sm leading-relaxed"
+                  aria-hidden
+                >
+                  {HARDBOILED}
+                </p>
+                <p className="absolute inset-0 text-pretty text-left text-sm leading-relaxed text-[var(--foreground)]">
+                  {hardboiled}
+                  {hardboiled.length < HARDBOILED.length ? (
+                    <span className="ml-0.5 inline-block h-[1em] w-px animate-pulse bg-[var(--primary)] align-[-0.05em]" />
+                  ) : null}
+                </p>
+              </div>
               <form className="space-y-4" onSubmit={(e) => void onSubmit(e)}>
                 <div>
                   <label
                     htmlFor="landing-case-code"
                     className="mb-1.5 block text-xs font-medium text-[var(--accent)]"
                   >
-                    코드
+                    사건 코드
                   </label>
                   <div className="relative">
                     <Input
@@ -281,11 +377,11 @@ export function StudentBlackoutLanding() {
                       onChange={(e) => setCaseCode(e.target.value)}
                       disabled={busy}
                       placeholder=""
-                      className="h-11 font-mono text-sm tracking-[0.08em]"
+                      className="h-11 text-sm tracking-[0.08em]"
                     />
-                    {!caseCode ? (
-                      <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 font-mono text-sm tracking-[0.06em] text-[var(--muted-foreground)]">
-                        케이스 코드
+                    {!caseCode.trim() ? (
+                      <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm tracking-[0.06em] text-[var(--muted-foreground)]">
+                        사건 코드를 입력하세요
                       </span>
                     ) : null}
                   </div>
@@ -304,12 +400,17 @@ export function StudentBlackoutLanding() {
                     value={nickname}
                     onChange={(e) => setNickname(e.target.value)}
                     disabled={busy}
-                    placeholder="표시될 이름"
-                    className="h-11 font-mono text-sm tracking-[0.06em]"
+                    placeholder="닉네임을 입력하세요"
+                    className="h-11 text-sm tracking-[0.06em]"
                   />
                 </div>
-                <Button type="submit" disabled={busy} className="h-11 w-full font-mono text-sm" size="lg">
-                  {busy ? "확인 중…" : "입장하기"}
+                <Button
+                  type="submit"
+                  disabled={busy || !caseCode.trim() || !nickname.trim()}
+                  className="h-11 w-full text-sm"
+                  size="lg"
+                >
+                  {busy ? "사건 코드 확인 중…" : "사건 파일 열기"}
                 </Button>
               </form>
               {error ? (
@@ -340,6 +441,55 @@ export function StudentBlackoutLanding() {
           to {
             opacity: 1;
             transform: translateY(0) scale(1);
+          }
+        }
+        @keyframes revealPost {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        @keyframes warnPulse {
+          0%,
+          100% {
+            border-color: color-mix(in srgb, var(--entry-warn-glow) 48%, transparent);
+            box-shadow:
+              0 0 0 1px color-mix(in srgb, var(--entry-warn-glow) 18%, transparent),
+              0 0 22px color-mix(in srgb, var(--danger) 22%, transparent),
+              inset 0 1px 0 color-mix(in srgb, var(--highlight) 10%, transparent);
+          }
+          50% {
+            border-color: color-mix(in srgb, var(--entry-warn-glow) 68%, transparent);
+            box-shadow:
+              0 0 0 1px color-mix(in srgb, var(--entry-warn-glow) 32%, transparent),
+              0 0 36px color-mix(in srgb, var(--danger) 34%, transparent),
+              inset 0 1px 0 color-mix(in srgb, var(--highlight) 18%, transparent);
+          }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          @keyframes revealPost {
+            from {
+              opacity: 1;
+              transform: none;
+            }
+            to {
+              opacity: 1;
+              transform: none;
+            }
+          }
+          @keyframes warnPulse {
+            0%,
+            100% {
+              border-color: color-mix(in srgb, var(--entry-warn-glow) 55%, transparent);
+              box-shadow:
+                0 0 0 1px color-mix(in srgb, var(--entry-warn-glow) 22%, transparent),
+                0 0 28px color-mix(in srgb, var(--danger) 26%, transparent),
+                inset 0 1px 0 color-mix(in srgb, var(--highlight) 12%, transparent);
+            }
           }
         }
       `}</style>

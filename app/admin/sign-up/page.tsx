@@ -25,7 +25,7 @@ export default function AdminSignUpPage() {
     mutationFn: async ({ email, password }: { email: string; password: string }) => {
       if (!hasSupabaseEnv) {
         throw new Error(
-          "Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.",
+          "Supabase가 설정되지 않았습니다. .env에 NEXT_PUBLIC_SUPABASE_URL과 NEXT_PUBLIC_SUPABASE_ANON_KEY를 넣어 주세요.",
         );
       }
       await signUpTeacher(email, password);
@@ -43,10 +43,10 @@ export default function AdminSignUpPage() {
   const message =
     signUpMutation.error?.message ??
     (!hasSupabaseEnv
-      ? "Supabase is not configured. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to .env."
+      ? "Supabase가 설정되지 않았습니다. .env에 NEXT_PUBLIC_SUPABASE_URL과 NEXT_PUBLIC_SUPABASE_ANON_KEY를 추가하세요."
       : null) ??
     (signUpMutation.isSuccess
-      ? "Sign up successful. Check your email verification settings."
+      ? "회원가입 요청이 완료되었습니다. 이메일 인증 설정을 확인해 주세요."
       : null);
 
   return (
@@ -62,8 +62,8 @@ export default function AdminSignUpPage() {
           isLoading={signUpMutation.isPending || !hasSupabaseEnv}
           message={message}
           switchHref={ROUTES.admin.signIn}
-          switchPrompt="Already have an account?"
-          switchLabel="Sign in"
+          switchPrompt="이미 계정이 있으신가요?"
+          switchLabel="로그인"
         />
       </main>
     </>

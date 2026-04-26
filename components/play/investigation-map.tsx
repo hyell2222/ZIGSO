@@ -580,7 +580,7 @@ export function InvestigationMap({
           ph.destroy();
         }
 
-        // 시나리오에서 실제로 쓰이는 asset 만 동적으로 로딩
+        // 사건에서 실제로 쓰이는 asset 만 동적으로 로딩
         preloadMapPropImages(this, assetIdsInUse);
 
         // 누락된 asset 은 무시하고 placeholder 로 폴백 (Phaser 가 게임 정지하지 않도록)
@@ -864,7 +864,7 @@ export function InvestigationMap({
         {/* 발견 증거 인벤토리 */}
         <aside
           className={cn(
-            "flex min-h-0 shrink-0 flex-col border-[var(--border)] bg-[rgba(15,23,42,0.85)]",
+            "flex min-h-0 shrink-0 flex-col border-[var(--border)] bg-[var(--depth-panel)]",
             isFull
               ? "w-[220px] border-l"
               : "max-h-[200px] w-full border-t md:max-h-none md:w-[200px] md:border-l md:border-t-0",
@@ -887,7 +887,7 @@ export function InvestigationMap({
                     variant="ghost"
                     size="sm"
                     onClick={() => openEvidenceFromInventory(clue)}
-                    className="h-auto w-full justify-start rounded border border-[var(--border)] bg-black/20 px-2.5 py-2 text-left text-xs text-[var(--foreground)] transition-colors hover:border-[var(--accent)] hover:bg-black/35"
+                    className="h-auto w-full justify-start rounded border border-[var(--border)] bg-[var(--tint-mystery)] px-2.5 py-2 text-left text-xs text-[var(--foreground)] transition-colors hover:border-[var(--accent)] hover:bg-[color-mix(in_srgb,var(--mystery)_14%,var(--surface))]"
                   >
                     <span className="line-clamp-2">{clue.name?.trim() || "이름 없음"}</span>
                   </Button>
@@ -898,7 +898,7 @@ export function InvestigationMap({
         </aside>
       </div>
       {selectedEvidence ? (
-        <div className="absolute inset-0 z-[120] flex items-center justify-center bg-black/70 p-4">
+        <div className="absolute inset-0 z-[120] flex items-center justify-center bg-[var(--overlay-scrim)] p-4">
           <div className="w-full max-w-2xl rounded-md border border-[var(--border)] bg-[var(--background)] shadow-xl">
             <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3">
               <div>
@@ -918,7 +918,7 @@ export function InvestigationMap({
             <div className="max-h-[65vh] space-y-4 overflow-y-auto px-4 py-4">
               {selectedEvidence.clues.length > 0 ? (
                 selectedEvidence.clues.map((clue) => (
-                  <section key={clue.id} className="rounded-md border border-[var(--border)] bg-black/10 p-4">
+                  <section key={clue.id} className="rounded-md border border-[var(--border)] bg-[var(--tint-accent-weak)] p-4">
                     <h3 className="text-base text-[var(--foreground)]">{clue.name?.trim() || "이름 없는 증거"}</h3>
                     {clue.content?.trim() ? (
                       <p className="mt-3 whitespace-pre-wrap break-words text-sm text-[var(--foreground)]">

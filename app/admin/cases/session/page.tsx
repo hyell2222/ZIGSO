@@ -332,7 +332,7 @@ function TeamReportDashboard({
         </div>
       ) : (
         <p className="mb-2 text-xs text-amber-200/80">
-          시나리오에「범인(정답) 용의자」가 지정되지 않았습니다. 시나리오 편집에서 선택해 주세요.
+          사건에「범인(정답) 용의자」가 지정되지 않았습니다. 사건 편집에서 선택해 주세요.
         </p>
       )}
       {loading ? (
@@ -748,7 +748,9 @@ function CaseSessionHostContent() {
               </p>
             </div>
             <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-[var(--muted-foreground)]">Join code</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-[var(--muted-foreground)]">
+                사건 코드
+              </p>
               <p className="font-mono text-3xl font-semibold tracking-[0.2em] text-[var(--accent)] sm:text-4xl">
                 {row.join_code}
               </p>
@@ -758,7 +760,7 @@ function CaseSessionHostContent() {
             {!sessionStarted ? (
               <Button type="button" onClick={() => beginMutation.mutate()} disabled={beginMutation.isPending}>
                 {beginMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                Start
+                수사 시작
               </Button>
             ) : null}
             {sessionStarted && !sessionEnded && nextPhase ? (

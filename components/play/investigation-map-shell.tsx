@@ -38,7 +38,7 @@ export function InvestigationMapShell({
           role="status"
           aria-live="polite"
         >
-          <Loader2 className="h-8 w-8 animate-spin text-[var(--accent)]" aria-hidden />
+          <Loader2 className="h-8 w-8 animate-spin text-[var(--primary)]" aria-hidden />
           <p className="text-sm">장소·단서 정보를 불러오는 중…</p>
         </div>
       ) : mapError ? (
