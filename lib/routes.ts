@@ -2,7 +2,6 @@ export const ROUTES = {
   home: "/",
   play: "/play",
   admin: {
-    root: "/admin",
     cases: "/admin/cases",
     /** Static export: use query param, not a dynamic segment. */
     casesSession: (sessionId: string) =>

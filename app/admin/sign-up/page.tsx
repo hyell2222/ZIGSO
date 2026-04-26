@@ -37,7 +37,7 @@ export default function AdminSignUpPage() {
 
   useEffect(() => {
     if (sessionQuery.isLoading) return;
-    if (sessionQuery.data) router.replace(ROUTES.admin.root);
+    if (sessionQuery.data) router.replace(ROUTES.admin.cases);
   }, [router, sessionQuery.data, sessionQuery.isLoading]);
 
   const message =

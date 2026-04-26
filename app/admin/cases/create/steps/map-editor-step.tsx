@@ -685,7 +685,6 @@ function ClueEditorPanel({
           size="icon"
           onClick={onRemove}
           className="text-red-300 transition-colors hover:bg-red-500/20"
-          aria-label="단서 삭제"
         >
           <Trash2 className="h-4 w-4" />
         </Button>

@@ -5,10 +5,11 @@ import { Loader2 } from "lucide-react";
 import { FormEvent, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
+import { CaseAcceptanceOverlay } from "@/components/play/case-acceptance-overlay";
 import { InvestigationMapShell } from "@/components/play/investigation-map-shell";
 import { DetectiveIdCard } from "@/components/play/detective-id-card";
 import { SessionInfoLayout } from "@/components/play/session-info-layout";
-import { TopNav } from "@/components/layout/top-nav";
+import { StudentBlackoutLanding } from "@/components/play/student-blackout-landing";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -38,11 +39,28 @@ import { ROUTES } from "@/lib/routes";
 import { hasSupabaseEnv, supabase } from "@/lib/supabase";
 
 function PlayPageContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
+  const joinCodeRaw = searchParams.get("code")?.trim() ?? "";
+  const nicknameRaw = searchParams.get("nickname")?.trim() ?? "";
+  if (!joinCodeRaw) {
+    return <StudentBlackoutLanding />;
+  }
+  return (
+    <PlaySessionShell joinCode={joinCodeRaw.toUpperCase()} initialNickname={nicknameRaw} />
+  );
+}
+
+function PlaySessionShell({
+  joinCode,
+  initialNickname = "",
+}: {
+  joinCode: string;
+  initialNickname?: string;
+}) {
+  const router = useRouter();
   const queryClient = useQueryClient();
-  const joinCode = searchParams.get("code")?.trim().toUpperCase() ?? "";
-  const [nickname, setNickname] = useState("");
+  const [nickname, setNickname] = useState(initialNickname);
+  const autoJoinAttempted = useRef(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [playerId, setPlayerId] = useState<string | null>(null);
   const [discoveredClueIds, setDiscoveredClueIds] = useState<string[]>([]);
@@ -52,6 +70,7 @@ function PlayPageContent() {
   const [reportMethod, setReportMethod] = useState("");
   const [reportMotive, setReportMotive] = useState("");
   const [reportDecisive, setReportDecisive] = useState("");
+  const [briefingEntranceDone, setBriefingEntranceDone] = useState(false);
 
   const playerQuery = useQuery({
     queryKey: ["play-player", playerId],
@@ -186,6 +205,14 @@ function PlayPageContent() {
   }, [sessionPhase, router, joinCode]);
 
   useEffect(() => {
+    const reduce =
+      typeof window !== "undefined" &&
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    setBriefingEntranceDone(reduce);
+  }, [sessionId]);
+
+  useEffect(() => {
     if (!playerId) return;
     void setPlayerOnline(playerId, true).catch(() => {});
     const onVisibility = () => {
@@ -198,24 +225,27 @@ function PlayPageContent() {
   }, [playerId]);
 
   const joinAndRegisterMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (args?: { nickname?: string }) => {
       const normalizedJoinCode = joinCode.trim().toUpperCase();
-      if (!normalizedJoinCode) throw new Error("Invalid access. Please enter from home with a join code.");
-      if (!nickname.trim()) throw new Error("Enter your nickname.");
+      const nick = (args?.nickname ?? nickname).trim();
+      if (!normalizedJoinCode) throw new Error("/play 에서 입장 코드를 입력해 주세요.");
+      if (!nick) throw new Error("닉네임을 입력해 주세요.");
       const session = await getSessionByJoinCode(normalizedJoinCode);
       setSessionId(session.id);
       const result = await joinPlayerSession({
         session_id: session.id,
-        nickname: nickname.trim(),
+        nickname: nick,
       });
       setPlayerId(result.player.id);
       saveResumeRecord({
         joinCode: normalizedJoinCode,
         sessionId: session.id,
         playerId: result.player.id,
-        nickname: nickname.trim(),
+        nickname: nick,
       });
     },
+    onSuccess: () => setMessage(null),
+    onError: (e: Error) => setMessage(e.message),
   });
 
   const handleContinueAsPlayer = (rec: ResumeRecord) => {
@@ -234,7 +264,23 @@ function PlayPageContent() {
   const handleJoinAsNewPlayer = () => {
     if (joinCode) clearResumeRecord(joinCode);
     setResumeDecided(true);
+    if (initialNickname.trim()) {
+      autoJoinAttempted.current = false;
+    }
   };
+
+  useEffect(() => {
+    if (!initialNickname.trim()) return;
+    if (playerId || sessionId) return;
+    if (resumeQuery.isLoading) return;
+    if (resumeQuery.data && !resumeDecided) return;
+    if (autoJoinAttempted.current) return;
+    autoJoinAttempted.current = true;
+    setNickname(initialNickname.trim());
+    joinAndRegisterMutation.mutate({ nickname: initialNickname.trim() });
+    // mutate is stable; omit mutation object from deps to avoid redundant runs
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialNickname, playerId, sessionId, resumeQuery.isLoading, resumeQuery.data, resumeDecided]);
 
   const hasJoinedSession = Boolean(playerId && sessionId);
   const hasAssignment = Boolean(patrolLocationId && teamId && playerQuery.data?.club_role);
@@ -314,7 +360,6 @@ function PlayPageContent() {
   if (hasSupabaseEnv && isFinalReport && teamId) {
     return (
       <div className="min-h-screen">
-        <TopNav />
         <main className="mx-auto w-full max-w-2xl space-y-6 px-4 py-8">
           <TeamBadge teamName={teamName} />
           <Card>
@@ -434,9 +479,17 @@ function PlayPageContent() {
   }
 
   if (hasSupabaseEnv && isBriefing) {
+    if (!briefingEntranceDone) {
+      return (
+        <CaseAcceptanceOverlay
+          title={sessionQuery.data?.cases?.title ?? "사건 파일"}
+          description={sessionQuery.data?.cases?.description ?? ""}
+          onComplete={() => setBriefingEntranceDone(true)}
+        />
+      );
+    }
     return (
       <div className="min-h-screen">
-        <TopNav />
         <main className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8">
           <p className="text-center text-sm font-medium text-[var(--mystery)]">1단계: 브리핑</p>
           <TeamBadge teamName={teamName} />
@@ -468,7 +521,6 @@ function PlayPageContent() {
   if (!hasSupabaseEnv) {
     return (
       <div className="min-h-screen">
-        <TopNav />
         <main className="mx-auto w-full max-w-7xl px-4 py-8">
           <Card className="max-w-3xl">
             <CardHeader>
@@ -496,7 +548,19 @@ function PlayPageContent() {
           />
         ) : null}
 
-        {!hasJoinedSession && !showResumeModal ? (
+        {!hasJoinedSession && !showResumeModal && initialNickname.trim() && joinAndRegisterMutation.isPending ? (
+          <section className="flex min-h-[40vh] items-center justify-center rounded-lg bg-[var(--ink-88)] p-4 backdrop-blur-sm">
+            <div className="flex flex-col items-center gap-3 text-[var(--foreground)]">
+              <Loader2 className="h-8 w-8 animate-spin text-[var(--primary)]" aria-hidden />
+              <p className="font-mono text-sm text-[var(--muted-foreground)]">보안 승인 확인 중…</p>
+            </div>
+          </section>
+        ) : null}
+
+        {!hasJoinedSession &&
+        !showResumeModal &&
+        !(initialNickname.trim() && joinAndRegisterMutation.isPending) &&
+        (!initialNickname.trim() || joinAndRegisterMutation.isError) ? (
           <section className="flex items-center justify-center rounded-lg bg-[var(--ink-88)] p-4 backdrop-blur-sm">
             <div className="w-full max-w-md rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">
               <h3 className="text-lg font-semibold text-[var(--foreground)]">닉네임 설정</h3>
@@ -505,7 +569,7 @@ function PlayPageContent() {
                 className="mt-4 space-y-3"
                 onSubmit={(event: FormEvent<HTMLFormElement>) => {
                   event.preventDefault();
-                  joinAndRegisterMutation.mutate();
+                  joinAndRegisterMutation.mutate({ nickname: nickname.trim() });
                 }}
               >
                 <Input
@@ -519,7 +583,12 @@ function PlayPageContent() {
                 </Button>
               </form>
               {!joinCode.trim() ? (
-                <p className="mt-3 text-xs text-[var(--accent)]">홈에서 입장 코드로 들어와 주세요.</p>
+                <p className="mt-3 text-xs text-[var(--accent)]">
+                  <a className="underline hover:text-[var(--foreground)]" href={ROUTES.play}>
+                    /play
+                  </a>
+                  에서 입장 코드를 입력해 주세요.
+                </p>
               ) : null}
               {message ? <p className="mt-3 text-xs text-[var(--foreground)]">{message}</p> : null}
             </div>
@@ -587,11 +656,8 @@ export default function PlayPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen">
-          <TopNav />
-          <main className="mx-auto w-full max-w-7xl px-4 py-8">
-            <p className="text-sm text-[var(--muted-foreground)]">Loading…</p>
-          </main>
+        <div className="min-h-screen bg-black" aria-hidden>
+          <span className="sr-only">Loading</span>
         </div>
       }
     >

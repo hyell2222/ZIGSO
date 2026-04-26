@@ -75,7 +75,6 @@ export function InvestigationZonesStep({ zones, onAdd, onUpdate, onRemove }: Pro
                       onClick={() => onRemove(z.tempId)}
                       disabled={zones.length === 1}
                       className="text-[var(--muted-foreground)] hover:bg-red-500/10 hover:text-red-800 disabled:cursor-not-allowed disabled:opacity-40"
-                      aria-label={`조사 구역 ${index + 1} 삭제`}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>

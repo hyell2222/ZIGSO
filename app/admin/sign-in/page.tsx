@@ -33,13 +33,13 @@ export default function AdminSignInPage() {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["auth-session"] });
-      router.replace(ROUTES.admin.root);
+      router.replace(ROUTES.admin.cases);
     },
   });
 
   useEffect(() => {
     if (sessionQuery.isLoading) return;
-    if (sessionQuery.data) router.replace(ROUTES.admin.root);
+    if (sessionQuery.data) router.replace(ROUTES.admin.cases);
   }, [router, sessionQuery.data, sessionQuery.isLoading]);
 
   return (
