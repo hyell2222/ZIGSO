@@ -6,8 +6,8 @@ import {
   WizardListItemCard,
   WizardListSection,
   WizardRowRemoveButton,
+  WizardStepHint,
 } from "@/components/admin/wizard-list-section";
-import { WizardStepHint } from "@/components/admin/wizard-step-hint";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
@@ -45,7 +45,7 @@ export function InvestigationZonesStep({ zones, onAdd, onUpdate, onRemove }: Pro
   return (
     <Card>
       <CardHeader>
-        <CardTitle>2. 조사 구역(맵)</CardTitle>
+        <CardTitle>3. 조사 구역</CardTitle>
       </CardHeader>
       <CardContent className="space-y-5">
         <WizardStepHint>
@@ -57,7 +57,7 @@ export function InvestigationZonesStep({ zones, onAdd, onUpdate, onRemove }: Pro
         <WizardListSection
           title={
             <span>
-              조사 구역<span className="ml-0.5 text-red-400">*</span>
+              조사 구역<span className="ml-0.5 text-[var(--danger)]">*</span>
             </span>
           }
           description="장소명을 입력한 뒤 필요하면 아래에서 구역을 더 추가하세요."
@@ -81,7 +81,7 @@ export function InvestigationZonesStep({ zones, onAdd, onUpdate, onRemove }: Pro
                 </div>
                 <div className="space-y-1">
                   <p className="text-[11px] font-semibold text-[var(--muted-foreground)]">
-                    장소명<span className="ml-0.5 text-red-500">*</span>
+                    장소명<span className="ml-0.5 text-[var(--danger)]">*</span>
                   </p>
                   <Input
                     value={z.zoneName}
@@ -94,7 +94,7 @@ export function InvestigationZonesStep({ zones, onAdd, onUpdate, onRemove }: Pro
                     placeholder="예: 옥상, 음악준비실, 도서부실"
                   />
                   {isDuplicateZone ? (
-                    <p className="text-xs text-red-600">이미 같은 이름의 구역이 있습니다.</p>
+                    <p className="text-xs text-[var(--danger)]">이미 같은 이름의 구역이 있습니다.</p>
                   ) : null}
                 </div>
               </WizardListItemCard>

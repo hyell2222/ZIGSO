@@ -25,11 +25,12 @@ import { AIGenerateModal } from "../create/steps/ai-generate-modal";
 import { BasicInfoStep, type Difficulty } from "../create/steps/basic-info-step";
 import { InvestigationZonesStep } from "../create/steps/investigation-zones-step";
 import { MapEditorStep } from "../create/steps/map-editor-step";
-import { type DraftInvestigationZone, type DraftClue } from "../create/steps/types";
+import { SuspectsStep } from "../create/steps/suspects-step";
+import { type DraftClue, type DraftInvestigationZone } from "../create/steps/types";
 
-type StepIndex = 0 | 1 | 2;
+type StepIndex = 0 | 1 | 2 | 3;
 
-const STEP_LABELS = ["기본 정보", "조사 구역", "맵 에디터"] as const;
+const STEP_LABELS = ["기본 정보", "용의자 프로필", "조사 구역", "맵 에디터"] as const;
 
 function locationNameFor(zone: DraftInvestigationZone) {
   return zone.zoneName.trim() || "미정 구역";
@@ -146,7 +147,7 @@ export function CaseWizard(props: Props) {
     if (
       hasExistingDraft &&
       !window.confirm(
-        "AI 가 생성한 결과로 현재 입력(제목/설명/조사 구역/단서 등)이 대체됩니다. 계속할까요?",
+        "AI 가 생성한 결과로 현재 입력(제목/설명/용의자/조사 구역/단서 등)이 대체됩니다. 계속할까요?",
       )
     ) {
       return;
@@ -233,10 +234,10 @@ export function CaseWizard(props: Props) {
       }
       const namedSuspects = suspects.filter((s) => s.name.trim().length > 0);
       if (namedSuspects.length === 0) {
-        throw new Error("용의자를 한 명 이상 등록하세요. (1단계)");
+        throw new Error("용의자를 한 명 이상 등록하세요. (2단계)");
       }
       if (!answerSuspectId || !namedSuspects.some((s) => s.id === answerSuspectId)) {
-        throw new Error("범인(정답)에 해당하는 용의자를 한 명 선택하세요. (1단계)");
+        throw new Error("범인(정답)에 해당하는 용의자를 한 명 선택하세요. (2단계)");
       }
 
       const payload = buildPayload();
@@ -257,16 +258,19 @@ export function CaseWizard(props: Props) {
     onError: (error: Error) => setErrorMessage(error.message),
   });
 
-  const isBasicInfoValid = useMemo(() => {
+  const isBasicInfoValid = useMemo(
+    () => title.trim().length > 0 && description.trim().length > 0,
+    [title, description],
+  );
+
+  const isSuspectsValid = useMemo(() => {
     const named = suspects.filter((s) => s.name.trim().length > 0);
     return (
-      title.trim().length > 0 &&
-      description.trim().length > 0 &&
       named.length > 0 &&
       answerSuspectId.length > 0 &&
       named.some((s) => s.id === answerSuspectId)
     );
-  }, [title, description, suspects, answerSuspectId]);
+  }, [suspects, answerSuspectId]);
 
   const hasValidZones = useMemo(() => {
     const completeCount = investigationZones.filter((c) => c.zoneName.trim()).length;
@@ -283,25 +287,27 @@ export function CaseWizard(props: Props) {
 
   const maxReachableStep = useMemo<StepIndex>(() => {
     if (!isBasicInfoValid) return 0;
-    if (!hasValidZones) return 1;
-    if (!isMapEditorValid) return 2;
-    return 2;
-  }, [isBasicInfoValid, hasValidZones, isMapEditorValid]);
+    if (!isSuspectsValid) return 1;
+    if (!hasValidZones) return 2;
+    if (!isMapEditorValid) return 3;
+    return 3;
+  }, [isBasicInfoValid, isSuspectsValid, hasValidZones, isMapEditorValid]);
 
   const canGoNext = useMemo(() => {
     if (step === 0) return isBasicInfoValid;
-    if (step === 1) return hasValidZones;
-    if (step === 2) return isMapEditorValid;
+    if (step === 1) return isSuspectsValid;
+    if (step === 2) return hasValidZones;
+    if (step === 3) return isMapEditorValid;
     return false;
-  }, [step, isBasicInfoValid, hasValidZones, isMapEditorValid]);
+  }, [step, isBasicInfoValid, isSuspectsValid, hasValidZones, isMapEditorValid]);
 
   const goNext = () => {
     if (!canGoNext) return;
     setErrorMessage(null);
-    if (step === 1) {
+    if (step === 2) {
       setInvestigationZones((prev) => prev.filter((c) => c.zoneName.trim()));
     }
-    setStep((s) => (Math.min(2, s + 1) as StepIndex));
+    setStep((s) => (Math.min(3, s + 1) as StepIndex));
   };
 
   const goPrev = () => {
@@ -337,7 +343,7 @@ export function CaseWizard(props: Props) {
               }}
             />
           </div>
-          <Button type="button" variant="outline" onClick={handleOpenAiModal} disabled={saveMutation.isPending}>
+          <Button type="button" variant="default" onClick={handleOpenAiModal} disabled={saveMutation.isPending}>
             <Sparkles className="mr-1 h-4 w-4" />
             AI로 생성하기
           </Button>
@@ -347,19 +353,24 @@ export function CaseWizard(props: Props) {
           <BasicInfoStep
             title={title}
             description={description}
-            suspects={suspects}
-            answerSuspectId={answerSuspectId}
             difficulty={difficulty}
-            newSuspectId={makeTempId}
             onChangeTitle={setTitle}
             onChangeDescription={setDescription}
-            onChangeSuspects={setSuspects}
-            onChangeAnswerSuspectId={setAnswerSuspectId}
             onChangeDifficulty={setDifficulty}
           />
         ) : null}
 
         {step === 1 ? (
+          <SuspectsStep
+            suspects={suspects}
+            answerSuspectId={answerSuspectId}
+            newSuspectId={makeTempId}
+            onChangeSuspects={setSuspects}
+            onChangeAnswerSuspectId={setAnswerSuspectId}
+          />
+        ) : null}
+
+        {step === 2 ? (
           <InvestigationZonesStep
             zones={investigationZones}
             onAdd={handleAddZone}
@@ -368,7 +379,7 @@ export function CaseWizard(props: Props) {
           />
         ) : null}
 
-        {step === 2 ? (
+        {step === 3 ? (
           <>
             <MapEditorStep
               investigationZones={investigationZones}
@@ -409,7 +420,7 @@ export function CaseWizard(props: Props) {
             이전
           </Button>
 
-          {step < 2 ? (
+          {step < 3 ? (
             <Button type="button" onClick={goNext} disabled={!canGoNext} variant="default">
               다음
               <ArrowRight className="ml-1 h-4 w-4" />

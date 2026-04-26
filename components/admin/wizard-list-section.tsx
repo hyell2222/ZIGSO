@@ -6,6 +6,27 @@ import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
+type HintProps = {
+  children: ReactNode;
+  className?: string;
+};
+
+/**
+ * 사건 마법사 단계 상단 안내 문구 — 단계 간 동일한 톤·테두리.
+ */
+export function WizardStepHint({ children, className }: HintProps) {
+  return (
+    <div
+      className={cn(
+        "rounded-md border border-[var(--border)] bg-[var(--tint-accent-weak)] px-3 py-2.5 text-sm leading-relaxed text-[var(--foreground)] [&_strong]:font-semibold [&_strong]:text-[var(--accent)]",
+        className,
+      )}
+    >
+      {children}
+    </div>
+  );
+}
+
 type ListSectionProps = {
   title: ReactNode;
   description?: ReactNode;
@@ -97,7 +118,7 @@ export function WizardRowRemoveButton({
       onClick={onClick}
       disabled={disabled}
       aria-label={ariaLabel ?? "항목 삭제"}
-      className="h-8 w-8 shrink-0 text-[var(--muted-foreground)] hover:bg-red-500/10 hover:text-red-800 disabled:cursor-not-allowed disabled:opacity-40"
+      className="h-8 w-8 shrink-0 text-[var(--muted-foreground)] hover:bg-[var(--danger)]/10 hover:text-[var(--danger)] disabled:cursor-not-allowed disabled:opacity-40"
     >
       <Trash2 className="h-4 w-4" aria-hidden />
     </Button>

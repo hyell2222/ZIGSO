@@ -33,7 +33,7 @@ export async function startGameSession(caseRecord: CaseRecord, hostId?: string |
 
   if (locError) throw locError;
   if (!locRows?.length) {
-    throw new Error("이 사건에 조사 구역(맵)이 없습니다. 맵 에디터에서 구역을 추가하세요.");
+    throw new Error("이 사건에 조사 구역이 없습니다. 맵 에디터에서 구역을 추가하세요.");
   }
 
   const joinCode = generateJoinCode(6);

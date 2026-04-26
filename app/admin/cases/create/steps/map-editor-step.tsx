@@ -3,7 +3,7 @@
 import { Trash2 } from "lucide-react";
 import { useCallback, useMemo, useRef, useState } from "react";
 
-import { WizardStepHint } from "@/components/admin/wizard-step-hint";
+import { WizardStepHint } from "@/components/admin/wizard-list-section";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -143,12 +143,12 @@ export function MapEditorStep({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>3. 맵 에디터</CardTitle>
+        <CardTitle>4. 맵 에디터</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {investigationZones.length === 0 ? (
           <WizardStepHint>
-            조사 구역이 1곳 이상 필요합니다. <strong>2단계</strong>에서 구역을 추가한 뒤 맵에 소품을 올려 주세요.
+            조사 구역이 1곳 이상 필요합니다. <strong>3단계</strong>에서 구역을 추가한 뒤 맵에 소품을 올려 주세요.
           </WizardStepHint>
         ) : (
           <WizardStepHint>
@@ -696,7 +696,7 @@ function ClueEditorPanel({
 
       <div className="space-y-1.5">
         <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--accent)] opacity-80">
-          단서 이름<span className="ml-0.5 text-red-400">*</span>
+          단서 이름<span className="ml-0.5 text-[var(--danger)]">*</span>
         </label>
         <Input
           value={clue.name}
@@ -705,7 +705,7 @@ function ClueEditorPanel({
           aria-required
           className={cn(
             "h-8 text-xs",
-            !clue.name.trim() ? "border-red-500/50 focus-visible:ring-red-500/30" : "",
+            !clue.name.trim() ? "border-[var(--danger)]/50 focus-visible:ring-[var(--danger)]/30" : "",
           )}
         />
         {!clue.name.trim() ? (
