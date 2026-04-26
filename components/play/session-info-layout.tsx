@@ -3,38 +3,23 @@
 import type { UseQueryResult } from "@tanstack/react-query";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { clubRoleLabelKr } from "@/lib/club-role";
-import type { PlayerWithPatrolRow, SessionDetailsRow } from "@/lib/api/play";
-import { parseSuspectRosterFromCase } from "@/lib/suspects";
+import type { SessionDetailsRow } from "@/lib/api/play";
+import { legacySuspectProfilesPlainText, parseSuspectRosterFromCase } from "@/lib/suspects";
 
 type SessionInfoLayoutProps = {
-  zoneName: string | null;
-  playerQuery: UseQueryResult<PlayerWithPatrolRow, Error>;
   sessionQuery: UseQueryResult<SessionDetailsRow, Error>;
-  message: string | null;
 };
 
 /**
- * 1단계(브리핑): 부원 증(역할·구역) + 사건 개요 + 용의자 프로필
+ * 1단계(브리핑): 사건 개요 + 용의자(또는 레거시 텍스트)
  */
-export function SessionInfoLayout({
-  zoneName,
-  playerQuery,
-  sessionQuery,
-  message,
-}: SessionInfoLayoutProps) {
-  const data = playerQuery.data;
+export function SessionInfoLayout({ sessionQuery }: SessionInfoLayoutProps) {
   const cases = sessionQuery.data?.cases;
   const roster = parseSuspectRosterFromCase(cases?.suspect_roster);
-  const legacyText =
-    typeof cases?.suspect_profiles === "string"
-      ? cases.suspect_profiles.trim()
-      : cases?.suspect_profiles != null
-        ? JSON.stringify(cases.suspect_profiles).trim()
-        : "";
+  const legacyText = legacySuspectProfilesPlainText(cases?.suspect_profiles);
 
   return (
-    <div className="grid gap-4 lg:grid-cols-3">
+    <div className="grid gap-4 lg:grid-cols-2">
       <Card>
         <CardHeader>
           <CardTitle>사건 개요</CardTitle>
@@ -55,7 +40,7 @@ export function SessionInfoLayout({
         </CardContent>
       </Card>
 
-      <Card className="lg:col-span-1">
+      <Card>
         <CardHeader>
           <CardTitle>용의자</CardTitle>
         </CardHeader>
@@ -75,7 +60,7 @@ export function SessionInfoLayout({
             <p className="whitespace-pre-wrap text-sm text-[var(--foreground)]">{legacyText}</p>
           ) : (
             <p className="text-sm text-[var(--muted-foreground)]">
-              (교사가 사건에 용의자 정보를 넣지 않았습니다.)
+              (지도교사가 사건에 용의자 정보를 넣지 않았습니다.)
             </p>
           )}
         </CardContent>

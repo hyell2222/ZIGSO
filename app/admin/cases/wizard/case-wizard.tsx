@@ -19,6 +19,7 @@ import { ROUTES } from "@/lib/routes";
 import { hasSupabaseEnv } from "@/lib/supabase";
 import type { SuspectEntry } from "@/lib/suspects";
 import { textLinesToSuspectRoster } from "@/lib/suspects";
+import { makeTempId } from "@/lib/temp-id";
 
 import { AIGenerateModal } from "../create/steps/ai-generate-modal";
 import { BasicInfoStep, type Difficulty } from "../create/steps/basic-info-step";
@@ -29,10 +30,6 @@ import { type DraftInvestigationZone, type DraftClue } from "../create/steps/typ
 type StepIndex = 0 | 1 | 2;
 
 const STEP_LABELS = ["기본 정보", "조사 구역", "맵 에디터"] as const;
-
-function makeTempId() {
-  return Math.random().toString(36).slice(2, 10);
-}
 
 function locationNameFor(zone: DraftInvestigationZone) {
   return zone.zoneName.trim() || "미정 구역";
@@ -316,20 +313,20 @@ export function CaseWizard(props: Props) {
 
   if (!sessionQuery.data) {
     return (
-      <div className="min-h-screen">
+      <div className="app-page flex min-h-dvh flex-col">
         <TopNav />
-        <main className="mx-auto w-full max-w-7xl px-4 py-8" />
+        <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="app-page flex min-h-dvh flex-col">
       <TopNav />
-      <main className="mx-auto w-full max-w-7xl space-y-5 px-4 py-8">
+      <main className="mx-auto w-full max-w-7xl flex-1 space-y-5 px-4 py-8">
         <header className="flex flex-wrap items-end justify-between gap-3">
           <div className="space-y-1">
-            <h1 className="text-2xl font-bold text-[var(--foreground)]">{pageTitle}</h1>
+            <h1 className="text-2xl font-bold">{pageTitle}</h1>
             <Stepper
               current={step}
               maxReachableStep={maxReachableStep}
@@ -401,7 +398,7 @@ export function CaseWizard(props: Props) {
         ) : null}
 
         {errorMessage ? (
-          <p className="rounded-md border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+          <p className="rounded-md border border-[var(--danger)]/40 bg-[var(--danger)]/10 px-3 py-2 text-sm text-[var(--danger)]">
             {errorMessage}
           </p>
         ) : null}
@@ -449,7 +446,7 @@ function Stepper({
   return (
     <ol
       role="tablist"
-      className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-[var(--muted-foreground,#94a3b8)]"
+      className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-[var(--muted-foreground)]"
     >
       {STEP_LABELS.map((label, idx) => {
         const active = idx === current;
@@ -465,28 +462,36 @@ function Stepper({
               onClick={() => onSelect(idx as StepIndex)}
               className={
                 "group flex items-center gap-2 rounded-md px-1.5 py-1" +
-                (disabled ? " opacity-45" : " cursor-pointer hover:bg-[var(--tint-mystery)]")
+                (disabled ? " opacity-45" : " cursor-pointer hover:bg-[var(--tint-accent)]")
               }
             >
               <span
                 className={
-                  "flex h-6 w-6 items-center justify-center rounded-full border text-[11px] " +
+                  "flex h-6 w-6 items-center justify-center rounded-full border text-[11px] font-semibold tabular-nums " +
                   (active
-                    ? "border-[var(--accent)] bg-[var(--accent)] text-[var(--background)]"
+                    ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--on-primary)] shadow-sm"
                     : done
-                      ? "border-[var(--accent)] text-[var(--accent)]"
-                      : "border-[var(--border)] text-[var(--muted-foreground,#94a3b8)]")
+                      ? "border-[var(--accent)] bg-[var(--tint-accent-medium)] text-[var(--mystery)]"
+                      : "border-[var(--accent)]/45 bg-[var(--surface)] text-[var(--muted-foreground)]")
                 }
               >
                 {idx + 1}
               </span>
               <span
-                className={active ? "text-[var(--foreground)]" : done ? "text-[var(--accent)]" : ""}
+                className={
+                  active
+                    ? "font-semibold text-[var(--foreground)]"
+                    : done
+                      ? "text-[var(--accent)]"
+                      : "text-[var(--muted-foreground)]"
+                }
               >
                 {label}
               </span>
             </Button>
-            {idx < STEP_LABELS.length - 1 ? <span className="mx-1 h-px w-6 bg-[var(--border)]" /> : null}
+            {idx < STEP_LABELS.length - 1 ? (
+              <span className="mx-1 h-px w-6 bg-[var(--accent)]/35" aria-hidden />
+            ) : null}
           </li>
         );
       })}

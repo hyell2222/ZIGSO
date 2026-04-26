@@ -234,7 +234,7 @@ function KebabMenu({
       {open ? (
         <div
           role="menu"
-          className="absolute right-0 top-7 z-20 min-w-[140px] overflow-hidden rounded-md border border-[var(--border)] bg-[var(--background)] shadow-lg"
+          className="absolute right-0 top-7 z-20 min-w-[100px] overflow-hidden rounded-md border border-[var(--border)] bg-[var(--background)] shadow-lg"
         >
           <MenuItem
             icon={<Pencil className="h-3.5 w-3.5" />}
@@ -280,7 +280,7 @@ function MenuItem({
       className={
         "flex w-full items-center gap-2 px-3 py-2 text-left text-xs transition-colors " +
         (danger
-          ? "text-red-300 hover:bg-red-500/10"
+          ? "text-[var(--danger)] hover:bg-[var(--danger)]/10"
           : "text-[var(--foreground)] hover:bg-[var(--tint-mystery)]")
       }
     >

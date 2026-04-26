@@ -8,6 +8,17 @@ export type SuspectEntry = {
   detail: string;
 };
 
+/** 구 DB/AI 필드 `suspect_profiles`(문자열·JSON) → 화면·편집용 평문 */
+export function legacySuspectProfilesPlainText(value: unknown): string {
+  if (value == null) return "";
+  if (typeof value === "string") return value.trim();
+  try {
+    return JSON.stringify(value).trim();
+  } catch {
+    return String(value).trim();
+  }
+}
+
 export function parseSuspectRosterFromCase(value: unknown): SuspectEntry[] {
   if (value == null) return [];
   if (Array.isArray(value)) {

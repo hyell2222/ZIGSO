@@ -18,11 +18,11 @@
   /* 칠판 초록(주요 CTA·포인트) */
   --primary: #1b4a3a;
   --on-primary: #f0f6f2;
-  /* 위험/삭제(버튼) — warm brick */
-  --danger: #5c2a25;
-  --on-danger: #f7f0ed;
-  /* 본문 오류 메시지 */
-  --error: #5e2f28;
+  /* 삭제·파괴적 액션 버튼 */
+  --danger: #c81e1d;
+  --on-danger: #fff5f5;
+  /* 인라인 오류·검증 메시지(밝은 배경용, danger보다 약간 진한 빨강) */
+  --error: #b42318;
 
   --border: color-mix(in srgb, var(--accent) 32%, var(--mystery));
 
@@ -33,8 +33,8 @@
   --tint-accent-strong: color-mix(in srgb, var(--accent) 20%, transparent);
   /* 외곽선 버튼 호버 */
   --tint-mystery: color-mix(in srgb, var(--mystery) 8%, transparent);
-  /* 타이머·링크 강조 */
-  --highlight: #b58a4a;
+  /* 주의·타이머·보조 강조 — 앰버(빨강·초록 primary 와 구분) */
+  --highlight: #b86220;
 
   --ink-35: color-mix(in srgb, var(--ink) 35%, transparent);
   --ink-45: color-mix(in srgb, var(--ink) 45%, transparent);
@@ -59,15 +59,14 @@
   --entry-accent-soft: color-mix(in srgb, var(--on-primary) 78%, var(--primary));
   --entry-accent-glow: color-mix(in srgb, var(--highlight) 28%, var(--primary));
   --entry-warm: var(--highlight);
-  /* 입장 화면 — 권한·경고 안내(어두운 배경용 붉은·주의 톤) */
-  --entry-auth-notice: color-mix(in srgb, var(--error) 22%, #f0d0c8);
-  --entry-warn-ink: color-mix(in srgb, var(--error) 55%, #2a1512);
-  --entry-warn-glow: color-mix(in srgb, var(--danger) 45%, var(--highlight) 20%);
+  --entry-auth-notice: color-mix(in srgb, var(--error) 28%, #f5e0dc);
+  --entry-warn-ink: color-mix(in srgb, var(--error) 50%, #1f1414);
+  --entry-warn-glow: color-mix(in srgb, var(--danger) 62%, var(--error) 18%);
   --entry-grid: color-mix(in srgb, var(--primary) 9%, transparent);
   --entry-bar-track: color-mix(in srgb, var(--ink) 55%, black);
   --overlay-scrim: color-mix(in srgb, var(--ink) 68%, transparent);
-  --panel-warn-border: color-mix(in srgb, var(--highlight) 42%, var(--accent));
-  --panel-warn-bg: color-mix(in srgb, var(--highlight) 14%, var(--surface));
+  --panel-warn-border: color-mix(in srgb, var(--highlight) 45%, var(--accent));
+  --panel-warn-bg: color-mix(in srgb, var(--highlight) 12%, var(--surface));
   /* 조사 맵 우측 패널 등 짙은 보조면 */
   --depth-panel: color-mix(in srgb, var(--mystery) 82%, var(--ink));
 }

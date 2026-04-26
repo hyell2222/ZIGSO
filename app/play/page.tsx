@@ -488,12 +488,7 @@ function PlaySessionShell({
               />
             </div>
           ) : null}
-          <SessionInfoLayout
-            zoneName={zoneName}
-            playerQuery={playerQuery}
-            sessionQuery={sessionQuery}
-            message={message}
-          />
+          <SessionInfoLayout sessionQuery={sessionQuery} />
         </main>
       </div>
     );

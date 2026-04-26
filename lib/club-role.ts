@@ -10,10 +10,10 @@ export function isClubRole(value: string | null | undefined): value is ClubRole 
 }
 
 export function clubRoleLabelKr(role: string | null | undefined): string {
-  if (role === "president") return "수석 요원(부장)";
-  if (role === "vice_president") return "부수석(차장)";
-  if (role === "member") return "탐정 부원";
-  return "탐정 부원";
+  if (role === "president") return "동아리 부장";
+  if (role === "vice_president") return "동아리 차장";
+  if (role === "member") return "동아리 부원";
+  return "역할 미정";
 }
 
 /** SQL ORDER BY 절에 맞는 문자열 (president → vice → member) */

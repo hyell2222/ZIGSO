@@ -3,11 +3,12 @@
 import { Trash2 } from "lucide-react";
 import { useCallback, useMemo, useRef, useState } from "react";
 
+import { WizardStepHint } from "@/components/admin/wizard-step-hint";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { PropAsset } from "@/lib/api/storage-props";
-
 import { mapEditorLocationCanvasStyle, MAP_GRID_STEP_PX } from "@/lib/map-location-style";
 import { cn } from "@/lib/utils";
 
@@ -15,10 +16,9 @@ import {
   DRAG_TYPE_PROP,
   MAP_EDITOR_WORLD,
   PROP_DEFAULT_DROP_SIZE,
-  type DraftInvestigationZone,
   type DraftClue,
+  type DraftInvestigationZone,
 } from "./types";
-import { Button } from "@/components/ui/button";
 
 type Props = {
   investigationZones: DraftInvestigationZone[];
@@ -142,15 +142,19 @@ export function MapEditorStep({
 
   return (
     <Card>
-      <CardHeader className="space-y-1.5">
+      <CardHeader>
         <CardTitle>3. 맵 에디터</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-4">
         {investigationZones.length === 0 ? (
-          <p className="mb-4 rounded-md border border-dashed border-[var(--border)] px-3 py-2 text-xs text-[var(--muted-foreground)]">
-            조사 구역이 1곳 이상 필요합니다. (2단계에서 추가)
-          </p>
-        ) : null}
+          <WizardStepHint>
+            조사 구역이 1곳 이상 필요합니다. <strong>2단계</strong>에서 구역을 추가한 뒤 맵에 소품을 올려 주세요.
+          </WizardStepHint>
+        ) : (
+          <WizardStepHint>
+            왼쪽에서 소품을 끌어 맵에 놓고, 배치한 소품을 눌러 내용을 편집합니다. 탭으로 장소를 바꿀 수 있습니다.
+          </WizardStepHint>
+        )}
 
         <LocationTabs
           locations={locationTabs}
@@ -161,7 +165,7 @@ export function MapEditorStep({
           }}
         />
 
-        <div className="mt-4 grid gap-4 lg:grid-cols-[260px_1fr_300px]">
+        <div className="grid gap-4 lg:grid-cols-[260px_1fr_300px]">
           <PropSidebar
             assets={propAssets}
             isLoading={isLoadingAssets}
@@ -684,7 +688,7 @@ function ClueEditorPanel({
           variant="ghost"
           size="icon"
           onClick={onRemove}
-          className="text-red-300 transition-colors hover:bg-red-500/20"
+          className="text-[var(--danger)] transition-colors hover:bg-[var(--danger)]/20"
         >
           <Trash2 className="h-4 w-4" />
         </Button>
@@ -705,7 +709,7 @@ function ClueEditorPanel({
           )}
         />
         {!clue.name.trim() ? (
-          <p className="text-[10px] text-red-300/90">이름을 입력해야 다음 단계로 진행할 수 있어요.</p>
+          <p className="text-[10px] text-[var(--danger)]/90">이름을 입력해야 다음 단계로 진행할 수 있어요.</p>
         ) : null}
       </div>
   

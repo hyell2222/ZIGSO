@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { generateCaseWithAI } from "@/lib/api/ai-case";
+import { makeTempId } from "@/lib/temp-id";
 
 import type { Difficulty } from "./basic-info-step";
 import type { DraftInvestigationZone, DraftClue } from "./types";
@@ -29,10 +30,6 @@ type Props = {
   /** AI 결과를 wizard state 로 적용 */
   onApply: (result: AIGenerateResult) => void;
 };
-
-function makeTempId() {
-  return Math.random().toString(36).slice(2, 10);
-}
 
 export function AIGenerateModal({
   open,
@@ -206,7 +203,7 @@ export function AIGenerateModal({
           )}
 
           {error ? (
-            <p className="rounded-md border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-300">
+            <p className="rounded-md border border-[var(--danger)]/40 bg-[var(--danger)]/10 px-3 py-2 text-xs text-[var(--danger)]">
               {error}
             </p>
           ) : null}

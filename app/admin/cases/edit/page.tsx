@@ -8,7 +8,12 @@ import { Suspense, useEffect, useMemo } from "react";
 import { TopNav } from "@/components/layout/top-nav";
 import { getCaseFull } from "@/lib/api/cases";
 import { ROUTES } from "@/lib/routes";
-import { parseSuspectRosterFromCase, textLinesToSuspectRoster } from "@/lib/suspects";
+import {
+  legacySuspectProfilesPlainText,
+  parseSuspectRosterFromCase,
+  textLinesToSuspectRoster,
+} from "@/lib/suspects";
+import { makeTempId } from "@/lib/temp-id";
 
 import type { Difficulty } from "../create/steps/basic-info-step";
 import {
@@ -19,10 +24,6 @@ import {
 } from "../create/steps/types";
 import { CaseWizard, type CaseDraft } from "../wizard/case-wizard";
 
-function makeTempId() {
-  return Math.random().toString(36).slice(2, 10);
-}
-
 function toDifficulty(value: string | null | undefined): Difficulty {
   return value === "Easy" || value === "Hard" ? value : "Normal";
 }
@@ -31,9 +32,9 @@ export default function AdminCaseEditPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen">
+        <div className="app-page flex min-h-dvh flex-col">
           <TopNav />
-          <main className="mx-auto flex w-full max-w-7xl items-center gap-2 px-4 py-8 text-sm text-[var(--muted-foreground,#94a3b8)]">
+          <main className="mx-auto flex w-full max-w-7xl flex-1 items-center gap-2 px-4 py-8 text-sm text-[color:var(--entry-parchment-muted)]">
             <Loader2 className="h-4 w-4 animate-spin" />
             준비 중...
           </main>
@@ -94,13 +95,8 @@ function CaseEditContent() {
 
     let suspects = parseSuspectRosterFromCase(caseRecord.suspect_roster);
     if (suspects.length === 0) {
-      const legacy =
-        typeof caseRecord.suspect_profiles === "string"
-          ? caseRecord.suspect_profiles
-          : caseRecord.suspect_profiles != null
-            ? JSON.stringify(caseRecord.suspect_profiles)
-            : "";
-      if (legacy.trim()) suspects = textLinesToSuspectRoster(legacy, makeTempId);
+      const legacy = legacySuspectProfilesPlainText(caseRecord.suspect_profiles);
+      if (legacy) suspects = textLinesToSuspectRoster(legacy, makeTempId);
     }
     if (suspects.length === 0) {
       suspects = [{ id: makeTempId(), name: "", detail: "" }];
@@ -121,9 +117,9 @@ function CaseEditContent() {
 
   if (dataQuery.isLoading || !initialDraft) {
     return (
-      <div className="min-h-screen">
+      <div className="app-page flex min-h-dvh flex-col">
         <TopNav />
-        <main className="mx-auto flex w-full max-w-7xl items-center gap-2 px-4 py-8 text-sm text-[var(--muted-foreground,#94a3b8)]">
+        <main className="mx-auto flex w-full max-w-7xl flex-1 items-center gap-2 px-4 py-8 text-sm text-[color:var(--entry-parchment-muted)]">
           <Loader2 className="h-4 w-4 animate-spin" />
           사건을 불러오는 중...
         </main>
@@ -133,10 +129,10 @@ function CaseEditContent() {
 
   if (dataQuery.isError) {
     return (
-      <div className="min-h-screen">
+      <div className="app-page flex min-h-dvh flex-col">
         <TopNav />
-        <main className="mx-auto w-full max-w-7xl px-4 py-8">
-          <p className="rounded-md border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+        <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8">
+          <p className="rounded-md border border-[var(--danger)]/40 bg-[var(--danger)]/10 px-3 py-2 text-sm text-[var(--danger)]">
             사건을 불러오지 못했습니다: {(dataQuery.error as Error).message}
           </p>
         </main>

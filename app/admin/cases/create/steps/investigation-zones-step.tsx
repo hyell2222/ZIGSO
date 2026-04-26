@@ -1,9 +1,13 @@
 "use client";
 
-import { Trash2 } from "lucide-react";
 import { useEffect, useRef } from "react";
 
-import { Button } from "@/components/ui/button";
+import {
+  WizardListItemCard,
+  WizardListSection,
+  WizardRowRemoveButton,
+} from "@/components/admin/wizard-list-section";
+import { WizardStepHint } from "@/components/admin/wizard-step-hint";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
@@ -44,69 +48,59 @@ export function InvestigationZonesStep({ zones, onAdd, onUpdate, onRemove }: Pro
         <CardTitle>2. 조사 구역(맵)</CardTitle>
       </CardHeader>
       <CardContent className="space-y-5">
-        <p className="text-xs text-[var(--muted-foreground)]">
-          사건이 벌어진 장소마다 <strong className="text-[var(--foreground)]">하나의 맵</strong>이 붙습니다.
-          의뢰를 받고 현장에 가면 그 구역에만 보이는 단서를 둡니다. 구역 이름은 겹치지 않게
-          적어주세요. 세션에 들어가면 팀이 나뉘고, 부장·차장·부원과 순찰할 구역은 그때
-          랜덤으로 정해집니다.
-        </p>
-        <div className="space-y-2">
-          <ul className="grid gap-3">
-            {zones.map((z, index) => {
-              const isLast = index === zones.length - 1;
-              const normalized = z.zoneName.trim().toLocaleLowerCase();
-              const isDuplicateZone = normalized
-                ? (normalizedZoneCount.get(normalized) ?? 0) > 1
-                : false;
-              const canCreateNext = z.zoneName.trim().length > 0 && !isDuplicateZone;
-              return (
-                <li
-                  key={z.tempId}
-                  className="space-y-3 rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-3"
-                >
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-[var(--mystery)]">
-                      조사 구역 {index + 1}
-                    </p>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => onRemove(z.tempId)}
-                      disabled={zones.length === 1}
-                      className="text-[var(--muted-foreground)] hover:bg-red-500/10 hover:text-red-800 disabled:cursor-not-allowed disabled:opacity-40"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-[11px] font-semibold text-[var(--muted-foreground)]">
-                      장소명<span className="ml-0.5 text-red-500">*</span>
-                    </p>
-                    <Input
-                      value={z.zoneName}
-                      onChange={(event) => onUpdate(z.tempId, { zoneName: event.target.value })}
-                      onKeyDown={(event) => {
-                        if (event.key !== "Enter" || !isLast || !canCreateNext) return;
-                        event.preventDefault();
-                        onAdd({ zoneName: "" });
-                      }}
-                      placeholder="예: 옥상, 음악준비실, 도서부실"
-                    />
-                    {isDuplicateZone ? (
-                      <p className="text-xs text-red-600">이미 같은 이름의 구역이 있습니다.</p>
-                    ) : null}
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-          <div className="flex justify-end">
-            <Button type="button" variant="outline" onClick={() => onAdd({ zoneName: "" })}>
-              구역 추가
-            </Button>
-          </div>
-        </div>
+        <WizardStepHint>
+          사건이 벌어진 장소마다 <strong>하나의 맵</strong>이 붙습니다. 의뢰를 받고 현장에 가면 그 구역에만 보이는
+          단서를 둡니다. 구역 이름은 겹치지 않게 적어주세요. 세션에 들어가면 팀이 나뉘고, 부장·차장·부원과 순찰할
+          구역은 그때 랜덤으로 정해집니다.
+        </WizardStepHint>
+
+        <WizardListSection
+          title={
+            <span>
+              조사 구역<span className="ml-0.5 text-red-400">*</span>
+            </span>
+          }
+          description="장소명을 입력한 뒤 필요하면 아래에서 구역을 더 추가하세요."
+          onAdd={() => onAdd({ zoneName: "" })}
+        >
+          {zones.map((z, index) => {
+            const isLast = index === zones.length - 1;
+            const normalized = z.zoneName.trim().toLocaleLowerCase();
+            const isDuplicateZone = normalized ? (normalizedZoneCount.get(normalized) ?? 0) > 1 : false;
+            const canCreateNext = z.zoneName.trim().length > 0 && !isDuplicateZone;
+            return (
+              <WizardListItemCard key={z.tempId} className="space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-[var(--mystery)]">
+                    조사 구역 {index + 1}
+                  </p>
+                  <WizardRowRemoveButton
+                    onClick={() => onRemove(z.tempId)}
+                    disabled={zones.length === 1}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[11px] font-semibold text-[var(--muted-foreground)]">
+                    장소명<span className="ml-0.5 text-red-500">*</span>
+                  </p>
+                  <Input
+                    value={z.zoneName}
+                    onChange={(event) => onUpdate(z.tempId, { zoneName: event.target.value })}
+                    onKeyDown={(event) => {
+                      if (event.key !== "Enter" || !isLast || !canCreateNext) return;
+                      event.preventDefault();
+                      onAdd({ zoneName: "" });
+                    }}
+                    placeholder="예: 옥상, 음악준비실, 도서부실"
+                  />
+                  {isDuplicateZone ? (
+                    <p className="text-xs text-red-600">이미 같은 이름의 구역이 있습니다.</p>
+                  ) : null}
+                </div>
+              </WizardListItemCard>
+            );
+          })}
+        </WizardListSection>
       </CardContent>
     </Card>
   );
