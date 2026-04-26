@@ -143,7 +143,7 @@ export function AIGenerateModal({
               disabled={isLoading}
             />
             <p className="text-[11px] text-[var(--muted-foreground,#94a3b8)]">
-              비워두면 AI 가 알아서 학교를 배경으로 한 사건을 만들어요.
+              비워 두면 학교·동아리 미스터리를 AI 가 제안합니다. 생성 결과는 마법사 1~4단계(기본 정보·용의자·구역·맵)에 한꺼번에 채워집니다. 범인 지정은 2단계에서 직접 해 주세요.
             </p>
           </div>
 
@@ -198,7 +198,7 @@ export function AIGenerateModal({
             </p>
           ) : (
             <p className="text-[11px] text-[var(--muted-foreground,#94a3b8)]">
-              현재 사용 가능한 prop {propAssets.length}개 중에서 AI 가 골라서 배치합니다.
+              Storage 에 등록된 prop {propAssets.length}개 식별자만 사용해 단서를 배치합니다(목록에 없는 이름은 서버에서 제거됩니다).
             </p>
           )}
 

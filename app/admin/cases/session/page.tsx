@@ -125,7 +125,7 @@ function PhaseTimerCard({ phase }: { phase: TimedPhase }) {
   };
 
   return (
-    <section className="rounded-lg border border-[var(--border)] bg-[rgba(36,40,43,0.55)] p-6">
+    <section className="rounded-lg border border-[var(--border)] bg-[var(--card-bg)] p-6 shadow-[var(--elevation-sm)]">
       <h2 className="mb-4 text-center text-sm font-semibold text-[var(--foreground)]">타이머</h2>
       <div className="flex flex-col items-center gap-4">
         {isEditing ? (
@@ -244,7 +244,7 @@ function TeamAssignmentDashboard({
 }) {
   const groups = useMemo(() => groupPlayersByTeam(players, teams), [players, teams]);
   return (
-    <section className="space-y-3 rounded-lg border border-[var(--border)] bg-[rgba(36,40,43,0.55)] p-6">
+    <section className="space-y-3 rounded-lg border border-[var(--border)] bg-[var(--card-bg)] p-6 shadow-[var(--elevation-sm)]">
       <header className="flex items-baseline justify-between">
         <h2 className="text-sm font-semibold text-[var(--foreground)]">팀·역할·순찰 구역</h2>
         <span className="text-xs text-[var(--muted-foreground)]">총 {players.length}명</span>
@@ -258,7 +258,7 @@ function TeamAssignmentDashboard({
           {groups.map((g) => (
             <div
               key={g.team.id}
-              className="rounded-md border border-[var(--border)] bg-[var(--ink-45)] p-3"
+              className="rounded-md border border-[var(--border)] bg-[var(--surface)] p-3 shadow-sm"
             >
               <p className="text-xs uppercase tracking-[0.16em] text-[var(--muted-foreground)]">
                 Team
@@ -273,7 +273,7 @@ function TeamAssignmentDashboard({
                   g.members.map((m) => (
                     <li
                       key={m.id}
-                      className="flex items-center justify-between gap-2 rounded border border-[var(--border)] bg-[rgba(255,255,255,0.03)] px-2 py-1.5 text-xs"
+                      className="flex items-center justify-between gap-2 rounded border border-[var(--border)] bg-[var(--tint-accent-weak)] px-2 py-1.5 text-xs"
                     >
                       <span className="min-w-0 flex-1 text-[var(--foreground)]">
                         {m.nickname ?? "Player"}
@@ -318,7 +318,7 @@ function TeamReportDashboard({
   const hasAnswer = Boolean(answerId?.trim() && trueName);
 
   return (
-    <section className="space-y-3 rounded-lg border border-[var(--border)] bg-[rgba(36,40,43,0.55)] p-6">
+    <section className="space-y-3 rounded-lg border border-[var(--border)] bg-[var(--card-bg)] p-6 shadow-[var(--elevation-sm)]">
       <header className="flex items-baseline justify-between">
         <h2 className="text-sm font-semibold text-[var(--foreground)]">최종 보고서</h2>
         <span className="text-xs text-[var(--muted-foreground)]">
@@ -331,8 +331,9 @@ function TeamReportDashboard({
           <p className="mt-1 font-medium">{trueName}</p>
         </div>
       ) : (
-        <p className="mb-2 text-xs text-amber-200/80">
-          사건에「범인(정답) 용의자」가 지정되지 않았습니다. 사건 편집에서 선택해 주세요.
+        <p className="mb-2 rounded-md border border-[var(--panel-warn-border)] bg-[var(--panel-warn-bg)] px-3 py-2 text-xs text-[var(--foreground)]">
+          사건에「범인(정답) 용의자」가 지정되지 않았습니다.{" "}
+          <span className="font-medium text-[var(--accent)]">사건 편집</span>에서 선택해 주세요.
         </p>
       )}
       {loading ? (
@@ -352,7 +353,7 @@ function TeamReportDashboard({
                 className={`rounded-md border p-3 ${
                   submitted
                     ? "border-[var(--accent)] bg-[var(--tint-accent-medium)]"
-                    : "border-[var(--border)] bg-[var(--ink-45)]"
+                    : "border-[var(--border)] bg-[var(--surface)]"
                 }`}
               >
                 <div className="flex items-center justify-between">
@@ -362,7 +363,7 @@ function TeamReportDashboard({
                   <span
                     className={`rounded px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.12em] ${
                       submitted
-                        ? "bg-[var(--accent)] text-black"
+                        ? "bg-[var(--accent)] text-[var(--background)]"
                         : "border border-[var(--border)] text-[var(--muted-foreground)]"
                     }`}
                   >
@@ -377,7 +378,8 @@ function TeamReportDashboard({
                 {submitted && hasAnswer ? (
                   <p
                     className={
-                      "mt-2 text-[11px] font-semibold " + (ok ? "text-[var(--accent)]" : "text-amber-200/90")
+                      "mt-2 text-[11px] font-semibold " +
+                      (ok ? "text-[var(--primary)]" : "text-[var(--error)]")
                     }
                   >
                     범인 검거: {ok ? "성공" : "실패"} — 제출: {subName ?? "—"}
@@ -407,7 +409,7 @@ function TeamReportDashboard({
                   {g.members.map((m) => (
                     <li
                       key={m.id}
-                      className="flex items-center justify-between gap-2 rounded border border-[var(--border)] bg-[rgba(255,255,255,0.03)] px-2 py-1.5 text-xs"
+                      className="flex items-center justify-between gap-2 rounded border border-[var(--border)] bg-[var(--tint-accent-weak)] px-2 py-1.5 text-xs"
                     >
                       <span className="min-w-0 flex-1 text-[var(--foreground)]">
                         {m.nickname ?? "Player"}
@@ -787,7 +789,7 @@ function CaseSessionHostContent() {
                 {onlinePlayers.map((p) => (
                   <li
                     key={p.id}
-                    className="inline-flex items-center gap-2 rounded-md border border-[var(--border)] bg-[var(--ink-35)] px-3 py-2 text-sm w-fit"
+                    className="inline-flex w-fit items-center gap-2 rounded-md border border-[var(--border)] bg-[var(--tint-accent-weak)] px-3 py-2 text-sm"
                   >
                     <span className="font-medium text-[var(--foreground)]">
                       {p.nickname ?? "Player"}
@@ -849,8 +851,8 @@ function CaseSessionHostContent() {
       </main>
 
       <div className="pointer-events-none fixed bottom-4 right-4 z-40">
-        <div className="pointer-events-auto rounded-md border border-[var(--border)] bg-[var(--ink-95)] px-3 py-2 text-sm text-[var(--foreground)] shadow-lg backdrop-blur">
-          플레이어 <span className="font-semibold text-[var(--accent)]">{playercount}</span>명
+        <div className="pointer-events-auto rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)] shadow-[var(--elevation-sm)]">
+          접속 <span className="font-semibold text-[var(--primary)]">{playercount}</span>명
         </div>
       </div>
     </div>

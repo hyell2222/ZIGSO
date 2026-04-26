@@ -1,8 +1,8 @@
 /**
  * /api/ai/generate-case 호출 클라이언트.
  *
- * 서버 응답은 조사 구역(맵) 목록/단서를 인덱스 기반으로 돌려준다.
- * 호출자는 받은 결과로 DraftInvestigationZone / DraftClue 를 만든다 (tempId 매핑).
+ * 응답: 제목·브리핑 설명·용의자 텍스트·난이도·조사 구역·맵 단서(구역 인덱스·좌표).
+ * 호출자가 tempId 를 붙여 마법사 초안으로 변환한다.
  */
 
 export type AICaseRequest = {

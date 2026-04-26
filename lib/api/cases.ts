@@ -68,7 +68,7 @@ export type CaseFullData = {
   clues: CaseClueRow[];
 };
 
-const SCENARIO_SELECT =
+const CASE_SELECT =
   "id,title,description,suspect_profiles,suspect_roster,difficulty,answer_suspect_id,creator_id,created_at,updated_at";
 
 function normalizeText(value: string | null | undefined) {
@@ -92,7 +92,7 @@ export type CaseListRow = CaseRecord & {
 export async function listCases(teacherId: string) {
   const { data, error } = await supabase
     .from("cases")
-    .select(`${SCENARIO_SELECT}, locations(count)`)
+    .select(`${CASE_SELECT}, locations(count)`)
     .eq("creator_id", teacherId)
     .order("created_at", { ascending: false });
   if (error) throw error;
@@ -180,7 +180,7 @@ export async function createCase(input: CreateCaseInput) {
 
 export async function getCaseFull(caseId: string): Promise<CaseFullData> {
   const [caseRes, locationsRes, cluesRes] = await Promise.all([
-    supabase.from("cases").select(SCENARIO_SELECT).eq("id", caseId).single(),
+    supabase.from("cases").select(CASE_SELECT).eq("id", caseId).single(),
     supabase
       .from("locations")
       .select("id,name")

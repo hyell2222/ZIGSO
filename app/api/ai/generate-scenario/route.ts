@@ -1,8 +1,8 @@
 /**
- * AI 사건 생성 라우트.
+ * AI 사건 생성 라우트 — POST /api/ai/generate-case
  *
- * 클라이언트가 사용 가능한 prop asset 목록과 (선택적) 주제 키워드를 보내면,
- * OpenAI structured outputs 를 이용해 사건 한 벌 (제목/설명/난이도/캐릭터/단서) 을 생성한다.
+ * prop 목록 + 선택 주제·난이도·단서 개수 → OpenAI structured output 으로
+ * 마법사 초안 JSON (기본 정보 / 용의자 텍스트 / 구역 / 맵 단서 좌표).
  *
  * 요구 환경변수:
  * - OPENAI_API_KEY  (필수)
@@ -25,7 +25,7 @@ const WORLD_H = 600;
  * OpenAI structured outputs 의 strict 모드에서는 minimum/maximum/minItems 같은
  * 제약이 지원되지 않으므로, 모든 분포 규칙은 prompt 로만 전달한다.
  */
-const SCENARIO_SCHEMA = {
+const CASE_SCHEMA = {
   type: "object",
   additionalProperties: false,
   required: ["title", "description", "suspect_profiles", "difficulty", "investigation_zones", "clues"],
@@ -86,47 +86,66 @@ type AICaseResponse = {
 
 function buildSystemPrompt(propAssets: string[]): string {
   return [
-    "너는 초·중등 교실에서 사용할 '비밀 탐정 동아리(Mystery Club)' 사건·의뢰 협동 추리 사건을 한국어로 만드는 전문 작가야.",
+    "너는 HiddenSchool(히든스쿨)용 '비밀 탐정 동아리 / MYSTERY CLUB' 협동 추리 사건을 한국어로 설계하는 작가다.",
+    "교사가 웹 마법사에 붙여 넣을 초안 JSON 만 출력한다. 범인 지정·세션 운영은 교사 몫이다.",
     "",
-    "[게임 구조]",
-    "- 사건이 벌어진 '조사 구역'(예: 음악준비실, 옥상)마다 맵이 하나씩 있고, 선생님이 둔 단서(prop)는 그 맵에만 붙는다.",
-    "- 실제로 플레이어의 부장·차장·부원 역할과 어느 맵을 순찰할지는 나중에 게임 세션에서 랜덤 배정된다. 여기서는 조사 맵(구역) 목록과 단서만 만든다.",
-    "- 맵 캔버스는 가로 800px × 세로 600px 탑다운 2D.",
-    "- 팀이 단서를 모아 사건(의뢰)의 진실을 찾는다.",
+    "[제품 맥락]",
+    "- 마법사 단계: (1) 사건 기본 정보 — 제목·사건 개요(브리핑)·난이도 (2) 용의자·범인 후보 (3) 조사 구역 이름 (4) 맵에 올릴 단서=소품.",
+    "- 학생 플로우: 사건 코드 입장 → 브리핑(사건 개요·용의자·부원증) → 팀별 조사 구역에서 단서 수집 → 최종 보고서에서 등록된 용의자 중 한 명만 범인 선택.",
+    "- 조사 구역마다 별도 맵이 있고, 단서는 해당 구역 맵에만 배치된다. 부장·차장·부원 역할과 순찰 구역은 세션 시작 시 랜덤 배정(여기서 지정하지 않음).",
+    `- 맵 월드: 가로 ${WORLD_W}px × 세로 ${WORLD_H}px, 탑다운. 좌표는 격자 40px에 맞추면 좋다(가능하면 x·y를 40의 배수로).`,
     "",
-    "[출력 규칙 — 반드시 지킬 것]",
-    "- difficulty: \"Easy\" | \"Normal\" | \"Hard\" 중 하나.",
-    "- investigation_zones: 2~5개. 각 항목은 zone_name(한국어)만. 서로 다른 장소명, 겹치지 않게.",
-    "- clues: 구역(assignment)당 3~6개씩 골고루. assignment_index는 investigation_zones 배열의 0-based 인덱스.",
-    `  · asset: 아래 [사용 가능한 prop asset 목록] 중에서만. 목록에 없는 값 금지.`,
-    `  · x, y: 중심 좌표. 월드 ${WORLD_W}×${WORLD_H} 내 60 ≤ x ≤ ${WORLD_W - 60}, 60 ≤ y ≤ ${WORLD_H - 60} 권장.`,
-    "  · w, h: 60~120 정도. 같은 구역 prop은 80px 이상 떨어뜨릴 것.",
-    "- title: 8~25자, 미스터리 느낌.",
-    "- description: 150~250자, 비밀 탐정 동아리가 맡은 의뢰·사건이 드러나게.",
-    "- suspect_profiles: 용의자 2~4명. 각각 이름·역할·알리바이 한 줄씩. 줄바꿈으로 구분.",
-    "- 단서 content: 추리에 도움 되는 1~2문장.",
-    "- 제목·구역·단서가 하나의 사건으로 일관되게.",
+    "[난이도]",
+    "- Easy: 단서가 직관적이고 연결이 적다. Normal: 균형. Hard: 여러 단서를 조합해야 하고 허위·우연을 구분해야 한다.",
     "",
-    "[사용 가능한 prop asset 목록]",
+    "[필드별 규칙]",
+    `· title: 한국어 8~28자. 학교·동아리 미스터리 톤, 스포일러 없음.`,
+    "· description: 한국어 180~320자. 브리핑에 그대로 보이므로 범인 실명·범행 확정 서술은 금지. 의뢰 맥락·알려진 사실·긴장감만.",
+    "· suspect_profiles: 한 줄에 한 명, 총 2~4명. 반드시 아래 형식(앞뒤 공백 없이):",
+    '  `이름 — 역할 또는 학년/동아리 — 알리바이·소지품·목격 등 한 문장`(구분자는 전각/반각 대시 "—" 또는 "–" 중 하나로 통일).',
+    "  예: `김민재 — 방송부 차장 — 사건 당시 음악실에서 기기 점검 중이었다고 주장한다.`",
+    "  용의자들만 등장시키고, 이야기 안에서 한 명이 논리적으로 범행에 가장 잘 맞게 짜되 description 에서 누구인지 드러내지 말 것.",
+    "· difficulty: 정확히 \"Easy\" | \"Normal\" | \"Hard\".",
+    "· investigation_zones: 2~5개. zone_name만. 학교 안 장소 한국어, 서로 절대 중복 금지, 비슷한 이름도 피할 것.",
+    "· clues:",
+    "  - assignment_index: investigation_zones 배열의 0부터 시작하는 인덱스. 구역마다 개수가 비슷하게 분배(대략 구역당 3~6개).",
+    "  - asset: 반드시 아래 [사용 가능한 prop asset 목록]에 있는 문자열만. 없는 이름·변형 금지.",
+    `  - x, y: 소품 중심 좌표. ${WORLD_W}×${WORLD_H} 안에 완전히 들어오게. 권장: x는 ${40}~${WORLD_W - 40}, y는 ${40}~${WORLD_H - 40}.`,
+    "  - w, h: 48~128(짝수 선호). 같은 구역 안에서는 서로 겹치지 않게 최소 72px 이상 간격.",
+    "  - name: 맵 목록에 보이는 짧은 단서 제목(한국어 2~12자), 고유하게.",
+    "  - content: 플레이어가 읽는 본문. 1~3문장. 분위기+추리 단서. description 과 모순 없게.",
+    "",
+    "[일관성]",
+    "- 제목·개요·구역명·단서·용의자가 하나의 사건으로 맞물릴 것.",
+    "- 현실 학교에서 벌어질 법한 사건(폭력·혐오 과도 묘사 금지).",
+    "",
+    "[사용 가능한 prop asset 목록 — 이 중에서만 asset 선택]",
     propAssets.join(", "),
   ].join("\n");
 }
 
 function buildUserPrompt(theme: string, difficulty?: string, propCountTarget?: number): string {
   const lines: string[] = [];
-  lines.push("아래 요청에 맞춰 사건 한 벌을 JSON 으로 생성해줘.");
+  lines.push(
+    "위 시스템 규칙을 모두 지켜, 스키마에 맞는 JSON 객체 하나만 생성해줘. 마크다운·코드 펜스·주석 없이 순수 JSON만.",
+  );
   if (theme.trim()) {
     lines.push("");
-    lines.push("[사용자 요청 주제/키워드]");
+    lines.push("[사용자 주제·키워드 — 이 방향으로 사건을 짜되 세부는 채워도 됨]");
     lines.push(theme.trim());
+  } else {
+    lines.push("");
+    lines.push("[사용자 주제 없음 — 학교 배경 미스터리를 알아서 제안]");
   }
   if (difficulty) {
     lines.push("");
-    lines.push(`[목표 난이도] ${difficulty}`);
+    lines.push(`[요청 난이도] ${difficulty} (difficulty 필드에 동일 값)`);
   }
   if (propCountTarget && propCountTarget > 0) {
     lines.push("");
-    lines.push(`[권장 단서 총 개수] 약 ${propCountTarget} 개`);
+    lines.push(
+      `[단서 개수] clues 배열 총합이 대략 ${propCountTarget}개에 가깝게(±3). 구역 수를 고려해 나눌 것.`,
+    );
   }
   return lines.join("\n");
 }
@@ -192,7 +211,7 @@ export async function POST(req: NextRequest) {
         json_schema: {
           name: "case",
           strict: true,
-          schema: SCENARIO_SCHEMA,
+          schema: CASE_SCHEMA,
         },
       },
     }),
