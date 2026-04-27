@@ -7,8 +7,6 @@ export type CaseRecord = {
   id: string;
   title: string | null;
   description: string | null;
-  /** 레거시 한 덩어리 문구 (이전 데이터) */
-  suspect_profiles: string | null;
   suspect_roster: SuspectEntry[] | null;
   difficulty: string | null;
   /** cases.suspect_roster[].id */
@@ -69,7 +67,7 @@ export type CaseFullData = {
 };
 
 const CASE_SELECT =
-  "id,title,description,suspect_profiles,suspect_roster,difficulty,answer_suspect_id,creator_id,created_at,updated_at";
+  "id,title,description,suspect_roster,difficulty,answer_suspect_id,creator_id,created_at,updated_at";
 
 function normalizeText(value: string | null | undefined) {
   const trimmed = value?.trim();
@@ -158,7 +156,6 @@ export async function createCase(input: CreateCaseInput) {
     .insert({
       title: normalizeText(input.title),
       description: normalizeText(input.description),
-      suspect_profiles: null,
       suspect_roster: input.suspect_roster,
       answer_suspect_id: normalizeText(input.answer_suspect_id),
       difficulty: normalizeText(input.difficulty),
@@ -215,7 +212,6 @@ export async function updateCase(
     .update({
       title: normalizeText(input.title),
       description: normalizeText(input.description),
-      suspect_profiles: null,
       suspect_roster: input.suspect_roster,
       answer_suspect_id: normalizeText(input.answer_suspect_id),
       difficulty: normalizeText(input.difficulty),

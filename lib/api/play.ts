@@ -28,7 +28,6 @@ export type SessionDetailsRow = {
   cases: {
     title: string | null;
     description: string | null;
-    suspect_profiles: string | null;
     suspect_roster: SuspectEntry[] | null;
     difficulty: string | null;
     answer_suspect_id: string | null;
@@ -38,7 +37,7 @@ export type SessionDetailsRow = {
 export type HostSessionDetailsRow = SessionDetailsRow;
 
 const SESSION_SELECT =
-  "id,join_code,host_id,phase,is_active,case_id,cases(title,description,suspect_profiles,suspect_roster,difficulty,answer_suspect_id)";
+  "id,join_code,host_id,phase,is_active,case_id,cases(title,description,suspect_roster,difficulty,answer_suspect_id)";
 
 export async function getPlaySessionDetails(sessionId: string) {
   const { data, error } = await supabase

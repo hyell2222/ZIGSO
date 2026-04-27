@@ -1,7 +1,9 @@
+import type { SuspectEntry } from "@/lib/suspects";
+
 /**
  * /api/ai/generate-case 호출 클라이언트.
  *
- * 응답: 제목·브리핑 설명·용의자 텍스트·난이도·조사 구역·맵 단서(구역 인덱스·좌표).
+ * 응답: 제목·브리핑 설명·용의자 로스터·난이도·조사 구역·맵 단서(구역 인덱스·좌표).
  * 호출자가 tempId 를 붙여 마법사 초안으로 변환한다.
  */
 
@@ -19,8 +21,7 @@ export type AICaseRequest = {
 export type AICaseResponse = {
   title: string;
   description: string;
-  /** 브리핑용 용의자 프로필 (여러 줄 텍스트) */
-  suspect_profiles: string;
+  suspect_roster: SuspectEntry[];
   difficulty: "Easy" | "Normal" | "Hard";
   investigation_zones: Array<{ zone_name: string }>;
   clues: Array<{

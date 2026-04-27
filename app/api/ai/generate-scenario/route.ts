@@ -28,11 +28,23 @@ const WORLD_H = 600;
 const CASE_SCHEMA = {
   type: "object",
   additionalProperties: false,
-  required: ["title", "description", "suspect_profiles", "difficulty", "investigation_zones", "clues"],
+  required: ["title", "description", "suspect_roster", "difficulty", "investigation_zones", "clues"],
   properties: {
     title: { type: "string" },
     description: { type: "string" },
-    suspect_profiles: { type: "string" },
+    suspect_roster: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["id", "name", "detail"],
+        properties: {
+          id: { type: "string" },
+          name: { type: "string" },
+          detail: { type: "string" },
+        },
+      },
+    },
     difficulty: { type: "string", enum: ["Easy", "Normal", "Hard"] },
     investigation_zones: {
       type: "array",
@@ -69,7 +81,7 @@ const CASE_SCHEMA = {
 type AICaseResponse = {
   title: string;
   description: string;
-  suspect_profiles: string;
+  suspect_roster: Array<{ id: string; name: string; detail: string }>;
   difficulty: "Easy" | "Normal" | "Hard";
   investigation_zones: Array<{ zone_name: string }>;
   clues: Array<{
@@ -101,10 +113,8 @@ function buildSystemPrompt(propAssets: string[]): string {
     "[필드별 규칙]",
     `· title: 한국어 8~28자. 학교·동아리 미스터리 톤, 스포일러 없음.`,
     "· description: 한국어 180~320자. 브리핑에 그대로 보이므로 범인 실명·범행 확정 서술은 금지. 의뢰 맥락·알려진 사실·긴장감만.",
-    "· suspect_profiles: 한 줄에 한 명, 총 2~4명. 반드시 아래 형식(앞뒤 공백 없이):",
-    '  `이름 — 역할 또는 학년/동아리 — 알리바이·소지품·목격 등 한 문장`(구분자는 전각/반각 대시 "—" 또는 "–" 중 하나로 통일).',
-    "  예: `김민재 — 방송부 차장 — 사건 당시 음악실에서 기기 점검 중이었다고 주장한다.`",
-    "  용의자들만 등장시키고, 이야기 안에서 한 명이 논리적으로 범행에 가장 잘 맞게 짜되 description 에서 누구인지 드러내지 말 것.",
+    "· suspect_roster: 2~4명. 각 항목에 id(영문·숫자·하이픈 등 URL-safe한 짧은 식별자, 사건 내 고유), name(이름), detail(역할·알리바이·특징 한두 문장).",
+    "  id 예: su_min, su_jae (한글 금지). 용의자들만 넣고, description 에서 범인이 누구인지 드러내지 말 것.",
     "· difficulty: 정확히 \"Easy\" | \"Normal\" | \"Hard\".",
     "· investigation_zones: 2~5개. zone_name만. 학교 안 장소 한국어, 서로 절대 중복 금지, 비슷한 이름도 피할 것.",
     "· clues:",
@@ -251,14 +261,16 @@ export async function POST(req: NextRequest) {
   const assetSet = new Set(propAssets);
   const slotCount = parsed.investigation_zones.length;
 
-  const suspect =
-    typeof parsed.suspect_profiles === "string" && parsed.suspect_profiles.trim()
-      ? parsed.suspect_profiles.trim()
-      : "용의자 A — 학생\n용의자 B — 학생";
+  const defaultRoster: AICaseResponse["suspect_roster"] = [
+    { id: "s1", name: "용의자 A", detail: "학생" },
+    { id: "s2", name: "용의자 B", detail: "학생" },
+  ];
+
+  const suspectRoster = normalizeAiSuspectRoster(parsed.suspect_roster, defaultRoster);
 
   const sanitized: AICaseResponse = {
     ...parsed,
-    suspect_profiles: suspect,
+    suspect_roster: suspectRoster,
     clues: parsed.clues
       .filter(
         (c) =>
@@ -277,6 +289,24 @@ export async function POST(req: NextRequest) {
   };
 
   return NextResponse.json(sanitized);
+}
+
+function normalizeAiSuspectRoster(
+  raw: unknown,
+  fallback: AICaseResponse["suspect_roster"],
+): AICaseResponse["suspect_roster"] {
+  if (!Array.isArray(raw) || raw.length === 0) return fallback;
+  const out = raw
+    .map((row, i) => {
+      if (!row || typeof row !== "object") return null;
+      const o = row as Record<string, unknown>;
+      const id = typeof o.id === "string" && o.id.trim() ? o.id.trim() : `s${i + 1}`;
+      const name = typeof o.name === "string" ? o.name : "";
+      const detail = typeof o.detail === "string" ? o.detail : "";
+      return { id, name, detail };
+    })
+    .filter((v): v is AICaseResponse["suspect_roster"][number] => v != null);
+  return out.length > 0 ? out : fallback;
 }
 
 function clamp(value: number, min: number, max: number): number {

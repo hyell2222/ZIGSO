@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { generateCaseWithAI } from "@/lib/api/ai-case";
 import { makeTempId } from "@/lib/temp-id";
+import type { SuspectEntry } from "@/lib/suspects";
 
 import type { Difficulty } from "./basic-info-step";
 import type { DraftInvestigationZone, DraftClue } from "./types";
@@ -14,7 +15,7 @@ import type { DraftInvestigationZone, DraftClue } from "./types";
 export type AIGenerateResult = {
   title: string;
   description: string;
-  suspectProfiles: string;
+  suspects: SuspectEntry[];
   difficulty: Difficulty;
   investigationZones: DraftInvestigationZone[];
   clues: DraftClue[];
@@ -92,7 +93,11 @@ export function AIGenerateModal({
       onApply({
         title: data.title,
         description: data.description,
-        suspectProfiles: data.suspect_profiles,
+        suspects: data.suspect_roster.map((s) => ({
+          id: s.id?.trim() || makeTempId(),
+          name: typeof s.name === "string" ? s.name : "",
+          detail: typeof s.detail === "string" ? s.detail : "",
+        })),
         difficulty: data.difficulty,
         investigationZones,
         clues,

@@ -18,7 +18,6 @@ import { listPropAssets } from "@/lib/api/storage-props";
 import { ROUTES } from "@/lib/routes";
 import { hasSupabaseEnv } from "@/lib/supabase";
 import type { SuspectEntry } from "@/lib/suspects";
-import { textLinesToSuspectRoster } from "@/lib/suspects";
 import { makeTempId } from "@/lib/temp-id";
 
 import { AIGenerateModal } from "../create/steps/ai-generate-modal";
@@ -159,7 +158,7 @@ export function CaseWizard(props: Props) {
     (result: {
       title: string;
       description: string;
-      suspectProfiles: string;
+      suspects: SuspectEntry[];
       difficulty: Difficulty;
       investigationZones: DraftInvestigationZone[];
       clues: DraftClue[];
@@ -167,7 +166,15 @@ export function CaseWizard(props: Props) {
       setErrorMessage(null);
       setTitle(result.title);
       setDescription(result.description);
-      setSuspects(textLinesToSuspectRoster(result.suspectProfiles, makeTempId));
+      setSuspects(
+        result.suspects.length > 0
+          ? result.suspects.map((s) => ({
+              id: s.id?.trim() || makeTempId(),
+              name: s.name,
+              detail: s.detail,
+            }))
+          : [{ id: makeTempId(), name: "", detail: "" }],
+      );
       setAnswerSuspectId("");
       setDifficulty(result.difficulty);
       setInvestigationZones(result.investigationZones);

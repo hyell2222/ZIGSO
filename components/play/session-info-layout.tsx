@@ -7,7 +7,7 @@ import type { UseQueryResult } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import type { SessionDetailsRow } from "@/lib/api/play";
-import { legacySuspectProfilesPlainText, parseSuspectRosterFromCase } from "@/lib/suspects";
+import { parseSuspectRosterFromCase } from "@/lib/suspects";
 
 type SessionInfoLayoutProps = {
   sessionQuery: UseQueryResult<SessionDetailsRow, Error>;
@@ -27,12 +27,11 @@ function FieldLabel({ children, className }: { children: ReactNode; className?: 
 }
 
 /**
- * 1단계(브리핑): 사건 개요 + 용의자(또는 레거시 텍스트)
+ * 1단계(브리핑): 사건 개요 + 용의자
  */
 export function SessionInfoLayout({ sessionQuery }: SessionInfoLayoutProps) {
   const cases = sessionQuery.data?.cases;
   const roster = parseSuspectRosterFromCase(cases?.suspect_roster);
-  const legacyText = legacySuspectProfilesPlainText(cases?.suspect_profiles);
 
   return (
     <div className="grid gap-5 lg:grid-cols-2">
@@ -128,11 +127,6 @@ export function SessionInfoLayout({ sessionQuery }: SessionInfoLayoutProps) {
                 </li>
               ))}
             </ul>
-          ) : legacyText ? (
-            <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4">
-              <FieldLabel className="mb-2">텍스트 형식 용의자 정보</FieldLabel>
-              <p className="whitespace-pre-wrap text-sm leading-relaxed text-[var(--foreground)]">{legacyText}</p>
-            </div>
           ) : (
             <p className="rounded-md border border-dashed border-[var(--border)] bg-[var(--tint-accent-weak)] px-4 py-6 text-center text-sm text-[var(--muted-foreground)]">
               지도교사가 이 사건에 용의자 정보를 넣지 않았습니다.

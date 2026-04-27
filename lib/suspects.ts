@@ -8,17 +8,6 @@ export type SuspectEntry = {
   detail: string;
 };
 
-/** 구 DB/AI 필드 `suspect_profiles`(문자열·JSON) → 화면·편집용 평문 */
-export function legacySuspectProfilesPlainText(value: unknown): string {
-  if (value == null) return "";
-  if (typeof value === "string") return value.trim();
-  try {
-    return JSON.stringify(value).trim();
-  } catch {
-    return String(value).trim();
-  }
-}
-
 export function parseSuspectRosterFromCase(value: unknown): SuspectEntry[] {
   if (value == null) return [];
   if (Array.isArray(value)) {
@@ -35,21 +24,6 @@ export function parseSuspectRosterFromCase(value: unknown): SuspectEntry[] {
       .filter((v): v is SuspectEntry => v != null);
   }
   return [];
-}
-
-/** AI/레거시 한 덩어리 텍스트 → 용의자 배열 (줄마다 1인, "이름 — 설명" 형식 권장) */
-export function textLinesToSuspectRoster(text: string, makeId: () => string): SuspectEntry[] {
-  return text
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line) => {
-      const m = line.match(/^(.+?)\s*[—:–-]\s*(.+)$/u);
-      if (m) {
-        return { id: makeId(), name: m[1]!.trim(), detail: m[2]!.trim() } satisfies SuspectEntry;
-      }
-      return { id: makeId(), name: line, detail: "" } satisfies SuspectEntry;
-    });
 }
 
 export function findSuspectName(roster: SuspectEntry[] | null | undefined, suspectId: string | null | undefined) {

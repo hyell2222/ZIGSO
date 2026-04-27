@@ -11,8 +11,6 @@ create table if not exists public.cases (
   id uuid primary key default gen_random_uuid(),
   title text not null,
   description text,
-  -- 레거시: 이전에 한 덩어리로 넣은 용의자 문구(선택)
-  suspect_profiles jsonb,
   -- [{ "id", "name", "detail" }] — 브리핑·범인 선택·정답 id 기준
   suspect_roster jsonb not null default '[]'::jsonb,
   -- 용의자 id 중 범인 1명 (suspect_roster[].id)

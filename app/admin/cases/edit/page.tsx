@@ -8,11 +8,7 @@ import { Suspense, useEffect, useMemo } from "react";
 import { TopNav } from "@/components/layout/top-nav";
 import { getCaseFull } from "@/lib/api/cases";
 import { ROUTES } from "@/lib/routes";
-import {
-  legacySuspectProfilesPlainText,
-  parseSuspectRosterFromCase,
-  textLinesToSuspectRoster,
-} from "@/lib/suspects";
+import { parseSuspectRosterFromCase } from "@/lib/suspects";
 import { makeTempId } from "@/lib/temp-id";
 
 import type { Difficulty } from "../create/steps/basic-info-step";
@@ -94,10 +90,6 @@ function CaseEditContent() {
       .filter((v): v is DraftClue => v !== null);
 
     let suspects = parseSuspectRosterFromCase(caseRecord.suspect_roster);
-    if (suspects.length === 0) {
-      const legacy = legacySuspectProfilesPlainText(caseRecord.suspect_profiles);
-      if (legacy) suspects = textLinesToSuspectRoster(legacy, makeTempId);
-    }
     if (suspects.length === 0) {
       suspects = [{ id: makeTempId(), name: "", detail: "" }];
     }
