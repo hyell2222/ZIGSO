@@ -1,10 +1,10 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, MoreVertical, Pencil, PlusIcon, Trash2 } from "lucide-react";
+import { Loader2, PlusIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   deleteCase,
@@ -14,6 +14,8 @@ import {
 } from "@/lib/api/cases";
 import { getCurrentSession } from "@/lib/api/auth";
 import { AUTH_SESSION_QUERY_KEY } from "@/lib/auth-session-query";
+import { KebabMenu } from "@/components/admin/kebab-menu";
+import { PageHeader } from "@/components/layout/admin-page-header";
 import { TopNav } from "@/components/layout/top-nav";
 import { Button } from "@/components/ui/button";
 import { ROUTES } from "@/lib/routes";
@@ -114,37 +116,35 @@ export default function AdminCasesPage() {
   return (
     <div className="min-h-screen">
       <TopNav />
-      <main className="mx-auto w-full max-w-7xl px-4 py-8">
-        <div className="mb-4" />
+      <main className="mx-auto w-full max-w-7xl space-y-6 px-4 py-8">
         {sessionQuery.data ? (
           <div className="space-y-6">
-            <div className="flex flex-wrap items-end justify-between gap-3">
-              <div>
-                <h2 className="text-xl font-semibold text-[var(--foreground)]">사건 목록</h2>
-                <p className="mt-1 text-xs text-[var(--muted-foreground)]">
-                  연 세션·제출 보고서는{" "}
-                  <Link href={ROUTES.admin.sessions} className="font-medium text-[var(--accent)] underline-offset-2 hover:underline">
-                    세션 · 보고서
-                  </Link>
-                  에서 확인할 수 있어요.
-                </p>
-              </div>
-              {(casesQuery.data?.length ?? 0) > 0 ? (
-                <Button type="button" onClick={() => router.push(ROUTES.admin.casesNew)} className="flex items-center gap-2">
-                  <PlusIcon className="h-4 w-4" />새 사건 만들기
-                </Button>
-              ) : null}
-            </div>
+            <PageHeader
+              title="사건 목록"
+              description="사건을 만들어 수사 세션을 시작해보세요."
+              actions={
+                (casesQuery.data?.length ?? 0) > 0 ? (
+                  <Button
+                    type="button"
+                    onClick={() => router.push(ROUTES.admin.casesNew)}
+                    className="flex items-center gap-2"
+                  >
+                    <PlusIcon className="h-4 w-4" />
+                    새 사건 만들기
+                  </Button>
+                ) : null
+              }
+            />
             {casesQuery.isLoading ? (
               <p className="text-sm text-[var(--muted-foreground)]">사건을 불러오는 중…</p>
             ) : (casesQuery.data?.length ?? 0) === 0 ? (
               <div className="flex justify-center py-10">
-                <Button type="button" onClick={() => router.push(ROUTES.admin.casesNew)}>
-                  새 사건
+                <Button type="button" onClick={() => router.push(ROUTES.admin.casesNew)} className="flex items-center gap-2">
+                  <PlusIcon className="h-4 w-4" />새 사건 만들기
                 </Button>
               </div>
             ) : (
-              <div className="grid gap-3 md:grid-cols-2">
+              <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-4">
                 {casesQuery.data?.map((row) => {
                   const isDeleting = pendingDeleteId === row.id;
                   return (
@@ -197,108 +197,5 @@ export default function AdminCasesPage() {
         ) : null}
       </main>
     </div>
-  );
-}
-
-/* ---------------- Kebab menu ---------------- */
-
-function KebabMenu({
-  onEdit,
-  onDelete,
-  disabled,
-}: {
-  onEdit: () => void;
-  onDelete: () => void;
-  disabled?: boolean;
-}) {
-  const [open, setOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const onDocPointer = (event: PointerEvent) => {
-      if (!containerRef.current) return;
-      if (!containerRef.current.contains(event.target as Node)) setOpen(false);
-    };
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setOpen(false);
-    };
-    document.addEventListener("pointerdown", onDocPointer);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("pointerdown", onDocPointer);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [open]);
-
-  return (
-    <div ref={containerRef} className="relative">
-      <Button
-        type="button"
-        aria-haspopup="menu"
-        aria-expanded={open}
-        disabled={disabled}
-        onClick={() => setOpen((v) => !v)}
-        variant="ghost"
-        size="icon"
-      >
-        <MoreVertical className="h-4 w-4" />
-      </Button>
-      {open ? (
-        <div
-          role="menu"
-          className="absolute right-0 top-7 z-20 min-w-[100px] overflow-hidden rounded-md border border-[var(--border)] bg-[var(--background)] shadow-lg"
-        >
-          <MenuItem
-            icon={<Pencil className="h-3.5 w-3.5" />}
-            onClick={() => {
-              setOpen(false);
-              onEdit();
-            }}
-          >
-            수정
-          </MenuItem>
-          <MenuItem
-            icon={<Trash2 className="h-3.5 w-3.5" />}
-            danger
-            onClick={() => {
-              setOpen(false);
-              onDelete();
-            }}
-          >
-            삭제
-          </MenuItem>
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-function MenuItem({
-  icon,
-  children,
-  onClick,
-  danger,
-}: {
-  icon: React.ReactNode;
-  children: React.ReactNode;
-  onClick: () => void;
-  danger?: boolean;
-}) {
-  return (
-    <Button
-      type="button"
-      variant="ghost"
-      onClick={onClick}
-      className={
-        "flex w-full items-center gap-2 px-3 py-2 text-left text-xs transition-colors " +
-        (danger
-          ? "text-[var(--danger)] hover:bg-[var(--danger)]/10"
-          : "text-[var(--foreground)] hover:bg-[var(--tint-mystery)]")
-      }
-    >
-      {icon}
-      {children}
-    </Button>
   );
 }

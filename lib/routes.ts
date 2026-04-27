@@ -23,6 +23,7 @@ export const ROUTES = {
     /** static export: `case` 쿼리 */
     casesEdit: (caseId: string) => `/admin/cases/edit/?case=${encodeURIComponent(caseId)}`,
     login: "/admin/login",
-    signUp: "/admin/sign-up",
+    /** `app/admin/signup/page.tsx` — 하이픈 없이 `signup` 세그먼트 */
+    signUp: "/admin/signup",
   },
 } as const;

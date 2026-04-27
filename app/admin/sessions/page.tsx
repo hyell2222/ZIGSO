@@ -1,18 +1,21 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { ExternalLink, FileText, Loader2, Radio } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { FileText, Loader2, Radio } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 import { getCurrentSession } from "@/lib/api/auth";
+import { deleteGameSession } from "@/lib/api/game-sessions";
 import { AUTH_SESSION_QUERY_KEY } from "@/lib/auth-session-query";
-import { listHostSessions } from "@/lib/api/game-sessions";
+import { KebabMenu } from "@/components/admin/kebab-menu";
+import { listHostSessions, type HostSessionListRow } from "@/lib/api/game-sessions";
 import { TopNav } from "@/components/layout/top-nav";
 import { ROUTES } from "@/lib/routes";
 import { hasSupabaseEnv } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
+import { PageHeader } from "@/components/layout/admin-page-header";
 
 const PHASE_KR: Record<string, string> = {
   waiting: "대기",
@@ -36,6 +39,8 @@ function formatWhen(iso: string | null) {
 
 export default function AdminSessionsPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   const sessionQuery = useQuery({
     queryKey: AUTH_SESSION_QUERY_KEY,
@@ -53,6 +58,36 @@ export default function AdminSessionsPage() {
     enabled: Boolean(hostId),
   });
 
+  const deleteSessionMutation = useMutation({
+    mutationFn: async (id: string) => {
+      setPendingDeleteId(id);
+      try {
+        await deleteGameSession(id);
+      } finally {
+        setPendingDeleteId(null);
+      }
+    },
+    onError: (e: Error) => window.alert(e.message),
+    onSuccess: async (_, id) => {
+      await queryClient.invalidateQueries({ queryKey: ["host-sessions"] });
+      await queryClient.removeQueries({ queryKey: ["host-session", id] });
+      await queryClient.removeQueries({ queryKey: ["host-session-players", id] });
+      await queryClient.removeQueries({ queryKey: ["host-session-teams", id] });
+    },
+  });
+
+  const handleDeleteSession = (row: HostSessionListRow) => {
+    const label = row.cases?.title?.trim() || "이 세션";
+    if (
+      !window.confirm(
+        `「${label}」플레이 세션을 삭제할까요?\n팀·플레이어·보고 내역이 모두 사라지며 되돌릴 수 없습니다.\n사건(케이스) 자체는 삭제되지 않습니다.`,
+      )
+    ) {
+      return;
+    }
+    deleteSessionMutation.mutate(row.id);
+  };
+
   useEffect(() => {
     if (sessionQuery.isLoading) return;
     if (sessionQuery.isFetching && !sessionQuery.data) return;
@@ -69,14 +104,10 @@ export default function AdminSessionsPage() {
       <main className="mx-auto w-full max-w-7xl space-y-6 px-4 py-8">
         {sessionQuery.data ? (
           <>
-            <div>
-              <h1 className="text-xl font-semibold text-[var(--foreground)]">세션 · 보고서</h1>
-              <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-                내가 연 플레이 세션입니다. <span className="font-medium">보고서</span>에서 팀·플레이어 제출·정답 여부를
-                볼 수 있어요.
-              </p>
-            </div>
-
+            <PageHeader
+              title="보고서"
+              description="내가 연 플레이 세션의 보고서를 확인할 수 있어요."
+            />
             {listQuery.isLoading ? (
               <p className="flex items-center gap-2 text-sm text-[var(--muted-foreground)]">
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -96,43 +127,42 @@ export default function AdminSessionsPage() {
                   return (
                     <li
                       key={row.id}
-                      className="flex flex-col gap-3 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between"
+                      className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4 shadow-sm"
                     >
-                      <div className="min-w-0 space-y-1">
-                        <p className="font-medium text-[var(--foreground)]">{title}</p>
-                        <p className="text-xs text-[var(--muted-foreground)]">
-                          <span className="font-mono text-[var(--accent)]">{row.join_code}</span>
-                          {" · "}
-                          {formatWhen(row.created_at)}
-                          {" · "}
-                          <span
-                            className={cn(
-                              "inline-flex items-center gap-0.5",
-                              row.phase === "session_end" || row.is_active === false
-                                ? "text-[var(--muted-foreground)]"
-                                : "text-[var(--foreground)]",
-                            )}
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="min-w-0 flex-1 space-y-1">
+                          <p className="font-medium text-[var(--foreground)]">{title}</p>
+                          <p className="text-xs text-[var(--muted-foreground)]">
+                            <span className="font-mono text-[var(--accent)]">{row.join_code}</span>
+                            {" · "}
+                            {formatWhen(row.created_at)}
+                            {" · "}
+                            <span
+                              className={cn(
+                                "inline-flex items-center gap-0.5",
+                                row.phase === "session_end" || row.is_active === false
+                                  ? "text-[var(--muted-foreground)]"
+                                  : "text-[var(--foreground)]",
+                              )}
+                            >
+                              <Radio className="inline h-3 w-3" aria-hidden />
+                              {phase}
+                            </span>
+                          </p>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-1 self-end sm:self-start">
+                          <Link
+                            href={ROUTES.admin.sessionReport(row.id)}
+                            className="inline-flex h-10 items-center justify-center gap-1.5 rounded-md bg-[var(--primary)] px-3 text-sm font-semibold text-[var(--on-primary)] transition-colors hover:brightness-95"
                           >
-                            <Radio className="inline h-3 w-3" aria-hidden />
-                            {phase}
-                          </span>
-                        </p>
-                      </div>
-                      <div className="flex shrink-0 flex-wrap gap-2">
-                        <Link
-                          href={ROUTES.admin.sessionHost(row.id)}
-                          className="inline-flex h-10 items-center justify-center gap-1.5 rounded-md border border-[var(--border)] bg-[var(--background)] px-3 text-sm font-semibold text-[var(--foreground)] transition-colors hover:bg-[var(--surface)]"
-                        >
-                          <ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                          세션 화면
-                        </Link>
-                        <Link
-                          href={ROUTES.admin.sessionReport(row.id)}
-                          className="inline-flex h-10 items-center justify-center gap-1.5 rounded-md bg-[var(--primary)] px-3 text-sm font-semibold text-[var(--on-primary)] transition-colors hover:brightness-95"
-                        >
-                          <FileText className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                          보고서
-                        </Link>
+                            <FileText className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                            보고서
+                          </Link>
+                          <KebabMenu
+                            disabled={pendingDeleteId === row.id}
+                            onDelete={() => handleDeleteSession(row)}
+                          />
+                        </div>
                       </div>
                     </li>
                   );

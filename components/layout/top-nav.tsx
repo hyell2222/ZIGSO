@@ -13,7 +13,7 @@ import { hasSupabaseEnv } from "@/lib/supabase";
 
 function showAdminSubNav(pathname: string) {
   if (!pathname.startsWith("/admin")) return false;
-  if (pathname.startsWith("/admin/login") || pathname.startsWith("/admin/sign-up")) return false;
+  if (pathname.startsWith("/admin/login") || pathname.startsWith("/admin/signup")) return false;
   return true;
 }
 

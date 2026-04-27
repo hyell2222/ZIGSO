@@ -126,3 +126,9 @@ export async function advanceSessionPhase(sessionId: string, nextPhase: CasePhas
     .eq("id", sessionId);
   if (error) throw error;
 }
+
+/** 호스트만 삭제 가능(RLS). 팀·플레이어는 FK `on delete cascade`로 함께 제거됩니다. */
+export async function deleteGameSession(sessionId: string) {
+  const { error } = await supabase.from("game_sessions").delete().eq("id", sessionId);
+  if (error) throw error;
+}

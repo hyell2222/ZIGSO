@@ -2,50 +2,73 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Briefcase, FileText, LucideIcon } from "lucide-react";
 
 import { ROUTES } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 
-const TABS: { href: string; label: string; match: (path: string) => boolean }[] = [
+const TABS: { 
+  href: string; 
+  label: string; 
+  icon: LucideIcon;
+  match: (path: string) => boolean 
+}[] = [
   {
     href: ROUTES.admin.cases,
-    label: "사건",
+    label: "사건 목록",
+    icon: Briefcase,
     match: (path) => path === ROUTES.admin.cases || path.startsWith(`${ROUTES.admin.cases}/`),
   },
   {
     href: ROUTES.admin.sessions,
-    label: "세션 · 보고서",
+    label: "세션 보고서",
+    icon: FileText,
     match: (path) => path === ROUTES.admin.sessions || path.startsWith(`${ROUTES.admin.sessions}/`),
   },
 ];
 
-/**
- * /admin 영역(로그인·회원가입 제외) 상단 2탭. 사이드바 대신 가벼운 구분선.
- */
 export function AdminSubNav() {
   const pathname = usePathname() ?? "";
 
   return (
-    <div className="border-b border-[var(--border)] bg-[var(--background)]/95 backdrop-blur-sm">
-      <div className="mx-auto flex w-full max-w-7xl gap-1 px-4">
+    <nav className="border-b border-[var(--border)] bg-[var(--background)]">
+      <div className="mx-auto flex w-full max-w-7xl items-center gap-2 px-4">
         {TABS.map((tab) => {
           const active = tab.match(pathname);
+          const Icon = tab.icon;
+
           return (
             <Link
               key={tab.href}
               href={tab.href}
               className={cn(
-                "relative -mb-px border-b-2 py-3 text-sm font-medium transition-colors",
+                "group relative -mb-px flex items-center gap-2 px-4 py-4 text-sm font-medium transition-colors",
                 active
-                  ? "border-[var(--primary)] text-[var(--foreground)]"
-                  : "border-transparent text-[var(--muted-foreground)] hover:text-[var(--foreground)]",
+                  ? "text-[var(--primary)]"
+                  : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
               )}
             >
-              {tab.label}
+              <Icon 
+                size={18} 
+                className={cn(
+                  "transition-colors",
+                  active ? "text-[var(--primary)]" : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+                )} 
+              />
+              
+              <span className="relative z-10">{tab.label}</span>
+              
+              {!active && (
+                <div className="absolute inset-x-1 inset-y-2 rounded-md bg-transparent transition-colors group-hover:bg-[var(--muted)]/60" />
+              )}
+              
+              {active && (
+                <div className="absolute inset-x-0 bottom-0 h-[3px] rounded-t-full bg-[var(--primary)]" />
+              )}
             </Link>
           );
         })}
       </div>
-    </div>
+    </nav>
   );
 }

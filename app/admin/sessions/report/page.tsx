@@ -15,6 +15,7 @@ import {
   type SessionPlayerRow,
   type TeamRow,
 } from "@/lib/api/play";
+import { PageHeader } from "@/components/layout/admin-page-header";
 import { TopNav } from "@/components/layout/top-nav";
 import { Button } from "@/components/ui/button";
 import { clubRoleLabelKr, clubRoleSortKey } from "@/lib/club-role";
@@ -229,27 +230,21 @@ function CaseSessionReportContent() {
     <div className="min-h-screen">
       <TopNav />
       <main className="mx-auto w-full max-w-7xl space-y-6 px-4 pb-16 pt-8">
-        <div className="flex flex-wrap items-center gap-3">
-          <Link
-            href={ROUTES.admin.sessionHost(sessionId)}
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-[var(--border)] bg-[var(--background)] px-4 text-sm font-semibold text-[var(--foreground)] transition-colors hover:bg-[var(--surface)]"
-          >
-            <ArrowLeft className="h-4 w-4 shrink-0" aria-hidden />
-            세션으로
-          </Link>
+        <div className="space-y-4">
+          <PageHeader
+            eyebrow="세션 보고서"
+            title={row.cases?.title ?? "제목 없음"}
+            titleClassName="font-mono text-[var(--accent)]"
+            description={
+              <>
+                사건 코드{" "}
+                <span className="font-mono font-semibold text-[var(--foreground)]">{row.join_code}</span>
+                {" · "}
+                팀 보고 제출 {teamSubmitted} / {teamTotal}
+              </>
+            }
+          />
         </div>
-
-        <header className="space-y-1 border-b border-[var(--border)] pb-6">
-          <p className="text-xs font-medium uppercase tracking-wide text-[var(--muted-foreground)]">세션 보고서</p>
-          <h1 className="font-mono text-2xl font-semibold text-[var(--accent)] sm:text-3xl">
-            {row.cases?.title ?? "제목 없음"}
-          </h1>
-          <p className="text-sm text-[var(--muted-foreground)]">
-            사건 코드 <span className="font-mono font-semibold text-[var(--foreground)]">{row.join_code}</span>
-            {" · "}
-            팀 보고 제출 {teamSubmitted} / {teamTotal}
-          </p>
-        </header>
 
         {hasAnswer ? (
           <div className="rounded-lg border border-[var(--mystery)]/35 bg-[var(--tint-accent)] p-4 text-sm text-[var(--foreground)]">
