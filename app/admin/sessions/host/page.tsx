@@ -752,13 +752,6 @@ function CaseSessionHostContent() {
             </div>
           </div>
           <div className="flex shrink-0 flex-col items-end gap-2 sm:flex-row sm:items-center">
-            <Link
-              href={ROUTES.admin.sessionReport(sessionId)}
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-[var(--mystery)]/45 px-4 text-sm font-semibold text-[var(--mystery)] transition-colors hover:bg-[var(--tint-mystery)]"
-            >
-              <FileText className="h-4 w-4 shrink-0" aria-hidden />
-              세션 보고서
-            </Link>
             {!sessionStarted ? (
               <Button type="button" onClick={() => beginMutation.mutate()} disabled={beginMutation.isPending}>
                 {beginMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
