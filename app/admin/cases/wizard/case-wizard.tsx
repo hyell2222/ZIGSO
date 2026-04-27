@@ -294,6 +294,39 @@ export function CaseWizard(props: Props) {
     return clues.every((c) => c.name.trim().length > 0);
   }, [clues]);
 
+  /** `saveMutation`과 동일한 검증 — 저장 버튼 비활성·요건 문구에 사용 */
+  const saveBlockers = useMemo(() => {
+    const lines: string[] = [];
+    if (!title.trim()) lines.push("제목을 입력하세요. (1단계: 기본 정보)");
+    if (!description.trim()) lines.push("사건 개요(설명)을 입력하세요. (1단계: 기본 정보)");
+    if (investigationZones.length === 0) {
+      lines.push("조사 구역을 한 곳 이상 추가하세요. (3단계: 조사 구역)");
+    } else {
+      if (investigationZones.some((c) => !c.zoneName.trim())) {
+        lines.push("모든 조사 구역에 장소명을 입력하세요. (3단계: 조사 구역)");
+      } else {
+        const normalized = investigationZones.map((c) => c.zoneName.trim().toLocaleLowerCase());
+        if (new Set(normalized).size !== normalized.length) {
+          lines.push("조사 구역 이름이 서로 겹치지 않게 하세요. (3단계: 조사 구역)");
+        }
+      }
+    }
+    const namedSuspects = suspects.filter((s) => s.name.trim().length > 0);
+    if (namedSuspects.length === 0) {
+      lines.push("이름이 있는 용의자를 한 명 이상 등록하세요. (2단계: 용의자 프로필)");
+    } else if (!answerSuspectId || !namedSuspects.some((s) => s.id === answerSuspectId)) {
+      lines.push("범인(정답)에 해당하는 용의자를 한 명 선택하세요. (2단계: 용의자 프로필)");
+    }
+    if (clues.length === 0) {
+      lines.push("맵에 단서(소품)를 하나 이상 올리세요. (4단계: 맵 에디터)");
+    } else if (clues.some((c) => !c.name.trim())) {
+      lines.push("맵에 올린 모든 단서에 이름을 붙이세요. (4단계: 맵 에디터)");
+    }
+    return lines;
+  }, [title, description, investigationZones, suspects, answerSuspectId, clues]);
+
+  const canSave = saveBlockers.length === 0;
+
   const maxReachableStep = useMemo<StepIndex>(() => {
     if (!isBasicInfoValid) return 0;
     if (!isSuspectsValid) return 1;
@@ -389,32 +422,15 @@ export function CaseWizard(props: Props) {
         ) : null}
 
         {step === 3 ? (
-          <>
-            <MapEditorStep
-              investigationZones={investigationZones}
-              clues={clues}
-              propAssets={propAssetsQuery.data ?? []}
-              isLoadingAssets={propAssetsQuery.isLoading}
-              onAddClue={handleAddClue}
-              onUpdateClue={handleUpdateClue}
-              onRemoveClue={handleRemoveClue}
-            />
-            {!isMapEditorValid ? (
-              <p className="rounded-md border border-amber-500/35 bg-amber-500/10 px-3 py-2 text-xs text-amber-100/95">
-                {clues.length === 0 ? (
-                  <>
-                    <span className="font-semibold">저장하려면:</span> 구역맵에 소품을 올리고, 각 단서에
-                    이름을 붙이세요.
-                  </>
-                ) : (
-                  <>
-                    <span className="font-semibold">저장하려면:</span>{" "}
-                    <b>모든 단서</b>에 이름을 입력하세요.
-                  </>
-                )}
-              </p>
-            ) : null}
-          </>
+          <MapEditorStep
+            investigationZones={investigationZones}
+            clues={clues}
+            propAssets={propAssetsQuery.data ?? []}
+            isLoadingAssets={propAssetsQuery.isLoading}
+            onAddClue={handleAddClue}
+            onUpdateClue={handleUpdateClue}
+            onRemoveClue={handleRemoveClue}
+          />
         ) : null}
 
         {errorMessage ? (
@@ -435,7 +451,11 @@ export function CaseWizard(props: Props) {
               <ArrowRight className="ml-1 h-4 w-4" />
             </Button>
           ) : (
-            <Button type="button" onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
+            <Button
+              type="button"
+              onClick={() => saveMutation.mutate()}
+              disabled={!canSave || saveMutation.isPending}
+            >
               {saveMutation.isPending ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Save className="mr-1 h-4 w-4" />}
               저장
             </Button>

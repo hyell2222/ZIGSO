@@ -136,7 +136,7 @@ export default function AdminCasesPage() {
               }
             />
             {casesQuery.isLoading ? (
-              <p className="text-sm text-[var(--muted-foreground)]">사건을 불러오는 중…</p>
+              <p className="text-sm text-[var(--muted-foreground)]">불러오는 중…</p>
             ) : (casesQuery.data?.length ?? 0) === 0 ? (
               <div className="flex justify-center py-10">
                 <Button type="button" onClick={() => router.push(ROUTES.admin.casesNew)} className="flex items-center gap-2">
