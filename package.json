@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "export": "next build",
+    "export": "cross-env STATIC_EXPORT=1 next build",
     "submission:init": "node scripts/prepare-submission.mjs"
   },
   "dependencies": {
@@ -31,6 +31,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "cross-env": "^10.1.0",
     "eslint": "^9",
     "eslint-config-next": "16.2.2",
     "tailwindcss": "^4",

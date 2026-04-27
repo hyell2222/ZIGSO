@@ -20,6 +20,8 @@ npm run submission:init
 
 ## 2) Export the web app
 
+`npm run export` runs a **static** build (submission용 `out/`). This is the same step as before; it does not use the Vercel/server build.
+
 ```bash
 npm run export
 ```

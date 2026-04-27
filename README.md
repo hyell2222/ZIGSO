@@ -27,7 +27,9 @@ npm run dev
 
 ## Static Export
 
-This project is configured for static export via `output: "export"`.
+For **submission** (plain `out/` folder, no server), use `npm run export`. This sets `STATIC_EXPORT=1` so Next.js outputs a static site to `/out`.
+
+**Vercel / any host that should run API routes** (e.g. AI case generation at `/api/ai/generate-case`): use the default `npm run build` **without** `STATIC_EXPORT`. Do not set `STATIC_EXPORT` in the hosting environment.
 
 ```bash
 npm run export
