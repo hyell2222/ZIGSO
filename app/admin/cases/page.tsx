@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, MoreVertical, Pencil, PlusIcon, Trash2 } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
@@ -54,7 +55,8 @@ export default function AdminCasesPage() {
       newTab: Window | null;
     }) => startGameSession(caseRow, sessionQuery.data?.user.id),
     onMutate: () => setErrorMessage(null),
-    onSuccess: (data, variables) => {
+    onSuccess: async (data, variables) => {
+      await queryClient.invalidateQueries({ queryKey: ["host-sessions"] });
       const url = ROUTES.admin.casesSession(data.sessionId);
       if (variables.newTab && !variables.newTab.closed) {
         variables.newTab.location.href = url;
@@ -114,8 +116,17 @@ export default function AdminCasesPage() {
         <div className="mb-4" />
         {sessionQuery.data ? (
           <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-[var(--foreground)]">사건 목록</h2>
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <h2 className="text-xl font-semibold text-[var(--foreground)]">사건 목록</h2>
+                <p className="mt-1 text-xs text-[var(--muted-foreground)]">
+                  연 세션·제출 보고서는{" "}
+                  <Link href={ROUTES.admin.sessions} className="font-medium text-[var(--accent)] underline-offset-2 hover:underline">
+                    세션 · 보고서
+                  </Link>
+                  에서 확인할 수 있어요.
+                </p>
+              </div>
               {(casesQuery.data?.length ?? 0) > 0 ? (
                 <Button type="button" onClick={() => router.push(ROUTES.admin.casesCreate)} className="flex items-center gap-2">
                   <PlusIcon className="h-4 w-4" />새 사건 만들기

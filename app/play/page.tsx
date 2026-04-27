@@ -8,6 +8,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { InvestigationMapShell } from "@/components/play/investigation-map-shell";
 import { DetectiveIdCard } from "@/components/play/detective-id-card";
 import { SessionInfoLayout } from "@/components/play/session-info-layout";
+import { SessionWaitingLobby } from "@/components/play/session-waiting-lobby";
 import { StudentBlackoutLanding } from "@/components/play/student-blackout-landing";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -278,6 +279,11 @@ function PlaySessionShell({
 
   const isWaitingLobby =
     hasJoinedSession && (sessionQuery.isLoading || sessionPhase === "waiting" || !hasAssignment);
+  const waitingLobbyState = useMemo(() => {
+    if (sessionQuery.isLoading) return "session_loading" as const;
+    if (sessionPhase === "waiting") return "host_not_started" as const;
+    return "assigning" as const;
+  }, [sessionQuery.isLoading, sessionPhase]);
   const isBriefing = hasJoinedSession && hasAssignment && sessionPhase === "briefing";
   const isInvestigation = hasJoinedSession && hasAssignment && sessionPhase === "investigation";
   const isFinalReport = hasJoinedSession && hasAssignment && sessionPhase === "final_report";
@@ -638,16 +644,13 @@ function PlaySessionShell({
         ) : null}
 
         {hasJoinedSession && isWaitingLobby ? (
-          <Card className="mt-4">
-            <CardContent className="flex items-center gap-3 py-5 text-[var(--foreground)]">
-              <Loader2 className="h-5 w-5 animate-spin text-[var(--primary)]" aria-hidden />
-              <p className="text-sm">
-                {sessionPhase === "waiting"
-                  ? "교사가 세션을 시작할 때까지 잠시만 기다려 주세요."
-                  : "팀·역할·순찰 구역이 배정되는 중입니다…"}
-              </p>
-            </CardContent>
-          </Card>
+          <SessionWaitingLobby
+            joinCode={joinCode}
+            nickname={nickname}
+            caseTitle={sessionQuery.data?.cases?.title ?? null}
+            state={waitingLobbyState}
+            className="mt-2"
+          />
         ) : null}
       </main>
     </div>

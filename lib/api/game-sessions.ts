@@ -21,6 +21,36 @@ function generateJoinCode(length: number) {
   return Math.random().toString(36).slice(2, 2 + length).toUpperCase();
 }
 
+export type HostSessionListRow = {
+  id: string;
+  join_code: string;
+  phase: string | null;
+  is_active: boolean | null;
+  created_at: string | null;
+  case_id: string | null;
+  cases: { title: string | null } | null;
+};
+
+/** 로그인한 교사(`host_id`)가 연 세션 — 최신순 */
+export async function listHostSessions(hostId: string) {
+  const { data, error } = await supabase
+    .from("game_sessions")
+    .select("id,join_code,phase,is_active,created_at,case_id,cases(title)")
+    .eq("host_id", hostId)
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  const raw = (data ?? []) as Array<
+    Omit<HostSessionListRow, "cases"> & {
+      cases: { title: string | null } | { title: string | null }[] | null;
+    }
+  >;
+  return raw.map((r) => {
+    const c = r.cases;
+    const caseRow = Array.isArray(c) ? c[0] ?? null : c;
+    return { ...r, cases: caseRow } satisfies HostSessionListRow;
+  });
+}
+
 export async function startGameSession(caseRecord: CaseRecord, hostId?: string | null) {
   if (!hostId) {
     throw new Error("세션을 시작하려면 로그인해 주세요.");

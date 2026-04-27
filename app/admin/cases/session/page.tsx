@@ -1,7 +1,8 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2 } from "lucide-react";
+import { FileText, Loader2 } from "lucide-react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 
@@ -18,6 +19,8 @@ import {
 import { isCulpritCorrect } from "@/lib/report-compare";
 import { findSuspectName, parseSuspectRosterFromCase } from "@/lib/suspects";
 import { advanceSessionPhase, beginHostingSession, endSession, getNextPhase } from "@/lib/api/cases";
+import { groupPlayersByTeam } from "@/lib/admin/group-players-by-team";
+import { PlayJoinQr } from "@/components/admin/play-join-qr";
 import { TopNav } from "@/components/layout/top-nav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,7 +30,7 @@ import {
   getSessionRoomChannelName,
   type SessionPresenceRow,
 } from "@/lib/realtime/session-presence";
-import { clubRoleLabelKr, clubRoleSortKey } from "@/lib/club-role";
+import { clubRoleLabelKr } from "@/lib/club-role";
 import { hasSupabaseEnv, supabase } from "@/lib/supabase";
 import type { CasePhase } from "@/lib/api/cases";
 
@@ -205,32 +208,6 @@ function PhaseTimerCard({ phase }: { phase: TimedPhase }) {
       </div>
     </section>
   );
-}
-
-type TeamGroup = {
-  team: TeamRow;
-  members: SessionPlayerRow[];
-};
-
-function groupPlayersByTeam(players: SessionPlayerRow[], teams: TeamRow[]): TeamGroup[] {
-  const playersByTeamId = new Map<string, SessionPlayerRow[]>();
-  for (const p of players) {
-    if (!p.team_id) continue;
-    const list = playersByTeamId.get(p.team_id) ?? [];
-    list.push(p);
-    playersByTeamId.set(p.team_id, list);
-  }
-  return [...teams]
-    .sort((a, b) => (a.name ?? "").localeCompare(b.name ?? ""))
-    .map((team) => ({
-      team,
-      members: (playersByTeamId.get(team.id) ?? []).sort((a, b) => {
-        const ra = clubRoleSortKey(a.club_role);
-        const rb = clubRoleSortKey(b.club_role);
-        if (ra !== rb) return ra - rb;
-        return (a.patrol_zone?.name ?? "").localeCompare(b.patrol_zone?.name ?? "", "ko");
-      }),
-    }));
 }
 
 function TeamAssignmentDashboard({
@@ -753,12 +730,22 @@ function CaseSessionHostContent() {
               <p className="text-xs font-medium uppercase tracking-wide text-[var(--muted-foreground)]">
                 사건 코드
               </p>
-              <p className="font-mono text-3xl font-semibold tracking-[0.2em] text-[var(--accent)] sm:text-4xl">
-                {row.join_code}
-              </p>
+              <div className="mt-1 flex flex-wrap items-center gap-3">
+                <p className="font-mono text-3xl font-semibold tracking-[0.2em] text-[var(--accent)] sm:text-4xl">
+                  {row.join_code}
+                </p>
+                <PlayJoinQr joinCode={row.join_code} />
+              </div>
             </div>
           </div>
           <div className="flex shrink-0 flex-col items-end gap-2 sm:flex-row sm:items-center">
+            <Link
+              href={ROUTES.admin.casesSessionReport(sessionId)}
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-[var(--mystery)]/45 px-4 text-sm font-semibold text-[var(--mystery)] transition-colors hover:bg-[var(--tint-mystery)]"
+            >
+              <FileText className="h-4 w-4 shrink-0" aria-hidden />
+              세션 보고서
+            </Link>
             {!sessionStarted ? (
               <Button type="button" onClick={() => beginMutation.mutate()} disabled={beginMutation.isPending}>
                 {beginMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
