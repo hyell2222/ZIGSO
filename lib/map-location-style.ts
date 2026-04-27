@@ -2,27 +2,28 @@ import type { CSSProperties } from "react";
 
 /**
  * 사건 장소(location) 영역 — 플레이 Phaser 맵과 어드민 맵 에디터에서 동일하게 사용.
+ * 팔레트: 입장 랜딩(`--entry-shell` / `--primary` / `--accent`)과 맞춘 갈흑·칠판초록·한지 톤.
  */
 
-export const MAP_WORLD_BACKGROUND = 0x16110e as const;
+export const MAP_WORLD_BACKGROUND = 0x1a1511 as const;
 /** CSS `background-color` (Phaser `MAP_WORLD_BACKGROUND` 와 동일) */
-export const MAP_WORLD_BACKGROUND_HEX = "#16110e" as const;
+export const MAP_WORLD_BACKGROUND_HEX = "#1a1511" as const;
 
-/** 월드 전체 격자 (장소 박스 아래에 그려짐) */
+/** 월드 전체 격자 (장소 박스 아래에 그려짐) — `var(--entry-grid)` 에 가깝게 */
 export const MAP_GRID_STEP_PX = 40 as const;
-export const MAP_GRID_LINE = { width: 1, color: 0x1e293b as const, alpha: 0.85 as const };
+export const MAP_GRID_LINE = { width: 1, color: 0x2a4a3c as const, alpha: 0.38 as const };
 
-/** 장소 사각형 채움·테두리 (플레이 맵 `layouts` / 에디터 단일 장소 캔버스) */
-export const MAP_LOCATION_FILL = { color: 0x164e63 as const, alpha: 0.45 as const };
+/** 장소 사각형: 칠판초록(--primary) 얕은 면 + 아코디언(--accent) 테두리 느낌 */
+export const MAP_LOCATION_FILL = { color: 0x1b4a3a as const, alpha: 0.4 as const };
 export const MAP_LOCATION_STROKE = {
   width: 2,
-  color: 0x22d3ee as const,
-  alpha: 0.35 as const,
+  color: 0x8a7355 as const,
+  alpha: 0.45 as const,
 } as const;
 export const MAP_LOCATION_CORNER_RADIUS = 8 as const;
 
 /** 바깥 월드 테두리 (플레이 맵 전용) */
-export const MAP_WORLD_OUTER_STROKE = { width: 2, color: 0x334155 as const, alpha: 0.6 as const };
+export const MAP_WORLD_OUTER_STROKE = { width: 2, color: 0x5a4d42 as const, alpha: 0.5 as const };
 
 function rgbaFromHex(hex: number, alpha: number): string {
   const r = (hex >> 16) & 255;

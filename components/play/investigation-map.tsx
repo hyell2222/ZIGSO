@@ -17,6 +17,7 @@ import {
   MAP_LOCATION_FILL,
   MAP_LOCATION_STROKE,
   MAP_WORLD_BACKGROUND,
+  MAP_WORLD_BACKGROUND_HEX,
   MAP_WORLD_OUTER_STROKE,
 } from "@/lib/map-location-style";
 import { Package, X } from "lucide-react";
@@ -542,9 +543,9 @@ export function InvestigationMap({
 
         const img = target.image;
         if (img.postFX) {
-          img.postFX.addGlow(0xfacc15, 2, 1.25, false);
+          img.postFX.addGlow(0xd4a574, 2, 1.2, false);
         } else {
-          img.setTint(0xffe066);
+          img.setTint(0xe8c89a);
         }
         this.highlightedPropImage = img;
 
@@ -559,9 +560,9 @@ export function InvestigationMap({
         this.load.font(FONT_KEY, FONT_URL, "opentype");
 
         const g = this.make.graphics({ x: 0, y: 0 });
-        g.fillStyle(0x22d3ee, 1);
+        g.fillStyle(0x1b4a3a, 1);
         g.fillRoundedRect(0, 0, PLAYER_SIZE, PLAYER_SIZE, 6);
-        g.lineStyle(2, 0xa5f3fc, 1);
+        g.lineStyle(2, 0xa8c9bc, 0.95);
         g.strokeRoundedRect(0, 0, PLAYER_SIZE, PLAYER_SIZE, 6);
         g.generateTexture("player", PLAYER_SIZE, PLAYER_SIZE);
         g.destroy();
@@ -570,10 +571,10 @@ export function InvestigationMap({
         if (!this.textures.exists(PLACEHOLDER_TEXTURE_KEY)) {
           const PH = 64;
           const ph = this.make.graphics({ x: 0, y: 0 });
-          ph.fillStyle(0xfacc15, 1);
+          ph.fillStyle(0xc9a156, 1);
           ph.fillTriangle(PH / 2, 0, PH, PH / 2, PH / 2, PH);
           ph.fillTriangle(PH / 2, 0, 0, PH / 2, PH / 2, PH);
-          ph.lineStyle(2, 0x713f12, 1);
+          ph.lineStyle(2, 0x5c4528, 1);
           ph.strokeTriangle(PH / 2, 0, PH, PH / 2, PH / 2, PH);
           ph.strokeTriangle(PH / 2, 0, 0, PH / 2, PH / 2, PH);
           ph.generateTexture(PLACEHOLDER_TEXTURE_KEY, PH, PH);
@@ -652,7 +653,7 @@ export function InvestigationMap({
             .text(d.x + pad, d.y + pad * 0.85, title, {
               fontFamily: FONT_KEY,
               fontSize: "22px",
-              color: "#94a3b8",
+              color: "#c4b5a3",
             })
             .setDepth(2);
         });
@@ -779,7 +780,7 @@ export function InvestigationMap({
       parent,
       width: initial.width,
       height: variant === "fullscreen" ? initial.height : 420,
-      backgroundColor: "#020617",
+      backgroundColor: MAP_WORLD_BACKGROUND_HEX,
       physics: {
         default: "matter",
         matter: {
@@ -822,25 +823,26 @@ export function InvestigationMap({
     <div
       className={cn(
         "relative",
-        isFull ? "flex h-full min-h-0 w-full flex-col bg-[var(--background)]" : "",
+        isFull ? "flex h-full min-h-0 w-full flex-col text-[color:var(--entry-parchment)]" : "",
         className,
       )}
     >
-      {/* 상단: 페이즈 라벨 + 수집 진행 (React state) */}
+      {/* 상단: 페이즈 라벨 + 수집 진행 (React state) — 풀스크린은 입장 랜딩과 같은 짙은 셸 */}
       <div
         className={cn(
-          "flex shrink-0 items-center justify-between gap-2 border-[var(--border)] text-xs text-[var(--muted-foreground)]",
-          isFull ? "border-b px-4 py-2" : "mb-2",
-          !isFull && "px-0",
+          "flex shrink-0 items-center justify-between gap-2",
+          isFull
+            ? "border-b border-[color-mix(in_srgb,var(--primary)_28%,transparent)] bg-[color-mix(in_srgb,var(--mystery)_80%,var(--ink))] px-4 py-2.5 text-[11px] tracking-wide text-[color:var(--entry-parchment-muted)]"
+            : "mb-2 border-b border-[var(--border)] px-0 text-xs text-[var(--muted-foreground)]",
         )}
       >
-        <span>
+        <span className={cn(isFull && "font-medium text-[color:var(--entry-parchment)]")}>
           {investigateMode?.topBarLabel
             ? investigateMode.topBarLabel
             : `${phaseLabel} — 탐색 중`}
         </span>
-        <div className="flex items-center gap-3">
-          <span>
+        <div className="flex min-w-0 max-w-[55%] items-center justify-end gap-3 sm:max-w-[65%]">
+          <span className="text-right text-[10px] sm:text-[11px]">
             {activeEvidence
               ? `${activeEvidence.label} · F 수집`
               : "소품에 가까이 다가가세요"}
@@ -857,26 +859,53 @@ export function InvestigationMap({
         <div
           ref={hostRef}
           className={cn(
-            "min-w-0 flex-1 overflow-hidden bg-[var(--background)]",
-            isFull ? "min-h-0" : "min-h-[420px] rounded-md border border-[var(--border)]",
+            "min-w-0 flex-1 overflow-hidden",
+            isFull ? "min-h-0 bg-transparent" : "min-h-[420px] rounded-md border border-[var(--border)] bg-[var(--background)]",
           )}
         />
         {/* 발견 증거 인벤토리 */}
         <aside
           className={cn(
-            "flex min-h-0 shrink-0 flex-col border-[var(--border)] bg-[var(--depth-panel)]",
+            "flex min-h-0 shrink-0 flex-col",
             isFull
-              ? "w-[220px] border-l"
-              : "max-h-[200px] w-full border-t md:max-h-none md:w-[200px] md:border-l md:border-t-0",
+              ? "w-[220px] border-l border-[color-mix(in_srgb,var(--accent)_26%,transparent)] bg-[color-mix(in_srgb,var(--mystery)_78%,var(--ink))]"
+              : "max-h-[200px] w-full border-t border-[var(--border)] bg-[var(--depth-panel)] md:max-h-none md:w-[200px] md:border-l md:border-t-0",
           )}
         >
-          <div className="flex items-center gap-2 border-b border-[var(--border)] px-2 py-2 pl-3">
-            <Package className="h-4 w-4 shrink-0 text-[var(--accent)]" aria-hidden />
-            <span className="min-w-0 flex-1 text-xs font-medium text-[var(--foreground)]">발견한 증거</span>
+          <div
+            className={cn(
+              "flex items-center gap-2 border-b px-2 py-2 pl-3",
+              isFull
+                ? "border-[color-mix(in_srgb,var(--primary)_22%,transparent)]"
+                : "border-[var(--border)]",
+            )}
+          >
+            <Package
+              className={cn(
+                "h-4 w-4 shrink-0",
+                isFull ? "text-[color:var(--entry-accent-soft)]" : "text-[var(--accent)]",
+              )}
+              aria-hidden
+            />
+            <span
+              className={cn(
+                "min-w-0 flex-1 text-xs font-medium",
+                isFull ? "text-[color:var(--entry-parchment)]" : "text-[var(--foreground)]",
+              )}
+            >
+              발견한 증거
+            </span>
           </div>
           <ul className="min-h-0 flex-1 list-none overflow-y-auto overscroll-contain p-2">
             {inventoryDisplayClues.length === 0 ? (
-              <li className="rounded-md border border-dashed border-[var(--border)] px-2 py-6 text-center text-[11px] text-[var(--muted-foreground)]">
+              <li
+                className={cn(
+                  "rounded-md border border-dashed px-2 py-6 text-center text-[11px]",
+                  isFull
+                    ? "border-[color-mix(in_srgb,var(--primary)_25%,transparent)] text-[color:var(--entry-parchment-muted)]"
+                    : "border-[var(--border)] text-[var(--muted-foreground)]",
+                )}
+              >
                 소품을 조사하면 증거가 여기에 쌓입니다.
               </li>
             ) : (
@@ -887,7 +916,12 @@ export function InvestigationMap({
                     variant="ghost"
                     size="sm"
                     onClick={() => openEvidenceFromInventory(clue)}
-                    className="h-auto w-full justify-start rounded border border-[var(--border)] bg-[var(--tint-mystery)] px-2.5 py-2 text-left text-xs text-[var(--foreground)] transition-colors hover:border-[var(--accent)] hover:bg-[color-mix(in_srgb,var(--mystery)_14%,var(--surface))]"
+                    className={cn(
+                      "h-auto w-full justify-start rounded border px-2.5 py-2 text-left text-xs transition-colors",
+                      isFull
+                        ? "border-[color-mix(in_srgb,var(--accent)_35%,transparent)] bg-[color-mix(in_srgb,var(--mystery)_25%,#1a1310)] text-[color:var(--entry-parchment)] hover:border-[color-mix(in_srgb,var(--entry-accent)_45%,transparent)] hover:bg-[color-mix(in_srgb,var(--primary)_18%,transparent)]"
+                        : "border-[var(--border)] bg-[var(--tint-mystery)] text-[var(--foreground)] hover:border-[var(--accent)] hover:bg-[color-mix(in_srgb,var(--mystery)_14%,var(--surface))]",
+                    )}
                   >
                     <span className="line-clamp-2">{clue.name?.trim() || "이름 없음"}</span>
                   </Button>
@@ -898,12 +932,30 @@ export function InvestigationMap({
         </aside>
       </div>
       {selectedEvidence ? (
-        <div className="absolute inset-0 z-[120] flex items-center justify-center bg-[var(--overlay-scrim)] p-4">
-          <div className="w-full max-w-2xl rounded-md border border-[var(--border)] bg-[var(--background)] shadow-xl">
-            <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3">
+        <div className="absolute inset-0 z-[120] flex items-center justify-center bg-[var(--overlay-scrim)] p-4 backdrop-blur-[1px]">
+          <div
+            className={cn(
+              "w-full max-w-2xl rounded-md border bg-[var(--card-bg)] shadow-xl",
+              isFull
+                ? "border-[color-mix(in_srgb,var(--primary)_25%,var(--mystery))] shadow-[0_0_0_1px_color-mix(in_srgb,var(--entry-accent)_10%,transparent),var(--elevation-sm)]"
+                : "border-[var(--border)] bg-[var(--background)]",
+            )}
+          >
+            <div
+              className={cn(
+                "flex items-center justify-between border-b px-4 py-3",
+                isFull ? "border-[color-mix(in_srgb,var(--accent)_22%,transparent)]" : "border-[var(--border)]",
+              )}
+            >
               <div>
-                <p className="text-xs text-[var(--muted-foreground)]">{selectedEvidence.locationName}</p>
-                <h2 className="text-lg text-[var(--foreground)]">{selectedEvidence.propLabel} 조사 결과</h2>
+                <p
+                  className={cn("text-xs", isFull ? "text-[var(--accent)]" : "text-[var(--muted-foreground)]")}
+                >
+                  {selectedEvidence.locationName}
+                </p>
+                <h2 className={cn("text-lg", isFull ? "text-[var(--mystery)]" : "text-[var(--foreground)]")}>
+                  {selectedEvidence.propLabel} 조사 결과
+                </h2>
               </div>
               <Button
                 type="button"
