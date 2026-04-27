@@ -8,7 +8,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { InvestigationMapShell } from "@/components/play/investigation-map-shell";
 import { DetectiveIdCard } from "@/components/play/detective-id-card";
 import { SessionInfoLayout } from "@/components/play/session-info-layout";
-import { SessionWaitingLobby } from "@/components/play/session-waiting-lobby";
 import { StudentBlackoutLanding } from "@/components/play/student-blackout-landing";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -644,15 +643,66 @@ function PlaySessionShell({
         ) : null}
 
         {hasJoinedSession && isWaitingLobby ? (
-          <SessionWaitingLobby
+          <WaitingLobbyBlock
             joinCode={joinCode}
             nickname={nickname}
             caseTitle={sessionQuery.data?.cases?.title ?? null}
             state={waitingLobbyState}
-            className="mt-2"
           />
         ) : null}
       </main>
+    </div>
+  );
+}
+
+const WAITING_LOBBY: Record<
+  "session_loading" | "host_not_started" | "assigning",
+  { title: string; body: string }
+> = {
+  session_loading: {
+    title: "세션을 불러오는 중",
+    body: "잠시만 기다려 주세요.",
+  },
+  host_not_started: {
+    title: "교사가 수사를 시작할 때까지 대기",
+    body: "팀·역할·조사 구역은 시작 후 자동으로 배정됩니다.",
+  },
+  assigning: {
+    title: "팀·역할 배정 중",
+    body: "곧 탐정 동아리 직책과 순찰 구역이 정해집니다.",
+  },
+};
+
+function WaitingLobbyBlock({
+  joinCode,
+  nickname,
+  caseTitle,
+  state,
+  className,
+}: {
+  joinCode: string;
+  nickname: string;
+  caseTitle: string | null;
+  state: keyof typeof WAITING_LOBBY;
+  className?: string;
+}) {
+  const copy = WAITING_LOBBY[state];
+  return (
+    <div
+      className={cn(
+        "mt-2 flex flex-col items-center gap-4 rounded-lg border border-[var(--border)] bg-[var(--card-bg)] px-6 py-8 text-center shadow-[var(--elevation-sm)]",
+        className,
+      )}
+    >
+      <Loader2 className="h-10 w-10 shrink-0 animate-spin text-[var(--accent)]" aria-hidden />
+      <div className="w-full max-w-sm space-y-2">
+        <p className="text-base font-semibold text-[var(--mystery)]">{copy.title}</p>
+        {caseTitle ? <p className="text-sm text-[var(--foreground)]">{caseTitle}</p> : null}
+        <p className="text-xs text-[var(--muted-foreground)]">
+          <span className="font-mono text-[var(--accent)]">{joinCode}</span> · {nickname}
+        </p>
+        <p className="text-sm leading-relaxed text-[var(--foreground)]">{copy.body}</p>
+      </div>
     </div>
   );
 }
