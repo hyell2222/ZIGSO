@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo } from "react";
 
 import { getCurrentSession } from "@/lib/api/auth";
+import { AUTH_SESSION_QUERY_KEY } from "@/lib/auth-session-query";
 import {
   getHostSessionDetails,
   listSessionPlayers,
@@ -100,10 +101,10 @@ function buildReportLines(
 function CaseSessionReportContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const sessionId = searchParams.get("id")?.trim() ?? "";
+  const sessionId = searchParams.get("session")?.trim() ?? "";
 
   const authQuery = useQuery({
-    queryKey: ["auth-session"],
+    queryKey: AUTH_SESSION_QUERY_KEY,
     queryFn: async () => {
       if (!hasSupabaseEnv) return null;
       return getCurrentSession();
@@ -132,12 +133,13 @@ function CaseSessionReportContent() {
 
   useEffect(() => {
     if (authQuery.isLoading) return;
+    if (authQuery.isFetching && !authQuery.data) return;
     if (!hasSupabaseEnv) {
-      router.replace(ROUTES.admin.signIn);
+      router.replace(ROUTES.admin.login);
       return;
     }
-    if (!authQuery.data) router.replace(ROUTES.admin.signIn);
-  }, [router, authQuery.data, authQuery.isLoading]);
+    if (!authQuery.data) router.replace(ROUTES.admin.login);
+  }, [router, authQuery.data, authQuery.isLoading, authQuery.isFetching]);
 
   const cases = row?.cases;
   const answerRoster = useMemo(
@@ -175,7 +177,7 @@ function CaseSessionReportContent() {
     );
   }
 
-  if (authQuery.isLoading) {
+  if (authQuery.isLoading || (authQuery.isFetching && !authQuery.data)) {
     return (
       <div className="min-h-screen">
         <TopNav />
@@ -229,7 +231,7 @@ function CaseSessionReportContent() {
       <main className="mx-auto w-full max-w-7xl space-y-6 px-4 pb-16 pt-8">
         <div className="flex flex-wrap items-center gap-3">
           <Link
-            href={ROUTES.admin.casesSession(sessionId)}
+            href={ROUTES.admin.sessionHost(sessionId)}
             className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-[var(--border)] bg-[var(--background)] px-4 text-sm font-semibold text-[var(--foreground)] transition-colors hover:bg-[var(--surface)]"
           >
             <ArrowLeft className="h-4 w-4 shrink-0" aria-hidden />

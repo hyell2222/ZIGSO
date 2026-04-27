@@ -37,7 +37,7 @@ export function PlayJoinQr({ joinCode, size = 52, className }: PlayJoinQrProps) 
 
   const playUrl = useMemo(() => {
     if (!joinCode || !origin) return "";
-    return `${origin}${ROUTES.play}?code=${encodeURIComponent(joinCode.trim().toUpperCase())}`;
+    return `${origin}${ROUTES.playJoin(joinCode)}`;
   }, [joinCode, origin]);
 
   if (!playUrl) return null;

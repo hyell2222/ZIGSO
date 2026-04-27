@@ -11,13 +11,13 @@ import { ROUTES } from "@/lib/routes";
 import { parseSuspectRosterFromCase } from "@/lib/suspects";
 import { makeTempId } from "@/lib/temp-id";
 
-import type { Difficulty } from "../create/steps/basic-info-step";
+import type { Difficulty } from "../new/steps/basic-info-step";
 import {
   MAP_EDITOR_WORLD,
   PROP_DEFAULT_DROP_SIZE,
   type DraftInvestigationZone,
   type DraftClue,
-} from "../create/steps/types";
+} from "../new/steps/types";
 import { CaseWizard, type CaseDraft } from "../wizard/case-wizard";
 
 function toDifficulty(value: string | null | undefined): Difficulty {
@@ -45,7 +45,7 @@ export default function AdminCaseEditPage() {
 function CaseEditContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const caseId = searchParams.get("id");
+  const caseId = searchParams.get("case");
 
   useEffect(() => {
     if (!caseId) router.replace(ROUTES.admin.cases);

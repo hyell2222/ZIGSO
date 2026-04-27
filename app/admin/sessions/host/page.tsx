@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 
 import { getCurrentSession } from "@/lib/api/auth";
+import { AUTH_SESSION_QUERY_KEY } from "@/lib/auth-session-query";
 import {
   getHostSessionDetails,
   listSessionPlayers,
@@ -412,12 +413,12 @@ function TeamReportDashboard({
 function CaseSessionHostContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const sessionId = searchParams.get("id")?.trim() ?? "";
+  const sessionId = searchParams.get("session")?.trim() ?? "";
   const queryClient = useQueryClient();
   const [presenceRows, setPresenceRows] = useState<SessionPresenceRow[]>([]);
 
   const authQuery = useQuery({
-    queryKey: ["auth-session"],
+    queryKey: AUTH_SESSION_QUERY_KEY,
     queryFn: async () => {
       if (!hasSupabaseEnv) return null;
       return getCurrentSession();
@@ -512,12 +513,13 @@ function CaseSessionHostContent() {
 
   useEffect(() => {
     if (authQuery.isLoading) return;
+    if (authQuery.isFetching && !authQuery.data) return;
     if (!hasSupabaseEnv) {
-      router.replace(ROUTES.admin.signIn);
+      router.replace(ROUTES.admin.login);
       return;
     }
-    if (!authQuery.data) router.replace(ROUTES.admin.signIn);
-  }, [router, authQuery.data, authQuery.isLoading]);
+    if (!authQuery.data) router.replace(ROUTES.admin.login);
+  }, [router, authQuery.data, authQuery.isLoading, authQuery.isFetching]);
 
   const beginMutation = useMutation({
     mutationFn: () => beginHostingSession(sessionId),
@@ -676,6 +678,17 @@ function CaseSessionHostContent() {
     );
   }
 
+  if (authQuery.isLoading || (authQuery.isFetching && !authQuery.data)) {
+    return (
+      <div className="min-h-screen">
+        <TopNav />
+        <main className="mx-auto w-full max-w-7xl px-4 py-8">
+          <p className="text-sm text-[var(--muted-foreground)]">인증 확인 중…</p>
+        </main>
+      </div>
+    );
+  }
+
   if (sessionQuery.isLoading) {
     return (
       <div className="min-h-screen">
@@ -740,7 +753,7 @@ function CaseSessionHostContent() {
           </div>
           <div className="flex shrink-0 flex-col items-end gap-2 sm:flex-row sm:items-center">
             <Link
-              href={ROUTES.admin.casesSessionReport(sessionId)}
+              href={ROUTES.admin.sessionReport(sessionId)}
               className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-[var(--mystery)]/45 px-4 text-sm font-semibold text-[var(--mystery)] transition-colors hover:bg-[var(--tint-mystery)]"
             >
               <FileText className="h-4 w-4 shrink-0" aria-hidden />

@@ -6,6 +6,7 @@ import { useEffect } from "react";
 
 import { AdminAuthForm } from "@/components/admin/admin-auth-form";
 import { getCurrentSession, signUpTeacher } from "@/lib/api/auth";
+import { AUTH_SESSION_QUERY_KEY } from "@/lib/auth-session-query";
 import { ROUTES } from "@/lib/routes";
 import { hasSupabaseEnv } from "@/lib/supabase";
 import { TopNav } from "@/components/layout/top-nav";
@@ -14,7 +15,7 @@ export default function AdminSignUpPage() {
   const router = useRouter();
 
   const sessionQuery = useQuery({
-    queryKey: ["auth-session"],
+    queryKey: AUTH_SESSION_QUERY_KEY,
     queryFn: async () => {
       if (!hasSupabaseEnv) return null;
       return getCurrentSession();
@@ -31,14 +32,15 @@ export default function AdminSignUpPage() {
       await signUpTeacher(email, password);
     },
     onSuccess: () => {
-      router.replace(ROUTES.admin.signIn);
+      router.replace(ROUTES.admin.login);
     },
   });
 
   useEffect(() => {
     if (sessionQuery.isLoading) return;
+    if (sessionQuery.isFetching && !sessionQuery.data) return;
     if (sessionQuery.data) router.replace(ROUTES.admin.cases);
-  }, [router, sessionQuery.data, sessionQuery.isLoading]);
+  }, [router, sessionQuery.data, sessionQuery.isLoading, sessionQuery.isFetching]);
 
   const message =
     signUpMutation.error?.message ??
@@ -61,7 +63,7 @@ export default function AdminSignUpPage() {
           }}
           isLoading={signUpMutation.isPending || !hasSupabaseEnv}
           message={message}
-          switchHref={ROUTES.admin.signIn}
+          switchHref={ROUTES.admin.login}
           switchPrompt="이미 계정이 있으신가요?"
           switchLabel="로그인"
         />

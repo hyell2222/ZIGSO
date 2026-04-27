@@ -7,12 +7,13 @@ import { usePathname, useRouter } from "next/navigation";
 import { getCurrentSession, signOutTeacher } from "@/lib/api/auth";
 import { AdminSubNav } from "@/components/layout/admin-sub-nav";
 import { Button } from "@/components/ui/button";
+import { AUTH_SESSION_QUERY_KEY } from "@/lib/auth-session-query";
 import { ROUTES } from "@/lib/routes";
 import { hasSupabaseEnv } from "@/lib/supabase";
 
 function showAdminSubNav(pathname: string) {
   if (!pathname.startsWith("/admin")) return false;
-  if (pathname.startsWith("/admin/sign-in") || pathname.startsWith("/admin/sign-up")) return false;
+  if (pathname.startsWith("/admin/login") || pathname.startsWith("/admin/sign-up")) return false;
   return true;
 }
 
@@ -21,7 +22,7 @@ export function TopNav() {
   const pathname = usePathname() ?? "";
   const queryClient = useQueryClient();
   const sessionQuery = useQuery({
-    queryKey: ["auth-session"],
+    queryKey: AUTH_SESSION_QUERY_KEY,
     queryFn: async () => {
       if (!hasSupabaseEnv) return null;
       return getCurrentSession();
@@ -34,9 +35,9 @@ export function TopNav() {
       await signOutTeacher();
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["auth-session"] });
+      await queryClient.invalidateQueries({ queryKey: AUTH_SESSION_QUERY_KEY });
       if (pathname.startsWith("/admin")) {
-        router.replace(ROUTES.admin.signIn);
+        router.replace(ROUTES.admin.login);
       }
     },
   });
@@ -53,7 +54,7 @@ export function TopNav() {
               Mystery Club
             </Link>
           </div>
-          <nav className="flex items-center gap-2 text-sm">
+          <nav className="flex flex-wrap items-center justify-end gap-2 text-sm">
             {sessionQuery.data ? (
               <Button
                 variant="secondary"
@@ -64,12 +65,20 @@ export function TopNav() {
                 로그아웃
               </Button>
             ) : (
-              <Link
-                href={ROUTES.admin.signIn}
-                className="inline-flex items-center rounded-md border border-[var(--on-primary)]/30 px-3 py-2 text-[var(--on-primary)] transition hover:border-[var(--on-primary)]/55 hover:bg-[var(--on-primary)]/10"
-              >
-                로그인
-              </Link>
+              <>
+                <Link
+                  href={ROUTES.play}
+                  className="rounded-md px-2.5 py-2 text-sm text-[var(--on-primary)]/90 underline-offset-4 transition hover:text-[var(--on-primary)] hover:underline"
+                >
+                  학생 입장
+                </Link>
+                <Link
+                  href={ROUTES.admin.login}
+                  className="rounded-md bg-[var(--on-primary)] px-4 py-2.5 text-sm font-bold tracking-tight text-[var(--primary)] shadow-md ring-1 ring-[var(--on-primary)]/30 transition hover:brightness-95"
+                >
+                  지금 시작하기
+                </Link>
+              </>
             )}
           </nav>
         </div>

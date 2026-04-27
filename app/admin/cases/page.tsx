@@ -13,6 +13,7 @@ import {
   type CaseListRow,
 } from "@/lib/api/cases";
 import { getCurrentSession } from "@/lib/api/auth";
+import { AUTH_SESSION_QUERY_KEY } from "@/lib/auth-session-query";
 import { TopNav } from "@/components/layout/top-nav";
 import { Button } from "@/components/ui/button";
 import { ROUTES } from "@/lib/routes";
@@ -25,7 +26,7 @@ export default function AdminCasesPage() {
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   const sessionQuery = useQuery({
-    queryKey: ["auth-session"],
+    queryKey: AUTH_SESSION_QUERY_KEY,
     queryFn: async () => {
       if (!hasSupabaseEnv) return null;
       return getCurrentSession();
@@ -34,12 +35,13 @@ export default function AdminCasesPage() {
 
   useEffect(() => {
     if (sessionQuery.isLoading) return;
+    if (sessionQuery.isFetching && !sessionQuery.data) return;
     if (!hasSupabaseEnv) {
-      router.replace(ROUTES.admin.signIn);
+      router.replace(ROUTES.admin.login);
       return;
     }
-    if (!sessionQuery.data) router.replace(ROUTES.admin.signIn);
-  }, [router, sessionQuery.data, sessionQuery.isLoading]);
+    if (!sessionQuery.data) router.replace(ROUTES.admin.login);
+  }, [router, sessionQuery.data, sessionQuery.isLoading, sessionQuery.isFetching]);
 
   const casesQuery = useQuery({
     queryKey: ["admin-cases", sessionQuery.data?.user.id],
@@ -57,7 +59,7 @@ export default function AdminCasesPage() {
     onMutate: () => setErrorMessage(null),
     onSuccess: async (data, variables) => {
       await queryClient.invalidateQueries({ queryKey: ["host-sessions"] });
-      const url = ROUTES.admin.casesSession(data.sessionId);
+      const url = ROUTES.admin.sessionHost(data.sessionId);
       if (variables.newTab && !variables.newTab.closed) {
         variables.newTab.location.href = url;
       } else {
@@ -128,7 +130,7 @@ export default function AdminCasesPage() {
                 </p>
               </div>
               {(casesQuery.data?.length ?? 0) > 0 ? (
-                <Button type="button" onClick={() => router.push(ROUTES.admin.casesCreate)} className="flex items-center gap-2">
+                <Button type="button" onClick={() => router.push(ROUTES.admin.casesNew)} className="flex items-center gap-2">
                   <PlusIcon className="h-4 w-4" />새 사건 만들기
                 </Button>
               ) : null}
@@ -137,7 +139,7 @@ export default function AdminCasesPage() {
               <p className="text-sm text-[var(--muted-foreground)]">사건을 불러오는 중…</p>
             ) : (casesQuery.data?.length ?? 0) === 0 ? (
               <div className="flex justify-center py-10">
-                <Button type="button" onClick={() => router.push(ROUTES.admin.casesCreate)}>
+                <Button type="button" onClick={() => router.push(ROUTES.admin.casesNew)}>
                   새 사건
                 </Button>
               </div>

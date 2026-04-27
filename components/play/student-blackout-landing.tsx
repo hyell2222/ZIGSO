@@ -190,17 +190,13 @@ export function StudentBlackoutLanding() {
     const nick = nickname.trim();
     if (!code || !nick) return;
     if (!hasSupabaseEnv) {
-      router.push(
-        `${ROUTES.play}?code=${encodeURIComponent(code)}&nickname=${encodeURIComponent(nick)}`,
-      );
+      router.push(ROUTES.playJoin(code, nick));
       return;
     }
     setBusy(true);
     try {
       await getSessionByJoinCode(code);
-      router.push(
-        `${ROUTES.play}?code=${encodeURIComponent(code)}&nickname=${encodeURIComponent(nick)}`,
-      );
+      router.push(ROUTES.playJoin(code, nick));
     } catch {
       setError("사건 코드를 확인할 수 없습니다. 교사에게 문의하세요.");
     } finally {

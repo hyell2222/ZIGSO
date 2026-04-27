@@ -6,6 +6,7 @@ import { useEffect } from "react";
 
 import { AdminAuthForm } from "@/components/admin/admin-auth-form";
 import { getCurrentSession, signInTeacher } from "@/lib/api/auth";
+import { AUTH_SESSION_QUERY_KEY } from "@/lib/auth-session-query";
 import { ROUTES } from "@/lib/routes";
 import { hasSupabaseEnv } from "@/lib/supabase";
 import { TopNav } from "@/components/layout/top-nav";
@@ -15,7 +16,7 @@ export default function AdminSignInPage() {
   const queryClient = useQueryClient();
 
   const sessionQuery = useQuery({
-    queryKey: ["auth-session"],
+    queryKey: AUTH_SESSION_QUERY_KEY,
     queryFn: async () => {
       if (!hasSupabaseEnv) return null;
       return getCurrentSession();
@@ -32,15 +33,16 @@ export default function AdminSignInPage() {
       await signInTeacher(email, password);
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["auth-session"] });
+      await queryClient.invalidateQueries({ queryKey: AUTH_SESSION_QUERY_KEY });
       router.replace(ROUTES.admin.cases);
     },
   });
 
   useEffect(() => {
     if (sessionQuery.isLoading) return;
+    if (sessionQuery.isFetching && !sessionQuery.data) return;
     if (sessionQuery.data) router.replace(ROUTES.admin.cases);
-  }, [router, sessionQuery.data, sessionQuery.isLoading]);
+  }, [router, sessionQuery.data, sessionQuery.isLoading, sessionQuery.isFetching]);
 
   return (
     <>
@@ -60,8 +62,8 @@ export default function AdminSignInPage() {
               : null)
           }
           switchHref={ROUTES.admin.signUp}
-          switchPrompt="No account yet?"
-          switchLabel="Sign up"
+          switchPrompt="계정이 없으신가요?"
+          switchLabel="회원가입"
         />
       </main>
     </>

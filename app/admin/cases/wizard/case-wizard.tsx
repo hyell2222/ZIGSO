@@ -8,6 +8,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { TopNav } from "@/components/layout/top-nav";
 import { Button } from "@/components/ui/button";
 import { getCurrentSession } from "@/lib/api/auth";
+import { AUTH_SESSION_QUERY_KEY } from "@/lib/auth-session-query";
 import {
   createCase,
   updateCase,
@@ -20,12 +21,12 @@ import { hasSupabaseEnv } from "@/lib/supabase";
 import type { SuspectEntry } from "@/lib/suspects";
 import { makeTempId } from "@/lib/temp-id";
 
-import { AIGenerateModal } from "../create/steps/ai-generate-modal";
-import { BasicInfoStep, type Difficulty } from "../create/steps/basic-info-step";
-import { InvestigationZonesStep } from "../create/steps/investigation-zones-step";
-import { MapEditorStep } from "../create/steps/map-editor-step";
-import { SuspectsStep } from "../create/steps/suspects-step";
-import { type DraftClue, type DraftInvestigationZone } from "../create/steps/types";
+import { AIGenerateModal } from "../new/steps/ai-generate-modal";
+import { BasicInfoStep, type Difficulty } from "../new/steps/basic-info-step";
+import { InvestigationZonesStep } from "../new/steps/investigation-zones-step";
+import { MapEditorStep } from "../new/steps/map-editor-step";
+import { SuspectsStep } from "../new/steps/suspects-step";
+import { type DraftClue, type DraftInvestigationZone } from "../new/steps/types";
 
 type StepIndex = 0 | 1 | 2 | 3;
 
@@ -80,7 +81,7 @@ export function CaseWizard(props: Props) {
   const [clues, setClues] = useState<DraftClue[]>(initial.clues);
 
   const sessionQuery = useQuery({
-    queryKey: ["auth-session"],
+    queryKey: AUTH_SESSION_QUERY_KEY,
     queryFn: async () => {
       if (!hasSupabaseEnv) return null;
       return getCurrentSession();
@@ -89,12 +90,13 @@ export function CaseWizard(props: Props) {
 
   useEffect(() => {
     if (sessionQuery.isLoading) return;
+    if (sessionQuery.isFetching && !sessionQuery.data) return;
     if (!hasSupabaseEnv) {
-      router.replace(ROUTES.admin.signIn);
+      router.replace(ROUTES.admin.login);
       return;
     }
-    if (!sessionQuery.data) router.replace(ROUTES.admin.signIn);
-  }, [router, sessionQuery.data, sessionQuery.isLoading]);
+    if (!sessionQuery.data) router.replace(ROUTES.admin.login);
+  }, [router, sessionQuery.data, sessionQuery.isLoading, sessionQuery.isFetching]);
 
   const propAssetsQuery = useQuery({
     queryKey: ["prop-assets"],

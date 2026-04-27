@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 import { getCurrentSession } from "@/lib/api/auth";
+import { AUTH_SESSION_QUERY_KEY } from "@/lib/auth-session-query";
 import { listHostSessions } from "@/lib/api/game-sessions";
 import { TopNav } from "@/components/layout/top-nav";
 import { ROUTES } from "@/lib/routes";
@@ -37,7 +38,7 @@ export default function AdminSessionsPage() {
   const router = useRouter();
 
   const sessionQuery = useQuery({
-    queryKey: ["auth-session"],
+    queryKey: AUTH_SESSION_QUERY_KEY,
     queryFn: async () => {
       if (!hasSupabaseEnv) return null;
       return getCurrentSession();
@@ -54,12 +55,13 @@ export default function AdminSessionsPage() {
 
   useEffect(() => {
     if (sessionQuery.isLoading) return;
+    if (sessionQuery.isFetching && !sessionQuery.data) return;
     if (!hasSupabaseEnv) {
-      router.replace(ROUTES.admin.signIn);
+      router.replace(ROUTES.admin.login);
       return;
     }
-    if (!sessionQuery.data) router.replace(ROUTES.admin.signIn);
-  }, [router, sessionQuery.data, sessionQuery.isLoading]);
+    if (!sessionQuery.data) router.replace(ROUTES.admin.login);
+  }, [router, sessionQuery.data, sessionQuery.isLoading, sessionQuery.isFetching]);
 
   return (
     <div className="min-h-screen">
@@ -118,14 +120,14 @@ export default function AdminSessionsPage() {
                       </div>
                       <div className="flex shrink-0 flex-wrap gap-2">
                         <Link
-                          href={ROUTES.admin.casesSession(row.id)}
+                          href={ROUTES.admin.sessionHost(row.id)}
                           className="inline-flex h-10 items-center justify-center gap-1.5 rounded-md border border-[var(--border)] bg-[var(--background)] px-3 text-sm font-semibold text-[var(--foreground)] transition-colors hover:bg-[var(--surface)]"
                         >
                           <ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden />
                           세션 화면
                         </Link>
                         <Link
-                          href={ROUTES.admin.casesSessionReport(row.id)}
+                          href={ROUTES.admin.sessionReport(row.id)}
                           className="inline-flex h-10 items-center justify-center gap-1.5 rounded-md bg-[var(--primary)] px-3 text-sm font-semibold text-[var(--on-primary)] transition-colors hover:brightness-95"
                         >
                           <FileText className="h-3.5 w-3.5 shrink-0" aria-hidden />
