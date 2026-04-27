@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 
-type AdminPageHeaderProps = {
+type PageHeaderProps = {
   /** 상단 라벨 (예: 세션 보고서, 사건) */
   eyebrow?: string;
   /** 본문 제목 */
@@ -18,7 +18,7 @@ type AdminPageHeaderProps = {
 };
 
 /**
- * 관리자 본문 상단 제목 블록 — 사건 목록·세션 보고서 등 동일한 톤.
+ * 본문 상단 제목 블록 — 사건 목록·세션 보고서 등 동일한 톤.
  */
 export function PageHeader({
   eyebrow,
@@ -28,10 +28,10 @@ export function PageHeader({
   description,
   actions,
   className,
-}: AdminPageHeaderProps) {
+}: PageHeaderProps) {
   const Heading = titleAs === "h2" ? "h2" : "h1";
   return (
-    <header className={cn("space-y-1 pb-6", className)}>
+    <header className={cn("space-y-1", className)}>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0 space-y-1">
           {eyebrow ? (

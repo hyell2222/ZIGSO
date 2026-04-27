@@ -55,7 +55,18 @@ export function TopNav() {
             </Link>
           </div>
           <nav className="flex flex-wrap items-center justify-end gap-2 text-sm">
-            {sessionQuery.data ? (
+            <Link
+              href={ROUTES.play}
+              className="rounded-md px-2.5 py-2 text-sm text-[var(--on-primary)]/90 underline-offset-4 transition hover:text-[var(--on-primary)] hover:underline"
+            >
+              학생 입장
+            </Link>
+            {sessionQuery.isPending ? (
+              <span
+                className="inline-block h-10 w-[7.5rem] shrink-0 animate-pulse rounded-md bg-[var(--on-primary)]/12"
+                aria-label="로그인 여부 확인 중"
+              />
+            ) : sessionQuery.data ? (
               <Button
                 variant="secondary"
                 onClick={() => signOutMutation.mutate()}
@@ -65,20 +76,12 @@ export function TopNav() {
                 로그아웃
               </Button>
             ) : (
-              <>
-                <Link
-                  href={ROUTES.play}
-                  className="rounded-md px-2.5 py-2 text-sm text-[var(--on-primary)]/90 underline-offset-4 transition hover:text-[var(--on-primary)] hover:underline"
-                >
-                  학생 입장
-                </Link>
-                <Link
-                  href={ROUTES.admin.login}
-                  className="rounded-md bg-[var(--on-primary)] px-4 py-2.5 text-sm font-bold tracking-tight text-[var(--primary)] shadow-md ring-1 ring-[var(--on-primary)]/30 transition hover:brightness-95"
-                >
-                  지금 시작하기
-                </Link>
-              </>
+              <Link
+                href={ROUTES.admin.login}
+                className="rounded-md bg-[var(--on-primary)] px-4 py-2.5 text-sm font-bold tracking-tight text-[var(--primary)] shadow-md ring-1 ring-[var(--on-primary)]/30 transition hover:brightness-95"
+              >
+                지금 시작하기
+              </Link>
             )}
           </nav>
         </div>

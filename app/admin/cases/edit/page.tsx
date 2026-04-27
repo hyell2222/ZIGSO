@@ -32,7 +32,7 @@ export default function AdminCaseEditPage() {
           <TopNav />
           <main className="mx-auto flex w-full max-w-7xl flex-1 items-center gap-2 px-4 py-8 text-sm text-[color:var(--entry-parchment-muted)]">
             <Loader2 className="h-4 w-4 animate-spin" />
-            준비 중...
+            불러오는 중...
           </main>
         </div>
       }
@@ -113,7 +113,7 @@ function CaseEditContent() {
         <TopNav />
         <main className="mx-auto flex w-full max-w-7xl flex-1 items-center gap-2 px-4 py-8 text-sm text-[color:var(--entry-parchment-muted)]">
           <Loader2 className="h-4 w-4 animate-spin" />
-          사건을 불러오는 중...
+          불러오는 중...
         </main>
       </div>
     );

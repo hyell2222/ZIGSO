@@ -683,7 +683,7 @@ function CaseSessionHostContent() {
       <div className="min-h-screen">
         <TopNav />
         <main className="mx-auto w-full max-w-7xl px-4 py-8">
-          <p className="text-sm text-[var(--muted-foreground)]">인증 확인 중…</p>
+          <p className="text-sm text-[var(--muted-foreground)]">불러오는 중…</p>
         </main>
       </div>
     );

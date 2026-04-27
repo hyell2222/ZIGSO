@@ -15,7 +15,7 @@ import { TopNav } from "@/components/layout/top-nav";
 import { ROUTES } from "@/lib/routes";
 import { hasSupabaseEnv } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
-import { PageHeader } from "@/components/layout/admin-page-header";
+import { PageHeader } from "@/components/layout/page-header";
 
 const PHASE_KR: Record<string, string> = {
   waiting: "대기",
