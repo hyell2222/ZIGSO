@@ -96,7 +96,32 @@ type AICaseResponse = {
   }>;
 };
 
-function buildSystemPrompt(propAssets: string[]): string {
+function formatPropSizeLines(sizeByAsset: Map<string, { w: number; h: number }>): string[] {
+  if (sizeByAsset.size === 0) return [];
+  const rows = [...sizeByAsset.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([asset, { w, h }]) => `  - ${asset}: ${w}×${h}px`);
+  return [
+    "[각 asset 의 맵 표시 크기 — 겹침·여백·좌표 판단은 반드시 이 크기를 기준으로 할 것]",
+    "  응답 JSON 의 clues[].w, clues[].h 는 형식상 포함하되, 서버가 아래 표준 크기로 교정한다.",
+    ...rows,
+  ];
+}
+
+function buildSystemPrompt(
+  propAssets: string[],
+  sizeByAsset: Map<string, { w: number; h: number }>,
+): string {
+  const hasCatalog = sizeByAsset.size > 0;
+  const sizeHint = hasCatalog
+    ? [
+        "  - w, h: 응답에 숫자로 넣되, 실제 크기는 위 [각 asset 의 맵 표시 크기]와 일치시키는 것이 좋다(서버가 동일 값으로 통일).",
+        "  - 같은 구역 안에서는 위 크기를 고려해 서로 겹치지 않게, 가장자리에서 반폭·반높이 이상 안쪽에 배치.",
+      ]
+    : [
+        "  - w, h: 48~128(짝수 선호). 같은 구역 안에서는 서로 겹치지 않게 최소 72px 이상 간격.",
+      ];
+
   return [
     "너는 HiddenSchool(히든스쿨)용 '비밀 탐정 동아리 / MYSTERY CLUB' 협동 추리 사건을 한국어로 설계하는 작가다.",
     "교사가 웹 마법사에 붙여 넣을 초안 JSON 만 출력한다. 범인 지정·세션 운영은 교사 몫이다.",
@@ -121,7 +146,7 @@ function buildSystemPrompt(propAssets: string[]): string {
     "  - assignment_index: investigation_zones 배열의 0부터 시작하는 인덱스. 구역마다 개수가 비슷하게 분배(대략 구역당 3~6개).",
     "  - asset: 반드시 아래 [사용 가능한 prop asset 목록]에 있는 문자열만. 없는 이름·변형 금지.",
     `  - x, y: 소품 중심 좌표. ${WORLD_W}×${WORLD_H} 안에 완전히 들어오게. 권장: x는 ${40}~${WORLD_W - 40}, y는 ${40}~${WORLD_H - 40}.`,
-    "  - w, h: 48~128(짝수 선호). 같은 구역 안에서는 서로 겹치지 않게 최소 72px 이상 간격.",
+    ...sizeHint,
     "  - name: 맵 목록에 보이는 짧은 단서 제목(한국어 2~12자), 고유하게.",
     "  - content: 플레이어가 읽는 본문. 1~3문장. 분위기+추리 단서. description 과 모순 없게.",
     "",
@@ -131,6 +156,7 @@ function buildSystemPrompt(propAssets: string[]): string {
     "",
     "[사용 가능한 prop asset 목록 — 이 중에서만 asset 선택]",
     propAssets.join(", "),
+    ...formatPropSizeLines(sizeByAsset),
   ].join("\n");
 }
 
@@ -178,6 +204,7 @@ export async function POST(req: NextRequest) {
   const input = body as {
     prompt?: unknown;
     propAssets?: unknown;
+    propCatalog?: unknown;
     difficulty?: unknown;
     targetClueCount?: unknown;
   };
@@ -190,6 +217,24 @@ export async function POST(req: NextRequest) {
       { error: "사용 가능한 prop asset 목록이 비어있습니다." },
       { status: 400 },
     );
+  }
+
+  const sizeByAsset = new Map<string, { w: number; h: number }>();
+  const assetKeySet = new Set(propAssets.map((a) => a.toLowerCase()));
+  if (Array.isArray(input.propCatalog)) {
+    for (const row of input.propCatalog) {
+      if (!row || typeof row !== "object") continue;
+      const o = row as Record<string, unknown>;
+      const asset = typeof o.asset === "string" ? o.asset.trim() : "";
+      if (!asset || !assetKeySet.has(asset.toLowerCase())) continue;
+      const w = typeof o.w === "number" && Number.isFinite(o.w) ? o.w : NaN;
+      const h = typeof o.h === "number" && Number.isFinite(o.h) ? o.h : NaN;
+      if (!(w > 0 && h > 0)) continue;
+      sizeByAsset.set(asset.toLowerCase(), {
+        w: Math.min(WORLD_W, Math.max(8, Math.round(w))),
+        h: Math.min(WORLD_H, Math.max(8, Math.round(h))),
+      });
+    }
   }
 
   const theme = typeof input.prompt === "string" ? input.prompt : "";
@@ -213,7 +258,7 @@ export async function POST(req: NextRequest) {
       model: OPENAI_MODEL,
       temperature: 0.9,
       messages: [
-        { role: "system", content: buildSystemPrompt(propAssets) },
+        { role: "system", content: buildSystemPrompt(propAssets, sizeByAsset) },
         { role: "user", content: buildUserPrompt(theme, difficulty, targetClueCount) },
       ],
       response_format: {
@@ -280,8 +325,13 @@ export async function POST(req: NextRequest) {
           c.assignment_index < slotCount,
       )
       .map((c) => {
-        const w = clamp(Math.round(c.w || 80), 24, WORLD_W);
-        const h = clamp(Math.round(c.h || 80), 24, WORLD_H);
+        const fromCat = sizeByAsset.get(c.asset.trim().toLowerCase());
+        const w = fromCat
+          ? fromCat.w
+          : clamp(Math.round(c.w || 80), 24, WORLD_W);
+        const h = fromCat
+          ? fromCat.h
+          : clamp(Math.round(c.h || 80), 24, WORLD_H);
         const x = clamp(Math.round(c.x), w / 2, WORLD_W - w / 2);
         const y = clamp(Math.round(c.y), h / 2, WORLD_H - h / 2);
         return { ...c, w, h, x, y };

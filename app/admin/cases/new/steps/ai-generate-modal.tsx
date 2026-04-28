@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { generateCaseWithAI } from "@/lib/api/ai-case";
+import { generateCaseWithAI, type PropCatalogEntry } from "@/lib/api/ai-case";
 import { makeTempId } from "@/lib/temp-id";
 import type { SuspectEntry } from "@/lib/suspects";
 
@@ -26,6 +26,8 @@ type Props = {
   onClose: () => void;
   /** 모델에 전달할 사용 가능한 prop 식별자 목록 */
   propAssets: string[];
+  /** DB `asset_metadata` 기준 맵상 크기 — 있으면 AI 배치가 이 크기를 따름 */
+  propCatalog?: PropCatalogEntry[];
   /** 현재 wizard 의 난이도 (시작값) */
   initialDifficulty: Difficulty;
   /** AI 결과를 wizard state 로 적용 */
@@ -36,6 +38,7 @@ export function AIGenerateModal({
   open,
   onClose,
   propAssets,
+  propCatalog,
   initialDifficulty,
   onApply,
 }: Props) {
@@ -63,6 +66,7 @@ export function AIGenerateModal({
       const data = await generateCaseWithAI({
         prompt: theme,
         propAssets,
+        propCatalog,
         difficulty,
         targetClueCount,
       });

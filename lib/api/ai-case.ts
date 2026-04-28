@@ -7,11 +7,24 @@ import type { SuspectEntry } from "@/lib/suspects";
  * 호출자가 tempId 를 붙여 마법사 초안으로 변환한다.
  */
 
+export type PropCatalogEntry = {
+  asset: string;
+  /** 맵 에디터(800×600) 기준 표시 너비(px) */
+  w: number;
+  /** 맵 에디터(800×600) 기준 표시 높이(px) */
+  h: number;
+};
+
 export type AICaseRequest = {
   /** 사용자가 입력한 주제/키워드 (선택) */
   prompt?: string;
   /** 사용 가능한 prop asset 식별자 목록 (필수) */
   propAssets: string[];
+  /**
+   * asset_metadata 기준 맵상 픽셀 크기(선택).
+   * 있으면 서버가 단서 w/h 를 이 값으로 맞추고 좌표를 다시 클램프한다.
+   */
+  propCatalog?: PropCatalogEntry[];
   /** 목표 난이도 (선택) */
   difficulty?: "Easy" | "Normal" | "Hard";
   /** 권장 단서 총 개수 (선택) */

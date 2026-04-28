@@ -16,6 +16,7 @@ import {
   type CaseLocationInput,
 } from "@/lib/api/cases";
 import { listPropAssets } from "@/lib/api/storage-props";
+import { mapPixelSizeFromAssetTiles } from "@/lib/map-prop-pixel-size";
 import { ROUTES } from "@/lib/routes";
 import { hasSupabaseEnv } from "@/lib/supabase";
 import type { SuspectEntry } from "@/lib/suspects";
@@ -467,6 +468,10 @@ export function CaseWizard(props: Props) {
         open={aiModalOpen}
         onClose={() => setAiModalOpen(false)}
         propAssets={(propAssetsQuery.data ?? []).map((a) => a.asset)}
+        propCatalog={(propAssetsQuery.data ?? []).map((a) => ({
+          asset: a.asset,
+          ...mapPixelSizeFromAssetTiles(a.tileW, a.tileH),
+        }))}
         initialDifficulty={difficulty}
         onApply={handleApplyAiResult}
       />
