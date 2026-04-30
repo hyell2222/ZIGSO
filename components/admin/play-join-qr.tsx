@@ -48,17 +48,12 @@ export function PlayJoinQr({ joinCode, size = 52, className }: PlayJoinQrProps) 
         type="button"
         onClick={() => setModalOpen(true)}
         className={cn(
-          "group flex shrink-0 flex-col items-center justify-center gap-0.5 rounded-lg border border-[var(--border)] bg-[var(--card-bg)] p-1.5 shadow-sm transition hover:border-[var(--accent)] hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]",
+          "group flex shrink-0 flex-col items-center justify-center gap-0.5 rounded-lg border border-[var(--border)] bg-[var(--card-bg)] p-1 shadow-sm transition hover:border-[var(--accent)] hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]",
           className,
         )}
-        aria-label="입장용 QR 코드 크게 보기"
-        title="QR 코드 (탭하여 크게)"
       >
         <span className="block rounded-sm bg-white p-0.5">
           <QRCode value={playUrl} size={size} style={{ width: "100%", maxWidth: size, height: "auto" }} />
-        </span>
-        <span className="text-[9px] font-medium text-[var(--muted-foreground)] group-hover:text-[var(--accent)]">
-          QR
         </span>
       </button>
 

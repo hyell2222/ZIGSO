@@ -733,22 +733,22 @@ function CaseSessionHostContent() {
         <header
           className={`flex flex-wrap items-start justify-between gap-6 pb-6 ${!sessionStarted ? "border-b border-[var(--border)]" : ""}`}
         >
-          <div className="min-w-0 flex-1 space-y-3">
+          <div className="min-w-0 flex-1 space-y-6">
             <div>
               <p className="font-mono text-3xl font-semibold tracking-[0.2em] text-[var(--accent)] sm:text-4xl">
                 {row.cases?.title}
               </p>
             </div>
-            <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-[var(--muted-foreground)]">
-                사건 코드
-              </p>
-              <div className="mt-1 flex flex-wrap items-center gap-3">
+            <div className="mt-1 flex flex-wrap items-center gap-3">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wide text-[var(--muted-foreground)]">
+                  사건 코드
+                </p>
                 <p className="font-mono text-3xl font-semibold tracking-[0.2em] text-[var(--accent)] sm:text-4xl">
                   {row.join_code}
                 </p>
-                <PlayJoinQr joinCode={row.join_code} />
               </div>
+              <PlayJoinQr joinCode={row.join_code} />
             </div>
           </div>
           <div className="flex shrink-0 flex-col items-end gap-2 sm:flex-row sm:items-center">

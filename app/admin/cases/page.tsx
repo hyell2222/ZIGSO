@@ -162,14 +162,11 @@ export default function AdminCasesPage() {
                           onDelete={() => handleDelete(row)}
                         />
                       </div>
-                      <p className="text-xs text-[var(--muted-foreground)]">
-                        난이도: {row.difficulty ?? "—"} · 조사 맵(장소):{" "}
+                      <p className="text-xs text-[var(--muted-foreground)] pb-4">
+                        난이도: {row.difficulty ?? "—"} · 역할:{" "}
                         {typeof row.locations?.[0]?.count === "number"
                           ? row.locations[0].count
-                          : "—"}
-                      </p>
-                      <p className="mt-1 line-clamp-2 text-xs text-[var(--foreground)]">
-                        {row.description ?? "No description provided yet."}
+                          : "—"}명
                       </p>
                       <Button
                         type="button"

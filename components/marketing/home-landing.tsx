@@ -27,14 +27,13 @@ export function HomeLanding() {
       />
       <div className="mx-auto w-full max-w-3xl px-4 py-16 text-center md:py-20">
         <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--accent)]">
-          협동 추리 · 교실 멀티플레이
+          직소 모형 기반 협동 추리 게임
         </p>
         <h1 className="mt-3 text-4xl font-bold leading-tight tracking-tight text-[var(--primary)] sm:text-6xl">
           MYSTERY CLUB
         </h1>
         <p className="mx-auto mt-4 max-w-xl text-balance text-base leading-relaxed text-[var(--muted-foreground)]">
-          팀을 맞추고 맵을 돌아다니며 단서를 수집하고, 토론 끝에 범인을 지목하세요. 교사는 사건·세션을
-          설계하고 수업 시간에 바로 띄울 수 있어요.
+          맵을 돌아다니며 단서를 수집하고, 범인을 지목하세요.
         </p>
 
         <ul className="mt-10 grid gap-3 sm:grid-cols-3 sm:gap-4">
@@ -43,9 +42,9 @@ export function HomeLanding() {
               <BookOpen className="h-5 w-5" aria-hidden />
             </span>
             <div>
-              <p className="text-sm font-semibold text-[var(--mystery)]">사건 설계</p>
+              <p className="text-sm font-semibold text-[var(--mystery)]">교사 - AI 기반 사건 설계</p>
               <p className="mt-1 text-xs leading-snug text-[var(--muted-foreground)]">
-                용의자·구역·단서·정답을 구성해 한 번에 세션을 엽니다.
+                용의자·구역·단서·정답을 구성해 사건을 설계합니다.
               </p>
             </div>
           </li>
