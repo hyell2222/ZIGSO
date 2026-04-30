@@ -14,6 +14,9 @@ import { hasSupabaseEnv } from "@/lib/supabase";
 function showAdminSubNav(pathname: string) {
   if (!pathname.startsWith("/admin")) return false;
   if (pathname.startsWith("/admin/login") || pathname.startsWith("/admin/signup")) return false;
+  if (pathname.startsWith("/admin/sessions/host") || pathname.startsWith("/admin/sessions/report")) {
+    return false;
+  }
   return true;
 }
 
