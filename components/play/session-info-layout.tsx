@@ -154,7 +154,7 @@ export function SessionInfoLayout({ sessionQuery }: SessionInfoLayoutProps) {
                 playMuted,
               )}
             >
-              지도교사가 이 사건에 용의자 정보를 넣지 않았습니다.
+              선생님이 이 사건에 용의자 정보를 넣지 않았습니다.
             </p>
           )}
         </CardContent>

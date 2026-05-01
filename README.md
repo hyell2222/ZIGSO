@@ -39,9 +39,12 @@ The exported app is generated to `/out` with `out/index.html` as the entry file.
 
 ## Core Routes
 
-- `/admin`: teacher login and game control panel
-- `/play`: student game room without login
-- `/`: landing page and route selection
+- `/login/`, `/signup/`: teacher authentication
+- `/cases/`, `/cases/new/`, `/cases/edit/`: case authoring
+- `/sessions/`: live session host dashboard (`?session=`)
+- `/reports/`: teacher session list and reports (`?session=` for detail)
+- `/play/`: student join (no login)
+- `/`: landing
 
 ## Submission Folder Support
 

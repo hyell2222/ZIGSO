@@ -11,7 +11,7 @@ const dungGeunMo = localFont({
 
 export const metadata: Metadata = {
   title: "Mystery Club",
-  description: "비밀 탐정 동아리 협동 추리 — 팀 기반 미스터리",
+  description: "비밀 탐정 동아리 Mystery Club — 팀 협동 추리",
   icons: {
     icon: "/window.svg",
   },

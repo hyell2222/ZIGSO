@@ -33,7 +33,7 @@ export function HomeLanding() {
           MYSTERY CLUB
         </h1>
         <p className="mx-auto mt-4 max-w-xl text-balance text-base leading-relaxed text-[var(--muted-foreground)]">
-          맵을 돌아다니며 단서를 수집하고, 범인을 지목하세요.
+          맵에서 단서를 모으고, 팀과 함께 범인을 지목하는 협동 추리입니다.
         </p>
 
         <ul className="mt-10 grid gap-3 sm:grid-cols-3 sm:gap-4">
@@ -42,9 +42,9 @@ export function HomeLanding() {
               <BookOpen className="h-5 w-5" aria-hidden />
             </span>
             <div>
-              <p className="text-sm font-semibold text-[var(--mystery)]">교사 - AI 기반 사건 설계</p>
+              <p className="text-sm font-semibold text-[var(--mystery)]">선생님용 · 사건 만들기</p>
               <p className="mt-1 text-xs leading-snug text-[var(--muted-foreground)]">
-                용의자·구역·단서·정답을 구성해 사건을 설계합니다.
+                용의자·조사 구역·단서·정답까지 한곳에서 준비하고, 수사를 열 수 있어요.
               </p>
             </div>
           </li>
@@ -53,9 +53,9 @@ export function HomeLanding() {
               <Map className="h-5 w-5" aria-hidden />
             </span>
             <div>
-              <p className="text-sm font-semibold text-[var(--mystery)]">현장 조사</p>
+              <p className="text-sm font-semibold text-[var(--mystery)]">조사 &amp; 협동</p>
               <p className="mt-1 text-xs leading-snug text-[var(--muted-foreground)]">
-                팀·역할·순찰 구역이 배정되고, 맵에서 발견한 단서는 팀과 공유됩니다.
+                브리핑에서는 팀끼리, 조사 단계에서는 같은 구역을 맡은 친구들끼리 모입니다. 맵에서 찾은 단서는 팀과 나눕니다.
               </p>
             </div>
           </li>
@@ -66,7 +66,7 @@ export function HomeLanding() {
             <div>
               <p className="text-sm font-semibold text-[var(--mystery)]">최종 보고</p>
               <p className="mt-1 text-xs leading-snug text-[var(--muted-foreground)]">
-                팀 단위로 범인·수법·동기를 제출하고, 정답과 비교해 결론을 나눕니다.
+                팀이 한 번만 제출하는 최종 보고로 범인·수법·동기를 정리하고, 정답과 맞춰 봅니다.
               </p>
             </div>
           </li>
@@ -74,7 +74,7 @@ export function HomeLanding() {
 
         <div className="mt-10 flex flex-col items-stretch justify-center gap-3 sm:mt-12 sm:flex-row sm:items-center">
           <Link
-            href={ROUTES.admin.login}
+            href={ROUTES.login}
             className={cn(
               "inline-flex h-12 min-w-[200px] items-center justify-center rounded-md px-8 text-base font-semibold",
               "bg-[var(--primary)] text-[var(--on-primary)] shadow-md transition hover:brightness-95",
@@ -90,12 +90,12 @@ export function HomeLanding() {
               "transition hover:border-[var(--mystery)]/55 hover:bg-[var(--surface)]",
             )}
           >
-            학생으로 입장
+            수사 참가
           </Link>
         </div>
         <p className="mt-4 text-center text-xs text-[var(--muted-foreground)]">
-          학생은 담당 교사가 알려 주는 <strong className="font-semibold text-[var(--foreground)]">사건 코드</strong>
-          가 필요해요.
+          참가하려면 담당 선생님이 알려 주는{" "}
+          <strong className="font-semibold text-[var(--foreground)]">참가 코드</strong>가 필요해요.
         </p>
       </div>
     </div>

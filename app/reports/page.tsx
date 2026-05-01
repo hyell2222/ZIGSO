@@ -1,0 +1,666 @@
+"use client";
+
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ArrowDown, ArrowUp, ArrowUpDown, Download, FileText, Loader2, Radio } from "lucide-react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useMemo, useState } from "react";
+
+import { deleteGameSession, listHostSessions, type HostSessionListRow } from "@/lib/api/game-sessions";
+import {
+  getHostSessionDetails,
+  listSessionPlayers,
+  listSessionTeams,
+  type SessionPlayerRow,
+  type TeamRow,
+} from "@/lib/api/play";
+import { useRequireTeacherSession } from "@/lib/auth/use-require-teacher-session";
+import { KebabMenu } from "@/components/ui/kebab-menu";
+import { TeamFinalReportModal } from "@/components/teacher/team-final-report-modal";
+import { PageHeader } from "@/components/layout/page-header";
+import { TopNav } from "@/components/layout/top-nav";
+import { Button } from "@/components/ui/button";
+import { clubRoleLabelKr, clubRoleSortKey } from "@/lib/club-role";
+import { isCulpritCorrect } from "@/lib/report-compare";
+import { ROUTES } from "@/lib/routes";
+import { findSuspectName, parseSuspectRosterFromCase } from "@/lib/suspects";
+import { cn } from "@/lib/utils";
+
+const PHASE_KR: Record<string, string> = {
+  waiting: "대기",
+  briefing: "브리핑",
+  investigation: "조사",
+  final_report: "최종 보고",
+  session_end: "종료",
+};
+
+function formatSessionsListWhen(iso: string | null) {
+  if (!iso) return "—";
+  try {
+    return new Date(iso).toLocaleString("ko-KR", {
+      dateStyle: "short",
+      timeStyle: "short",
+    });
+  } catch {
+    return "—";
+  }
+}
+
+function ReportsSessionsListPanel({ teacherUserId }: { teacherUserId: string }) {
+  const queryClient = useQueryClient();
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+
+  const listQuery = useQuery({
+    queryKey: ["host-sessions", teacherUserId],
+    queryFn: () => listHostSessions(teacherUserId),
+    enabled: Boolean(teacherUserId),
+  });
+
+  const deleteSessionMutation = useMutation({
+    mutationFn: async (id: string) => {
+      setPendingDeleteId(id);
+      try {
+        await deleteGameSession(id);
+      } finally {
+        setPendingDeleteId(null);
+      }
+    },
+    onError: (e: Error) => window.alert(e.message),
+    onSuccess: async (_, id) => {
+      await queryClient.invalidateQueries({ queryKey: ["host-sessions"] });
+      await queryClient.removeQueries({ queryKey: ["host-session", id] });
+      await queryClient.removeQueries({ queryKey: ["host-session-players", id] });
+      await queryClient.removeQueries({ queryKey: ["host-session-teams", id] });
+    },
+  });
+
+  const handleDeleteSession = (row: HostSessionListRow) => {
+    const label = row.cases?.title?.trim() || "제목 없는 사건";
+    if (
+      !window.confirm(
+        `「${label}」수사 세션을 삭제할까요?\n팀·참가 기록·보고 내용이 모두 삭제되며 되돌릴 수 없습니다.\n사건 원본은 그대로 남습니다.`,
+      )
+    ) {
+      return;
+    }
+    deleteSessionMutation.mutate(row.id);
+  };
+
+  return (
+    <div className="min-h-screen">
+      <TopNav />
+      <main className="mx-auto w-full max-w-7xl space-y-6 px-4 py-8">
+        <>
+          <PageHeader
+            title="수사 기록"
+            description="진행한 수사 세션별로 참가자 현황과 팀 최종 보고를 확인하고, CSV로 내려받을 수 있습니다."
+          />
+          {listQuery.isLoading ? (
+            <p className="flex items-center gap-2 text-sm text-[var(--muted-foreground)]">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              목록을 불러오는 중…
+            </p>
+          ) : listQuery.isError ? (
+            <p className="text-sm text-[var(--error)]">목록을 불러오지 못했습니다.</p>
+          ) : (listQuery.data?.length ?? 0) === 0 ? (
+            <p className="rounded-lg border border-dashed border-[var(--border)] bg-[var(--tint-accent-weak)] px-4 py-8 text-center text-sm text-[var(--muted-foreground)]">
+              아직 연 수사가 없습니다.{" "}
+              <Link className="font-medium text-[var(--accent)] underline" href={ROUTES.cases}>
+                내 사건
+              </Link>
+              에서「수사 세션 시작」을 눌러 주세요.
+            </p>
+          ) : (
+            <ul className="space-y-3">
+              {listQuery.data?.map((row) => {
+                const title = row.cases?.title?.trim() || "제목 없는 사건";
+                const phase = row.phase ? (PHASE_KR[row.phase] ?? row.phase) : "—";
+                return (
+                  <li
+                    key={row.id}
+                    className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4 shadow-sm"
+                  >
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <p className="font-medium text-[var(--foreground)]">{title}</p>
+                        <p className="text-xs text-[var(--muted-foreground)]">
+                          <span className="font-mono text-[var(--accent)]">{row.join_code}</span>
+                          {" · "}
+                          {formatSessionsListWhen(row.created_at)}
+                          {" · "}
+                          <span
+                            className={cn(
+                              "inline-flex items-center gap-0.5",
+                              row.phase === "session_end" || row.is_active === false
+                                ? "text-[var(--muted-foreground)]"
+                                : "text-[var(--foreground)]",
+                            )}
+                          >
+                            <Radio className="inline h-3 w-3" aria-hidden />
+                            {phase}
+                          </span>
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-1 self-end sm:self-start">
+                        <Link
+                          href={ROUTES.reportsForSession(row.id)}
+                          className="inline-flex h-10 items-center justify-center gap-1.5 rounded-md bg-[var(--primary)] px-3 text-sm font-semibold text-[var(--on-primary)] transition-colors hover:brightness-95"
+                        >
+                          <FileText className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                          요약 보기
+                        </Link>
+                        <KebabMenu
+                          disabled={pendingDeleteId === row.id}
+                          onDelete={() => handleDeleteSession(row)}
+                        />
+                      </div>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </>
+      </main>
+    </div>
+  );
+}
+
+function teamSortName(p: SessionPlayerRow, teamById: Map<string, TeamRow>) {
+  if (!p.team_id) return "\uffff";
+  return (teamById.get(p.team_id)?.name ?? "").trim() || "\uffff";
+}
+
+type PlayerReportLine = {
+  playerId: string;
+  teamId: string | null;
+  nickname: string;
+  teamName: string;
+  roleLabel: string;
+  patrolZone: string;
+  reportSubmitted: boolean;
+  /** null: 미제출 또는 정답 미등록으로 판정 불가 */
+  isCorrect: boolean | null;
+  submittedAt: string | null;
+  /** 제출 시각 정렬용 (ms) */
+  submittedAtMs: number | null;
+};
+
+type SortKey =
+  | "nickname"
+  | "teamName"
+  | "roleLabel"
+  | "patrolZone"
+  | "reportSubmitted"
+  | "isCorrect"
+  | "finalReport"
+  | "submittedAt";
+
+function isCorrectSortRank(line: PlayerReportLine, hasAnswer: boolean): number {
+  if (!line.reportSubmitted) return 0;
+  if (!hasAnswer) return 1;
+  if (line.isCorrect === true) return 3;
+  if (line.isCorrect === false) return 2;
+  return 1;
+}
+
+function compareReportLines(
+  a: PlayerReportLine,
+  b: PlayerReportLine,
+  key: SortKey,
+  hasAnswer: boolean,
+  dir: "asc" | "desc",
+): number {
+  const mul = dir === "asc" ? 1 : -1;
+  let cmp = 0;
+  switch (key) {
+    case "nickname":
+      cmp = a.nickname.localeCompare(b.nickname, "ko");
+      break;
+    case "teamName":
+      cmp = a.teamName.localeCompare(b.teamName, "ko");
+      break;
+    case "roleLabel":
+      cmp = a.roleLabel.localeCompare(b.roleLabel, "ko");
+      break;
+    case "patrolZone":
+      cmp = a.patrolZone.localeCompare(b.patrolZone, "ko");
+      break;
+    case "reportSubmitted":
+      cmp = Number(a.reportSubmitted) - Number(b.reportSubmitted);
+      break;
+    case "isCorrect":
+      cmp = isCorrectSortRank(a, hasAnswer) - isCorrectSortRank(b, hasAnswer);
+      break;
+    case "finalReport": {
+      const av = a.reportSubmitted && a.teamId ? 1 : 0;
+      const bv = b.reportSubmitted && b.teamId ? 1 : 0;
+      cmp = av - bv;
+      break;
+    }
+    case "submittedAt": {
+      const aMs = a.submittedAtMs;
+      const bMs = b.submittedAtMs;
+      if (aMs == null && bMs == null) cmp = 0;
+      else if (aMs == null) cmp = 1;
+      else if (bMs == null) cmp = -1;
+      else cmp = aMs - bMs;
+      break;
+    }
+    default:
+      cmp = 0;
+  }
+  if (cmp !== 0) return cmp * mul;
+  return a.playerId.localeCompare(b.playerId, "en");
+}
+
+function escapeCsvField(value: string): string {
+  if (/[",\r\n]/.test(value)) return `"${value.replace(/"/g, '""')}"`;
+  return value;
+}
+
+function buildSessionReportCsv(
+  lines: PlayerReportLine[],
+  teamById: Map<string, TeamRow>,
+  answerRoster: ReturnType<typeof parseSuspectRosterFromCase>,
+  hasAnswer: boolean,
+): string {
+  const header = [
+    "닉네임",
+    "팀",
+    "역할",
+    "순찰 구역",
+    "팀 제출",
+    "정답",
+    "제출 시각",
+    "지목한 범인",
+    "도구·방법",
+    "동기",
+    "결정적 단서",
+  ];
+  const rows: string[][] = [header];
+  for (const line of lines) {
+    const team = line.teamId ? teamById.get(line.teamId) : undefined;
+    const suspectName =
+      team?.report_suspect_id
+        ? (findSuspectName(answerRoster, team.report_suspect_id) ?? team.report_suspect_id)
+        : "";
+    const correctLabel = !line.reportSubmitted
+      ? "—"
+      : !hasAnswer
+        ? "미등록"
+        : line.isCorrect === true
+          ? "맞음"
+          : line.isCorrect === false
+            ? "틀림"
+            : "—";
+    rows.push([
+      line.nickname,
+      line.teamName,
+      line.roleLabel,
+      line.patrolZone,
+      line.reportSubmitted ? "제출" : "—",
+      correctLabel,
+      line.submittedAt ?? "—",
+      team?.report_suspect_id ? suspectName : "",
+      (team?.report_method ?? "").trim(),
+      (team?.report_motive ?? "").trim(),
+      (team?.report_decisive_clue ?? "").trim(),
+    ]);
+  }
+  return rows.map((r) => r.map(escapeCsvField).join(",")).join("\r\n");
+}
+
+function buildReportLines(
+  players: SessionPlayerRow[],
+  teams: TeamRow[],
+  answerSuspectId: string | null,
+): PlayerReportLine[] {
+  const teamById = new Map(teams.map((t) => [t.id, t]));
+  const hasRegisteredAnswer = Boolean(answerSuspectId?.trim());
+
+  const list = [...players];
+  list.sort((a, b) => {
+    const ta = teamSortName(a, teamById);
+    const tb = teamSortName(b, teamById);
+    if (ta !== tb) return ta.localeCompare(tb, "ko");
+    const ra = clubRoleSortKey(a.club_role);
+    const rb = clubRoleSortKey(b.club_role);
+    if (ra !== rb) return ra - rb;
+    return (a.nickname ?? "").localeCompare(b.nickname ?? "", "ko");
+  });
+
+  return list.map((p) => {
+    const team = p.team_id ? teamById.get(p.team_id) : undefined;
+    const submitted = Boolean(team?.report_submitted_at);
+    let isCorrect: boolean | null = null;
+    if (submitted && hasRegisteredAnswer && team) {
+      isCorrect = isCulpritCorrect(answerSuspectId, team.report_suspect_id);
+    } else if (submitted && !hasRegisteredAnswer) {
+      isCorrect = null;
+    }
+
+    const submittedAtRaw = team?.report_submitted_at;
+    return {
+      playerId: p.id,
+      teamId: p.team_id ?? null,
+      nickname: p.nickname?.trim() || "—",
+      teamName: team?.name?.trim() || "—",
+      roleLabel: clubRoleLabelKr(p.club_role),
+      patrolZone: p.patrol_zone?.name?.trim() || "—",
+      reportSubmitted: submitted,
+      isCorrect,
+      submittedAt: submittedAtRaw ? new Date(submittedAtRaw).toLocaleString("ko-KR") : null,
+      submittedAtMs: submittedAtRaw ? Date.parse(submittedAtRaw) : null,
+    };
+  });
+}
+
+function SortableTh({
+  label,
+  column,
+  current,
+  onSort,
+  className,
+}: {
+  label: string;
+  column: SortKey;
+  current: { key: SortKey; dir: "asc" | "desc" } | null;
+  onSort: (k: SortKey) => void;
+  className?: string;
+}) {
+  const active = current?.key === column;
+  const dir = current?.dir ?? "asc";
+  return (
+    <th className={cn("px-3 py-2.5 align-bottom", className)}>
+      <button
+        type="button"
+        onClick={() => onSort(column)}
+        className="group inline-flex w-full min-w-0 max-w-full items-center justify-start gap-1.5 text-left text-[10px] font-semibold uppercase tracking-wide text-[var(--muted-foreground)] transition hover:text-[var(--primary)]"
+      >
+        <span className="min-w-0 break-words leading-tight">{label}</span>
+        {active ? (
+          dir === "asc" ? (
+            <ArrowUp className="h-3.5 w-3.5 shrink-0 text-[var(--primary)]" aria-hidden />
+          ) : (
+            <ArrowDown className="h-3.5 w-3.5 shrink-0 text-[var(--primary)]" aria-hidden />
+          )
+        ) : (
+          <ArrowUpDown className="h-3.5 w-3.5 shrink-0 opacity-35 group-hover:opacity-70" aria-hidden />
+        )}
+      </button>
+    </th>
+  );
+}
+
+function SessionReportContent() {
+  const searchParams = useSearchParams();
+  const sessionId = searchParams.get("session")?.trim() ?? "";
+
+  const teacherSession = useRequireTeacherSession();
+
+  const sessionQuery = useQuery({
+    queryKey: ["host-session", sessionId],
+    queryFn: () => getHostSessionDetails(sessionId),
+    enabled: Boolean(sessionId && teacherSession.data),
+  });
+
+  const playersQuery = useQuery({
+    queryKey: ["host-session-players", sessionId],
+    queryFn: () => listSessionPlayers(sessionId),
+    enabled: Boolean(sessionId && teacherSession.data),
+  });
+
+  const teamsQuery = useQuery({
+    queryKey: ["host-session-teams", sessionId],
+    queryFn: () => listSessionTeams(sessionId),
+    enabled: Boolean(sessionId && teacherSession.data),
+  });
+
+  const row = sessionQuery.data;
+
+  const cases = row?.cases;
+  const answerRoster = useMemo(
+    () => parseSuspectRosterFromCase(cases?.suspect_roster),
+    [cases?.suspect_roster],
+  );
+  const trueName = findSuspectName(answerRoster, cases?.answer_suspect_id);
+  const hasAnswer = Boolean(cases?.answer_suspect_id?.trim() && trueName);
+
+  const [viewingTeamId, setViewingTeamId] = useState<string | null>(null);
+  const [sort, setSort] = useState<{ key: SortKey; dir: "asc" | "desc" } | null>(null);
+
+  const lines = useMemo(
+    () => buildReportLines(playersQuery.data ?? [], teamsQuery.data ?? [], cases?.answer_suspect_id ?? null),
+    [playersQuery.data, teamsQuery.data, cases?.answer_suspect_id],
+  );
+
+  const teamById = useMemo(
+    () => new Map((teamsQuery.data ?? []).map((t) => [t.id, t])),
+    [teamsQuery.data],
+  );
+  const viewingTeam = viewingTeamId ? teamById.get(viewingTeamId) ?? null : null;
+  const viewingTeamDisplayName = viewingTeam?.name?.trim() || viewingTeamId || "팀";
+
+  const displayedLines = useMemo(() => {
+    if (!sort) return lines;
+    return [...lines].sort((a, b) => compareReportLines(a, b, sort.key, hasAnswer, sort.dir));
+  }, [lines, sort, hasAnswer]);
+
+  if (!sessionId) {
+    if (teacherSession.isLoading || (teacherSession.isFetching && !teacherSession.data)) {
+      return (
+        <div className="min-h-screen">
+          <TopNav />
+          <main className="mx-auto flex w-full max-w-7xl items-center gap-2 px-4 py-8 text-sm text-[var(--muted-foreground)]">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            불러오는 중…
+          </main>
+        </div>
+      );
+    }
+    const uid = teacherSession.data?.user.id;
+    if (!uid) return null;
+    return <ReportsSessionsListPanel teacherUserId={uid} />;
+  }
+
+  if (teacherSession.isLoading || (teacherSession.isFetching && !teacherSession.data)) {
+    return (
+      <div className="min-h-screen">
+        <TopNav />
+        <main className="mx-auto flex w-full max-w-7xl items-center gap-2 px-4 py-8 text-sm text-[var(--muted-foreground)]">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          불러오는 중…
+        </main>
+      </div>
+    );
+  }
+
+  if (sessionQuery.isLoading || !row) {
+    return (
+      <div className="min-h-screen">
+        <TopNav />
+        <main className="mx-auto flex w-full max-w-7xl items-center gap-2 px-4 py-8 text-sm text-[var(--muted-foreground)]">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          수사 정보를 불러오는 중…
+        </main>
+      </div>
+    );
+  }
+
+  if (sessionQuery.isError) {
+    return (
+      <div className="min-h-screen">
+        <TopNav />
+        <main className="mx-auto w-full max-w-7xl px-4 py-8">
+          <p className="text-sm text-[var(--error)]">수사 정보를 불러오지 못했습니다.</p>
+        </main>
+      </div>
+    );
+  }
+
+  if (row && teacherSession.data?.user && row.host_id !== teacherSession.data.user.id) {
+    return (
+      <div className="min-h-screen">
+        <TopNav />
+        <main className="mx-auto w-full max-w-7xl px-4 py-8">
+          <p className="text-sm text-[var(--accent)]">이 수사를 볼 권한이 있는 계정이 아닙니다.</p>
+        </main>
+      </div>
+    );
+  }
+
+  const loading = playersQuery.isLoading || teamsQuery.isLoading;
+
+  const handleSort = (key: SortKey) => {
+    setSort((prev) => {
+      if (prev === null || prev.key !== key) return { key, dir: "asc" };
+      return { key, dir: prev.dir === "asc" ? "desc" : "asc" };
+    });
+  };
+
+  const handleDownloadCsv = () => {
+    const csv = buildSessionReportCsv(displayedLines, teamById, answerRoster, hasAnswer);
+    const blob = new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    const safe = (row.join_code ?? "session").replace(/[^\w.-]+/g, "_").slice(0, 64);
+    a.download = `수사기록_${safe}_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <div className="min-h-screen">
+      <TopNav />
+      <main className="mx-auto w-full max-w-7xl space-y-6 px-4 pb-16 pt-8">
+        <div className="space-y-4">
+          <PageHeader
+            title={row.cases?.title ?? "제목 없음"}
+            titleClassName="font-mono text-[var(--accent)]"
+            actions={
+              <div className="flex flex-wrap items-center gap-2">
+                <Link
+                  href={ROUTES.reports}
+                  className={cn(
+                    "inline-flex h-8 shrink-0 items-center justify-center rounded-md border border-[var(--mystery)]/45 px-3 text-xs font-semibold text-[var(--mystery)] transition-colors hover:bg-[var(--tint-mystery)]",
+                  )}
+                >
+                  기록 목록
+                </Link>
+                <Button type="button" variant="secondary" size="sm" className="gap-2" onClick={handleDownloadCsv}>
+                  <Download className="h-4 w-4" aria-hidden />
+                  CSV 다운로드
+                </Button>
+              </div>
+            }
+          />
+        </div>
+
+        {loading ? (
+          <p className="text-sm text-[var(--muted-foreground)]">참가자와 팀 정보를 불러오는 중…</p>
+        ) : lines.length === 0 ? (
+          <p className="text-sm text-[var(--muted-foreground)]">이 수사에 참가한 학생이 없습니다.</p>
+        ) : (
+          <div className="space-y-2">
+            <div className="overflow-x-auto rounded-lg border border-[var(--border)] shadow-[var(--elevation-sm)]">
+            <table className="w-full min-w-[720px] border-collapse text-left text-sm">
+              <thead>
+                <tr className="border-b border-[var(--border)] bg-[var(--tint-accent-weak)]">
+                  <SortableTh label="닉네임" column="nickname" current={sort} onSort={handleSort} />
+                  <SortableTh label="팀" column="teamName" current={sort} onSort={handleSort} />
+                  <SortableTh label="역할" column="roleLabel" current={sort} onSort={handleSort} />
+                  <SortableTh label="순찰 구역" column="patrolZone" current={sort} onSort={handleSort} />
+                  <SortableTh label="보고 제출" column="reportSubmitted" current={sort} onSort={handleSort} />
+                  <SortableTh label="정답" column="isCorrect" current={sort} onSort={handleSort} />
+                  <SortableTh label="제출 내용" column="finalReport" current={sort} onSort={handleSort} />
+                  <SortableTh label="제출 시각" column="submittedAt" current={sort} onSort={handleSort} />
+                </tr>
+              </thead>
+              <tbody>
+                {displayedLines.map((line) => (
+                  <tr
+                    key={line.playerId}
+                    className="border-b border-[var(--border)]/80 last:border-0 odd:bg-[var(--surface)]/50"
+                  >
+                    <td className="px-3 py-2.5 font-medium text-[var(--foreground)]">{line.nickname}</td>
+                    <td className="px-3 py-2.5 font-mono text-[var(--accent)]">{line.teamName}</td>
+                    <td className="px-3 py-2.5 text-[var(--foreground)]">{line.roleLabel}</td>
+                    <td className="px-3 py-2.5 text-[var(--foreground)]">{line.patrolZone}</td>
+                    <td className="px-3 py-2.5">
+                      <span
+                        className={cn(
+                          "inline-flex rounded px-1.5 py-0.5 text-[11px] font-semibold",
+                          line.reportSubmitted
+                            ? "bg-[var(--accent)]/20 text-[var(--accent)]"
+                            : "text-[var(--muted-foreground)]",
+                        )}
+                      >
+                        {line.reportSubmitted ? "제출" : "—"}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2.5">
+                      {!line.reportSubmitted ? (
+                        <span className="text-[var(--muted-foreground)]">—</span>
+                      ) : !hasAnswer ? (
+                        <span className="text-[var(--muted-foreground)]">미등록</span>
+                      ) : line.isCorrect ? (
+                        <span className="font-semibold text-[var(--primary)]">맞음</span>
+                      ) : (
+                        <span className="font-semibold text-[var(--error)]">틀림</span>
+                      )}
+                    </td>
+                    <td className="px-3 py-2.5">
+                      {line.reportSubmitted && line.teamId ? (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="secondary"
+                          className="h-8 text-xs"
+                          onClick={() => setViewingTeamId(line.teamId)}
+                        >
+                          펼치기
+                        </Button>
+                      ) : (
+                        <span className="text-[var(--muted-foreground)]">—</span>
+                      )}
+                    </td>
+                    <td className="whitespace-nowrap px-3 py-2.5 text-xs text-[var(--muted-foreground)]">
+                      {line.submittedAt ?? "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            </div>
+          </div>
+        )}
+        <TeamFinalReportModal
+          isOpen={viewingTeamId !== null}
+          onClose={() => setViewingTeamId(null)}
+          team={viewingTeam}
+          teamDisplayName={viewingTeamDisplayName}
+          suspectRoster={answerRoster}
+        />
+      </main>
+    </div>
+  );
+}
+
+export default function ReportsEntryPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen">
+          <TopNav />
+          <main className="mx-auto w-full max-w-7xl px-4 py-8">
+            <p className="text-sm text-[var(--muted-foreground)]">불러오는 중…</p>
+          </main>
+        </div>
+      }
+    >
+      <SessionReportContent />
+    </Suspense>
+  );
+}

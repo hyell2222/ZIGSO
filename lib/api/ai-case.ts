@@ -4,7 +4,7 @@ import type { SuspectEntry } from "@/lib/suspects";
  * /api/ai/generate-case 호출 클라이언트.
  *
  * 응답: 제목·브리핑 설명·용의자 로스터·난이도·조사 구역·맵 단서(구역 인덱스·좌표).
- * 호출자가 tempId 를 붙여 마법사 초안으로 변환한다.
+ * 호출자가 tempId 를 붙여 작성 화면 초안 형태로 변환한다.
  */
 
 export type PropCatalogEntry = {

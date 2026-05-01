@@ -7,8 +7,8 @@ import { getSessionByJoinCode } from "@/lib/api/play";
 import { ROUTES } from "@/lib/routes";
 import { hasSupabaseEnv } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
+import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
 const MYSTERY_CLUB_TAG = "MYSTERY CLUB";
@@ -24,7 +24,7 @@ const PRELUDE_FADE_MS = 380;
 const POST_BEAT_MS = 140;
 
 const HARDBOILED =
-  "사건 코드와 닉네임을 입력하세요. 보안 규정에 따라 승인된 동아리원만 사건 파일에 접근할 수 있습니다.";
+  "참가 코드와 닉네임을 입력하세요. 보안 규정에 따라 승인된 동아리원만 이 사건 자료에 접근할 수 있습니다.";
 
 async function typeChars(
   text: string,
@@ -163,13 +163,13 @@ export function StudentBlackoutLanding() {
   }, [modalOpen]);
 
   useEffect(() => {
-    if (!modalOpen && !awaitingAccessKey) return;
+    if (!awaitingAccessKey || modalOpen) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") e.preventDefault();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [modalOpen, awaitingAccessKey]);
+  }, [awaitingAccessKey, modalOpen]);
 
   useEffect(() => {
     if (!awaitingAccessKey) return;
@@ -198,7 +198,7 @@ export function StudentBlackoutLanding() {
       await getSessionByJoinCode(code);
       router.push(ROUTES.playJoin(code, nick));
     } catch {
-      setError("사건 코드를 확인할 수 없습니다. 교사에게 문의하세요.");
+      setError("참가 코드를 확인할 수 없습니다. 담당 선생님께 문의하세요.");
     } finally {
       setBusy(false);
     }
@@ -321,101 +321,78 @@ export function StudentBlackoutLanding() {
         </div>
       </div>
 
-      {modalOpen ? (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--overlay-scrim)] p-4 backdrop-blur-[2px]"
-          aria-hidden={false}
-        >
-          <Card
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="landing-auth-title"
-            className={cn(
-              "w-full max-w-md overflow-hidden",
-              "motion-safe:animate-[modalIn_0.45s_cubic-bezier(0.22,1,0.36,1)_both]",
-            )}
-            onMouseDown={(e) => e.stopPropagation()}
-          >
-            <CardHeader className="space-y-1 pb-3">
-              <CardTitle id="landing-auth-title" className="text-lg">
-                사건 파일 접근 인증
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="relative w-full">
-                <p
-                  className="invisible text-balance text-sm leading-relaxed"
-                  aria-hidden
-                >
-                  {HARDBOILED}
-                </p>
-                <p className="absolute inset-0 text-pretty text-left text-sm leading-relaxed text-[var(--foreground)]">
-                  {hardboiled}
-                  {hardboiled.length < HARDBOILED.length ? (
-                    <span className="ml-0.5 inline-block h-[1em] w-px animate-pulse bg-[var(--primary)] align-[-0.05em]" />
-                  ) : null}
-                </p>
-              </div>
-              <form className="space-y-4" onSubmit={(e) => void onSubmit(e)}>
-                <div>
-                  <label
-                    htmlFor="landing-case-code"
-                    className="mb-1.5 block text-xs font-medium text-[var(--accent)]"
-                  >
-                    사건 코드
-                  </label>
-                  <div className="relative">
-                    <Input
-                      id="landing-case-code"
-                      autoComplete="off"
-                      spellCheck={false}
-                      value={caseCode}
-                      onChange={(e) => setCaseCode(e.target.value)}
-                      disabled={busy}
-                      placeholder=""
-                      className="h-11 text-sm tracking-[0.08em]"
-                    />
-                    {!caseCode.trim() ? (
-                      <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm tracking-[0.06em] text-[var(--muted-foreground)]">
-                        사건 코드를 입력하세요
-                      </span>
-                    ) : null}
-                  </div>
-                </div>
-                <div>
-                  <label
-                    htmlFor="landing-nickname"
-                    className="mb-1.5 block text-xs font-medium text-[var(--accent)]"
-                  >
-                    닉네임
-                  </label>
-                  <Input
-                    id="landing-nickname"
-                    autoComplete="off"
-                    spellCheck={false}
-                    value={nickname}
-                    onChange={(e) => setNickname(e.target.value)}
-                    disabled={busy}
-                    placeholder="닉네임을 입력하세요"
-                    className="h-11 text-sm tracking-[0.06em]"
-                  />
-                </div>
-                <Button
-                  type="submit"
-                  disabled={busy || !caseCode.trim() || !nickname.trim()}
-                  className="h-11 w-full text-sm"
-                  size="lg"
-                >
-                  {busy ? "사건 코드 확인 중…" : "사건 파일 열기"}
-                </Button>
-              </form>
-              {error ? (
-                <p className="text-center text-sm font-medium text-[var(--error)]">{error}</p>
-              ) : null}
-            </CardContent>
-          </Card>
+      <Modal
+        open={modalOpen}
+        onClose={() => {
+          setModalOpen(false);
+          setHardboiled("");
+        }}
+        title="수사 참가 인증"
+        titleId="landing-auth-title"
+        variant="play"
+        closeOnBackdrop={false}
+        bodyClassName="space-y-4"
+      >
+        <div className="relative w-full">
+          <p className="invisible text-balance text-sm leading-relaxed" aria-hidden>
+            {HARDBOILED}
+          </p>
+          <p className="absolute inset-0 text-pretty text-left text-sm leading-relaxed text-[color:var(--entry-parchment-muted)]">
+            {hardboiled}
+            {hardboiled.length < HARDBOILED.length ? (
+              <span className="ml-0.5 inline-block h-[1em] w-px animate-pulse bg-[var(--primary)] align-[-0.05em]" />
+            ) : null}
+          </p>
         </div>
-      ) : null}
+        <form className="space-y-4" onSubmit={(e) => void onSubmit(e)}>
+          <div>
+            <label htmlFor="landing-case-code" className="mb-1.5 block text-xs font-medium text-[color:var(--entry-accent-soft)]">
+              참가 코드
+            </label>
+            <div className="relative">
+              <Input
+                id="landing-case-code"
+                autoComplete="off"
+                spellCheck={false}
+                value={caseCode}
+                onChange={(e) => setCaseCode(e.target.value)}
+                disabled={busy}
+                placeholder=""
+                className="h-11 border-[color-mix(in_srgb,var(--primary)_22%,transparent)] bg-[color-mix(in_srgb,var(--mystery)_55%,var(--ink))] text-sm tracking-[0.08em] text-[color:var(--entry-parchment)]"
+              />
+              {!caseCode.trim() ? (
+                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm tracking-[0.06em] text-[color:var(--entry-parchment-muted)]">
+                  참가 코드를 입력하세요
+                </span>
+              ) : null}
+            </div>
+          </div>
+          <div>
+            <label htmlFor="landing-nickname" className="mb-1.5 block text-xs font-medium text-[color:var(--entry-accent-soft)]">
+              닉네임
+            </label>
+            <Input
+              id="landing-nickname"
+              autoComplete="off"
+              spellCheck={false}
+              value={nickname}
+              onChange={(e) => setNickname(e.target.value)}
+              disabled={busy}
+              placeholder="닉네임을 입력하세요"
+              className="h-11 border-[color-mix(in_srgb,var(--primary)_22%,transparent)] bg-[color-mix(in_srgb,var(--mystery)_55%,var(--ink))] text-sm tracking-[0.06em] text-[color:var(--entry-parchment)]"
+            />
+          </div>
+          <Button
+            type="submit"
+            disabled={busy || !caseCode.trim() || !nickname.trim()}
+            className="h-11 w-full text-sm"
+            size="lg"
+          >
+            {busy ? "참가 코드 확인 중…" : "사건으로 입장"}
+          </Button>
+        </form>
+        {error ? <p className="text-center text-sm font-medium text-[var(--error)]">{error}</p> : null}
+      </Modal>
 
       <style>{`
         @keyframes ledPulse {

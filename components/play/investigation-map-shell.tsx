@@ -5,6 +5,7 @@ import { Loader2 } from "lucide-react";
 import type { CSSProperties } from "react";
 
 import type { CaseClueForMap, CaseLocationForMap } from "@/lib/api/play";
+import { jigsawSeatingCopy } from "@/lib/jigsaw-seating-guidance";
 import { investigationPhaseLabel } from "@/lib/play-session-phase";
 
 const ENTRY_MAP_BG: CSSProperties = {
@@ -33,6 +34,8 @@ type Props = {
   clues: CaseClueForMap[];
   discoveredClueIds?: string[];
   onDiscoveredClueIdsChange?: (ids: string[]) => void;
+  /** 같은 담당 구역 전문가 집단 안내 (학생 화면) */
+  patrolZoneName?: string | null;
 };
 
 export function InvestigationMapShell({
@@ -42,8 +45,13 @@ export function InvestigationMapShell({
   clues,
   discoveredClueIds,
   onDiscoveredClueIdsChange,
+  patrolZoneName,
 }: Props) {
   const label = investigationPhaseLabel();
+  const expertSeatLine =
+    patrolZoneName && patrolZoneName.trim().length > 0
+      ? jigsawSeatingCopy.studentInvestigationWithZone(patrolZoneName.trim())
+      : jigsawSeatingCopy.studentInvestigationNoZone;
 
   return (
     <div
@@ -54,6 +62,17 @@ export function InvestigationMapShell({
         className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[color-mix(in_srgb,var(--primary)_14%,transparent)] to-transparent"
         aria-hidden
       />
+      <div
+        className="shrink-0 border-b border-[color-mix(in_srgb,var(--primary)_22%,transparent)] bg-[color-mix(in_srgb,var(--mystery)_88%,var(--ink))] px-4 py-2.5 text-left"
+        role="status"
+      >
+        <p className="text-[11px] font-semibold leading-snug text-[color:var(--entry-accent-soft)]">
+          {jigsawSeatingCopy.expertGroupTerm} · 단서 수집
+        </p>
+        <p className="mt-1 text-[11px] leading-relaxed text-[color:var(--entry-parchment-muted)]">
+          {expertSeatLine}
+        </p>
+      </div>
       {mapLoading ? (
         <div
           className="relative flex flex-1 flex-col items-center justify-center gap-3"

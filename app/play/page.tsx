@@ -7,10 +7,11 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 import { InvestigationMapShell } from "@/components/play/investigation-map-shell";
 import { PlayAtmosphere } from "@/components/play/play-atmosphere";
-import { DetectiveIdCard } from "@/components/play/detective-id-card";
+import { PlayerIdCard } from "@/components/play/player-id-card";
 import { SessionInfoLayout } from "@/components/play/session-info-layout";
 import { StudentBlackoutLanding } from "@/components/play/student-blackout-landing";
 import { Button } from "@/components/ui/button";
+import { Modal } from "@/components/ui/modal";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -37,6 +38,7 @@ import { isCulpritCorrect } from "@/lib/report-compare";
 import { findSuspectName, parseSuspectRosterFromCase } from "@/lib/suspects";
 import { ROUTES } from "@/lib/routes";
 import { hasSupabaseEnv, supabase } from "@/lib/supabase";
+import { jigsawSeatingCopy } from "@/lib/jigsaw-seating-guidance";
 import { cn } from "@/lib/utils";
 
 function PlayPageContent() {
@@ -179,7 +181,7 @@ function PlaySessionShell({
           void channel.track({
             role: "player",
             player_id: playerId,
-            nickname: nickname.trim() || "탐정원",
+            nickname: nickname.trim() || "참가자",
             patrol_location_id: patrolLocationId ?? undefined,
             zone_name: zoneName ?? undefined,
           });
@@ -220,7 +222,7 @@ function PlaySessionShell({
     mutationFn: async (args?: { nickname?: string }) => {
       const normalizedJoinCode = joinCode.trim().toUpperCase();
       const nick = (args?.nickname ?? nickname).trim();
-      if (!normalizedJoinCode) throw new Error("사건 코드를 입력해 주세요.");
+      if (!normalizedJoinCode) throw new Error("참가 코드를 입력해 주세요.");
       if (!nick) throw new Error("닉네임을 입력해 주세요.");
       const session = await getSessionByJoinCode(normalizedJoinCode);
       setSessionId(session.id);
@@ -350,6 +352,7 @@ function PlaySessionShell({
         clues={mapQuery.data?.clues ?? []}
         discoveredClueIds={discoveredClueIds}
         onDiscoveredClueIdsChange={setDiscoveredClueIds}
+        patrolZoneName={zoneName}
       />
     );
   }
@@ -366,7 +369,7 @@ function PlaySessionShell({
                   <ClipboardList className="h-5 w-5" aria-hidden />
                 </span>
                 <div>
-                  <CardTitle className="text-lg text-[color:var(--entry-parchment)]">3단계 · 최종 보고서</CardTitle>
+                  <CardTitle className="text-lg text-[color:var(--entry-parchment)]">3단계 · 최종 보고</CardTitle>
                   <p className="text-xs font-normal text-[color:var(--entry-parchment-muted)]">
                     팀 단위로 1회 제출합니다. 범인은 등록된 용의자 중에서만 선택할 수 있습니다.
                   </p>
@@ -380,7 +383,7 @@ function PlaySessionShell({
                     <p className="text-xs font-semibold uppercase tracking-wider text-[color:var(--entry-accent-soft)]">
                       제출 완료
                     </p>
-                    <p className="mt-1 font-medium text-[color:var(--entry-parchment)]">팀 보고서가 접수되었습니다.</p>
+                    <p className="mt-1 font-medium text-[color:var(--entry-parchment)]">팀 최종 보고가 접수되었습니다.</p>
                     {teamQuery.data?.report_submitted_at ? (
                       <p className="mt-1 text-xs text-[color:var(--entry-parchment-muted)]">
                         {new Date(teamQuery.data.report_submitted_at).toLocaleString()}
@@ -419,7 +422,7 @@ function PlaySessionShell({
                     </p>
                   )}
                   <p className="text-sm text-[color:var(--entry-parchment-muted)]">
-                    교사가 세션을 마칠 때까지 잠시 기다려 주세요.
+                    선생님이 수사를 마칠 때까지 잠시 기다려 주세요.
                   </p>
                 </div>
               ) : (
@@ -430,7 +433,7 @@ function PlaySessionShell({
                   </p>
                   {caseRoster.length === 0 ? (
                     <p className="rounded-md border border-[color-mix(in_srgb,var(--highlight)_45%,#5c2e16)] bg-[color-mix(in_srgb,var(--highlight)_10%,#1a1410)] px-3 py-2 text-sm text-[color:var(--entry-parchment)]">
-                      이 사건에 용의자 목록이 없습니다. 교사에게 문의하세요.
+                      이 사건에 용의자 목록이 없습니다. 담당 선생님께 문의하세요.
                     </p>
                   ) : (
                     <div className="space-y-2">
@@ -501,7 +504,7 @@ function PlaySessionShell({
                     {reportMutation.isPending ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : null}
-                    보고서 제출
+                    최종 보고 제출
                   </Button>
                 </form>
               )}
@@ -524,10 +527,18 @@ function PlaySessionShell({
                 </p>
                 <h1 className="mt-1 text-xl font-bold text-[color:var(--entry-parchment)]">사건 파일 &amp; 부원증</h1>
                 <p className="mt-1 max-w-xl text-sm text-[color:var(--entry-parchment-muted)]">
-                  아래 정보를 확인한 뒤 교사 안내에 따라 다음 단계로 진행합니다.
+                  아래 정보를 확인한 뒤 선생님 안내에 따라 다음 단계로 진행합니다.
                 </p>
               </div>
               <TeamBadge teamName={teamName} className="shrink-0 self-start sm:self-center" />
+            </div>
+            <div className="mt-4 rounded-lg border border-[color-mix(in_srgb,var(--primary)_35%,transparent)] bg-[color-mix(in_srgb,var(--primary)_10%,#151512)] px-4 py-3 text-left text-sm leading-relaxed text-[color:var(--entry-parchment)]">
+              <p className="font-semibold text-[color:var(--entry-accent-soft)]">
+                {jigsawSeatingCopy.studentBriefingLead}
+              </p>
+              <p className="mt-1.5 text-xs text-[color:var(--entry-parchment-muted)]">
+                {jigsawSeatingCopy.studentBriefingSub}
+              </p>
             </div>
           </header>
 
@@ -541,8 +552,8 @@ function PlaySessionShell({
                   <Loader2 className="h-8 w-8 animate-spin" aria-label="불러오는 중" />
                 </div>
               ) : playerQuery.data?.club_role && patrolLocationId ? (
-                <DetectiveIdCard
-                  nickname={nickname.trim() || "탐정원"}
+                <PlayerIdCard
+                  nickname={nickname.trim() || "참가자"}
                   teamName={teamName}
                   zoneName={zoneName ?? ""}
                   roleKey={playerQuery.data.club_role}
@@ -646,7 +657,7 @@ function PlaySessionShell({
                   <a className="underline hover:text-[color:var(--entry-parchment)]" href={ROUTES.play}>
                     입장 화면
                   </a>
-                  에서 사건 코드를 입력해 주세요.
+                  에서 참가 코드를 입력해 주세요.
                 </p>
               ) : null}
               {message ? <p className="mt-3 text-xs text-[color:var(--entry-parchment-muted)]">{message}</p> : null}
@@ -672,16 +683,16 @@ const WAITING_LOBBY: Record<
   { title: string; body: string }
 > = {
   session_loading: {
-    title: "세션을 불러오는 중",
+    title: "수사 정보를 불러오는 중",
     body: "잠시만 기다려 주세요.",
   },
   host_not_started: {
-    title: "교사가 수사를 시작할 때까지 대기",
-    body: "팀·역할·조사 구역은 시작 후 자동으로 배정됩니다.",
+    title: "선생님이 수사를 시작할 때까지 대기",
+    body: "팀·역할·조사 구역은 시작 후 자동 배정됩니다. 배정 후 브리핑에서는 같은 팀 동료와 한 자리에 모입니다 (홈 집단).",
   },
   assigning: {
     title: "팀·역할 배정 중",
-    body: "곧 탐정 동아리 직책과 순찰 구역이 정해집니다.",
+    body: "곧 동아리 직책과 순찰 구역이 정해지면, 브리핑에서는 같은 소속 팀끼리 모여 앉습니다 (홈 집단).",
   },
 };
 
@@ -752,24 +763,31 @@ function ResumeModal({
   onNew: () => void;
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--overlay-scrim)] p-4 backdrop-blur-[2px]">
-      <div className="w-full max-w-md rounded-xl border border-[color-mix(in_srgb,var(--primary)_26%,transparent)] bg-[color-mix(in_srgb,var(--mystery)_78%,var(--ink))] p-6 text-[color:var(--entry-parchment)] shadow-xl ring-1 ring-[color-mix(in_srgb,var(--primary)_18%,transparent)] motion-safe:animate-[playModalRise_0.45s_cubic-bezier(0.22,1,0.36,1)_both]">
-        <h3 className="text-lg font-semibold text-[color:var(--entry-parchment)]">이전 입장 기록</h3>
-        <p className="mt-2 text-sm text-[color:var(--entry-parchment-muted)]">
-          이 사건 코드로{" "}
-          <span className="font-medium text-[color:var(--entry-accent-soft)]">{record.nickname}</span> 닉네임으로
-          입장한 기록이 있어요. 이어갈까요?
-        </p>
-        <div className="mt-5 flex flex-col gap-2">
-          <Button onClick={onContinue} className="w-full">
-            계속하기
-          </Button>
-          <Button onClick={onNew} variant="outline" className="w-full">
-            새 닉네임으로 입장
-          </Button>
-        </div>
+    <Modal
+      open
+      onClose={() => {}}
+      title="이전 입장 기록"
+      titleId="play-resume-modal-title"
+      variant="play"
+      hideCloseButton
+      closeOnBackdrop={false}
+      closeOnEscape={false}
+      bodyClassName="space-y-5"
+    >
+      <p className="text-sm text-[color:var(--entry-parchment-muted)]">
+        이 참가 코드로{" "}
+        <span className="font-medium text-[color:var(--entry-accent-soft)]">{record.nickname}</span> 닉네임으로 입장한 기록이 있어요.
+        이어갈까요?
+      </p>
+      <div className="flex flex-col gap-2">
+        <Button onClick={onContinue} className="w-full">
+          계속하기
+        </Button>
+        <Button onClick={onNew} variant="outline" className="w-full">
+          새 닉네임으로 입장
+        </Button>
       </div>
-    </div>
+    </Modal>
   );
 }
 

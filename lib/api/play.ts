@@ -355,7 +355,7 @@ export async function assignTeamsAndPatrol(sessionId: string) {
     .single();
   if (sessionError) throw sessionError;
   if (!session?.case_id) {
-    throw new Error("이 세션이 사건과 연결되어 있지 않습니다.");
+    throw new Error("이 수사 세션이 사건 원본과 연결되어 있지 않습니다.");
   }
   const caseId = session.case_id;
 
