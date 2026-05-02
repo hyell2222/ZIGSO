@@ -16,7 +16,7 @@ type Props = {
   suspectRoster: SuspectEntry[];
 };
 
-/** 학생 `/play` 최종 보고 제출 폼과 같은 뼈대·다크 톤, 읽기 전용. */
+/** 팀 최종 보고 내용 — 읽기 전용. */
 export function TeamFinalReportModal({ isOpen, onClose, team, teamDisplayName, suspectRoster }: Props) {
   const submitted = Boolean(team?.report_submitted_at);
   const suspectName =
@@ -30,7 +30,6 @@ export function TeamFinalReportModal({ isOpen, onClose, team, teamDisplayName, s
       onClose={onClose}
       title={`${teamDisplayName} — 최종 보고`}
       titleId="team-report-modal-title"
-      variant="play"
       sheetOnNarrow
       maxWidthClassName="max-w-2xl"
       zIndexClassName="z-[200]"
@@ -38,9 +37,9 @@ export function TeamFinalReportModal({ isOpen, onClose, team, teamDisplayName, s
       panelClassName="shadow-[0_24px_60px_color-mix(in_srgb,var(--ink)_50%,transparent)]"
     >
       {!team ? (
-        <p className="text-sm text-[color:var(--entry-parchment-muted)]">팀 정보를 찾을 수 없습니다.</p>
+        <p className="text-sm text-[var(--muted-foreground)]">팀 정보를 찾을 수 없습니다.</p>
       ) : !submitted ? (
-        <p className="text-sm text-[color:var(--entry-parchment-muted)]">
+        <p className="text-sm text-[var(--muted-foreground)]">
           이 팀은 아직 최종 보고를 제출하지 않았습니다.
         </p>
       ) : (

@@ -6,26 +6,12 @@ import { useEffect, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-const VARIANT = {
-  teacher: {
-    panel:
-      "border-[var(--border)] bg-[var(--card-bg)] text-[var(--foreground)] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.35)]",
-    divider: "border-[var(--border)]",
-    title: "text-base font-semibold text-[var(--foreground)]",
-    closeMuted: "text-[var(--muted-foreground)] hover:bg-[var(--tint-accent)] hover:text-[var(--foreground)]",
-  },
-  play: {
-    panel:
-      "border-[color-mix(in_srgb,var(--primary)_26%,transparent)] bg-[color-mix(in_srgb,var(--mystery)_78%,var(--ink))] text-[color:var(--entry-parchment)] shadow-[0_24px_60px_color-mix(in_srgb,var(--ink)_48%,transparent)] ring-1 ring-[color-mix(in_srgb,var(--primary)_18%,transparent)]",
-    divider:
-      "border-[color-mix(in_srgb,var(--primary)_18%,transparent)] bg-[color-mix(in_srgb,var(--mystery)_55%,#151210)]",
-    title: "text-base font-semibold text-[color:var(--entry-parchment)]",
-    closeMuted:
-      "text-[color:var(--entry-parchment-muted)] hover:bg-[color-mix(in_srgb,var(--entry-parchment)_8%,transparent)] hover:text-[color:var(--entry-parchment)]",
-  },
-} as const;
-
-export type ModalVariant = keyof typeof VARIANT;
+const panel =
+  "border-[var(--border)] bg-[var(--card-bg)] text-[var(--foreground)] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.35)]";
+const divider = "border-[var(--border)]";
+const title = "text-base font-semibold text-[var(--foreground)]";
+const closeMuted =
+  "text-[var(--muted-foreground)] hover:bg-[var(--tint-accent)] hover:text-[var(--foreground)]";
 
 export type ModalProps = {
   open: boolean;
@@ -34,7 +20,6 @@ export type ModalProps = {
   titleId: string;
   children: ReactNode;
   footer?: ReactNode;
-  variant?: ModalVariant;
   /** 모바일에서는 하단 정렬 후 `sm:`에서 중앙 (예: 역할 상세 패널) */
   sheetOnNarrow?: boolean;
   /** 기본 max-w-md */
@@ -51,7 +36,7 @@ export type ModalProps = {
 };
 
 /**
- * 교사 도구 화면·플레이 화면 공통 모달 레이아웃 — 스크림, 헤더(제목+닫기), 본문, 선택 푸터.
+ * 공통 모달 — 스크림, 헤더(제목+닫기), 본문, 선택 푸터.
  */
 export function Modal({
   open,
@@ -60,7 +45,6 @@ export function Modal({
   titleId,
   children,
   footer,
-  variant = "teacher",
   sheetOnNarrow = false,
   maxWidthClassName = "max-w-md",
   zIndexClassName = "z-50",
@@ -84,8 +68,6 @@ export function Modal({
 
   if (!open) return null;
 
-  const v = VARIANT[variant];
-
   return (
     <div
       className={cn(
@@ -103,17 +85,17 @@ export function Modal({
         className={cn(
           "flex max-h-[min(92dvh,880px)] w-full flex-col overflow-hidden rounded-xl border motion-safe:animate-[playModalRise_0.4s_cubic-bezier(0.22,1,0.36,1)_both]",
           maxWidthClassName,
-          v.panel,
+          panel,
           panelClassName,
         )}
         role="dialog"
         aria-modal="true"
         onClick={(e) => e.stopPropagation()}
       >
-        <header className={cn("flex shrink-0 items-center justify-between gap-3 border-b px-4 py-3 pl-5", v.divider)}>
+        <header className={cn("flex shrink-0 items-center justify-between gap-3 border-b px-4 py-3 pl-5", divider)}>
           <div className="flex min-w-0 items-center gap-2">
             {titlePrefix ?? null}
-            <h2 id={titleId} className={cn("truncate tracking-tight", v.title)}>
+            <h2 id={titleId} className={cn("truncate tracking-tight", title)}>
               {title}
             </h2>
           </div>
@@ -122,7 +104,7 @@ export function Modal({
               type="button"
               variant="ghost"
               size="icon"
-              className={cn("h-9 w-9 shrink-0", v.closeMuted)}
+              className={cn("h-9 w-9 shrink-0", closeMuted)}
               onClick={onClose}
             >
               <X className="h-4 w-4" aria-hidden />
@@ -136,7 +118,7 @@ export function Modal({
           <footer
             className={cn(
               "flex shrink-0 flex-wrap items-center justify-end gap-2 border-t px-5 py-3",
-              v.divider,
+              divider,
               footerClassName,
             )}
           >

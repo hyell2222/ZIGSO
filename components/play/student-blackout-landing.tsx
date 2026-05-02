@@ -329,7 +329,6 @@ export function StudentBlackoutLanding() {
         }}
         title="학생 참가 인증"
         titleId="landing-auth-title"
-        variant="play"
         closeOnBackdrop={false}
         bodyClassName="space-y-4"
       >
@@ -337,7 +336,7 @@ export function StudentBlackoutLanding() {
           <p className="invisible text-balance text-sm leading-relaxed" aria-hidden>
             {HARDBOILED}
           </p>
-          <p className="absolute inset-0 text-pretty text-left text-sm leading-relaxed text-[color:var(--entry-parchment-muted)]">
+          <p className="absolute inset-0 text-pretty text-left text-sm leading-relaxed text-[var(--muted-foreground)]">
             {hardboiled}
             {hardboiled.length < HARDBOILED.length ? (
               <span className="ml-0.5 inline-block h-[1em] w-px animate-pulse bg-[var(--primary)] align-[-0.05em]" />
@@ -346,7 +345,7 @@ export function StudentBlackoutLanding() {
         </div>
         <form className="space-y-4" onSubmit={(e) => void onSubmit(e)}>
           <div>
-            <label htmlFor="landing-case-code" className="mb-1.5 block text-xs font-medium text-[color:var(--entry-accent-soft)]">
+            <label htmlFor="landing-case-code" className="mb-1.5 block text-xs font-medium text-[var(--primary)]">
               참가 코드
             </label>
             <div className="relative">
@@ -358,17 +357,17 @@ export function StudentBlackoutLanding() {
                 onChange={(e) => setCaseCode(e.target.value)}
                 disabled={busy}
                 placeholder=""
-                className="h-11 border-[color-mix(in_srgb,var(--primary)_22%,transparent)] bg-[color-mix(in_srgb,var(--mystery)_55%,var(--ink))] text-sm tracking-[0.08em] text-[color:var(--entry-parchment)]"
+                className="h-11 text-sm tracking-[0.08em]"
               />
               {!caseCode.trim() ? (
-                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm tracking-[0.06em] text-[color:var(--entry-parchment-muted)]">
+                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm tracking-[0.06em] text-[var(--muted-foreground)]">
                   참가 코드를 입력하세요
                 </span>
               ) : null}
             </div>
           </div>
           <div>
-            <label htmlFor="landing-nickname" className="mb-1.5 block text-xs font-medium text-[color:var(--entry-accent-soft)]">
+            <label htmlFor="landing-nickname" className="mb-1.5 block text-xs font-medium text-[var(--primary)]">
               닉네임
             </label>
             <Input
@@ -379,7 +378,7 @@ export function StudentBlackoutLanding() {
               onChange={(e) => setNickname(e.target.value)}
               disabled={busy}
               placeholder="닉네임을 입력하세요"
-              className="h-11 border-[color-mix(in_srgb,var(--primary)_22%,transparent)] bg-[color-mix(in_srgb,var(--mystery)_55%,var(--ink))] text-sm tracking-[0.06em] text-[color:var(--entry-parchment)]"
+              className="h-11 text-sm tracking-[0.06em]"
             />
           </div>
           <Button
@@ -404,16 +403,6 @@ export function StudentBlackoutLanding() {
           50% {
             opacity: 0.88;
             transform: scale(1.25);
-          }
-        }
-        @keyframes modalIn {
-          from {
-            opacity: 0;
-            transform: translateY(20px) scale(0.98);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0) scale(1);
           }
         }
         @keyframes revealPost {

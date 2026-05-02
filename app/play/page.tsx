@@ -770,15 +770,14 @@ function ResumeModal({
       onClose={() => {}}
       title="이전 입장 기록"
       titleId="play-resume-modal-title"
-      variant="play"
       hideCloseButton
       closeOnBackdrop={false}
       closeOnEscape={false}
       bodyClassName="space-y-5"
     >
-      <p className="text-sm text-[color:var(--entry-parchment-muted)]">
+      <p className="text-sm text-[var(--muted-foreground)]">
         이 참가 코드로{" "}
-        <span className="font-medium text-[color:var(--entry-accent-soft)]">{record.nickname}</span> 닉네임으로 입장한 기록이 있어요.
+        <span className="font-medium text-[var(--primary)]">{record.nickname}</span> 닉네임으로 입장한 기록이 있어요.
         이어갈까요?
       </p>
       <div className="flex flex-col gap-2">
