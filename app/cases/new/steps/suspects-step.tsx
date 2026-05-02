@@ -106,7 +106,7 @@ export function SuspectsStep({
           ))}
         </ul>
         <div className="flex justify-end">
-          <Button variant="secondary" onClick={addSuspect} className="gap-1">
+          <Button variant="secondary" size="sm" onClick={addSuspect} className="gap-1">
             <Plus className="h-3.5 w-3.5 shrink-0" aria-hidden />
             용의자 추가
           </Button>

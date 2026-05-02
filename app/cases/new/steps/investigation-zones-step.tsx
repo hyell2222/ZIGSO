@@ -71,9 +71,9 @@ export function InvestigationZonesStep({ zones, onAdd, onUpdate, onRemove }: Pro
                   />
                 </div>
                 <div className="space-y-1">
-                  <p className="text-[11px] font-semibold text-[var(--muted-foreground)]">
+                  <label className="text-xs font-medium text-[var(--accent)]">
                     장소명<span className="ml-0.5 text-[var(--danger)]">*</span>
-                  </p>
+                  </label>
                   <Input
                     value={z.zoneName}
                     onChange={(event) => onUpdate(z.tempId, { zoneName: event.target.value })}
@@ -93,7 +93,7 @@ export function InvestigationZonesStep({ zones, onAdd, onUpdate, onRemove }: Pro
           })}
         </ul>
         <div className="flex justify-end">
-          <Button variant="secondary" onClick={() => onAdd({ zoneName: "" })} className="gap-1">
+          <Button variant="secondary" size="sm" onClick={() => onAdd({ zoneName: "" })} className="gap-1">
             <Plus className="h-3.5 w-3.5 shrink-0" aria-hidden />
             조사 장소 추가
           </Button>

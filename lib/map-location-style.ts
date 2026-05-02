@@ -29,6 +29,32 @@ export function snapDimensionToOddTileCount(
   return oddTiles * stepPx;
 }
 
+/**
+ * 월드 좌표를 가장 가까운 격자 **칸 중심**으로 스냅.
+ * 한 칸은 `[k·step, (k+1)·step]` 구간이고 중심은 `k·step + step/2`.
+ */
+export function snapWorldPointToNearestTileCenter(
+  x: number,
+  y: number,
+  stepPx: number = MAP_GRID_STEP_PX,
+): { x: number; y: number } {
+  if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(stepPx) || stepPx <= 0) {
+    return { x, y };
+  }
+  const half = stepPx * 0.5;
+  const ix = Math.round((x - half) / stepPx);
+  const iy = Math.round((y - half) / stepPx);
+  return { x: ix * stepPx + half, y: iy * stepPx + half };
+}
+
+/** 가로·세로 픽셀 길이를 격자에 맞춤(최소 한 칸). 에디터·저장 시 공통 사용 */
+export function snapSizePxToGrid(sizePx: number, stepPx: number = MAP_GRID_STEP_PX): number {
+  if (!Number.isFinite(sizePx) || sizePx <= 0 || !Number.isFinite(stepPx) || stepPx <= 0) {
+    return stepPx;
+  }
+  return Math.max(stepPx, Math.round(sizePx / stepPx) * stepPx);
+}
+
 /** 장소 사각형: 칠판초록(--primary) 얕은 면 + 아코디언(--accent) 테두리 느낌 */
 export const MAP_LOCATION_FILL = { color: 0x1b4a3a as const, alpha: 0.4 as const };
 export const MAP_LOCATION_STROKE = {

@@ -12,7 +12,10 @@ import { parseSuspectRosterFromCase } from "@/lib/suspects";
 import { makeTempId } from "@/lib/temp-id";
 
 import type { Difficulty } from "../new/steps/basic-info-step";
-import { mapPropFootprintEditorPx } from "@/lib/map-prop-pixel-size";
+import {
+  clampPropFootprintToMapEditorCanvas,
+  mapPropDisplayEditorPx,
+} from "@/lib/map-prop-pixel-size";
 
 import {
   MAP_EDITOR_WORLD,
@@ -75,7 +78,13 @@ function CaseEditContent() {
         const tid = tempIdByLocationId.get(locId) ?? "";
         if (!tid) return null;
         const props = cl.props ?? null;
-        const footprint = mapPropFootprintEditorPx(props);
+        const raw = mapPropDisplayEditorPx(props);
+        const footprint = clampPropFootprintToMapEditorCanvas(
+          raw.w,
+          raw.h,
+          MAP_EDITOR_WORLD.w,
+          MAP_EDITOR_WORLD.h,
+        );
         return {
           tempId: makeTempId(),
           assignmentTempId: tid,

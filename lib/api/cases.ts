@@ -24,12 +24,12 @@ export type CaseClueProps = {
   x: number;
   y: number;
   asset?: string;
-  /** 격자 칸 수(저장 권장) — `w`/`h` 픽셀 없이 크기 표현 */
-  tile_w?: number;
-  tile_h?: number;
-  /** 레거시 픽셀 크기 */
+  /** 맵 에디터 기준 표시 크기(px), 격자 스냅 */
   w?: number;
   h?: number;
+  /** 레거시: 칸 수만 저장된 경우 */
+  tile_w?: number;
+  tile_h?: number;
 };
 
 export type CaseClueInput = {

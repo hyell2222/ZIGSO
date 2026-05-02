@@ -1,16 +1,26 @@
 "use client";
 
 import { Trash2 } from "lucide-react";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import { StepHeading } from "./step-blocks";
 import { Button } from "@/components/ui/button";
 import { LoadingState } from "@/components/ui/loading-state";
+import { Modal } from "@/components/ui/modal";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { PropAsset } from "@/lib/api/storage-props";
-import { mapEditorLocationCanvasStyle, MAP_GRID_STEP_PX } from "@/lib/map-location-style";
+import {
+  mapEditorLocationCanvasStyle,
+  MAP_GRID_STEP_PX,
+  snapSizePxToGrid,
+} from "@/lib/map-location-style";
+import { loadImageNaturalSize } from "@/lib/natural-image-size";
+import {
+  clampPropFootprintToEditorWorld,
+  clampPropFootprintToMapEditorCanvas,
+} from "@/lib/map-prop-pixel-size";
 import { cn } from "@/lib/utils";
 
 import {
@@ -47,15 +57,6 @@ type LocationTabItem = {
   clueCount: number;
 };
 
-function sizeFromAssetMetadata(asset: PropAsset): { w: number; h: number } | null {
-  if (!asset.tileW || !asset.tileH) return null;
-  if (asset.tileW <= 0 || asset.tileH <= 0) return null;
-  return {
-    w: asset.tileW * MAP_GRID_STEP_PX,
-    h: asset.tileH * MAP_GRID_STEP_PX,
-  };
-}
-
 export function MapEditorStep({
   investigationZones,
   clues,
@@ -69,7 +70,33 @@ export function MapEditorStep({
     initialAssignmentLocationTabId(investigationZones, clues),
   );
   const [selectedClueId, setSelectedClueId] = useState<string | null>(null);
+  /** 맵에 막 올린 단서 — 이름·내용 입력 모달 */
+  const [draftClueModalId, setDraftClueModalId] = useState<string | null>(null);
+  const [clueModalNameError, setClueModalNameError] = useState(false);
   const [draggingAsset, setDraggingAsset] = useState<string | null>(null);
+  /** 소품 PNG 등 자연 크기 — 드롭 시 기본 w/h(격자 스냅) */
+  const [naturalByAsset, setNaturalByAsset] = useState(() => new Map<string, { w: number; h: number }>());
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const pairs = await Promise.all(
+        propAssets.map(async (a) => {
+          const { w, h } = await loadImageNaturalSize(a.url);
+          return { asset: a.asset, size: w > 0 && h > 0 ? { w, h } : null };
+        }),
+      );
+      if (cancelled) return;
+      const m = new Map<string, { w: number; h: number }>();
+      for (const { asset, size } of pairs) {
+        if (size) m.set(asset, size);
+      }
+      setNaturalByAsset(m);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [propAssets]);
 
   const locationTabs = useMemo<LocationTabItem[]>(() => {
     const countByLocation = new Map<string, number>();
@@ -127,19 +154,49 @@ export function MapEditorStep({
     [clues, effectiveTabId],
   );
 
+  /** 고해상도 텍스처를 그대로 w/h에 넣었을 때 맵 밖으로 퍼지는 기존 데이터 보정 */
+  useLayoutEffect(() => {
+    for (const c of cluesInLocation) {
+      const cl = clampPropFootprintToMapEditorCanvas(
+        c.w,
+        c.h,
+        MAP_EDITOR_WORLD.w,
+        MAP_EDITOR_WORLD.h,
+        MAP_GRID_STEP_PX,
+      );
+      if (cl.w !== c.w || cl.h !== c.h) {
+        onUpdateClue(c.tempId, { w: cl.w, h: cl.h });
+      }
+    }
+  }, [cluesInLocation, onUpdateClue]);
+
   const selectedClue = useMemo(
     () => clues.find((c) => c.tempId === validSelectedClueId) ?? null,
     [clues, validSelectedClueId],
   );
 
-  const metadataSizeByAsset = useMemo(() => {
-    const map = new Map<string, { w: number; h: number }>();
-    for (const asset of propAssets) {
-      const size = sizeFromAssetMetadata(asset);
-      if (size) map.set(asset.asset, size);
+  const draftClueForModal = useMemo(
+    () => (draftClueModalId ? clues.find((c) => c.tempId === draftClueModalId) ?? null : null),
+    [clues, draftClueModalId],
+  );
+
+  useEffect(() => {
+    if (draftClueModalId) setClueModalNameError(false);
+  }, [draftClueModalId]);
+
+  const closeDraftClueModal = useCallback(() => {
+    setDraftClueModalId(null);
+    setClueModalNameError(false);
+  }, []);
+
+  const confirmDraftClueModal = useCallback(() => {
+    const c = draftClueForModal;
+    if (!c?.name.trim()) {
+      setClueModalNameError(true);
+      return;
     }
-    return map;
-  }, [propAssets]);
+    closeDraftClueModal();
+  }, [closeDraftClueModal, draftClueForModal]);
 
   return (
     <Card>
@@ -147,7 +204,7 @@ export function MapEditorStep({
         <StepHeading
           step={4}
           title="맵 에디터"
-          subtitle="소품을 맵에 올리고, 배치한 단서의 이름·내용을 편집합니다."
+          subtitle="소품을 맵에 놓으면 단서 입력 창이 열립니다. 이후에는 오른쪽 패널에서도 수정할 수 있어요."
         />
       </CardHeader>
       <CardContent className="space-y-4">
@@ -174,37 +231,26 @@ export function MapEditorStep({
             clues={cluesInLocation}
             selectedClueId={validSelectedClueId}
             onSelectClue={setSelectedClueId}
-            onDropAsset={(asset, x, y) => {
+            onDropAsset={(asset, x, y, w, h) => {
               if (!effectiveTabId) return;
-              const metadataSize = metadataSizeByAsset.get(asset) ?? null;
-              const preferred = metadataSize ?? PROP_DEFAULT_DROP_SIZE;
-              const fallbackW = preferred.w;
-              const fallbackH = preferred.h;
-              const fallbackRect = snapClueRectToGrid(
-                x,
-                y,
-                fallbackW,
-                fallbackH,
-                MAP_EDITOR_WORLD.w,
-                MAP_EDITOR_WORLD.h,
-                MAP_GRID_STEP_PX,
-              );
               const newId = onAddClue({
                 assignmentTempId: effectiveTabId,
                 asset,
-                x: fallbackRect.x,
-                y: fallbackRect.y,
-                w: fallbackRect.w,
-                h: fallbackRect.h,
+                x,
+                y,
+                w,
+                h,
                 name: "",
                 content: "",
               });
               setSelectedClueId(newId);
+              setDraftClueModalId(newId);
             }}
-            onMoveClue={(id, x, y) => onUpdateClue(id, { x, y })}
+            onUpdateClue={onUpdateClue}
+            onRemoveClue={onRemoveClue}
             propAssets={propAssets}
             draggingAsset={draggingAsset}
-            metadataSizeByAsset={metadataSizeByAsset}
+            naturalByAsset={naturalByAsset}
           />
 
           <ClueEditorPanel
@@ -219,6 +265,51 @@ export function MapEditorStep({
             }}
           />
         </div>
+
+        <Modal
+          open={draftClueForModal != null}
+          onClose={closeDraftClueModal}
+          title="단서 입력"
+          titleId="map-editor-draft-clue-modal-title"
+          sheetOnNarrow
+          maxWidthClassName="max-w-md"
+          zIndexClassName="z-[200]"
+          footer={
+            <div className="flex w-full flex-wrap items-center justify-end gap-2">
+              <Button type="button" variant="ghost" size="sm" onClick={closeDraftClueModal}>
+                나중에
+              </Button>
+              <Button type="button" size="sm" onClick={confirmDraftClueModal}>
+                확인
+              </Button>
+            </div>
+          }
+        >
+          {draftClueForModal ? (
+            <div className="space-y-4">
+              <p className="text-sm text-[var(--muted-foreground,#94a3b8)]">
+                학생에게 보일 <strong className="text-[var(--foreground)]">이름</strong>과
+                조사 시 보일 <strong className="text-[var(--foreground)]">설명</strong>을 적어주세요. <br />
+                오른쪽 패널에서도 언제든 수정할 수 있어요.
+              </p>
+              {(() => {
+                const thumb = propAssets.find((a) => a.asset === draftClueForModal.asset)?.url;
+                return thumb ? (
+                  <div className="w-fit mx-auto flex items-center rounded-md border border-[var(--border)] bg-[var(--muted)]/20 p-2">
+                    <img src={thumb} alt="" className="h-14 w-14 shrink-0 object-contain [image-rendering:pixelated]" />
+                  </div>
+                ) : null;
+              })()}
+              <ClueNameContentFields
+                clue={draftClueForModal}
+                onChange={(patch) => onUpdateClue(draftClueForModal.tempId, patch)}
+                nameInputAutoFocus
+                emphasizeEmptyName={false}
+                submitAttempted={clueModalNameError}
+              />
+            </div>
+          ) : null}
+        </Modal>
       </CardContent>
     </Card>
   );
@@ -354,53 +445,144 @@ type DragState = {
   activated: boolean;
 };
 
-type PlacementPreview = { x: number; y: number; w: number; h: number };
+/** w/h 는 배치 박스(월드). asset 있으면 프리뷰 점선을 object-contain 표시 크기에 맞춤 */
+type PlacementPreview = { x: number; y: number; w: number; h: number; asset?: string };
 
 const DRAG_THRESHOLD = 4; // px
 
-function snapClueRectToGrid(
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-  worldW: number,
-  worldH: number,
-  cell: number,
-) {
+/** 격자 스냅만 하고 월드 박스 밖 배치를 허용한다(에디터에서 잘림 허용). */
+function snapClueRectToGrid(x: number, y: number, w: number, h: number, cell: number) {
   const snappedW = Math.max(cell, Math.round(w / cell) * cell);
   const snappedH = Math.max(cell, Math.round(h / cell) * cell);
-  const safeW = Math.min(worldW, snappedW);
-  const safeH = Math.min(worldH, snappedH);
-  const left = Math.round((x - safeW / 2) / cell) * cell;
-  const top = Math.round((y - safeH / 2) / cell) * cell;
-  const clampedLeft = Math.min(worldW - safeW, Math.max(0, left));
-  const clampedTop = Math.min(worldH - safeH, Math.max(0, top));
+  const left = Math.round((x - snappedW / 2) / cell) * cell;
+  const top = Math.round((y - snappedH / 2) / cell) * cell;
   return {
-    x: clampedLeft + safeW / 2,
-    y: clampedTop + safeH / 2,
-    w: safeW,
-    h: safeH,
+    x: left + snappedW / 2,
+    y: top + snappedH / 2,
+    w: snappedW,
+    h: snappedH,
   };
 }
+
+/** 배치 박스 안 `object-contain` 과 동일한 표시 크기(월드 px 비율) */
+function imageContainDisplaySize(
+  boxW: number,
+  boxH: number,
+  natW: number | undefined,
+  natH: number | undefined,
+): { dispW: number; dispH: number } {
+  if (
+    natW == null ||
+    natH == null ||
+    !Number.isFinite(natW) ||
+    !Number.isFinite(natH) ||
+    natW <= 0 ||
+    natH <= 0 ||
+    !Number.isFinite(boxW) ||
+    !Number.isFinite(boxH) ||
+    boxW <= 0 ||
+    boxH <= 0
+  ) {
+    return { dispW: boxW, dispH: boxH };
+  }
+  const ar = natW / natH;
+  const boxAr = boxW / boxH;
+  if (boxAr > ar) {
+    return { dispH: boxH, dispW: boxH * ar };
+  }
+  return { dispW: boxW, dispH: boxW / ar };
+}
+
+type ResizeHandleId = "nw" | "ne" | "se" | "sw";
+
+/**
+ * 모서리 핸들이 실제 PNG 모서리에 붙은 경우를 위해 포인터 델타로 박스 크기 변화.
+ * (절대 좌표식은 object-contain 빈 여백 때문에 방향이 뒤집힐 수 있음)
+ */
+function applyCornerResizeDelta(
+  handle: ResizeHandleId,
+  px: number,
+  py: number,
+  startWorldX: number,
+  startWorldY: number,
+  cx: number,
+  cy: number,
+  w: number,
+  h: number,
+  cell: number,
+): { x: number; y: number; w: number; h: number } {
+  const dpx = px - startWorldX;
+  const dpy = py - startWorldY;
+  const L0 = cx - w / 2;
+  const T0 = cy - h / 2;
+  const R0 = cx + w / 2;
+  const B0 = cy + h / 2;
+  const snap = (n: number) => snapSizePxToGrid(Math.max(cell, n), cell);
+  switch (handle) {
+    case "se": {
+      const nw = snap(w + dpx);
+      const nh = snap(h + dpy);
+      return { x: L0 + nw / 2, y: T0 + nh / 2, w: nw, h: nh };
+    }
+    case "nw": {
+      const nw = snap(w - dpx);
+      const nh = snap(h - dpy);
+      return { x: R0 - nw / 2, y: B0 - nh / 2, w: nw, h: nh };
+    }
+    case "ne": {
+      const nw = snap(w + dpx);
+      const nh = snap(h - dpy);
+      return { x: L0 + nw / 2, y: B0 - nh / 2, w: nw, h: nh };
+    }
+    case "sw": {
+      const nw = snap(w - dpx);
+      const nh = snap(h + dpy);
+      return { x: R0 - nw / 2, y: T0 + nh / 2, w: nw, h: nh };
+    }
+    default:
+      return { x: cx, y: cy, w, h };
+  }
+}
+
+const RESIZE_HANDLES: { id: ResizeHandleId; className: string; cursor: string }[] = [
+  { id: "nw", className: "left-0 top-0 -translate-x-1/2 -translate-y-1/2", cursor: "nwse-resize" },
+  // ne 는 우측 상단 삭제 버튼으로 대체
+  { id: "se", className: "right-0 bottom-0 translate-x-1/2 translate-y-1/2", cursor: "nwse-resize" },
+  { id: "sw", className: "left-0 bottom-0 -translate-x-1/2 translate-y-1/2", cursor: "nesw-resize" },
+];
+
+type ResizeGesture = {
+  clueId: string;
+  handle: ResizeHandleId;
+  pointerId: number;
+  startWorldX: number;
+  startWorldY: number;
+  initialCx: number;
+  initialCy: number;
+  initialW: number;
+  initialH: number;
+};
 
 function MapCanvas({
   clues,
   selectedClueId,
   propAssets,
   draggingAsset,
-  metadataSizeByAsset,
+  naturalByAsset,
   onSelectClue,
   onDropAsset,
-  onMoveClue,
+  onUpdateClue,
+  onRemoveClue,
 }: {
   clues: DraftClue[];
   selectedClueId: string | null;
   propAssets: PropAsset[];
   draggingAsset: string | null;
-  metadataSizeByAsset: Map<string, { w: number; h: number }>;
+  naturalByAsset: Map<string, { w: number; h: number }>;
   onSelectClue: (id: string | null) => void;
-  onDropAsset: (asset: string, x: number, y: number) => void;
-  onMoveClue: (id: string, x: number, y: number) => void;
+  onDropAsset: (asset: string, x: number, y: number, w: number, h: number) => void;
+  onUpdateClue: (id: string, patch: Partial<Pick<DraftClue, "x" | "y" | "w" | "h">>) => void;
+  onRemoveClue: (tempId: string) => void;
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   /**
@@ -410,6 +592,7 @@ function MapCanvas({
    * - 활성화되지 않은 채 pointerUp 이 오면 = 단순 클릭으로 간주, 선택을 유지한다.
    */
   const dragRef = useRef<DragState | null>(null);
+  const resizeRef = useRef<ResizeGesture | null>(null);
   /** 드래그 직후 발생할 click 이벤트로 인한 deselect 차단용 가드 */
   const justDraggedRef = useRef(false);
   /** 배치 예정 위치 프리뷰 (사이드바 drag/drop + 맵 내 이동) */
@@ -428,29 +611,99 @@ function MapCanvas({
         event.dataTransfer.getData(DRAG_TYPE_PROP) ||
         event.dataTransfer.getData("text/plain");
       if (!asset) return;
-      const previewSize = metadataSizeByAsset.get(asset);
-      const previewW = previewSize?.w ?? PROP_DEFAULT_DROP_SIZE.w;
-      const previewH = previewSize?.h ?? PROP_DEFAULT_DROP_SIZE.h;
-      const rect = event.currentTarget.getBoundingClientRect();
-      const rawX = clampWithin(event.clientX - rect.left, MAP_EDITOR_WORLD.w, rect.width);
-      const rawY = clampWithin(event.clientY - rect.top, MAP_EDITOR_WORLD.h, rect.height);
-      const rectOnGrid = snapClueRectToGrid(
-        rawX,
-        rawY,
-        previewW,
-        previewH,
-        MAP_EDITOR_WORLD.w,
-        MAP_EDITOR_WORLD.h,
-        MAP_GRID_STEP_PX,
-      );
-      onDropAsset(asset, rectOnGrid.x, rectOnGrid.y);
-      setPlacementPreview(null);
+      const host = event.currentTarget;
+      void (async () => {
+        let nw = naturalByAsset.get(asset)?.w ?? 0;
+        let nh = naturalByAsset.get(asset)?.h ?? 0;
+        if (nw <= 0 || nh <= 0) {
+          const url = assetUrlByName.get(asset);
+          if (url) {
+            const s = await loadImageNaturalSize(url);
+            nw = s.w;
+            nh = s.h;
+          }
+        }
+        if (nw <= 0 || nh <= 0) {
+          nw = PROP_DEFAULT_DROP_SIZE.w;
+          nh = PROP_DEFAULT_DROP_SIZE.h;
+        }
+        const { w: sw, h: sh } = clampPropFootprintToEditorWorld(
+          nw,
+          nh,
+          MAP_EDITOR_WORLD.w,
+          MAP_EDITOR_WORLD.h,
+          MAP_GRID_STEP_PX,
+        );
+        const { x: rawX, y: rawY } = editorMapClientToWorld(
+          host,
+          event.clientX,
+          event.clientY,
+          MAP_EDITOR_WORLD.w,
+          MAP_EDITOR_WORLD.h,
+        );
+        const { dispW, dispH } = imageContainDisplaySize(sw, sh, nw, nh);
+        const pos = snapClueRectToGrid(rawX, rawY, dispW, dispH, MAP_GRID_STEP_PX);
+        onDropAsset(asset, pos.x, pos.y, sw, sh);
+        setPlacementPreview(null);
+      })();
     },
-    [metadataSizeByAsset, onDropAsset],
+    [assetUrlByName, naturalByAsset, onDropAsset],
   );
 
   const handlePointerMove = useCallback(
     (event: React.PointerEvent<HTMLDivElement>) => {
+      const rs = resizeRef.current;
+      if (rs && rs.pointerId === event.pointerId) {
+        const host = containerRef.current;
+        if (!host) return;
+        const { x: px, y: py } = editorMapClientToWorld(
+          host,
+          event.clientX,
+          event.clientY,
+          MAP_EDITOR_WORLD.w,
+          MAP_EDITOR_WORLD.h,
+        );
+        const raw = applyCornerResizeDelta(
+          rs.handle,
+          px,
+          py,
+          rs.startWorldX,
+          rs.startWorldY,
+          rs.initialCx,
+          rs.initialCy,
+          rs.initialW,
+          rs.initialH,
+          MAP_GRID_STEP_PX,
+        );
+        let snapped = snapClueRectToGrid(raw.x, raw.y, raw.w, raw.h, MAP_GRID_STEP_PX);
+        const fp = clampPropFootprintToMapEditorCanvas(
+          snapped.w,
+          snapped.h,
+          MAP_EDITOR_WORLD.w,
+          MAP_EDITOR_WORLD.h,
+          MAP_GRID_STEP_PX,
+        );
+        if (fp.w !== snapped.w || fp.h !== snapped.h) {
+          snapped = snapClueRectToGrid(snapped.x, snapped.y, fp.w, fp.h, MAP_GRID_STEP_PX);
+        }
+        const resizedClue = clues.find((c) => c.tempId === rs.clueId);
+        const natR = resizedClue ? naturalByAsset.get(resizedClue.asset) : undefined;
+        const { dispW: dispRw, dispH: dispRh } = imageContainDisplaySize(
+          snapped.w,
+          snapped.h,
+          natR?.w,
+          natR?.h,
+        );
+        const posR = snapClueRectToGrid(snapped.x, snapped.y, dispRw, dispRh, MAP_GRID_STEP_PX);
+        onUpdateClue(rs.clueId, {
+          x: posR.x,
+          y: posR.y,
+          w: snapped.w,
+          h: snapped.h,
+        });
+        return;
+      }
+
       const drag = dragRef.current;
       if (!drag || drag.pointerId !== event.pointerId) return;
 
@@ -467,23 +720,31 @@ function MapCanvas({
         }
       }
 
-      const worldDx = (dx / drag.rectW) * MAP_EDITOR_WORLD.w;
-      const worldDy = (dy / drag.rectH) * MAP_EDITOR_WORLD.h;
-      const rawX = Math.min(MAP_EDITOR_WORLD.w, Math.max(0, drag.initialX + worldDx));
-      const rawY = Math.min(MAP_EDITOR_WORLD.h, Math.max(0, drag.initialY + worldDy));
-      const rectOnGrid = snapClueRectToGrid(
-        rawX,
-        rawY,
+      const cw = Math.max(1, drag.rectW);
+      const ch = Math.max(1, drag.rectH);
+      const worldDx = (dx / cw) * MAP_EDITOR_WORLD.w;
+      const worldDy = (dy / ch) * MAP_EDITOR_WORLD.h;
+      const rawX = drag.initialX + worldDx;
+      const rawY = drag.initialY + worldDy;
+      const moving = clues.find((c) => c.tempId === drag.clueId);
+      const nat = moving ? naturalByAsset.get(moving.asset) : undefined;
+      const { dispW, dispH } = imageContainDisplaySize(
         drag.initialW,
         drag.initialH,
-        MAP_EDITOR_WORLD.w,
-        MAP_EDITOR_WORLD.h,
-        MAP_GRID_STEP_PX,
+        nat?.w,
+        nat?.h,
       );
-      onMoveClue(drag.clueId, rectOnGrid.x, rectOnGrid.y);
-      setPlacementPreview(rectOnGrid);
+      const rectOnGrid = snapClueRectToGrid(rawX, rawY, dispW, dispH, MAP_GRID_STEP_PX);
+      onUpdateClue(drag.clueId, { x: rectOnGrid.x, y: rectOnGrid.y });
+      setPlacementPreview({
+        x: rectOnGrid.x,
+        y: rectOnGrid.y,
+        w: drag.initialW,
+        h: drag.initialH,
+        asset: moving?.asset,
+      });
     },
-    [onMoveClue],
+    [clues, naturalByAsset, onUpdateClue],
   );
 
   const finishGesture = useCallback((pointerId: number, target: Element) => {
@@ -502,6 +763,13 @@ function MapCanvas({
 
   const handlePointerUp = useCallback(
     (event: React.PointerEvent<HTMLDivElement>) => {
+      const rs = resizeRef.current;
+      if (rs && rs.pointerId === event.pointerId) {
+        resizeRef.current = null;
+        finishGesture(event.pointerId, event.currentTarget);
+        setPlacementPreview(null);
+        return;
+      }
       const drag = dragRef.current;
       if (drag && drag.pointerId === event.pointerId) {
         if (drag.activated) finishGesture(event.pointerId, event.currentTarget);
@@ -523,9 +791,16 @@ function MapCanvas({
             event.dataTransfer.getData(DRAG_TYPE_PROP) ||
             event.dataTransfer.getData("text/plain");
           const asset = draggingAsset ?? assetFromData;
-          const previewSize = asset ? metadataSizeByAsset.get(asset) : undefined;
-          const previewW = previewSize?.w ?? PROP_DEFAULT_DROP_SIZE.w;
-          const previewH = previewSize?.h ?? PROP_DEFAULT_DROP_SIZE.h;
+          const previewSize = asset ? naturalByAsset.get(asset) : undefined;
+          const rawW = previewSize?.w ?? PROP_DEFAULT_DROP_SIZE.w;
+          const rawH = previewSize?.h ?? PROP_DEFAULT_DROP_SIZE.h;
+          const { w: previewW, h: previewH } = clampPropFootprintToEditorWorld(
+            rawW,
+            rawH,
+            MAP_EDITOR_WORLD.w,
+            MAP_EDITOR_WORLD.h,
+            MAP_GRID_STEP_PX,
+          );
 
           // 일부 브라우저는 dragover 시 getData()를 빈 문자열로 돌려준다.
           // 따라서 dataTransfer 타입과 현재 draggingAsset 상태를 함께 본다.
@@ -536,19 +811,23 @@ function MapCanvas({
             setPlacementPreview(null);
             return;
           }
-          const rect = event.currentTarget.getBoundingClientRect();
-          const rawX = clampWithin(event.clientX - rect.left, MAP_EDITOR_WORLD.w, rect.width);
-          const rawY = clampWithin(event.clientY - rect.top, MAP_EDITOR_WORLD.h, rect.height);
-          const rectOnGrid = snapClueRectToGrid(
-            rawX,
-            rawY,
-            previewW,
-            previewH,
+          const host = event.currentTarget;
+          const { x: rawX, y: rawY } = editorMapClientToWorld(
+            host,
+            event.clientX,
+            event.clientY,
             MAP_EDITOR_WORLD.w,
             MAP_EDITOR_WORLD.h,
-            MAP_GRID_STEP_PX,
           );
-          setPlacementPreview(rectOnGrid);
+          const { dispW, dispH } = imageContainDisplaySize(previewW, previewH, rawW, rawH);
+          const pos = snapClueRectToGrid(rawX, rawY, dispW, dispH, MAP_GRID_STEP_PX);
+          setPlacementPreview({
+            x: pos.x,
+            y: pos.y,
+            w: previewW,
+            h: previewH,
+            asset: asset ?? undefined,
+          });
         }}
         onDragLeave={(event) => {
           // dragleave 의 relatedTarget 은 브라우저별로 불안정하므로, 일단 즉시 숨긴다.
@@ -581,19 +860,38 @@ function MapCanvas({
         ) : null}
 
         {placementPreview ? (
-          <div
-            className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-1/2 rounded border-2 border-dashed border-[var(--accent)] bg-[var(--accent)]/15"
-            style={{
-              left: `${(placementPreview.x / MAP_EDITOR_WORLD.w) * 100}%`,
-              top: `${(placementPreview.y / MAP_EDITOR_WORLD.h) * 100}%`,
-              width: `${(placementPreview.w / MAP_EDITOR_WORLD.w) * 100}%`,
-              height: `${(placementPreview.h / MAP_EDITOR_WORLD.h) * 100}%`,
-            }}
-          />
+          (() => {
+            const nat = placementPreview.asset
+              ? naturalByAsset.get(placementPreview.asset)
+              : undefined;
+            const { dispW, dispH } = imageContainDisplaySize(
+              placementPreview.w,
+              placementPreview.h,
+              nat?.w,
+              nat?.h,
+            );
+            return (
+              <div
+                className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-1/2 rounded border-2 border-dashed border-[var(--accent)] bg-[var(--accent)]/15"
+                style={{
+                  left: `${(placementPreview.x / MAP_EDITOR_WORLD.w) * 100}%`,
+                  top: `${(placementPreview.y / MAP_EDITOR_WORLD.h) * 100}%`,
+                  width: `${(dispW / MAP_EDITOR_WORLD.w) * 100}%`,
+                  height: `${(dispH / MAP_EDITOR_WORLD.h) * 100}%`,
+                }}
+              />
+            );
+          })()
         ) : null}
 
         {clues.map((clue) => {
           const url = assetUrlByName.get(clue.asset);
+          const nat = naturalByAsset.get(clue.asset);
+          const { dispW, dispH } = imageContainDisplaySize(clue.w, clue.h, nat?.w, nat?.h);
+          const innerLeftPct = ((clue.w - dispW) / (2 * clue.w)) * 100;
+          const innerTopPct = ((clue.h - dispH) / (2 * clue.h)) * 100;
+          const innerWidthPct = (dispW / clue.w) * 100;
+          const innerHeightPct = (dispH / clue.h) * 100;
           const left = `${(clue.x / MAP_EDITOR_WORLD.w) * 100}%`;
           const top = `${(clue.y / MAP_EDITOR_WORLD.h) * 100}%`;
           const widthPct = `${(clue.w / MAP_EDITOR_WORLD.w) * 100}%`;
@@ -602,14 +900,15 @@ function MapCanvas({
           return (
             <div
               key={clue.tempId}
-              role="button"
+              role="group"
               tabIndex={0}
+              aria-label={`맵 소품: ${clue.asset}`}
               onPointerDown={(event) => {
                 if (event.button !== 0) return;
                 event.stopPropagation();
                 onSelectClue(clue.tempId);
-                const rect = containerRef.current?.getBoundingClientRect();
-                if (!rect) return;
+                const host = containerRef.current;
+                if (!host) return;
                 dragRef.current = {
                   clueId: clue.tempId,
                   pointerId: event.pointerId,
@@ -619,8 +918,8 @@ function MapCanvas({
                   initialY: clue.y,
                   initialW: clue.w,
                   initialH: clue.h,
-                  rectW: rect.width,
-                  rectH: rect.height,
+                  rectW: host.clientWidth,
+                  rectH: host.clientHeight,
                   activated: false,
                 };
               }}
@@ -628,29 +927,185 @@ function MapCanvas({
                 event.stopPropagation();
               }}
               className={
-                "absolute -translate-x-1/2 -translate-y-1/2 cursor-grab select-none rounded outline-offset-2 " +
-                (selected ? "outline outline-2 outline-[var(--accent)]" : "")
+                "absolute -translate-x-1/2 -translate-y-1/2 cursor-grab select-none overflow-visible outline-none focus-visible:outline-none " +
+                (selected ? "z-[5]" : "")
               }
               style={{ left, top, width: widthPct, height: heightPct }}
             >
               {url ? (
-                <>
+                <div
+                  className={cn(
+                    "absolute z-[1] overflow-hidden",
+                    selected && "ring-2 ring-inset ring-[var(--accent)]",
+                  )}
+                  style={{
+                    left: `${innerLeftPct}%`,
+                    top: `${innerTopPct}%`,
+                    width: `${innerWidthPct}%`,
+                    height: `${innerHeightPct}%`,
+                  }}
+                >
                   <img
                     src={url}
                     alt={clue.asset}
                     draggable={false}
-                    className="h-full w-full"
-                    style={{ imageRendering: "pixelated" }}
+                    className="block h-full w-full object-contain [image-rendering:pixelated]"
                   />
-                </>
+                </div>
               ) : (
-                <div className="flex h-full w-full items-center justify-center rounded bg-yellow-300/80 text-[10px] text-yellow-900">
+                <div
+                  className={cn(
+                    "absolute z-[1] flex items-center justify-center overflow-hidden bg-yellow-300/80 text-[10px] text-yellow-900",
+                    selected && "ring-2 ring-inset ring-[var(--accent)]",
+                  )}
+                  style={{
+                    left: `${innerLeftPct}%`,
+                    top: `${innerTopPct}%`,
+                    width: `${innerWidthPct}%`,
+                    height: `${innerHeightPct}%`,
+                  }}
+                >
                   ?
                 </div>
               )}
+              {selected ? (
+                <div
+                  className="pointer-events-none absolute z-20 overflow-visible"
+                  style={{
+                    left: `${innerLeftPct}%`,
+                    top: `${innerTopPct}%`,
+                    width: `${innerWidthPct}%`,
+                    height: `${innerHeightPct}%`,
+                  }}
+                >
+                  {RESIZE_HANDLES.map(({ id: hid, className: hClass, cursor }) => (
+                    <button
+                      key={hid}
+                      type="button"
+                      tabIndex={-1}
+                      aria-label={`크기 조절 (${hid})`}
+                      className={cn(
+                        "pointer-events-auto absolute z-30 flex h-5 w-5 touch-none items-center justify-center rounded-full border-0 bg-transparent p-0 shadow-none",
+                        hClass,
+                      )}
+                      style={{ cursor }}
+                      onPointerDown={(event) => {
+                        if (event.button !== 0) return;
+                        event.stopPropagation();
+                        event.preventDefault();
+                        const host = containerRef.current;
+                        if (!host) return;
+                        const p = editorMapClientToWorld(
+                          host,
+                          event.clientX,
+                          event.clientY,
+                          MAP_EDITOR_WORLD.w,
+                          MAP_EDITOR_WORLD.h,
+                        );
+                        resizeRef.current = {
+                          clueId: clue.tempId,
+                          handle: hid,
+                          pointerId: event.pointerId,
+                          startWorldX: p.x,
+                          startWorldY: p.y,
+                          initialCx: clue.x,
+                          initialCy: clue.y,
+                          initialW: clue.w,
+                          initialH: clue.h,
+                        };
+                        try {
+                          host.setPointerCapture(event.pointerId);
+                        } catch {
+                          // ignore
+                        }
+                      }}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                      }}
+                    >
+                      <span
+                        className="pointer-events-none h-2.5 w-2.5 shrink-0 rounded-full border border-[color-mix(in_srgb,var(--background)_88%,transparent)] bg-[var(--accent)] shadow-[0_1px_2px_rgba(0,0,0,0.35)] ring-1 ring-black/20"
+                        aria-hidden
+                      />
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    tabIndex={-1}
+                    className="pointer-events-auto absolute right-0 top-0 z-30 flex h-5 w-5 translate-x-1/2 -translate-y-1/2 cursor-pointer touch-none items-center justify-center rounded-full border border-[color-mix(in_srgb,var(--background)_88%,transparent)] bg-[var(--card-bg)] text-[var(--danger)] shadow-[0_1px_2px_rgba(0,0,0,0.35)] ring-1 ring-black/20"
+                    onPointerDown={(event) => {
+                      if (event.button !== 0) return;
+                      event.stopPropagation();
+                      event.preventDefault();
+                    }}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      if (clue.tempId === selectedClueId) onSelectClue(null);
+                      onRemoveClue(clue.tempId);
+                    }}
+                  >
+                    <Trash2 className="pointer-events-none h-2.5 w-2.5 shrink-0" strokeWidth={2.5} aria-hidden />
+                  </button>
+                </div>
+              ) : null}
             </div>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+function ClueNameContentFields({
+  clue,
+  onChange,
+  nameInputAutoFocus,
+  emphasizeEmptyName,
+  submitAttempted,
+}: {
+  clue: DraftClue;
+  onChange: (patch: Partial<DraftClue>) => void;
+  nameInputAutoFocus?: boolean;
+  /** true: 이름이 비면 항상 빨간 안내(오른쪽 패널). false: 아래 submitAttempted 가 true 일 때만 */
+  emphasizeEmptyName: boolean;
+  /** 모달에서 확인을 눌렀는데 이름이 비었을 때 true */
+  submitAttempted?: boolean;
+}) {
+  const nameInvalid = !clue.name.trim();
+  const showNameHint = nameInvalid && (emphasizeEmptyName || !!submitAttempted);
+  return (
+    <div className="space-y-3">
+      <div className="space-y-1.5">
+        <label className="text-xs font-medium text-[var(--accent)]" htmlFor={`clue-name-${clue.tempId}`}>
+          단서 이름<span className="ml-0.5 text-[var(--danger)]">*</span>
+        </label>
+        <Input
+          id={`clue-name-${clue.tempId}`}
+          value={clue.name}
+          onChange={(e) => onChange({ name: e.target.value })}
+          placeholder="예) 낡은 열쇠"
+          aria-required
+          autoFocus={nameInputAutoFocus}
+          className={cn(
+            showNameHint ? "border-[var(--danger)]/50 focus-visible:ring-[var(--danger)]/30" : "",
+          )}
+        />
+        {showNameHint ? (
+          <p className="text-[10px] text-[var(--danger)]/90 px-1">이름을 입력해주세요.</p>
+        ) : null}
+      </div>
+
+      <div className="space-y-1.5">
+        <label className="text-xs font-medium text-[var(--accent)]" htmlFor={`clue-content-${clue.tempId}`}>
+          단서 내용
+        </label>
+        <Textarea
+          id={`clue-content-${clue.tempId}`}
+          value={clue.content}
+          onChange={(e) => onChange({ content: e.target.value })}
+          placeholder="학생이 조사했을 때 보여줄 설명"
+          rows={4}
+        />
       </div>
     </div>
   );
@@ -674,60 +1129,27 @@ function ClueEditorPanel({
   }
   return (
     <aside className="space-y-3 rounded-md border border-[var(--border)] bg-[var(--card-bg)] p-3 shadow-[var(--elevation-sm)]">
-      <div className="flex items-center justify-between">
-        <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--accent)]">
-          단서 편집
-        </h3>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          onClick={onRemove}
-          className="text-[var(--danger)] transition-colors hover:bg-[var(--danger)]/20"
-        >
-          <Trash2 className="h-4 w-4" />
-        </Button>
-      </div>
-
-      <div className="space-y-1.5">
-        <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--accent)] opacity-80">
-          단서 이름<span className="ml-0.5 text-[var(--danger)]">*</span>
-        </label>
-        <Input
-          value={clue.name}
-          onChange={(e) => onChange({ name: e.target.value })}
-          placeholder="예) 낡은 열쇠"
-          aria-required
-          className={cn(
-            "h-8 text-xs",
-            !clue.name.trim() ? "border-[var(--danger)]/50 focus-visible:ring-[var(--danger)]/30" : "",
-          )}
-        />
-        {!clue.name.trim() ? (
-          <p className="text-[10px] text-[var(--danger)]/90">이름을 입력해야 다음 단계로 진행할 수 있어요.</p>
-        ) : null}
-      </div>
-  
-      <div className="space-y-1.5">
-        <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--accent)] opacity-80">
-          단서 내용
-        </label>
-        <Textarea
-          value={clue.content}
-          onChange={(e) => onChange({ content: e.target.value })}
-          placeholder="학생이 조사했을 때 보여줄 설명"
-          rows={4}
-          className="resize-none text-xs"
-        />
-      </div>
+      <ClueNameContentFields clue={clue} onChange={onChange} emphasizeEmptyName />
     </aside>
   );
 } 
 
 
-function clampWithin(localPx: number, worldDim: number, renderedDim: number) {
-  if (renderedDim <= 0) return 0;
-  const ratio = localPx / renderedDim;
-  const world = ratio * worldDim;
-  return Math.min(worldDim, Math.max(0, world));
+/** border 제외 콘텐츠 박스 기준. 포인터가 맵 밖이어도 월드 좌표로 투영(에디터 밖 배치). */
+function editorMapClientToWorld(
+  host: HTMLElement,
+  clientX: number,
+  clientY: number,
+  worldW: number,
+  worldH: number,
+): { x: number; y: number } {
+  const rect = host.getBoundingClientRect();
+  const ox = rect.left + host.clientLeft;
+  const oy = rect.top + host.clientTop;
+  const cw = Math.max(1, host.clientWidth);
+  const ch = Math.max(1, host.clientHeight);
+  return {
+    x: ((clientX - ox) / cw) * worldW,
+    y: ((clientY - oy) / ch) * worldH,
+  };
 }

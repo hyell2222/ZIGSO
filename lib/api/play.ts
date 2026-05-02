@@ -72,12 +72,12 @@ export type ClueMapProps = {
   x: number;
   y: number;
   asset?: string;
-  /** 격자 칸 수 — 있으면 표시 크기는 `tile_* × MAP_GRID_STEP_PX` 만으로 결정 */
-  tile_w?: number;
-  tile_h?: number;
-  /** 레거시: 픽셀 w/h (없으면 tile_* 또는 기본 2×2칸) */
+  /** 맵 에디터 좌표계 기준 표시 크기(px), 격자에 맞춰 저장 */
   w?: number;
   h?: number;
+  /** 레거시: 격자 칸 수만 있던 경우 */
+  tile_w?: number;
+  tile_h?: number;
 };
 
 export type CaseClueForMap = {

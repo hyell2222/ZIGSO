@@ -29,19 +29,6 @@ const rosterCardHeader =
 const playMuted = "text-[var(--muted-foreground)]";
 const playTitle = "text-[var(--foreground)]";
 
-function FieldLabel({ children, className }: { children: ReactNode; className?: string }) {
-  return (
-    <p
-      className={cn(
-        "text-[11px] font-semibold uppercase tracking-[0.12em] text-[color-mix(in_srgb,var(--primary)_40%,var(--accent))]",
-        className,
-      )}
-    >
-      {children}
-    </p>
-  );
-}
-
 /**
  * 1단계(사건 파악): 사건 개요 + 용의자
  */
@@ -62,23 +49,18 @@ export function SessionInfoLayout({ sessionQuery }: SessionInfoLayoutProps) {
             <span className="flex h-8 w-8 items-center justify-center rounded-md bg-[var(--play-chip-cool)] text-[var(--primary)] ring-1 ring-[color-mix(in_srgb,var(--primary)_22%,transparent)]">
               <FileText className="h-4 w-4" aria-hidden />
             </span>
-            <div>
-              <CardTitle className={cn("text-base font-semibold", playTitle)}>사건 파일</CardTitle>
-              <p className={cn("text-xs", playMuted)}>사건 파악에 공개되는 제목·개요입니다.</p>
-            </div>
+            <CardTitle className={cn("text-base font-semibold", playTitle)}>사건 파일</CardTitle>
           </div>
         </CardHeader>
         <CardContent className="space-y-4 pt-5">
           {sessionQuery.data ? (
             <>
               <div className="space-y-1.5">
-                <FieldLabel>사건 제목</FieldLabel>
                 <p className={cn("text-lg font-semibold leading-snug", playTitle)}>
                   {sessionQuery.data.cases?.title ?? "제목 없음"}
                 </p>
               </div>
               <div className="space-y-1.5">
-                <FieldLabel>사건 개요 · 의뢰 내용</FieldLabel>
                 <div
                   className={cn(
                     "rounded-lg border border-[var(--border)] bg-[var(--background)] p-4 text-sm leading-relaxed shadow-[inset_var(--input-inset)]",
@@ -141,22 +123,12 @@ export function SessionInfoLayout({ sessionQuery }: SessionInfoLayoutProps) {
                     {index + 1}
                   </span>
                   <div className="min-w-0 flex-1 space-y-1">
-                    <FieldLabel className="normal-case tracking-normal !text-[var(--muted-foreground)]">
-                      이름
-                    </FieldLabel>
                     <p className={cn("text-base font-semibold", playTitle)}>{s.name || "(이름 없음)"}</p>
                     {s.detail ? (
-                      <>
-                        <FieldLabel className={cn("mt-2 normal-case tracking-normal", playMuted)}>
-                          프로필 · 알리바이 등
-                        </FieldLabel>
-                        <p className={cn("whitespace-pre-wrap text-sm leading-relaxed", playTitle)}>
-                          {s.detail}
-                        </p>
-                      </>
-                    ) : (
-                      <p className={cn("text-xs italic", playMuted)}>추가 설명 없음</p>
-                    )}
+                      <p className={cn("whitespace-pre-wrap text-sm leading-relaxed", playTitle)}>
+                        {s.detail}
+                      </p>
+                    ) : null}
                   </div>
                 </li>
               ))}

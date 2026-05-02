@@ -19,11 +19,15 @@ import {
   MAP_WORLD_BACKGROUND_HEX,
   MAP_WORLD_OUTER_STROKE,
   snapDimensionToOddTileCount,
+  snapWorldPointToNearestTileCenter,
 } from "@/lib/map-location-style";
 import { Package, X } from "lucide-react";
 
 import type { CaseClueForMap, CaseLocationForMap } from "@/lib/api/play";
-import { mapPropFootprintEditorPx } from "@/lib/map-prop-pixel-size";
+import {
+  clampPropFootprintToMapEditorCanvas,
+  mapPropDisplayEditorPx,
+} from "@/lib/map-prop-pixel-size";
 import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
 
@@ -34,6 +38,8 @@ const DEFAULT_WORLD_H = 1392;
 const PLAYER_SIZE = 28;
 /** 이동 목표 속도(픽셀/초) — Matter는 Arcade와 달리 동일 수치여도 더 빨리 느껴져 다소 낮춤 */
 const SPEED = 5;
+/** 저장 풋프린트보다 큰 원본 텍스처 여유 — `computeWorldSize` 반경 추정 */
+const MAP_PROP_TEXTURE_WORLD_HALO = 240;
 
 /** Phaser load.font / Text 에서 쓰는 폰트 키 (preload에서 등록) */
 const FONT_KEY = "DungGeunMo";
@@ -74,6 +80,7 @@ type ClueEntry = {
   propLabel: string;
   x: number;
   y: number;
+  /** `props.w`/`h` 를 장소 스케일로 월드 px 에 투영한 표시 크기 */
   w: number;
   h: number;
   /** 한 단서 = 한 엔티티 (props 기반 배치). clues.length 는 항상 1. */
@@ -120,6 +127,18 @@ function autoPlaceInsideLocation(
   };
 }
 
+/** 편집기 월드(848×592) 한도까지 — 에디터에서 저장한 크기와 플레이 스케일이 맞도록 */
+function cluePropsDisplayEditorPx(props: CaseClueForMap["props"]): { w: number; h: number } {
+  const raw = mapPropDisplayEditorPx(props);
+  return clampPropFootprintToMapEditorCanvas(
+    raw.w,
+    raw.h,
+    MAP_EDITOR_SPACE.w,
+    MAP_EDITOR_SPACE.h,
+    MAP_GRID_STEP_PX,
+  );
+}
+
 function buildClueEntries(layouts: LocationLayout[], clues: CaseClueForMap[]): ClueEntry[] {
   const layoutById = new Map(layouts.map((l) => [l.id, l]));
 
@@ -138,7 +157,7 @@ function buildClueEntries(layouts: LocationLayout[], clues: CaseClueForMap[]): C
 
     const asset = clue.props?.asset?.trim() || null;
 
-    // 어드민은 단서의 x/y 및 크기(tile_w/h 칸 또는 레거시 w/h 픽셀)를 MAP_EDITOR_SPACE 기준으로 저장한다.
+    // 어드민은 단서의 x/y 및 표시 크기 w/h(px, MAP_EDITOR_SPACE 기준)를 props 에 저장한다.
     // 학생 맵은 여러 장소를 한 월드에 배치하므로, 각 장소 박스 L.w/L.h 크기에 맞춰
     // 편집기 좌표를 장소 내부 좌표로 선형 매핑해야 소품이 장소 안에 그려진다.
     let cx: number;
@@ -155,14 +174,14 @@ function buildClueEntries(layouts: LocationLayout[], clues: CaseClueForMap[]): C
       const sy = L.h / MAP_EDITOR_SPACE.h;
       cx = L.x + clue.props!.x * sx;
       cy = L.y + clue.props!.y * sy;
-      const base = mapPropFootprintEditorPx(clue.props);
+      const base = cluePropsDisplayEditorPx(clue.props);
       w = Math.max(8, base.w * sx);
       h = Math.max(8, base.h * sy);
     } else if (hasEditorCoords) {
       // 장소 정보가 없으면 스케일 불가 → 편집기 좌표를 그대로 사용.
       cx = clue.props!.x;
       cy = clue.props!.y;
-      const size = mapPropFootprintEditorPx(clue.props);
+      const size = cluePropsDisplayEditorPx(clue.props);
       w = size.w;
       h = size.h;
     } else if (L) {
@@ -175,15 +194,23 @@ function buildClueEntries(layouts: LocationLayout[], clues: CaseClueForMap[]): C
       cy = placed.y;
       const sx = L.w / MAP_EDITOR_SPACE.w;
       const sy = L.h / MAP_EDITOR_SPACE.h;
-      const size = mapPropFootprintEditorPx(clue.props);
+      const size = cluePropsDisplayEditorPx(clue.props);
       w = Math.max(8, size.w * sx);
       h = Math.max(8, size.h * sy);
     } else {
       cx = DEFAULT_WORLD_W / 2;
       cy = DEFAULT_WORLD_H / 2;
-      const size = mapPropFootprintEditorPx(clue.props);
+      const size = cluePropsDisplayEditorPx(clue.props);
       w = size.w;
       h = size.h;
+    }
+
+    // 편집기에서 저장한 좌표는 이미 격자/경계에 맞춰졌다. 타일 중심 스냅을 다시 쓰면
+    // 맵 끝 근처 소품이 안쪽으로 밀린다.
+    if (!hasEditorCoords) {
+      const onTile = snapWorldPointToNearestTileCenter(cx, cy, MAP_GRID_STEP_PX);
+      cx = onTile.x;
+      cy = onTile.y;
     }
 
     out.push({
@@ -206,6 +233,7 @@ function rectsTouchOrOverlap(a: Phaser.Geom.Rectangle, b: Phaser.Geom.Rectangle)
   return a.x <= b.right && a.right >= b.x && a.y <= b.bottom && a.bottom >= b.y;
 }
 
+/** `clue.props` 의 w/h 를 월드에 반영한 표시 크기(entry.w/h)로 그린다. */
 function placeLocationProps2D(scene: Phaser.Scene, entries: ClueEntry[]) {
   const objects: PlacedClueObject[] = [];
   for (const entry of entries) {
@@ -213,13 +241,6 @@ function placeLocationProps2D(scene: Phaser.Scene, entries: ClueEntry[]) {
     // 텍스처가 로딩되지 않았으면 placeholder 로 대체 (404 에셋 보호)
     const safeKey = scene.textures.exists(textureKey) ? textureKey : PLACEHOLDER_TEXTURE_KEY;
 
-    // Matter body 는 "옵션에 shape 를 넣지 않고" 기본값(텍스처 프레임 크기)으로 생성한다.
-    // 이렇게 하면 이어지는 setDisplaySize 가 스케일을 바꿀 때 Matter 가 body 도 동일 비율로
-    // 스케일해 visual 과 collider 가 정확히 같은 크기로 맞춰진다.
-    //
-    // (이전엔 shape:{w:entry.w,h:entry.h} + setDisplaySize(entry.w,entry.h) 로 설정했는데,
-    //  텍스처 해상도(T)와 표시 크기(D)가 다르면 body 가 D×(D/T) 로 과대/과소 스케일되어
-    //  visual 바깥까지 충돌 영역이 삐져나와 "닿지 않는 padding" 버그가 있었음.)
     const image = scene.matter.add.image(entry.x, entry.y, safeKey, undefined, {
       isStatic: true,
     });
@@ -251,7 +272,7 @@ function clueEntryForSingleClue(
     return { ...entry, id: `${entry.id}:inv:${clue.id}`, clues: [clue] };
   }
   const L = layouts.find((l) => l.id === clue.location_id);
-  const fallback = mapPropFootprintEditorPx(clue.props);
+  const fallback = cluePropsDisplayEditorPx(clue.props);
   return {
     id: `inv:${clue.id}`,
     locationId: clue.location_id ?? "",
@@ -291,8 +312,9 @@ function computeWorldSize(layouts: LocationLayout[], entries: ClueEntry[]) {
     h = Math.max(h, L.y + L.h + 120);
   }
   for (const e of entries) {
-    w = Math.max(w, e.x + e.w / 2 + 120);
-    h = Math.max(h, e.y + e.h / 2 + 120);
+    const ext = Math.max(e.w, e.h, MAP_GRID_STEP_PX) * 0.5 + MAP_PROP_TEXTURE_WORLD_HALO;
+    w = Math.max(w, e.x + ext + 120);
+    h = Math.max(h, e.y + ext + 120);
   }
   return {
     w: snapDimensionToOddTileCount(w, MAP_GRID_STEP_PX),
@@ -778,23 +800,6 @@ export function InvestigationMap({
         className,
       )}
     >
-      {/* 상단: 페이즈 라벨 + 수집 진행 (React state) — 풀스크린은 입장 랜딩과 같은 짙은 셸 */}
-      <div
-        className={cn(
-          "flex shrink-0 items-center justify-between gap-2",
-          isFull
-            ? "border-b border-[var(--play-border-cool)] bg-[var(--play-panel-cool)] px-4 py-2.5 text-[11px] tracking-wide text-[var(--muted-foreground)]"
-            : "mb-2 border-b border-[var(--border)] px-0 text-xs text-[var(--muted-foreground)]",
-        )}
-      >
-        <div className="flex min-w-0 max-w-[55%] items-center justify-end gap-3 sm:max-w-[65%]">
-          <span className="text-right text-[10px] sm:text-[11px]">
-            {activeClue
-              ? `${activeClue.label} · F 단서 확인`
-              : "소품에 가까이 다가가세요"}
-          </span>
-        </div>
-      </div>
       <div
         className={cn(
           "flex min-h-0 w-full flex-1",
@@ -901,7 +906,7 @@ export function InvestigationMap({
                   {selectedClue.locationName}
                 </p>
                 <h2 className={cn("text-lg", isFull ? "text-[var(--foreground)]" : "text-[var(--foreground)]")}>
-                  {selectedClue.propLabel} 수집한 단서
+                  {selectedClue.propLabel}
                 </h2>
               </div>
               <Button
