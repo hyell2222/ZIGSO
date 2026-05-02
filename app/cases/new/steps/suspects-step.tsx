@@ -4,13 +4,13 @@ import {
   StepHeading,
   StepListItemCard,
   StepListRemoveButton,
-  StepListSection,
-  StepHint,
 } from "./step-blocks";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { SuspectEntry } from "@/lib/suspects";
+import { Plus } from "lucide-react";
 
 type Props = {
   suspects: SuspectEntry[];
@@ -53,25 +53,11 @@ export function SuspectsStep({
         <StepHeading
           step={2}
           title="용의자 프로필"
-          subtitle="사건 파악에 공개되는 인물 목록과 범인(정답) 한 명을 지정합니다."
+          subtitle="사건 파악 단계에 공개되는 용의자 목록을 등록하고, 범인(정답) 한 명을 지정합니다."
         />
       </CardHeader>
       <CardContent className="space-y-5">
-        <StepHint>
-          사건 파악에 그대로 공개되는 인물 목록입니다. 범인 지목에서는{" "}
-          <strong>여기서 등록한 용의자 중에서만</strong> 범인을 고를 수 있습니다. 반드시 한 명을{" "}
-          <strong>범인(정답)</strong>으로 지정하세요.
-        </StepHint>
-
-        <StepListSection
-          title={
-            <span>
-              용의자<span className="ml-0.5 text-[var(--danger)]">*</span>
-            </span>
-          }
-          description="이름(필수)과 부가 설명(선택)."
-          onAdd={addSuspect}
-        >
+        <ul className="space-y-5">
           {suspects.map((s, index) => (
             <StepListItemCard key={s.id}>
               <div className="flex items-center justify-between gap-2">
@@ -84,19 +70,24 @@ export function SuspectsStep({
                 />
               </div>
               <div className="mt-3 space-y-1.5">
+                <label className="text-xs font-medium text-[var(--accent)]">
+                  이름<span className="ml-0.5 text-[var(--danger)]">*</span>
+                </label>
                 <Input
                   value={s.name}
                   onChange={(e) => onChangeSuspects(updateSuspectAt(suspects, s.id, { name: e.target.value }))}
                   placeholder="이름 (예: 김OO)"
                 />
+                <label className="text-xs font-medium text-[var(--accent)]">
+                  프로필<span className="ml-0.5 text-[var(--danger)]">*</span>
+                </label>
                 <Textarea
                   value={s.detail}
                   onChange={(e) =>
                     onChangeSuspects(updateSuspectAt(suspects, s.id, { detail: e.target.value }))
                   }
-                  placeholder="알리바이·특징 등 (선택)"
+                  placeholder="알리바이·특징 등"
                   rows={2}
-                  className="text-xs"
                 />
               </div>
               <label className="mt-2 flex cursor-pointer items-center gap-2 text-xs text-[var(--foreground)]">
@@ -113,7 +104,13 @@ export function SuspectsStep({
               </label>
             </StepListItemCard>
           ))}
-        </StepListSection>
+        </ul>
+        <div className="flex justify-end">
+          <Button variant="secondary" onClick={addSuspect} className="gap-1">
+            <Plus className="h-3.5 w-3.5 shrink-0" aria-hidden />
+            용의자 추가
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );

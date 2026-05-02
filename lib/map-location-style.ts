@@ -9,9 +9,25 @@ export const MAP_WORLD_BACKGROUND = 0x1a1511 as const;
 /** CSS `background-color` (Phaser `MAP_WORLD_BACKGROUND` 와 동일) */
 export const MAP_WORLD_BACKGROUND_HEX = "#1a1511" as const;
 
-/** 월드 전체 격자 (장소 박스 아래에 그려짐) — `var(--entry-grid)` 에 가깝게 */
-export const MAP_GRID_STEP_PX = 40 as const;
+/** 월드 전체 격자 (장소 박스 아래에 그려짐) — `var(--entry-grid)` 에 가깝게. 작을수록 배치·스냅이 촘촘함 */
+export const MAP_GRID_STEP_PX = 16 as const;
 export const MAP_GRID_LINE = { width: 1, color: 0x2a4a3c as const, alpha: 0.38 as const };
+
+/**
+ * `sizePx` 이상으로, `stepPx` 격자에 맞추되 타일 개수(sizePx/step)가 홀수가 되도록 올림.
+ * 홀수 칸이면 월드 기하학적 중앙이 한 타일의 중심과 같다(중앙 소품 배치에 유리).
+ */
+export function snapDimensionToOddTileCount(
+  sizePx: number,
+  stepPx: number = MAP_GRID_STEP_PX,
+): number {
+  if (!Number.isFinite(sizePx) || sizePx <= 0 || !Number.isFinite(stepPx) || stepPx <= 0) {
+    return Math.max(0, sizePx);
+  }
+  const tiles = Math.ceil(sizePx / stepPx);
+  const oddTiles = tiles % 2 === 1 ? tiles : tiles + 1;
+  return oddTiles * stepPx;
+}
 
 /** 장소 사각형: 칠판초록(--primary) 얕은 면 + 아코디언(--accent) 테두리 느낌 */
 export const MAP_LOCATION_FILL = { color: 0x1b4a3a as const, alpha: 0.4 as const };

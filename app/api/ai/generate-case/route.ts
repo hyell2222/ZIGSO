@@ -11,6 +11,10 @@
 
 import { NextRequest, NextResponse } from "next/server";
 
+import { MAP_EDITOR_SPACE } from "@/lib/assets/map-props";
+import { MAP_GRID_STEP_PX } from "@/lib/map-location-style";
+import { mapDefaultPropPixelSize } from "@/lib/map-prop-pixel-size";
+
 export const runtime = "nodejs";
 // Vercel 배포 시 응답 시간 여유 확보 (로컬에서는 무시됨)
 export const maxDuration = 60;
@@ -18,8 +22,8 @@ export const maxDuration = 60;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const OPENAI_MODEL = process.env.OPENAI_MODEL ?? "gpt-4o-mini";
 
-const WORLD_W = 800;
-const WORLD_H = 600;
+const WORLD_W = MAP_EDITOR_SPACE.w;
+const WORLD_H = MAP_EDITOR_SPACE.h;
 
 /**
  * OpenAI structured outputs 의 strict 모드에서는 minimum/maximum/minItems 같은
@@ -120,7 +124,7 @@ function buildSystemPrompt(
         "  - 같은 장소 안에서는 위 크기를 고려해 서로 겹치지 않게, 가장자리에서 반폭·반높이 이상 안쪽에 배치.",
       ]
     : [
-        "  - w, h: 48~128(짝수 선호). 같은 장소 안에서는 서로 겹치지 않게 최소 72px 이상 간격.",
+        `  - w, h: 격자 ${MAP_GRID_STEP_PX}px 배수 권장. 같은 장소 안에서는 서로 겹치지 않게 최소 ${MAP_GRID_STEP_PX * 3}px 이상 간격.`,
       ];
 
   const localeRule = cluesInEnglish
@@ -136,7 +140,7 @@ function buildSystemPrompt(
     "- 편집 단계: (1) 사건 기본 정보 — 제목·사건 개요(사건 파악)·난이도 (2) 용의자·범인 후보 (3) 조사 장소 이름 (4) 맵에 올릴 단서=소품.",
     "- 학생 플로우: 참가 코드 입장 → 사건 파악(사건 개요·용의자·부원증) → 팀별 조사 장소에서 단서 수집 → 범인 지목에서 등록된 용의자 중 한 명만 범인 선택.",
     "- 조사 장소마다 별도 맵이 있고, 단서는 해당 장소 맵에만 배치된다. 부장·차장·부원 역할과 조사 장소은 세션 시작 시 랜덤 배정(여기서 지정하지 않음).",
-    `- 맵 월드: 가로 ${WORLD_W}px × 세로 ${WORLD_H}px, 탑다운. 좌표는 격자 40px에 맞추면 좋다(가능하면 x·y를 40의 배수로).`,
+    `- 맵 월드: 가로 ${WORLD_W}px × 세로 ${WORLD_H}px, 탑다운. 좌표는 격자 ${MAP_GRID_STEP_PX}px에 맞추면 좋다(가능하면 x·y를 ${MAP_GRID_STEP_PX}의 배수로).`,
     "",
     "[난이도]",
     "- Easy: 단서가 직관적이고 연결이 적다. Normal: 균형. Hard: 여러 단서를 조합해야 하고 허위·우연을 구분해야 한다.",
@@ -151,7 +155,7 @@ function buildSystemPrompt(
     "· clues:",
     "  - assignment_index: investigation_zones 배열의 0부터 시작하는 인덱스. 장소마다 단서 개수를 가능한 한 균등하게 맞출 것. 사용자가 [장소별 단서 개수]를 요청하면 각 장소의 clues 개수가 그 값에 가깝도록(장소별 ±1). 요청이 없으면 장소당 대략 3~6개 수준으로 균등 배분.",
     "  - asset: 반드시 아래 [사용 가능한 소품asset 목록]에 있는 문자열만. 없는 이름·변형 금지.",
-    `  - x, y: 소품 중심 좌표. ${WORLD_W}×${WORLD_H} 안에 완전히 들어오게. 권장: x는 ${40}~${WORLD_W - 40}, y는 ${40}~${WORLD_H - 40}.`,
+    `  - x, y: 소품 중심 좌표. ${WORLD_W}×${WORLD_H} 안에 완전히 들어오게. 권장: x는 ${MAP_GRID_STEP_PX}~${WORLD_W - MAP_GRID_STEP_PX}, y는 ${MAP_GRID_STEP_PX}~${WORLD_H - MAP_GRID_STEP_PX}.`,
     ...sizeHint,
     ...(cluesInEnglish
       ? [
@@ -383,12 +387,9 @@ export async function POST(req: NextRequest) {
       )
       .map((c) => {
         const fromCat = sizeByAsset.get(c.asset.trim().toLowerCase());
-        const w = fromCat
-          ? fromCat.w
-          : clamp(Math.round(c.w || 80), 24, WORLD_W);
-        const h = fromCat
-          ? fromCat.h
-          : clamp(Math.round(c.h || 80), 24, WORLD_H);
+        const def = mapDefaultPropPixelSize();
+        const w = fromCat ? fromCat.w : def.w;
+        const h = fromCat ? fromCat.h : def.h;
         const x = clamp(Math.round(c.x), w / 2, WORLD_W - w / 2);
         const y = clamp(Math.round(c.y), h / 2, WORLD_H - h / 2);
         return { ...c, w, h, x, y };

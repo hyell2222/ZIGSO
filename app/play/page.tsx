@@ -30,6 +30,7 @@ import { Input } from "@/components/ui/input";
 
 import {
   addFoundClueToTeam,
+  assignOrphanPlayersForOngoingSession,
   getPlayerById,
   getPlayerReport,
   getPlayerWithInvestigationZone,
@@ -48,6 +49,7 @@ import {
   saveResumeRecord,
   type ResumeRecord,
 } from "@/lib/play-resume";
+import type { CasePhase } from "@/lib/api/cases";
 import { getSessionRoomChannelName } from "@/lib/realtime/session-presence";
 import { isCulpritCorrect } from "@/lib/report-compare";
 import { findSuspectName, parseSuspectRosterFromCase } from "@/lib/suspects";
@@ -245,7 +247,7 @@ function PlaySessionShell({
     };
   }, [sessionId, playerId, teamId, investigationLocationId, zoneName, nickname, queryClient]);
 
-  const sessionPhase = sessionQuery.data?.phase ?? (sessionId ? "waiting" : null);
+  const sessionPhase = sessionQuery.data?.phase as CasePhase | null | undefined;
 
   useEffect(() => {
     if (sessionPhase !== "session_end") return;
@@ -278,18 +280,27 @@ function PlaySessionShell({
         nickname: nick,
       });
       setPlayerId(result.player.id);
+      const phase = session.phase as CasePhase | null | undefined;
+      if (phase && phase !== "waiting" && phase !== "session_end") {
+        await assignOrphanPlayersForOngoingSession(session.id);
+      }
       saveResumeRecord({
         joinCode: normalizedJoinCode,
         sessionId: session.id,
         playerId: result.player.id,
         nickname: nick,
       });
+      return { sessionId: session.id, playerId: result.player.id };
     },
-    onSuccess: () => setMessage(null),
+    onSuccess: async (ctx) => {
+      setMessage(null);
+      await queryClient.invalidateQueries({ queryKey: ["play-player", ctx.playerId] });
+      await queryClient.invalidateQueries({ queryKey: ["play-session", ctx.sessionId] });
+    },
     onError: (e: Error) => setMessage(e.message),
   });
 
-  const handleContinueAsPlayer = (rec: ResumeRecord) => {
+  const handleContinueAsPlayer = async (rec: ResumeRecord) => {
     setSessionId(rec.sessionId);
     setPlayerId(rec.playerId);
     setNickname(rec.nickname);
@@ -300,6 +311,17 @@ function PlaySessionShell({
       playerId: rec.playerId,
       nickname: rec.nickname,
     });
+    try {
+      const d = await getPlaySessionDetails(rec.sessionId);
+      const ph = d.phase as CasePhase | null | undefined;
+      if (ph && ph !== "waiting" && ph !== "session_end") {
+        await assignOrphanPlayersForOngoingSession(rec.sessionId);
+      }
+    } catch {
+      /* 배정 실패 시에도 입장은 유지; 플레이어 쿼리로 재시도 */
+    }
+    void queryClient.invalidateQueries({ queryKey: ["play-player", rec.playerId] });
+    void queryClient.invalidateQueries({ queryKey: ["play-session", rec.sessionId] });
   };
 
   const handleJoinAsNewPlayer = () => {
@@ -327,14 +349,24 @@ function PlaySessionShell({
   const hasAssignment = Boolean(investigationLocationId && teamId && playerQuery.data?.club_role);
 
   const isWaitingLobby =
-    hasJoinedSession && (sessionQuery.isLoading || sessionPhase === "waiting" || !hasAssignment);
+    hasJoinedSession &&
+    (sessionQuery.isLoading ||
+      !sessionQuery.data ||
+      sessionPhase === "waiting" ||
+      (sessionPhase !== "briefing" &&
+        sessionPhase !== "investigation" &&
+        sessionPhase !== "final_report" &&
+        sessionPhase !== "session_end" &&
+        !hasAssignment));
+
   const waitingLobbyState = useMemo(() => {
-    if (sessionQuery.isLoading) return "session_loading" as const;
+    if (sessionQuery.isLoading || !sessionQuery.data) return "session_loading" as const;
     return "waiting" as const;
-  }, [sessionQuery.isLoading, sessionPhase]);
-  const isBriefing = hasJoinedSession && hasAssignment && sessionPhase === "briefing";
+  }, [sessionQuery.isLoading, sessionQuery.data]);
+
+  const isBriefing = hasJoinedSession && sessionPhase === "briefing";
   const isInvestigation = hasJoinedSession && hasAssignment && sessionPhase === "investigation";
-  const isFinalReport = hasJoinedSession && hasAssignment && sessionPhase === "final_report";
+  const isFinalReport = hasJoinedSession && sessionPhase === "final_report";
 
   const mapQuery = useQuery({
     queryKey: ["play-case-map", sessionQuery.data?.case_id, investigationLocationId, sessionPhase],
@@ -409,7 +441,7 @@ function PlaySessionShell({
     );
   }
 
-  if (hasSupabaseEnv && isFinalReport && teamId) {
+  if (hasSupabaseEnv && isFinalReport) {
     return (
       <PlayAtmosphere>
         <main className="mx-auto w-full max-w-2xl space-y-6 px-4 py-8 pb-12">
@@ -432,7 +464,14 @@ function PlaySessionShell({
               playSurfaceCool,
             )}
           >
-              {reportSubmitted ? (
+              {!teamId ? (
+                <LoadingState
+                  variant="section"
+                  tone="default"
+                  label="팀·역할 정보를 불러오는 중…"
+                  className="min-h-[12rem] py-10"
+                />
+              ) : reportSubmitted ? (
                 <div className="space-y-5 text-sm text-[var(--foreground)]">
                   <FinalReportSubmittedBanner
                     submittedAt={playerReport?.submitted_at ?? null}
@@ -506,7 +545,7 @@ function PlaySessionShell({
                   <Button
                     type="submit"
                     className="w-full"
-                    disabled={reportMutation.isPending || caseRoster.length === 0}
+                    disabled={reportMutation.isPending || caseRoster.length === 0 || !teamId}
                   >
                     {reportMutation.isPending ? (
                       <>

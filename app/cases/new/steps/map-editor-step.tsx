@@ -3,7 +3,7 @@
 import { Trash2 } from "lucide-react";
 import { useCallback, useMemo, useRef, useState } from "react";
 
-import { StepHeading, StepHint } from "./step-blocks";
+import { StepHeading } from "./step-blocks";
 import { Button } from "@/components/ui/button";
 import { LoadingState } from "@/components/ui/loading-state";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -151,16 +151,6 @@ export function MapEditorStep({
         />
       </CardHeader>
       <CardContent className="space-y-4">
-        {investigationZones.length === 0 ? (
-          <StepHint>
-            조사 장소이 1곳 이상 필요합니다. <strong>3단계</strong>에서 장소을 추가한 뒤 맵에 소품을 올려 주세요.
-          </StepHint>
-        ) : (
-          <StepHint>
-            왼쪽에서 소품을 끌어 맵에 놓고, 배치한 소품을 눌러 내용을 편집합니다. 탭으로 장소를 바꿀 수 있습니다.
-          </StepHint>
-        )}
-
         <LocationTabs
           locations={locationTabs}
           activeId={effectiveTabId}

@@ -27,7 +27,7 @@ type Props = {
   onClose: () => void;
   /** 모델에 전달할 사용 가능한 소품식별자 목록 */
   propAssets: string[];
-  /** DB `asset_metadata` 기준 맵상 크기 — 있으면 AI 배치가 이 크기를 따름 */
+  /** 에셋별 맵상 크기(px) — 있으면 AI 배치·후처리가 이 w/h 를 따름 */
   propCatalog?: PropCatalogEntry[];
   /** 현재 화면에 설정된 난이도 (AI 초기값) */
   initialDifficulty: Difficulty;

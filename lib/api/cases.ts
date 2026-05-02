@@ -24,6 +24,10 @@ export type CaseClueProps = {
   x: number;
   y: number;
   asset?: string;
+  /** 격자 칸 수(저장 권장) — `w`/`h` 픽셀 없이 크기 표현 */
+  tile_w?: number;
+  tile_h?: number;
+  /** 레거시 픽셀 크기 */
   w?: number;
   h?: number;
 };

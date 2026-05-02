@@ -6,13 +6,13 @@ import {
   StepHeading,
   StepListItemCard,
   StepListRemoveButton,
-  StepListSection,
-  StepHint,
 } from "./step-blocks";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
 import type { DraftInvestigationZone } from "./types";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
 
 type Props = {
   zones: DraftInvestigationZone[];
@@ -49,23 +49,11 @@ export function InvestigationZonesStep({ zones, onAdd, onUpdate, onRemove }: Pro
         <StepHeading
           step={3}
           title="조사 장소"
-          subtitle="장소마다 맵이 하나씩 붙습니다. 이름은 겹치지 않게 적어 주세요."
+          subtitle="장소마다 맵이 하나씩 붙습니다. 장소 이름은 겹치지 않게 적어 주세요."
         />
       </CardHeader>
       <CardContent className="space-y-5">
-        <StepHint>
-          사건과 관련된 장소마다 <strong>하나의 맵</strong>이 붙습니다. 장소 이름은 겹치지 않게 적어주세요. 플레이가 시작되면 팀이 나뉘고, 담당 조사 장소가 랜덤으로 정해집니다.
-        </StepHint>
-
-        <StepListSection
-          title={
-            <span>
-              조사 장소<span className="ml-0.5 text-[var(--danger)]">*</span>
-            </span>
-          }
-          description="장소명을 입력한 뒤 필요하면 아래에서 장소을 더 추가하세요."
-          onAdd={() => onAdd({ zoneName: "" })}
-        >
+        <ul className="space-y-5">
           {zones.map((z, index) => {
             const isLast = index === zones.length - 1;
             const normalized = z.zoneName.trim().toLocaleLowerCase();
@@ -103,7 +91,13 @@ export function InvestigationZonesStep({ zones, onAdd, onUpdate, onRemove }: Pro
               </StepListItemCard>
             );
           })}
-        </StepListSection>
+        </ul>
+        <div className="flex justify-end">
+          <Button variant="secondary" onClick={() => onAdd({ zoneName: "" })} className="gap-1">
+            <Plus className="h-3.5 w-3.5 shrink-0" aria-hidden />
+            조사 장소 추가
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );

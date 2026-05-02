@@ -1,5 +1,6 @@
 import type { Scene } from "phaser";
 
+import { mapDefaultPropPixelSize } from "@/lib/map-prop-pixel-size";
 import { hasSupabaseEnv, supabase } from "@/lib/supabase";
 
 /**
@@ -28,16 +29,20 @@ export const MAP_PROP_PREFIX = RAW_PREFIX.replace(/^\/+|\/+$/g, "");
 /** 폴백용 로컬 경로 (개발 환경 / Supabase 미설정 시) */
 export const MAP_PROP_LOCAL_BASE = "/assets/props";
 
-/** 기본 표시 크기 (asset 의 w/h 가 모두 비어있을 때 사용) */
-export const MAP_PROP_DEFAULT_SIZE = { w: 80, h: 80 };
+/** 기본 표시 크기 — `MAP_PROP_DEFAULT_TILE_SPAN`×격자 (에셋 타일 메타 없을 때) */
+export const MAP_PROP_DEFAULT_SIZE = mapDefaultPropPixelSize();
 
 /**
  * 어드민 맵 에디터 1장(=캐릭터 1명분)이 사용하는 좌표 공간.
- * 단서의 `props.x/y/w/h` 값은 이 공간(0..w, 0..h) 기준으로 저장된다.
+ * 단서의 `props.x/y` 및 크기(`tile_w`/`tile_h` 칸 수, 또는 레거시 `w`/`h` 픽셀)는
+ * 이 공간(0..w, 0..h) 기준으로 저장된다.
  * 학생 맵은 여러 장소를 한 월드에 배치하므로, 이 좌표를 각 장소 박스 크기로
  * 변환해 써야 한다 (`investigation-map.tsx` 의 `buildClueEntries` 참고).
+ *
+ * 가로·세로 모두 맵 격자(16px)에 맞추고 타일 수는 홀수(53×37)라,
+ * 월드 기하 중앙이 한 타일의 중심과 맞는다.
  */
-export const MAP_EDITOR_SPACE = { w: 800, h: 600 } as const;
+export const MAP_EDITOR_SPACE = { w: 848, h: 592 } as const;
 
 /** asset 문자열에서 안전한 Phaser 텍스처 키를 만든다 */
 export function mapPropTextureKey(asset: string): string {

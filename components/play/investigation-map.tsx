@@ -5,7 +5,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   MAP_EDITOR_SPACE,
-  MAP_PROP_DEFAULT_SIZE,
   mapPropTextureKey,
   preloadMapPropImages,
   setMapPropTexturesNearest,
@@ -19,16 +18,18 @@ import {
   MAP_WORLD_BACKGROUND,
   MAP_WORLD_BACKGROUND_HEX,
   MAP_WORLD_OUTER_STROKE,
+  snapDimensionToOddTileCount,
 } from "@/lib/map-location-style";
 import { Package, X } from "lucide-react";
 
 import type { CaseClueForMap, CaseLocationForMap } from "@/lib/api/play";
+import { mapPropFootprintEditorPx } from "@/lib/map-prop-pixel-size";
 import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
 
-/** 맵 기본 가로·세로 (장소/단서가 더 나가면 computeWorldSize에서 확장) */
+/** 맵 기본 가로·세로 (장소/단서가 더 나가면 computeWorldSize에서 확장). `MAP_GRID_STEP_PX` 배수·타일 수 홀수 */
 const DEFAULT_WORLD_W = 2000;
-const DEFAULT_WORLD_H = 1400;
+const DEFAULT_WORLD_H = 1392;
 /** 플레이어 스프라이트 한 변 길이(픽셀) */
 const PLAYER_SIZE = 28;
 /** 이동 목표 속도(픽셀/초) — Matter는 Arcade와 달리 동일 수치여도 더 빨리 느껴져 다소 낮춤 */
@@ -52,7 +53,7 @@ function autoLayoutLocation(index: number, total: number) {
   const col = index % cols;
   const row = Math.floor(index / cols);
   const gap = 32;
-  const w = Math.min(800, Math.max(320, cellW - gap));
+  const w = Math.min(MAP_EDITOR_SPACE.w, Math.max(320, cellW - gap));
   const h = Math.min(460, Math.max(240, cellH - gap));
   const x = pad + col * cellW + (cellW - w) / 2;
   const y = pad + row * cellH + (cellH - h) / 2;
@@ -97,18 +98,6 @@ type MatterSpritePlayer = Phaser.GameObjects.Sprite & {
   setVelocity(x: number, y: number): void;
 };
 
-function resolveSize(override?: { w?: number; h?: number }) {
-  const w =
-    typeof override?.w === "number" && Number.isFinite(override.w) && override.w > 0
-      ? override.w
-      : MAP_PROP_DEFAULT_SIZE.w;
-  const h =
-    typeof override?.h === "number" && Number.isFinite(override.h) && override.h > 0
-      ? override.h
-      : MAP_PROP_DEFAULT_SIZE.h;
-  return { w, h };
-}
-
 /**
  * props 가 없는 단서들을 해당 장소 박스 안에 격자로 자동 배치.
  * (창작 단계에서 props 를 채워 넣지 않은 임시 단서를 위한 폴백)
@@ -149,7 +138,7 @@ function buildClueEntries(layouts: LocationLayout[], clues: CaseClueForMap[]): C
 
     const asset = clue.props?.asset?.trim() || null;
 
-    // 어드민은 단서의 x/y/w/h 를 MAP_EDITOR_SPACE(= 800×600) 좌표로 저장한다.
+    // 어드민은 단서의 x/y 및 크기(tile_w/h 칸 또는 레거시 w/h 픽셀)를 MAP_EDITOR_SPACE 기준으로 저장한다.
     // 학생 맵은 여러 장소를 한 월드에 배치하므로, 각 장소 박스 L.w/L.h 크기에 맞춰
     // 편집기 좌표를 장소 내부 좌표로 선형 매핑해야 소품이 장소 안에 그려진다.
     let cx: number;
@@ -166,21 +155,14 @@ function buildClueEntries(layouts: LocationLayout[], clues: CaseClueForMap[]): C
       const sy = L.h / MAP_EDITOR_SPACE.h;
       cx = L.x + clue.props!.x * sx;
       cy = L.y + clue.props!.y * sy;
-      const editorW = Number.isFinite(clue.props!.w) ? Number(clue.props!.w) : NaN;
-      const editorH = Number.isFinite(clue.props!.h) ? Number(clue.props!.h) : NaN;
-      w =
-        Number.isFinite(editorW) && editorW > 0
-          ? Math.max(8, editorW * sx)
-          : MAP_PROP_DEFAULT_SIZE.w;
-      h =
-        Number.isFinite(editorH) && editorH > 0
-          ? Math.max(8, editorH * sy)
-          : MAP_PROP_DEFAULT_SIZE.h;
+      const base = mapPropFootprintEditorPx(clue.props);
+      w = Math.max(8, base.w * sx);
+      h = Math.max(8, base.h * sy);
     } else if (hasEditorCoords) {
       // 장소 정보가 없으면 스케일 불가 → 편집기 좌표를 그대로 사용.
       cx = clue.props!.x;
       cy = clue.props!.y;
-      const size = resolveSize({ w: clue.props?.w, h: clue.props?.h });
+      const size = mapPropFootprintEditorPx(clue.props);
       w = size.w;
       h = size.h;
     } else if (L) {
@@ -191,13 +173,15 @@ function buildClueEntries(layouts: LocationLayout[], clues: CaseClueForMap[]): C
       fallbackCounts.set(key, i + 1);
       cx = placed.x;
       cy = placed.y;
-      const size = resolveSize({ w: clue.props?.w, h: clue.props?.h });
-      w = size.w;
-      h = size.h;
+      const sx = L.w / MAP_EDITOR_SPACE.w;
+      const sy = L.h / MAP_EDITOR_SPACE.h;
+      const size = mapPropFootprintEditorPx(clue.props);
+      w = Math.max(8, size.w * sx);
+      h = Math.max(8, size.h * sy);
     } else {
       cx = DEFAULT_WORLD_W / 2;
       cy = DEFAULT_WORLD_H / 2;
-      const size = resolveSize({ w: clue.props?.w, h: clue.props?.h });
+      const size = mapPropFootprintEditorPx(clue.props);
       w = size.w;
       h = size.h;
     }
@@ -267,16 +251,17 @@ function clueEntryForSingleClue(
     return { ...entry, id: `${entry.id}:inv:${clue.id}`, clues: [clue] };
   }
   const L = layouts.find((l) => l.id === clue.location_id);
+  const fallback = mapPropFootprintEditorPx(clue.props);
   return {
     id: `inv:${clue.id}`,
     locationId: clue.location_id ?? "",
     locationName: L?.name?.trim() ?? "장소",
-    asset: null,
+    asset: clue.props?.asset?.trim() ?? null,
     propLabel: "단서",
     x: 0,
     y: 0,
-    w: 0,
-    h: 0,
+    w: fallback.w,
+    h: fallback.h,
     clues: [clue],
   };
 }
@@ -309,7 +294,10 @@ function computeWorldSize(layouts: LocationLayout[], entries: ClueEntry[]) {
     w = Math.max(w, e.x + e.w / 2 + 120);
     h = Math.max(h, e.y + e.h / 2 + 120);
   }
-  return { w, h };
+  return {
+    w: snapDimensionToOddTileCount(w, MAP_GRID_STEP_PX),
+    h: snapDimensionToOddTileCount(h, MAP_GRID_STEP_PX),
+  };
 }
 
 /** React 래퍼 props — Phaser 인스턴스는 내부 useEffect에서만 생성 */

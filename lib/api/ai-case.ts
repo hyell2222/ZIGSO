@@ -9,9 +9,9 @@ import type { SuspectEntry } from "@/lib/suspects";
 
 export type PropCatalogEntry = {
   asset: string;
-  /** 맵 에디터(800×600) 기준 표시 너비(px) */
+  /** 맵 에디터 좌표계 기준 표시 너비(px) — 타일×격자와 동일 */
   w: number;
-  /** 맵 에디터(800×600) 기준 표시 높이(px) */
+  /** 맵 에디터 좌표계 기준 표시 높이(px) — 타일×격자와 동일 */
   h: number;
 };
 
@@ -21,8 +21,7 @@ export type AICaseRequest = {
   /** 사용 가능한 소품asset 식별자 목록 (필수) */
   propAssets: string[];
   /**
-   * asset_metadata 기준 맵상 픽셀 크기(선택).
-   * 있으면 서버가 단서 w/h 를 이 값으로 맞추고 좌표를 다시 클램프한다.
+   * 에셋별 맵상 픽셀 크기(선택). 있으면 서버가 단서 w/h 를 이 값으로 맞추고 좌표를 다시 클램프한다.
    */
   propCatalog?: PropCatalogEntry[];
   /** 목표 난이도 (선택) */

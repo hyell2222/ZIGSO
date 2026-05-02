@@ -12,9 +12,10 @@ import { parseSuspectRosterFromCase } from "@/lib/suspects";
 import { makeTempId } from "@/lib/temp-id";
 
 import type { Difficulty } from "../new/steps/basic-info-step";
+import { mapPropFootprintEditorPx } from "@/lib/map-prop-pixel-size";
+
 import {
   MAP_EDITOR_WORLD,
-  PROP_DEFAULT_DROP_SIZE,
   type DraftInvestigationZone,
   type DraftClue,
 } from "../new/steps/types";
@@ -74,14 +75,15 @@ function CaseEditContent() {
         const tid = tempIdByLocationId.get(locId) ?? "";
         if (!tid) return null;
         const props = cl.props ?? null;
+        const footprint = mapPropFootprintEditorPx(props);
         return {
           tempId: makeTempId(),
           assignmentTempId: tid,
           asset: typeof props?.asset === "string" ? props.asset : "",
           x: Number.isFinite(props?.x) ? Number(props?.x) : MAP_EDITOR_WORLD.w / 2,
           y: Number.isFinite(props?.y) ? Number(props?.y) : MAP_EDITOR_WORLD.h / 2,
-          w: Number.isFinite(props?.w) ? Number(props?.w) : PROP_DEFAULT_DROP_SIZE.w,
-          h: Number.isFinite(props?.h) ? Number(props?.h) : PROP_DEFAULT_DROP_SIZE.h,
+          w: footprint.w,
+          h: footprint.h,
           name: cl.name ?? "",
           content: cl.content ?? "",
         } satisfies DraftClue;

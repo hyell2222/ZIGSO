@@ -15,6 +15,7 @@ import {
   type CaseLocationInput,
 } from "@/lib/api/cases";
 import { listPropAssets } from "@/lib/api/storage-props";
+import { MAP_GRID_STEP_PX } from "@/lib/map-location-style";
 import { mapPixelSizeFromAssetTiles } from "@/lib/map-prop-pixel-size";
 import { ROUTES } from "@/lib/routes";
 import type { SuspectEntry } from "@/lib/suspects";
@@ -184,8 +185,8 @@ export function CaseSteps(props: Props) {
           x: Math.round(cl.x),
           y: Math.round(cl.y),
           asset: cl.asset,
-          w: Math.round(cl.w),
-          h: Math.round(cl.h),
+          tile_w: Math.max(1, Math.round(cl.w / MAP_GRID_STEP_PX)),
+          tile_h: Math.max(1, Math.round(cl.h / MAP_GRID_STEP_PX)),
         },
       };
     };

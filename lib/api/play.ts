@@ -11,7 +11,7 @@ import { supabase } from "@/lib/supabase";
 export async function getSessionByJoinCode(joinCode: string) {
   const { data, error } = await supabase
     .from("game_sessions")
-    .select("id,case_id,is_active")
+    .select("id,case_id,is_active,phase")
     .eq("join_code", joinCode)
     .single();
   if (error) throw error;
@@ -72,6 +72,10 @@ export type ClueMapProps = {
   x: number;
   y: number;
   asset?: string;
+  /** 격자 칸 수 — 있으면 표시 크기는 `tile_* × MAP_GRID_STEP_PX` 만으로 결정 */
+  tile_w?: number;
+  tile_h?: number;
+  /** 레거시: 픽셀 w/h (없으면 tile_* 또는 기본 2×2칸) */
   w?: number;
   h?: number;
 };
@@ -202,6 +206,101 @@ export async function joinPlayerSession(input: {
     .single();
   if (error) throw error;
   return { player: joinedPlayer as PlayerSelfRow };
+}
+
+/**
+ * 수사가 이미 시작된 뒤(`phase` ≠ waiting) 입장한 플레이어에게만 팀·역할·조사 장소를 붙입니다.
+ * 기존 플레이어의 배정은 변경하지 않습니다.
+ */
+export async function assignOrphanPlayersForOngoingSession(sessionId: string) {
+  const { data: sess, error: se } = await supabase
+    .from("game_sessions")
+    .select("phase,case_id")
+    .eq("id", sessionId)
+    .single();
+  if (se) throw se;
+  const phase = sess?.phase ?? "waiting";
+  if (phase === "waiting" || phase === "session_end") return;
+
+  const caseId = sess?.case_id;
+  if (!caseId) return;
+
+  const { data: locRows, error: le } = await supabase.from("locations").select("id").eq("case_id", caseId);
+  if (le) throw le;
+  const investigationIds = (locRows ?? []).map((r) => r.id as string);
+  if (investigationIds.length === 0) return;
+
+  const { data: teamRows, error: te } = await supabase
+    .from("teams")
+    .select("id,name")
+    .eq("session_id", sessionId);
+  if (te) throw te;
+  const teams = teamRows ?? [];
+  if (teams.length === 0) return;
+
+  const { data: playerRows, error: pe } = await supabase
+    .from("players")
+    .select("id,team_id,club_role,investigation_location_id")
+    .eq("session_id", sessionId);
+  if (pe) throw pe;
+  const rows = playerRows ?? [];
+
+  const orphans = rows.filter((p) => !p.team_id || !p.club_role || !p.investigation_location_id);
+  if (orphans.length === 0) return;
+
+  type P = (typeof rows)[number];
+  const state: P[] = rows.map((r) => ({ ...r }));
+
+  const pickRole = (teamId: string): ClubRole => {
+    const members = state.filter((p) => p.team_id === teamId);
+    if (!members.some((p) => p.club_role === "president")) return "president";
+    if (!members.some((p) => p.club_role === "vice_president")) return "vice_president";
+    return "member";
+  };
+
+  const pickZone = (teamId: string): string => {
+    const members = state.filter((p) => p.team_id === teamId);
+    let best = investigationIds[0]!;
+    let bestCount = Infinity;
+    for (const lid of investigationIds) {
+      const c = members.filter((p) => p.investigation_location_id === lid).length;
+      if (c < bestCount) {
+        bestCount = c;
+        best = lid;
+      }
+    }
+    return best;
+  };
+
+  const teamIds = teams.map((t) => t.id as string);
+
+  for (const orphan of orphans) {
+    let bestTeam = teamIds[0]!;
+    let bestSize = Infinity;
+    for (const tid of teamIds) {
+      const sz = state.filter((p) => p.team_id === tid).length;
+      if (sz < bestSize) {
+        bestSize = sz;
+        bestTeam = tid;
+      }
+    }
+
+    const role = pickRole(bestTeam);
+    const zone = pickZone(bestTeam);
+
+    const { error: up } = await supabase
+      .from("players")
+      .update({ team_id: bestTeam, club_role: role, investigation_location_id: zone })
+      .eq("id", orphan.id);
+    if (up) throw up;
+
+    const st = state.find((p) => p.id === orphan.id);
+    if (st) {
+      st.team_id = bestTeam;
+      st.club_role = role;
+      st.investigation_location_id = zone;
+    }
+  }
 }
 
 export async function setPlayerOnline(playerId: string, online: boolean) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { StepHeading, StepHint } from "./step-blocks";
+import { StepHeading } from "./step-blocks";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -32,14 +32,10 @@ export function BasicInfoStep({
         <StepHeading
           step={1}
           title="기본 정보"
-          subtitle="제목·사건 개요·난이도를 정합니다. 용의자는 다음 단계에서 등록합니다."
+          subtitle="게임은 사건 파악 → 단서 수집 → 범인 지목 단계로 진행됩니다. 이 단계에서는 사건 제목·사건 개요·난이도를 정합니다."
         />
       </CardHeader>
       <CardContent className="space-y-5">
-        <StepHint>
-          게임은 <strong>사건 파악 → 단서 수집 → 범인 지목</strong>로 진행됩니다. 이 단계에서는{" "}
-          <strong>제목·사건 개요·난이도</strong>만 정합니다. 용의자는 다음 단계에서 등록합니다.
-        </StepHint>
         <div className="space-y-2">
           <label className="text-xs font-medium text-[var(--accent)]">
             제목<span className="ml-0.5 text-[var(--danger)]">*</span>
@@ -52,7 +48,7 @@ export function BasicInfoStep({
         </div>
         <div className="space-y-2">
           <label className="text-xs font-medium text-[var(--accent)]">
-            사건 개요 (사건 파악에 공개)<span className="ml-0.5 text-[var(--danger)]">*</span>
+            사건 개요 (사건 파악 단계에 공개)<span className="ml-0.5 text-[var(--danger)]">*</span>
           </label>
           <Textarea
             value={description}
