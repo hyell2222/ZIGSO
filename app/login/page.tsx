@@ -47,7 +47,7 @@ export default function LoginPage() {
   return (
     <>
       <TopNav />
-      <main className="flex items-center justify-center py-40">
+      <main className="flex items-center justify-center py-32">
         <TeacherAuthForm
           mode="sign-in"
           onSubmit={(email, password) => {

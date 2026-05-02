@@ -60,8 +60,8 @@ export function TeacherAuthForm({
             onChange={(event) => setPassword(event.target.value)}
             required
           />
-          <div className="flex justify-center pt-6">
-            <Button type="submit" disabled={isLoading}>
+          <div className="flex justify-center pt-4">
+            <Button type="submit" disabled={isLoading} className="w-full">
               {mode === "sign-in" ? "로그인" : "회원가입"}
             </Button>
           </div>
