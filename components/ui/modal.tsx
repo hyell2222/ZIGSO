@@ -108,7 +108,6 @@ export function Modal({
         )}
         role="dialog"
         aria-modal="true"
-        aria-labelledby={titleId}
         onClick={(e) => e.stopPropagation()}
       >
         <header className={cn("flex shrink-0 items-center justify-between gap-3 border-b px-4 py-3 pl-5", v.divider)}>
@@ -125,7 +124,6 @@ export function Modal({
               size="icon"
               className={cn("h-9 w-9 shrink-0", v.closeMuted)}
               onClick={onClose}
-              aria-label="닫기"
             >
               <X className="h-4 w-4" aria-hidden />
             </Button>

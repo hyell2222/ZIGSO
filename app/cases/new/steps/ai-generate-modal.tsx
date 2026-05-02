@@ -132,7 +132,7 @@ export function AIGenerateModal({
           </Button>
           <Button type="button" onClick={() => void handleGenerate()} disabled={isLoading || propAssets.length === 0}>
             {isLoading ? <Loader2 className="mr-1 h-4 w-4 animate-spin" aria-hidden /> : <Sparkles className="mr-1 h-4 w-4" aria-hidden />}
-            {isLoading ? "생성 중..." : "생성하기"}
+            {isLoading ? "생성 중…" : "생성하기"}
           </Button>
         </>
       }

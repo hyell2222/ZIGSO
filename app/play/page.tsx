@@ -11,6 +11,7 @@ import { PlayerIdCard } from "@/components/play/player-id-card";
 import { SessionInfoLayout } from "@/components/play/session-info-layout";
 import { StudentBlackoutLanding } from "@/components/play/student-blackout-landing";
 import { Button } from "@/components/ui/button";
+import { LoadingState } from "@/components/ui/loading-state";
 import { Modal } from "@/components/ui/modal";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -502,9 +503,13 @@ function PlaySessionShell({
                     disabled={reportMutation.isPending || caseRoster.length === 0}
                   >
                     {reportMutation.isPending ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : null}
-                    최종 보고 제출
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 shrink-0 animate-spin" aria-hidden />
+                        제출 중…
+                      </>
+                    ) : (
+                      "최종 보고 제출"
+                    )}
                   </Button>
                 </form>
               )}
@@ -548,8 +553,13 @@ function PlaySessionShell({
                 내 부원증
               </h2>
               {playerQuery.isLoading ? (
-                <div className="flex min-h-[200px] items-center justify-center rounded-xl border border-dashed border-[color-mix(in_srgb,var(--primary)_28%,transparent)] bg-[color-mix(in_srgb,var(--ink)_28%,#11100e)] text-[color:var(--entry-parchment-muted)]">
-                  <Loader2 className="h-8 w-8 animate-spin" aria-label="불러오는 중" />
+                <div className="rounded-xl border border-dashed border-[color-mix(in_srgb,var(--primary)_28%,transparent)] bg-[color-mix(in_srgb,var(--ink)_28%,#11100e)]">
+                  <LoadingState
+                    variant="section"
+                    tone="play"
+                    label="역할·구역 정보를 불러오는 중…"
+                    className="min-h-[200px]"
+                  />
                 </div>
               ) : playerQuery.data?.club_role && patrolLocationId ? (
                 <PlayerIdCard
@@ -559,9 +569,12 @@ function PlaySessionShell({
                   roleKey={playerQuery.data.club_role}
                 />
               ) : (
-                <p className="rounded-lg border border-[color-mix(in_srgb,var(--primary)_22%,transparent)] bg-[color-mix(in_srgb,var(--mystery)_40%,#12100e)] px-4 py-6 text-center text-sm text-[color:var(--entry-parchment-muted)]">
-                  역할·구역 배정을 불러오는 중입니다…
-                </p>
+                <LoadingState
+                  variant="section"
+                  tone="play"
+                  label="역할·구역 배정을 불러오는 중입니다…"
+                  className="min-h-[8rem] rounded-lg border border-[color-mix(in_srgb,var(--primary)_22%,transparent)] bg-[color-mix(in_srgb,var(--mystery)_40%,#12100e)] py-8"
+                />
               )}
             </section>
 
@@ -609,18 +622,7 @@ function PlaySessionShell({
 
         {!hasJoinedSession && !showResumeModal && initialNickname.trim() && joinAndRegisterMutation.isPending ? (
           <section className="flex min-h-[40vh] items-center justify-center overflow-hidden rounded-xl border border-[color-mix(in_srgb,var(--primary)_20%,var(--border))] bg-[color-mix(in_srgb,var(--entry-shell)_50%,var(--ink))] p-6 shadow-[0_0_0_1px_color-mix(in_srgb,var(--entry-accent)_12%,transparent),var(--elevation-sm)] motion-safe:animate-[playRevealUp_0.5s_ease-out_both]">
-            <div className="flex flex-col items-center gap-4 text-[color:var(--entry-parchment)]">
-              <Loader2
-                className="h-9 w-9 animate-spin text-[var(--primary)]"
-                style={{
-                  filter: "drop-shadow(0 0 12px color-mix(in srgb, var(--primary) 45%, transparent))",
-                }}
-                aria-hidden
-              />
-              <p className="font-mono text-sm tracking-wide text-[color:var(--entry-parchment-muted)]">
-                보안 승인 확인 중…
-              </p>
-            </div>
+            <LoadingState variant="page" tone="play" label="보안 승인 확인 중…" className="min-h-[32vh]" />
           </section>
         ) : null}
 
@@ -815,8 +817,8 @@ export default function PlayPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-[var(--entry-shell-deep)]" aria-hidden>
-          <span className="sr-only">불러오는 중</span>
+        <div className="flex min-h-dvh flex-col bg-[var(--entry-shell-deep)] px-4 text-[color:var(--entry-parchment)]">
+          <LoadingState variant="page" tone="play" className="min-h-dvh" />
         </div>
       }
     >

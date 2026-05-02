@@ -2,11 +2,13 @@
 
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Loader2 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 
 import { getCurrentSession, signOutTeacher } from "@/lib/api/auth";
 import { TeacherSubNav } from "@/components/layout/teacher-sub-nav";
 import { Button } from "@/components/ui/button";
+import { LoadingState } from "@/components/ui/loading-state";
 import { AUTH_SESSION_QUERY_KEY } from "@/lib/auth-session-query";
 import { ROUTES } from "@/lib/routes";
 import { hasSupabaseEnv } from "@/lib/supabase";
@@ -70,9 +72,10 @@ export function TopNav() {
               수사 참가
             </Link>
             {sessionQuery.isPending ? (
-              <span
-                className="inline-block h-10 w-[7.5rem] shrink-0 animate-pulse rounded-md bg-[var(--on-primary)]/12"
-                aria-label="로그인 여부 확인 중"
+              <LoadingState
+                variant="inline"
+                tone="onPrimary"
+                className="!w-auto shrink-0 py-0 [&>p]:text-left [&>p]:whitespace-nowrap"
               />
             ) : sessionQuery.data ? (
               <Button
@@ -81,7 +84,14 @@ export function TopNav() {
                 disabled={signOutMutation.isPending}
                 className="border-[var(--on-primary)]/30 bg-[var(--on-primary)]/12 text-[var(--on-primary)] hover:bg-[var(--on-primary)]/18 hover:text-[var(--on-primary)]"
               >
-                로그아웃
+                {signOutMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 shrink-0 animate-spin" aria-hidden />
+                    종료 중…
+                  </>
+                ) : (
+                  "로그아웃"
+                )}
               </Button>
             ) : (
               <Link

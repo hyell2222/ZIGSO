@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowDown, ArrowUp, ArrowUpDown, Download, FileText, Loader2, Radio } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, Download, FileText, Radio } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useMemo, useState } from "react";
@@ -20,6 +20,7 @@ import { TeamFinalReportModal } from "@/components/teacher/team-final-report-mod
 import { PageHeader } from "@/components/layout/page-header";
 import { TopNav } from "@/components/layout/top-nav";
 import { Button } from "@/components/ui/button";
+import { LoadingState } from "@/components/ui/loading-state";
 import { clubRoleLabelKr, clubRoleSortKey } from "@/lib/club-role";
 import { isCulpritCorrect } from "@/lib/report-compare";
 import { ROUTES } from "@/lib/routes";
@@ -96,12 +97,9 @@ function ReportsSessionsListPanel({ teacherUserId }: { teacherUserId: string }) 
             description="진행한 수사 세션별로 참가자 현황과 팀 최종 보고를 확인하고, CSV로 내려받을 수 있습니다."
           />
           {listQuery.isLoading ? (
-            <p className="flex items-center gap-2 text-sm text-[var(--muted-foreground)]">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              목록을 불러오는 중…
-            </p>
+            <LoadingState variant="section" label="목록을 불러오는 중…" />
           ) : listQuery.isError ? (
-            <p className="text-sm text-[var(--error)]">목록을 불러오지 못했습니다.</p>
+            <p className="text-sm text-[var(--danger)]">목록을 불러오지 못했습니다.</p>
           ) : (listQuery.data?.length ?? 0) === 0 ? (
             <p className="rounded-lg border border-dashed border-[var(--border)] bg-[var(--tint-accent-weak)] px-4 py-8 text-center text-sm text-[var(--muted-foreground)]">
               아직 연 수사가 없습니다.{" "}
@@ -452,9 +450,8 @@ function SessionReportContent() {
       return (
         <div className="min-h-screen">
           <TopNav />
-          <main className="mx-auto flex w-full max-w-7xl items-center gap-2 px-4 py-8 text-sm text-[var(--muted-foreground)]">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            불러오는 중…
+          <main className="mx-auto flex w-full max-w-7xl flex-col px-4 py-8">
+            <LoadingState variant="page" />
           </main>
         </div>
       );
@@ -468,9 +465,8 @@ function SessionReportContent() {
     return (
       <div className="min-h-screen">
         <TopNav />
-        <main className="mx-auto flex w-full max-w-7xl items-center gap-2 px-4 py-8 text-sm text-[var(--muted-foreground)]">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          불러오는 중…
+        <main className="mx-auto flex w-full max-w-7xl flex-col px-4 py-8">
+          <LoadingState variant="page" />
         </main>
       </div>
     );
@@ -480,9 +476,8 @@ function SessionReportContent() {
     return (
       <div className="min-h-screen">
         <TopNav />
-        <main className="mx-auto flex w-full max-w-7xl items-center gap-2 px-4 py-8 text-sm text-[var(--muted-foreground)]">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          수사 정보를 불러오는 중…
+        <main className="mx-auto flex w-full max-w-7xl flex-col px-4 py-8">
+          <LoadingState variant="page" label="수사 정보를 불러오는 중…" />
         </main>
       </div>
     );
@@ -493,7 +488,7 @@ function SessionReportContent() {
       <div className="min-h-screen">
         <TopNav />
         <main className="mx-auto w-full max-w-7xl px-4 py-8">
-          <p className="text-sm text-[var(--error)]">수사 정보를 불러오지 못했습니다.</p>
+          <p className="text-sm text-[var(--danger)]">수사 정보를 불러오지 못했습니다.</p>
         </main>
       </div>
     );
@@ -559,7 +554,7 @@ function SessionReportContent() {
         </div>
 
         {loading ? (
-          <p className="text-sm text-[var(--muted-foreground)]">참가자와 팀 정보를 불러오는 중…</p>
+          <LoadingState variant="section" label="참가자와 팀 정보를 불러오는 중…" />
         ) : lines.length === 0 ? (
           <p className="text-sm text-[var(--muted-foreground)]">이 수사에 참가한 학생이 없습니다.</p>
         ) : (
@@ -608,7 +603,7 @@ function SessionReportContent() {
                       ) : line.isCorrect ? (
                         <span className="font-semibold text-[var(--primary)]">맞음</span>
                       ) : (
-                        <span className="font-semibold text-[var(--error)]">틀림</span>
+                        <span className="font-semibold text-[var(--danger)]">틀림</span>
                       )}
                     </td>
                     <td className="px-3 py-2.5">
@@ -654,8 +649,8 @@ export default function ReportsEntryPage() {
       fallback={
         <div className="min-h-screen">
           <TopNav />
-          <main className="mx-auto w-full max-w-7xl px-4 py-8">
-            <p className="text-sm text-[var(--muted-foreground)]">불러오는 중…</p>
+          <main className="mx-auto flex w-full max-w-7xl flex-col px-4 py-8">
+            <LoadingState variant="page" />
           </main>
         </div>
       }

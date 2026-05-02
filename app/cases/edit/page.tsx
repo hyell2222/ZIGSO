@@ -1,11 +1,11 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { Loader2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo } from "react";
 
 import { TopNav } from "@/components/layout/top-nav";
+import { LoadingState } from "@/components/ui/loading-state";
 import { getCaseFull } from "@/lib/api/cases";
 import { ROUTES } from "@/lib/routes";
 import { parseSuspectRosterFromCase } from "@/lib/suspects";
@@ -30,9 +30,8 @@ export default function CaseEditPage() {
       fallback={
         <div className="app-page flex min-h-dvh flex-col">
           <TopNav />
-          <main className="mx-auto flex w-full max-w-7xl flex-1 items-center gap-2 px-4 py-8 text-sm text-[color:var(--entry-parchment-muted)]">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            불러오는 중...
+          <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col px-4 py-8">
+            <LoadingState variant="page" />
           </main>
         </div>
       }
@@ -111,9 +110,8 @@ function CaseEditContent() {
     return (
       <div className="app-page flex min-h-dvh flex-col">
         <TopNav />
-        <main className="mx-auto flex w-full max-w-7xl flex-1 items-center gap-2 px-4 py-8 text-sm text-[color:var(--entry-parchment-muted)]">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          불러오는 중...
+        <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col px-4 py-8">
+          <LoadingState variant="page" />
         </main>
       </div>
     );

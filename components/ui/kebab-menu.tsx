@@ -39,7 +39,6 @@ export function KebabMenu({ onEdit, onDelete, disabled }: KebabMenuProps) {
         type="button"
         aria-haspopup="menu"
         aria-expanded={open}
-        aria-label="더보기 메뉴"
         disabled={disabled}
         onClick={() => setOpen((v) => !v)}
         variant="ghost"

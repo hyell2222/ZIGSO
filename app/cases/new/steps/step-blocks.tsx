@@ -91,13 +91,11 @@ export function StepListItemCard({
 type RemoveProps = {
   onClick: () => void;
   disabled?: boolean;
-  "aria-label"?: string;
 };
 
 export function StepListRemoveButton({
   onClick,
   disabled,
-  "aria-label": ariaLabel,
 }: RemoveProps) {
   return (
     <Button
@@ -106,7 +104,6 @@ export function StepListRemoveButton({
       size="icon"
       onClick={onClick}
       disabled={disabled}
-      aria-label={ariaLabel ?? "항목 삭제"}
       className="h-8 w-8 shrink-0 text-[var(--muted-foreground)] hover:bg-[var(--danger)]/10 hover:text-[var(--danger)] disabled:cursor-not-allowed disabled:opacity-40"
     >
       <Trash2 className="h-4 w-4" aria-hidden />

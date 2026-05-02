@@ -439,8 +439,17 @@ export function CaseSteps(props: Props) {
               onClick={() => saveMutation.mutate()}
               disabled={!canSave || saveMutation.isPending}
             >
-              {saveMutation.isPending ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Save className="mr-1 h-4 w-4" />}
-              저장
+              {saveMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-1 h-4 w-4 shrink-0 animate-spin" aria-hidden />
+                  저장 중…
+                </>
+              ) : (
+                <>
+                  <Save className="mr-1 h-4 w-4" aria-hidden />
+                  저장
+                </>
+              )}
             </Button>
           )}
         </footer>

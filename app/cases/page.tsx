@@ -14,6 +14,7 @@ import {
 } from "@/lib/api/cases";
 import { useRequireTeacherSession } from "@/lib/auth/use-require-teacher-session";
 import { KebabMenu } from "@/components/ui/kebab-menu";
+import { LoadingState } from "@/components/ui/loading-state";
 import { PageHeader } from "@/components/layout/page-header";
 import { TopNav } from "@/components/layout/top-nav";
 import { Button } from "@/components/ui/button";
@@ -118,7 +119,7 @@ export default function CasesPage() {
               }
             />
             {casesQuery.isLoading ? (
-              <p className="text-sm text-[var(--muted-foreground)]">불러오는 중…</p>
+              <LoadingState variant="section" label="사건 목록을 불러오는 중…" />
             ) : (casesQuery.data?.length ?? 0) === 0 ? (
               <div className="flex justify-center py-10">
                 <Button type="button" onClick={() => router.push(ROUTES.casesNew)} className="flex items-center gap-2">
@@ -160,9 +161,13 @@ export default function CasesPage() {
                         }
                       >
                         {startGameMutation.isPending ? (
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        ) : null}
-                        수사 세션 시작
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 shrink-0 animate-spin" aria-hidden />
+                            세션 여는 중…
+                          </>
+                        ) : (
+                          "수사 세션 시작"
+                        )}
                       </Button>
                     </div>
                   );
@@ -170,7 +175,7 @@ export default function CasesPage() {
               </div>
             )}
             {errorMessage ? (
-              <p className="text-sm text-[var(--error)]">{errorMessage}</p>
+              <p className="text-sm text-[var(--danger)]">{errorMessage}</p>
             ) : null}
           </div>
         ) : null}

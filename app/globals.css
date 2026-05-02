@@ -2,55 +2,36 @@
 
 :root {
   color-scheme: light;
-  /* 사건서·다이어리질 용지 / 잉크 */
+
   --background: #f3ede3;
   --surface: #e4d9c9;
   --foreground: #1d1814;
   --muted-foreground: #5a5147;
 
-  /* 만년필 / 동판 라벨 */
   --accent: #76583c;
-  /* 먹물·봉투 안쪽(미스터리/타이틀) — 따뜻한 차콜 */
   --mystery: #2a2225;
-  /* 잠금·야간 패널용 짙은 갈흑 */
   --ink: #16110e;
 
-  /* 칠판 초록(주요 CTA·포인트) */
   --primary: #1b4a3a;
   --on-primary: #f0f6f2;
-  /* 삭제·파괴적 액션 버튼 */
+
   --danger: #c81e1d;
   --on-danger: #fff5f5;
-  /* 인라인 오류·검증 메시지(밝은 배경용, danger보다 약간 진한 빨강) */
-  --error: #b42318;
 
   --border: color-mix(in srgb, var(--accent) 32%, var(--mystery));
 
-  /* 칩·배지·선택 배경(라임 대신) */
   --tint-accent-weak: color-mix(in srgb, var(--accent) 6%, transparent);
   --tint-accent: color-mix(in srgb, var(--accent) 11%, transparent);
   --tint-accent-medium: color-mix(in srgb, var(--accent) 15%, transparent);
   --tint-accent-strong: color-mix(in srgb, var(--accent) 20%, transparent);
-  /* 외곽선 버튼 호버 */
   --tint-mystery: color-mix(in srgb, var(--mystery) 8%, transparent);
-  /* 주의·타이머·보조 강조 — 앰버(빨강·초록 primary 와 구분) */
   --highlight: #b86220;
 
-  --ink-35: color-mix(in srgb, var(--ink) 35%, transparent);
-  --ink-45: color-mix(in srgb, var(--ink) 45%, transparent);
-  --ink-50: color-mix(in srgb, var(--ink) 50%, transparent);
-  --ink-88: color-mix(in srgb, var(--ink) 88%, transparent);
-  --ink-95: color-mix(in srgb, var(--ink) 95%, transparent);
-
-  --mystery-glow: color-mix(in srgb, var(--mystery) 14%, transparent);
-  /* 카드·입력 톤 (배경과 구분) */
   --card-bg: color-mix(in srgb, var(--surface) 92%, var(--background));
   --elevation-sm: 0 4px 20px color-mix(in srgb, var(--mystery) 7%, transparent);
   --ring-focus: color-mix(in srgb, var(--mystery) 25%, transparent);
-  /* 입력란: 용지 얕은 압힘 */
   --input-inset: inset 0 1px 0 color-mix(in srgb, var(--mystery) 4%, transparent);
 
-  /* 야간 입장·보안 화면 — 칠판·용지·갈색 악센트와 동일 계열 */
   --entry-shell: color-mix(in srgb, var(--ink) 78%, var(--mystery));
   --entry-shell-deep: color-mix(in srgb, var(--ink) 92%, var(--mystery));
   --entry-parchment: color-mix(in srgb, var(--background) 88%, var(--surface));
@@ -58,16 +39,14 @@
   --entry-accent: var(--primary);
   --entry-accent-soft: color-mix(in srgb, var(--on-primary) 78%, var(--primary));
   --entry-accent-glow: color-mix(in srgb, var(--highlight) 28%, var(--primary));
-  --entry-warm: var(--highlight);
-  --entry-auth-notice: color-mix(in srgb, var(--error) 28%, #f5e0dc);
-  --entry-warn-ink: color-mix(in srgb, var(--error) 50%, #1f1414);
-  --entry-warn-glow: color-mix(in srgb, var(--danger) 62%, var(--error) 18%);
+  --entry-auth-notice: color-mix(in srgb, var(--danger) 28%, #f5e0dc);
+  --entry-warn-ink: color-mix(in srgb, var(--danger) 50%, #1f1414);
+  --entry-warn-glow: color-mix(in srgb, var(--danger) 78%, transparent);
   --entry-grid: color-mix(in srgb, var(--primary) 9%, transparent);
   --entry-bar-track: color-mix(in srgb, var(--ink) 55%, black);
   --overlay-scrim: color-mix(in srgb, var(--ink) 68%, transparent);
   --panel-warn-border: color-mix(in srgb, var(--highlight) 45%, var(--accent));
   --panel-warn-bg: color-mix(in srgb, var(--highlight) 12%, var(--surface));
-  /* 조사 맵 우측 패널 등 짙은 보조면 */
   --depth-panel: color-mix(in srgb, var(--mystery) 82%, var(--ink));
 }
 
@@ -81,16 +60,15 @@ body {
   font-family: var(--font-dunggeunmo);
 }
 
-.font-sans {
-  font-family: var(--font-dunggeunmo);
-}
-
+.font-sans,
 .font-mono {
   font-family: var(--font-dunggeunmo);
 }
 
-* {
-  border-color: var(--border);
+@layer base {
+  * {
+    border-color: var(--border);
+  }
 }
 
 ::selection {

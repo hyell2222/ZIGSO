@@ -5,6 +5,7 @@ import { useCallback, useMemo, useRef, useState } from "react";
 
 import { StepHint } from "./step-blocks";
 import { Button } from "@/components/ui/button";
+import { LoadingState } from "@/components/ui/loading-state";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -290,7 +291,7 @@ function PropSidebar({
         </p>
       </div>
       {isLoading ? (
-        <p className="text-xs text-[var(--muted-foreground,#94a3b8)]">불러오는 중…</p>
+        <LoadingState variant="compact" label="소품을 불러오는 중…" className="min-h-[6rem]" />
       ) : assets.length === 0 ? (
         <p className="text-xs text-[var(--muted-foreground,#94a3b8)]">
           사용 가능한 prop 이 없어요. Supabase Storage 의 prop bucket 을 확인해주세요.

@@ -1,11 +1,11 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { Loader2 } from "lucide-react";
 import type { CSSProperties } from "react";
 
 import type { CaseClueForMap, CaseLocationForMap } from "@/lib/api/play";
 import { jigsawSeatingCopy } from "@/lib/jigsaw-seating-guidance";
+import { LoadingState } from "@/components/ui/loading-state";
 import { investigationPhaseLabel } from "@/lib/play-session-phase";
 
 const ENTRY_MAP_BG: CSSProperties = {
@@ -22,7 +22,9 @@ const InvestigationMap = dynamic(
   {
     ssr: false,
     loading: () => (
-      <p className="px-2 text-sm text-[color:var(--entry-parchment-muted)]">맵 로딩 중…</p>
+      <div className="px-2 py-4">
+        <LoadingState variant="compact" tone="play" label="조사 맵을 불러오는 중…" />
+      </div>
     ),
   },
 );
@@ -74,20 +76,12 @@ export function InvestigationMapShell({
         </p>
       </div>
       {mapLoading ? (
-        <div
-          className="relative flex flex-1 flex-col items-center justify-center gap-3"
-          role="status"
-          aria-live="polite"
-        >
-          <Loader2
-            className="h-8 w-8 animate-spin text-[color:var(--entry-accent-soft)]"
-            style={{ filter: "drop-shadow(0 0 10px color-mix(in srgb, var(--entry-accent) 40%, transparent))" }}
-            aria-hidden
-          />
-          <p className="text-sm tracking-wide text-[color:var(--entry-parchment-muted)]">
-            장소·단서 정보를 불러오는 중…
-          </p>
-        </div>
+        <LoadingState
+          variant="page"
+          tone="play"
+          label="장소·단서 정보를 불러오는 중…"
+          className="min-h-0 flex-1 py-16"
+        />
       ) : mapError ? (
         <div
           className="relative flex flex-1 items-center justify-center p-6 text-center text-sm text-[color:var(--entry-auth-notice)]"

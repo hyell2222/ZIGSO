@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import type { UseQueryResult } from "@tanstack/react-query";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { LoadingState } from "@/components/ui/loading-state";
 import { cn } from "@/lib/utils";
 import type { SessionDetailsRow } from "@/lib/api/play";
 import { parseSuspectRosterFromCase } from "@/lib/suspects";
@@ -83,7 +84,7 @@ export function SessionInfoLayout({ sessionQuery }: SessionInfoLayoutProps) {
               </div>
             </>
           ) : (
-            <p className={cn("text-sm", playMuted)}>불러오는 중…</p>
+            <LoadingState variant="section" tone="play" label="사건 정보를 불러오는 중…" className="min-h-[12rem]" />
           )}
         </CardContent>
       </Card>

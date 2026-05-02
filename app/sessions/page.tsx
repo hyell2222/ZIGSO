@@ -27,6 +27,7 @@ import { useRequireTeacherSession } from "@/lib/auth/use-require-teacher-session
 import { groupPlayersByTeam } from "@/lib/teacher/group-players-by-team";
 import { PlayJoinQr } from "@/components/teacher/play-join-qr";
 import { Button } from "@/components/ui/button";
+import { LoadingState } from "@/components/ui/loading-state";
 import { Modal } from "@/components/ui/modal";
 import { Input } from "@/components/ui/input";
 import { ROUTES } from "@/lib/routes";
@@ -258,7 +259,7 @@ function TeamAssignmentDashboard({
         <span className="text-xs text-[var(--muted-foreground)]">총 {players.length}명</span>
       </header>
       {loading ? (
-        <p className="text-sm text-[var(--muted-foreground)]">불러오는 중…</p>
+        <LoadingState variant="section" label="참가자·팀 정보를 불러오는 중…" />
       ) : groups.length === 0 ? (
         <p className="text-sm text-[var(--muted-foreground)]">배정된 팀이 없습니다.</p>
       ) : (
@@ -345,7 +346,7 @@ function TeamReportDashboard({
         </p>
       )}
       {loading ? (
-        <p className="text-sm text-[var(--muted-foreground)]">불러오는 중…</p>
+        <LoadingState variant="section" label="참가자·팀 정보를 불러오는 중…" />
       ) : groups.length === 0 ? (
         <p className="text-sm text-[var(--muted-foreground)]">학생이 없습니다.</p>
       ) : (
@@ -387,7 +388,7 @@ function TeamReportDashboard({
                   <p
                     className={
                       "mt-2 text-[11px] font-semibold " +
-                      (ok ? "text-[var(--primary)]" : "text-[var(--error)]")
+                      (ok ? "text-[var(--primary)]" : "text-[var(--danger)]")
                     }
                   >
                     범인 검거: {ok ? "성공" : "실패"} — 제출: {subName ?? "—"}
@@ -699,8 +700,8 @@ function SessionHostContent() {
   if (teacherSession.isLoading || (teacherSession.isFetching && !teacherSession.data)) {
     return (
       <div className="min-h-screen">
-        <main className="mx-auto w-full max-w-7xl px-4 py-8">
-          <p className="text-sm text-[var(--muted-foreground)]">불러오는 중…</p>
+        <main className="mx-auto flex w-full max-w-7xl flex-col px-4 py-8">
+          <LoadingState variant="page" />
         </main>
       </div>
     );
@@ -709,8 +710,8 @@ function SessionHostContent() {
   if (sessionQuery.isLoading) {
     return (
       <div className="min-h-screen">
-        <main className="mx-auto w-full max-w-7xl px-4 py-8">
-          <p className="text-sm text-[var(--muted-foreground)]">불러오는 중…</p>
+        <main className="mx-auto flex w-full max-w-7xl flex-col px-4 py-8">
+          <LoadingState variant="page" />
         </main>
       </div>
     );
@@ -720,7 +721,7 @@ function SessionHostContent() {
     return (
       <div className="min-h-screen">
         <main className="mx-auto w-full max-w-7xl px-4 py-8">
-          <p className="text-sm text-[var(--error)]">수사 세션을 불러오지 못했습니다.</p>
+          <p className="text-sm text-[var(--danger)]">수사 세션을 불러오지 못했습니다.</p>
           <Button type="button" className="mt-4" variant="secondary" onClick={() => router.push(ROUTES.reports)}>
             수사 기록
           </Button>
@@ -768,8 +769,27 @@ function SessionHostContent() {
             <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:justify-end">
               {!sessionStarted ? (
                 <Button type="button" onClick={() => beginMutation.mutate()} disabled={beginMutation.isPending}>
-                  {beginMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                  수사 시작
+                  {beginMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 shrink-0 animate-spin" aria-hidden />
+                      시작하는 중…
+                    </>
+                  ) : (
+                    "수사 시작"
+                  )}
+                </Button>
+              ) : null}
+              {shouldShowTimer ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="shrink-0 gap-2 sm:ml-0"
+                  aria-haspopup="dialog"
+                  aria-expanded={timerToolOpen}
+                  onClick={() => setTimerToolOpen(true)}
+                >
+                  <Timer className="h-4 w-4 shrink-0 text-[var(--accent)]" aria-hidden />
+                  타이머
                 </Button>
               ) : null}
               {sessionStarted && !sessionEnded && nextPhase ? (
@@ -778,25 +798,17 @@ function SessionHostContent() {
                   onClick={() => nextPhaseMutation.mutate()}
                   disabled={nextPhaseMutation.isPending}
                 >
-                  {nextPhaseMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                  {nextPhaseLabel}
+                  {nextPhaseMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 shrink-0 animate-spin" aria-hidden />
+                      진행 중…
+                    </>
+                  ) : (
+                    nextPhaseLabel
+                  )}
                 </Button>
               ) : null}
               {sessionEnded ? <span className="text-xs text-[var(--muted-foreground)]">종료됨</span> : null}
-              {shouldShowTimer ? (
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="icon"
-                  className="h-10 w-10 shrink-0 rounded-full border-[var(--border)] shadow-[var(--elevation-sm)] sm:ml-0"
-                  aria-label="타이머 열기"
-                  aria-haspopup="dialog"
-                  aria-expanded={timerToolOpen}
-                  onClick={() => setTimerToolOpen(true)}
-                >
-                  <Timer className="h-5 w-5 text-[var(--accent)]" aria-hidden />
-                </Button>
-              ) : null}
             </div>
           </div>
         </header>
@@ -871,7 +883,7 @@ function SessionHostContent() {
       </main>
 
       <div
-        className="fixed bottom-4 right-4 z-40 inline-flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)] shadow-[var(--elevation-sm)]"
+        className="fixed bottom-4 right-4 z-40 inline-flex items-center gap-2 rounded-full border-2 border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)] shadow-[var(--elevation-sm)]"
         aria-live="polite"
       >
         <Users className="h-4 w-4 shrink-0 text-[var(--muted-foreground)]" aria-hidden />
@@ -901,8 +913,8 @@ export default function SessionHostPage() {
     <Suspense
       fallback={
         <div className="min-h-screen">
-          <main className="mx-auto w-full max-w-7xl px-4 py-8">
-            <p className="text-sm text-[var(--muted-foreground)]">불러오는 중…</p>
+          <main className="mx-auto flex w-full max-w-7xl flex-col px-4 py-8">
+            <LoadingState variant="page" />
           </main>
         </div>
       }

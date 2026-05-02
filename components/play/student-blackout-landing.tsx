@@ -391,7 +391,7 @@ export function StudentBlackoutLanding() {
             {busy ? "참가 코드 확인 중…" : "사건으로 입장"}
           </Button>
         </form>
-        {error ? <p className="text-center text-sm font-medium text-[var(--error)]">{error}</p> : null}
+        {error ? <p className="text-center text-sm font-medium text-[var(--danger)]">{error}</p> : null}
       </Modal>
 
       <style>{`
