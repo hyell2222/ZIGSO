@@ -66,7 +66,7 @@ export function PlayerIdCard({ nickname, teamName, zoneName, roleKey, className 
         <p className="text-center text-[11px] font-bold tracking-[0.22em] text-[var(--primary)]">
           MYSTERY CLUB
         </p>
-        <p className="mt-1 text-center text-xs font-medium text-[color-mix(in_srgb,var(--highlight)_45%,var(--muted-foreground))]">
+        <p className="mt-1 text-center text-md font-bold text-[var(--highlight)]">
           부원증
         </p>
       </div>
