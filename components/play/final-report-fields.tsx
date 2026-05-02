@@ -27,7 +27,7 @@ type ThemeStyles = {
 
 const THEMES: Record<FinalReportTheme, ThemeStyles> = {
   play: {
-    label: "text-[var(--accent)]",
+    label: "text-xs font-medium text-[var(--accent)]",
     select:
       "border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] shadow-[inset_var(--input-inset)]",
     textarea: "border-[var(--border)] bg-[var(--background)] text-[var(--foreground)]",
@@ -38,7 +38,7 @@ const THEMES: Record<FinalReportTheme, ThemeStyles> = {
     bannerTimestamp: "text-[var(--muted-foreground)]",
   },
   parchment: {
-    label: "text-[color:var(--entry-accent-soft)]",
+    label: "text-xs font-medium text-[color:var(--entry-accent-soft)]",
     select:
       "border-[color-mix(in_srgb,var(--accent)_28%,transparent)] bg-[color-mix(in_srgb,var(--mystery)_65%,var(--ink))] text-[color:var(--entry-parchment)]",
     textarea:
@@ -50,8 +50,6 @@ const THEMES: Record<FinalReportTheme, ThemeStyles> = {
     bannerTimestamp: "text-[color:var(--entry-parchment-muted)]",
   },
 };
-
-const SECTION_LABEL_CLASS = "text-[11px] font-semibold uppercase tracking-wider";
 
 type FieldsProps = {
   values: FinalReportFieldValues;
@@ -78,7 +76,7 @@ export function FinalReportFields({
   emptyRosterEditFallback,
 }: FieldsProps) {
   const styles = THEMES[theme];
-  const labelClass = cn(SECTION_LABEL_CLASS, styles.label);
+  const labelClass = cn(styles.label);
   const update = (patch: Partial<FinalReportFieldValues>) => {
     if (readOnly) return;
     onChange?.({ ...values, ...patch });
@@ -94,7 +92,7 @@ export function FinalReportFields({
       ) : (
         <div className="space-y-2">
           <label className={labelClass} htmlFor={suspectFieldId}>
-            지목한 범인 (용의자 중 1명)
+            지목한 범인 (용의자 중 1명) <span className="text-[var(--danger)]">*</span>
           </label>
           <select
             id={suspectFieldId}
@@ -108,7 +106,7 @@ export function FinalReportFields({
             disabled={readOnly}
             required={!readOnly}
           >
-            {!readOnly ? <option value="">용의자를 선택하세요</option> : null}
+            {!readOnly ? <option value="">용의자를 선택해주세요</option> : null}
             {suspectRoster.length === 0 ? (
               <option value={values.suspectId}>
                 {emptyRosterSuspectName?.trim() || values.suspectId.trim() || "—"}
@@ -125,7 +123,7 @@ export function FinalReportFields({
       )}
 
       <FinalReportTextField
-        label="범행 도구 · 수법"
+        label={<span>범행 도구 · 수법 <span className="text-[var(--danger)]">*</span></span>}
         value={values.method}
         readOnly={readOnly}
         labelClass={labelClass}
@@ -133,7 +131,7 @@ export function FinalReportFields({
         onChange={(next) => update({ method: next })}
       />
       <FinalReportTextField
-        label="범행 동기"
+        label={<span>범행 동기 <span className="text-[var(--danger)]">*</span></span>}
         value={values.motive}
         readOnly={readOnly}
         labelClass={labelClass}
@@ -141,7 +139,7 @@ export function FinalReportFields({
         onChange={(next) => update({ motive: next })}
       />
       <FinalReportTextField
-        label="결정적 단서"
+        label={<span>결정적 단서 <span className="text-[var(--danger)]">*</span></span>}
         value={values.decisiveClue}
         readOnly={readOnly}
         labelClass={labelClass}
@@ -160,7 +158,7 @@ function FinalReportTextField({
   textareaClass,
   onChange,
 }: {
-  label: string;
+  label: ReactNode;
   value: string;
   readOnly: boolean;
   labelClass: string;

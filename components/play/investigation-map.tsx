@@ -88,8 +88,8 @@ type ClueEntry = {
 };
 
 type ActiveClueState = {
-  label: string;
-  clueCount: number;
+  clueName: string;
+  locationName: string;
 } | null;
 
 type PlacedClueObject = {
@@ -218,7 +218,7 @@ function buildClueEntries(layouts: LocationLayout[], clues: CaseClueForMap[]): C
       locationId: clue.location_id ?? "",
       locationName,
       asset,
-      propLabel: "단서",
+      propLabel: clue.name?.trim() || "이름 없는 단서",
       x: cx,
       y: cy,
       w,
@@ -278,7 +278,7 @@ function clueEntryForSingleClue(
     locationId: clue.location_id ?? "",
     locationName: L?.name?.trim() ?? "장소",
     asset: clue.props?.asset?.trim() ?? null,
-    propLabel: "단서",
+    propLabel: clue.name?.trim() || "이름 없는 단서",
     x: 0,
     y: 0,
     w: fallback.w,
@@ -532,8 +532,8 @@ export function InvestigationMap({
         this.highlightedPropImage = img;
 
         setActiveClue({
-          label: entry.propLabel,
-          clueCount: entry.clues.length,
+          clueName: entry.propLabel,
+          locationName: entry.locationName,
         });
       }
 
@@ -806,27 +806,67 @@ export function InvestigationMap({
           isFull ? "flex-row" : "flex-col-reverse gap-2 md:flex-row",
         )}
       >
-        {/* Phaser 캔버스 */}
+        {/* Phaser 캔버스 + 근접 시 F 안내 */}
         <div
-          ref={hostRef}
           className={cn(
-            "min-w-0 flex-1 overflow-hidden",
-            isFull ? "min-h-0 bg-transparent" : "min-h-[420px] rounded-md border border-[var(--border)] bg-[var(--background)]",
+            "relative min-w-0 flex-1 overflow-hidden",
+            isFull
+              ? "min-h-0 border-r border-[color-mix(in_srgb,var(--primary)_28%,transparent)] bg-[color-mix(in_srgb,var(--ink)_10%,transparent)]"
+              : "min-h-[420px] rounded-md border border-[var(--border)] bg-[var(--background)]",
           )}
-        />
+        >
+          <div
+            ref={hostRef}
+            className={cn("h-full w-full", isFull ? "min-h-0 bg-transparent" : "")}
+          />
+          {activeClue && !selectedClue ? (
+            <div className="pointer-events-none absolute inset-x-0 bottom-3 z-[30] flex justify-center px-3 sm:bottom-4">
+              <div
+                key={`${activeClue.clueName}\0${activeClue.locationName}`}
+                className={cn(
+                  "max-w-md rounded-lg border px-3 py-2.5 text-center shadow-lg motion-safe:animate-[playRevealUp_0.42s_cubic-bezier(0.22,1,0.36,1)_both]",
+                  isFull
+                    ? "border-[color-mix(in_srgb,var(--primary)_42%,var(--play-border-warm))] bg-[color-mix(in_srgb,var(--play-paper)_92%,var(--play-veil))] text-[var(--foreground)] shadow-[var(--play-shadow-lift)] ring-1 ring-[color-mix(in_srgb,var(--primary)_22%,transparent)]"
+                    : "border-[var(--border)] bg-[color-mix(in_srgb,var(--card-bg)_88%,var(--tint-accent-weak))] text-[var(--foreground)] ring-1 ring-[color-mix(in_srgb,var(--accent)_18%,transparent)]",
+                )}
+              >
+                <p
+                  className={cn(
+                    "flex items-center justify-center gap-2 text-[11px]",
+                    isFull ? "text-[var(--muted-foreground)]" : "text-[var(--muted-foreground)]",
+                  )}
+                >
+                  <kbd
+                    className={cn(
+                      "rounded border px-1.5 py-0.5 font-mono text-[10px] font-semibold tabular-nums shadow-sm",
+                      isFull
+                        ? "border-[var(--play-border-cool)] bg-[var(--play-inset)] text-[var(--foreground)]"
+                        : "border-[var(--border)] bg-[var(--background)] text-[var(--foreground)]",
+                    )}
+                  >
+                    F
+                  </kbd>
+                  <span className="text-[var(--foreground)]">를 눌러 단서를 확인해보세요</span>
+                </p>
+              </div>
+            </div>
+          ) : null}
+        </div>
         {/* 발견 단서 인벤토리 */}
         <aside
           className={cn(
             "flex min-h-0 shrink-0 flex-col",
             isFull
-              ? "w-[220px] border-l border-[var(--play-border-cool)] bg-[var(--play-panel-warm)]"
-              : "max-h-[200px] w-full border-t border-[var(--border)] bg-[var(--card-bg)] md:max-h-none md:w-[200px] md:border-l md:border-t-0",
+              ? "w-[220px] border-l border-[color-mix(in_srgb,var(--primary)_55%,var(--border))] bg-[var(--background)] shadow-[inset_10px_0_32px_-12px_color-mix(in_srgb,var(--primary)_10%,transparent)]"
+              : "max-h-[200px] w-full border-t border-[var(--border)] bg-[color-mix(in_srgb,var(--background)_55%,var(--card-bg))] md:max-h-none md:w-[200px] md:border-l md:border-t-0 md:border-l-[color-mix(in_srgb,var(--primary)_35%,var(--border))]",
           )}
         >
           <div
             className={cn(
               "flex items-center gap-2 border-b px-2 py-2 pl-3",
-              isFull ? "border-[var(--play-border-warm)]" : "border-[var(--border)]",
+              isFull
+                ? "border-[color-mix(in_srgb,var(--primary)_30%,var(--border))] bg-[color-mix(in_srgb,var(--surface)_55%,var(--tint-accent-weak))]"
+                : "border-[color-mix(in_srgb,var(--primary)_22%,var(--border))] bg-[color-mix(in_srgb,var(--surface)_40%,var(--tint-accent-weak))]",
             )}
           >
             <Package
@@ -836,23 +876,23 @@ export function InvestigationMap({
               )}
               aria-hidden
             />
-            <span
-              className={cn(
-                "min-w-0 flex-1 text-xs font-medium",
-                isFull ? "text-[var(--foreground)]" : "text-[var(--foreground)]",
-              )}
-            >
+            <span className="min-w-0 flex-1 text-xs font-semibold tracking-wide text-[var(--foreground)]">
               수집한 단서
             </span>
           </div>
-          <ul className="min-h-0 flex-1 list-none overflow-y-auto overscroll-contain p-2">
+          <ul
+            className={cn(
+              "min-h-0 flex-1 list-none overflow-y-auto overscroll-contain p-2",
+              isFull ? "bg-[color-mix(in_srgb,var(--card-bg)_35%,var(--background))]" : "",
+            )}
+          >
             {inventoryDisplayClues.length === 0 ? (
               <li
                 className={cn(
                   "rounded-md border border-dashed px-2 py-6 text-center text-[11px]",
                   isFull
-                    ? "border-[var(--play-border-cool)] text-[var(--muted-foreground)]"
-                    : "border-[var(--border)] text-[var(--muted-foreground)]",
+                    ? "border-[color-mix(in_srgb,var(--primary)_28%,var(--border))] text-[var(--muted-foreground)]"
+                    : "border-[color-mix(in_srgb,var(--primary)_18%,var(--border))] text-[var(--muted-foreground)]",
                 )}
               >
                 단서를 수집하면 단서가 여기에 쌓입니다.
@@ -868,7 +908,7 @@ export function InvestigationMap({
                     className={cn(
                       "h-auto w-full justify-start rounded border px-2.5 py-2 text-left text-xs transition-colors",
                       isFull
-                        ? "border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] hover:border-[color-mix(in_srgb,var(--primary)_35%,var(--border))] hover:bg-[var(--tint-accent-weak)]"
+                        ? "border-[color-mix(in_srgb,var(--primary)_22%,var(--border))] bg-[var(--card-bg)] text-[var(--foreground)] hover:border-[color-mix(in_srgb,var(--primary)_45%,var(--border))] hover:bg-[var(--tint-accent-weak)]"
                         : "border-[var(--border)] bg-[var(--tint-mystery)] text-[var(--foreground)] hover:border-[var(--accent)] hover:bg-[var(--tint-accent-weak)]",
                     )}
                   >
@@ -881,10 +921,10 @@ export function InvestigationMap({
         </aside>
       </div>
       {selectedClue ? (
-        <div className="absolute inset-0 z-[120] flex items-center justify-center bg-[var(--overlay-scrim)] p-4 backdrop-blur-[1px]">
+        <div className="absolute inset-0 z-[120] flex items-center justify-center bg-[var(--overlay-scrim)] p-4 backdrop-blur-[2px] motion-safe:animate-[playRevealUp_0.28s_ease-out_both]">
           <div
             className={cn(
-              "w-full max-w-2xl rounded-md border shadow-xl",
+              "w-full max-w-2xl rounded-md border shadow-xl motion-safe:animate-[playModalRise_0.48s_cubic-bezier(0.22,1,0.36,1)_both]",
               isFull
                 ? "border-[var(--play-border-warm)] bg-[var(--play-paper)] shadow-[var(--play-shadow-lift)]"
                 : "border-[var(--border)] bg-[var(--card-bg)]",
@@ -892,21 +932,25 @@ export function InvestigationMap({
           >
             <div
               className={cn(
-                "flex items-center justify-between border-b px-4 py-3",
+                "relative flex items-center justify-between border-b px-4 py-3",
                 isFull ? "border-[var(--play-border-cool)] bg-[var(--play-veil)]" : "border-[var(--border)]",
               )}
             >
-              <div>
-                <p
+              <div
+                className={cn(
+                  "pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-transparent via-[var(--primary)] to-transparent opacity-70",
+                  isFull ? "via-[color-mix(in_srgb,var(--primary)_75%,var(--highlight))]" : "",
+                )}
+                aria-hidden
+              />
+              <div className="min-w-0 pr-2">
+                <h2
                   className={cn(
-                    "text-xs",
-                    isFull ? "font-medium text-[var(--primary)]" : "text-[var(--muted-foreground)]",
+                    "mt-0.5 line-clamp-2 text-lg leading-snug",
+                    isFull ? "text-[var(--foreground)]" : "text-[var(--foreground)]",
                   )}
                 >
-                  {selectedClue.locationName}
-                </p>
-                <h2 className={cn("text-lg", isFull ? "text-[var(--foreground)]" : "text-[var(--foreground)]")}>
-                  {selectedClue.propLabel}
+                  「{selectedClue.propLabel}」
                 </h2>
               </div>
               <Button
@@ -921,23 +965,23 @@ export function InvestigationMap({
             </div>
             <div className="max-h-[65vh] space-y-4 overflow-y-auto px-4 py-4">
               {selectedClue.clues.length > 0 ? (
-                selectedClue.clues.map((clue) => (
+                selectedClue.clues.map((clue, idx) => (
                   <section
                     key={clue.id}
                     className={cn(
-                      "rounded-md border p-4",
+                      "rounded-md border p-4 motion-safe:animate-[playRevealUp_0.45s_cubic-bezier(0.22,1,0.36,1)_both]",
                       isFull
                         ? "border-[var(--play-border-cool)] bg-[var(--play-inset)]"
                         : "border-[var(--border)] bg-[var(--tint-accent-weak)]",
                     )}
+                    style={{ animationDelay: `${60 + idx * 40}ms` }}
                   >
-                    <h3 className="text-base text-[var(--foreground)]">{clue.name?.trim() || "이름 없는 단서"}</h3>
                     {clue.content?.trim() ? (
-                      <p className="mt-3 whitespace-pre-wrap break-words text-sm text-[var(--foreground)]">
+                      <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-[var(--foreground)]">
                         {clue.content}
                       </p>
                     ) : (
-                      <p className="mt-2 text-sm text-[var(--muted-foreground)]">등록된 단서 내용이 없습니다.</p>
+                      <p className="text-sm text-[var(--muted-foreground)]">등록된 단서 내용이 없습니다.</p>
                     )}
                   </section>
                 ))

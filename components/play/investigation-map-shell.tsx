@@ -3,7 +3,11 @@
 import dynamic from "next/dynamic";
 import type { CSSProperties } from "react";
 
-import { PLAY_PAGE_BLACK_BG } from "@/components/play/play-atmosphere";
+import {
+  PLAY_PAGE_BLACK_BG,
+  playPhaseHeaderChromeInner,
+  playPhaseHeaderChromeShell,
+} from "@/components/play/play-atmosphere";
 import { PlayPhaseHeader } from "@/components/play/play-phase-header";
 import { LoadingState } from "@/components/ui/loading-state";
 import type { CaseClueForMap, CaseLocationForMap } from "@/lib/api/play";
@@ -16,10 +20,8 @@ const InvestigationMap = dynamic(
     ssr: false,
     loading: () => (
         <div className="flex justify-center px-2 py-4">
-        <div className="w-full max-w-md rounded-xl border border-[var(--border)] bg-[var(--card-bg)] px-4 py-6 shadow-[var(--elevation-sm)]">
-          <LoadingState variant="compact" tone="default" label="조사 장소 맵을 불러오는 중…" />
+          <LoadingState variant="section" tone="default" label="맵 데이터를 불러오는 중…" />
         </div>
-      </div>
     ),
   },
 );
@@ -51,15 +53,14 @@ export function InvestigationMapShell({
         aria-hidden
       />
       <div className="relative z-10 flex min-h-0 flex-1 flex-col">
-        <div
-          className="shrink-0 border-b border-[var(--border)] bg-[var(--surface)] px-4 py-4 text-left shadow-[var(--elevation-sm)] sm:px-6"
-          role="status"
-        >
-          <PlayPhaseHeader
-            phase={2}
-            title="단서 수집"
-            description="같은 조사 장소를 배정받은 학생들끼리 새롭게 모여 앉아 단서를 수집하고 해석하세요."
-          />
+        <div className={playPhaseHeaderChromeShell} role="status">
+          <div className={playPhaseHeaderChromeInner}>
+            <PlayPhaseHeader
+              phase={2}
+              title="단서 수집"
+              description="같은 조사 장소를 배정받은 학생들끼리 새롭게 모여 앉아 단서를 수집하고 해석하세요."
+            />
+          </div>
         </div>
         {mapLoading ? (
           <div className="relative flex min-h-0 flex-1 items-center justify-center p-6">

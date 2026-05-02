@@ -36,6 +36,27 @@ export const playSurfacePanelHeader =
 export const playSurfaceWarmHeader =
   "border-b border-[var(--border)] bg-[var(--panel-warn-bg)]";
 
+/**
+ * Play 단계 헤더(PlayPhaseHeader 래퍼) — 전 폭 스트립(비카드), 밝은 페이퍼·서피스 크롬.
+ * 본문 `main`과 구분되는 얕은 하단 보더·미스트 섀도만 사용.
+ */
+export const playPhaseHeaderChrome =
+  "border-b border-[color-mix(in_srgb,var(--primary)_18%,var(--border))] bg-[color-mix(in_srgb,var(--surface)_28%,var(--background)_72%)] text-[var(--foreground)] shadow-[0_1px_0_color-mix(in_srgb,var(--primary)_8%,transparent),0_12px_32px_-10px_color-mix(in_srgb,var(--ink)_5%,transparent)]";
+
+/** 단계 헤더 스트립 바깥 — 크롬 + 등장 애니메이션 (패딩은 inner 전용) */
+export const playPhaseHeaderChromeShell = cn(
+  "shrink-0",
+  playPhaseHeaderChrome,
+  "motion-safe:animate-[playRevealUp_0.55s_cubic-bezier(0.22,1,0.36,1)_both]",
+);
+
+/**
+ * 단계 헤더 안쪽 — 본문 `main`과 동일한 max-width·좌우 패딩·세로 간격.
+ * (3단계 본문이 `max-w-2xl`이어도 헤더 밴드는 1·2단계와 같은 룰로 맞춤.)
+ */
+export const playPhaseHeaderChromeInner =
+  "mx-auto w-full max-w-6xl px-4 py-4 text-left sm:px-6";
+
 export function PlayAtmosphere({ children, className }: PlayAtmosphereProps) {
   return (
     <div

@@ -74,7 +74,7 @@ export function SessionInfoLayout({ sessionQuery }: SessionInfoLayoutProps) {
               </div>
             </>
           ) : (
-            <LoadingState variant="section" tone="default" label="사건 정보를 불러오는 중…" className="min-h-[12rem]" />
+            <LoadingState variant="section" tone="default" label="사건 정보를 불러오는 중…" />
           )}
         </CardContent>
       </Card>

@@ -15,6 +15,8 @@ import { PlayPhaseHeader } from "@/components/play/play-phase-header";
 import {
   PLAY_PAGE_BLACK_BG,
   PlayAtmosphere,
+  playPhaseHeaderChromeInner,
+  playPhaseHeaderChromeShell,
   playSurfaceCool,
   playSurfacePanel,
   playSurfaceWarm,
@@ -444,20 +446,18 @@ function PlaySessionShell({
   if (hasSupabaseEnv && isFinalReport) {
     return (
       <PlayAtmosphere>
-        <main className="mx-auto w-full max-w-2xl space-y-6 px-4 py-8 pb-12">
-          <header
-            className={cn(
-              "motion-safe:animate-[playRevealUp_0.55s_cubic-bezier(0.22,1,0.36,1)_both] px-4 py-4 sm:px-6",
-              playSurfaceWarm,
-            )}
-          >
-            <PlayPhaseHeader
-              phase={3}
-              title="범인 지목"
-              description="각자 한 번씩 제출합니다. 범인은 등록된 용의자 중에서만 선택할 수 있습니다."
-              rightSlot={<TeamBadge teamName={teamName} />}
-            />
+        <div className="flex min-h-dvh flex-col">
+          <header className={playPhaseHeaderChromeShell}>
+            <div className={playPhaseHeaderChromeInner}>
+              <PlayPhaseHeader
+                phase={3}
+                title="범인 지목"
+                description="각자 한 번씩 제출합니다. 범인은 등록된 용의자 중에서만 선택할 수 있습니다."
+                rightSlot={<TeamBadge teamName={teamName} />}
+              />
+            </div>
           </header>
+          <main className="mx-auto w-full max-w-2xl flex-1 space-y-6 px-4 py-8 pb-12">
           <div
             className={cn(
               "overflow-hidden px-5 pb-6 pt-6 motion-safe:animate-[playRevealUp_0.6s_cubic-bezier(0.22,1,0.36,1)_both] motion-safe:[animation-delay:60ms]",
@@ -475,11 +475,7 @@ function PlaySessionShell({
                 <div className="space-y-5 text-sm text-[var(--foreground)]">
                   <FinalReportSubmittedBanner
                     submittedAt={playerReport?.submitted_at ?? null}
-                    description={
-                      ownSuspectName
-                        ? `${ownSuspectName}을(를) 범인으로 지목했습니다.`
-                        : "범인 지목이 접수되었습니다."
-                    }
+                    description={`지목한 범인: ${ownSuspectName ?? "—"}`}
                   />
                   {answerSuspectId ? (
                     <div
@@ -520,9 +516,6 @@ function PlaySessionShell({
                       이 사건에는 정답 범인이 등록되지 않아 검거 여부를 표시하지 않습니다.
                     </p>
                   )}
-                  <p className="text-sm text-[var(--muted-foreground)]">
-                    선생님이 세션을 종료할 때까지 잠시 기다려 주세요.
-                  </p>
                 </div>
               ) : (
                 <form className="space-y-5" onSubmit={handleReportSubmit}>
@@ -559,7 +552,8 @@ function PlaySessionShell({
                 </form>
               )}
           </div>
-        </main>
+          </main>
+        </div>
       </PlayAtmosphere>
     );
   }
@@ -567,21 +561,19 @@ function PlaySessionShell({
   if (hasSupabaseEnv && isBriefing) {
     return (
       <PlayAtmosphere>
-        <main className="mx-auto w-full max-w-6xl space-y-6 px-4 py-8 pb-12">
-          <header
-            className={cn(
-              "motion-safe:animate-[playRevealUp_0.55s_cubic-bezier(0.22,1,0.36,1)_both] px-4 py-4 sm:px-6",
-              playSurfaceWarm,
-            )}
-          >
-            <PlayPhaseHeader
-              phase={1}
-              title="사건 파악"
-              description="부원증을 확인한 후, 같은 팀끼리 모여 앉아 사건 파일을 확인하세요."
-              rightSlot={<TeamBadge teamName={teamName} />}
-            />
+        <div className="flex min-h-dvh flex-col">
+          <header className={playPhaseHeaderChromeShell}>
+            <div className={playPhaseHeaderChromeInner}>
+              <PlayPhaseHeader
+                phase={1}
+                title="사건 파악"
+                description="부원증을 확인한 후, 같은 팀끼리 모여 앉아 사건 파일을 확인하세요."
+                rightSlot={<TeamBadge teamName={teamName} />}
+              />
+            </div>
           </header>
 
+          <main className="mx-auto w-full max-w-6xl flex-1 space-y-6 px-4 py-8 pb-12">
           <div className="grid gap-8 lg:grid-cols-[minmax(280px,380px)_1fr] lg:items-start">
             <section className="space-y-2 motion-safe:animate-[playRevealUp_0.6s_cubic-bezier(0.22,1,0.36,1)_both] motion-safe:[animation-delay:80ms]">
               {playerQuery.isLoading ? (
@@ -614,7 +606,8 @@ function PlaySessionShell({
               <SessionInfoLayout sessionQuery={sessionQuery} />
             </section>
           </div>
-        </main>
+          </main>
+        </div>
       </PlayAtmosphere>
     );
   }

@@ -260,14 +260,6 @@ function TeamAssignmentDashboard({
         <div className="min-w-0">
           <h2 className="text-sm font-semibold text-[var(--foreground)]">배정 결과</h2>
         </div>
-        <div className="flex shrink-0 gap-1.5 text-[11px] text-[var(--muted-foreground)]">
-          <span className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-2 py-0.5">
-            팀 {groups.length}
-          </span>
-          <span className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-2 py-0.5">
-            {players.length}명
-          </span>
-        </div>
       </header>
       {loading ? (
         <LoadingState variant="section" label="참가자·팀 정보를 불러오는 중…" />
