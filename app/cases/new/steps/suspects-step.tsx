@@ -53,7 +53,7 @@ export function SuspectsStep({
       </CardHeader>
       <CardContent className="space-y-5">
         <StepHint>
-          브리핑에 그대로 공개되는 인물 목록입니다. 최종 보고에서는{" "}
+          사건 파악에 그대로 공개되는 인물 목록입니다. 범인 지목에서는{" "}
           <strong>여기서 등록한 용의자 중에서만</strong> 범인을 고를 수 있습니다. 반드시 한 명을{" "}
           <strong>범인(정답)</strong>으로 지정하세요.
         </StepHint>

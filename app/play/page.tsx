@@ -16,10 +16,11 @@ import { Modal } from "@/components/ui/modal";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+
 import {
   addFoundClueToTeam,
   getPlayerById,
-  getPlayerWithPatrolZone,
+  getPlayerWithInvestigationZone,
   getPlaySessionDetails,
   getCaseMapEntities,
   getSessionByJoinCode,
@@ -39,7 +40,6 @@ import { isCulpritCorrect } from "@/lib/report-compare";
 import { findSuspectName, parseSuspectRosterFromCase } from "@/lib/suspects";
 import { ROUTES } from "@/lib/routes";
 import { hasSupabaseEnv, supabase } from "@/lib/supabase";
-import { jigsawSeatingCopy } from "@/lib/jigsaw-seating-guidance";
 import { cn } from "@/lib/utils";
 
 function PlayPageContent() {
@@ -77,15 +77,15 @@ function PlaySessionShell({
 
   const playerQuery = useQuery({
     queryKey: ["play-player", playerId],
-    queryFn: async () => getPlayerWithPatrolZone(playerId as string),
+    queryFn: async () => getPlayerWithInvestigationZone(playerId as string),
     enabled: Boolean(playerId),
     refetchInterval: playerId ? 3_000 : false,
     refetchIntervalInBackground: true,
   });
 
-  const patrolLocationId = playerQuery.data?.patrol_location_id ?? null;
+  const investigationLocationId = playerQuery.data?.investigation_location_id ?? null;
   const teamId = playerQuery.data?.team_id ?? null;
-  const zoneName = playerQuery.data?.patrol_zone?.name ?? null;
+  const zoneName = playerQuery.data?.investigation_zone?.name ?? null;
 
   const teamQuery = useQuery({
     queryKey: ["play-team", teamId],
@@ -183,7 +183,7 @@ function PlaySessionShell({
             role: "player",
             player_id: playerId,
             nickname: nickname.trim() || "참가자",
-            patrol_location_id: patrolLocationId ?? undefined,
+            investigation_location_id: investigationLocationId ?? undefined,
             zone_name: zoneName ?? undefined,
           });
           return;
@@ -197,7 +197,7 @@ function PlaySessionShell({
       void channel.untrack().catch(() => {});
       void supabase.removeChannel(channel);
     };
-  }, [sessionId, playerId, teamId, patrolLocationId, zoneName, nickname, queryClient]);
+  }, [sessionId, playerId, teamId, investigationLocationId, zoneName, nickname, queryClient]);
 
   const sessionPhase = sessionQuery.data?.phase ?? (sessionId ? "waiting" : null);
 
@@ -278,24 +278,23 @@ function PlaySessionShell({
   }, [initialNickname, playerId, sessionId, resumeQuery.isLoading, resumeQuery.data, resumeDecided]);
 
   const hasJoinedSession = Boolean(playerId && sessionId);
-  const hasAssignment = Boolean(patrolLocationId && teamId && playerQuery.data?.club_role);
+  const hasAssignment = Boolean(investigationLocationId && teamId && playerQuery.data?.club_role);
 
   const isWaitingLobby =
     hasJoinedSession && (sessionQuery.isLoading || sessionPhase === "waiting" || !hasAssignment);
   const waitingLobbyState = useMemo(() => {
     if (sessionQuery.isLoading) return "session_loading" as const;
-    if (sessionPhase === "waiting") return "host_not_started" as const;
-    return "assigning" as const;
+    return "waiting" as const;
   }, [sessionQuery.isLoading, sessionPhase]);
   const isBriefing = hasJoinedSession && hasAssignment && sessionPhase === "briefing";
   const isInvestigation = hasJoinedSession && hasAssignment && sessionPhase === "investigation";
   const isFinalReport = hasJoinedSession && hasAssignment && sessionPhase === "final_report";
 
   const mapQuery = useQuery({
-    queryKey: ["play-case-map", sessionQuery.data?.case_id, patrolLocationId, sessionPhase],
+    queryKey: ["play-case-map", sessionQuery.data?.case_id, investigationLocationId, sessionPhase],
     queryFn: async () =>
       getCaseMapEntities(sessionQuery.data!.case_id!, {
-        restrictToPatrolLocationId: patrolLocationId,
+        restrictToInvestigationLocationId: investigationLocationId,
       }),
     enabled: Boolean(isInvestigation && sessionQuery.data?.case_id),
   });
@@ -353,7 +352,6 @@ function PlaySessionShell({
         clues={mapQuery.data?.clues ?? []}
         discoveredClueIds={discoveredClueIds}
         onDiscoveredClueIdsChange={setDiscoveredClueIds}
-        patrolZoneName={zoneName}
       />
     );
   }
@@ -370,9 +368,9 @@ function PlaySessionShell({
                   <ClipboardList className="h-5 w-5" aria-hidden />
                 </span>
                 <div>
-                  <CardTitle className="text-lg text-[color:var(--entry-parchment)]">3단계 · 최종 보고</CardTitle>
+                  <CardTitle className="text-lg text-[color:var(--entry-parchment)]">3단계 - 범인 지목</CardTitle>
                   <p className="text-xs font-normal text-[color:var(--entry-parchment-muted)]">
-                    팀 단위로 1회 제출합니다. 범인은 등록된 용의자 중에서만 선택할 수 있습니다.
+                    각자 한 번씩 제출합니다. 범인은 등록된 용의자 중에서만 선택할 수 있습니다.
                   </p>
                 </div>
               </div>
@@ -384,7 +382,7 @@ function PlaySessionShell({
                     <p className="text-xs font-semibold uppercase tracking-wider text-[color:var(--entry-accent-soft)]">
                       제출 완료
                     </p>
-                    <p className="mt-1 font-medium text-[color:var(--entry-parchment)]">팀 최종 보고가 접수되었습니다.</p>
+                    <p className="mt-1 font-medium text-[color:var(--entry-parchment)]">각자 범인 지목이 접수되었습니다.</p>
                     {teamQuery.data?.report_submitted_at ? (
                       <p className="mt-1 text-xs text-[color:var(--entry-parchment-muted)]">
                         {new Date(teamQuery.data.report_submitted_at).toLocaleString()}
@@ -508,7 +506,7 @@ function PlaySessionShell({
                         제출 중…
                       </>
                     ) : (
-                      "최종 보고 제출"
+                      "범인 지목 제출"
                     )}
                   </Button>
                 </form>
@@ -527,41 +525,29 @@ function PlaySessionShell({
           <header className="motion-safe:animate-[playRevealUp_0.55s_cubic-bezier(0.22,1,0.36,1)_both] rounded-xl border border-[color-mix(in_srgb,var(--primary)_26%,transparent)] bg-[color-mix(in_srgb,var(--mystery)_78%,var(--ink))] px-4 py-4 text-[color:var(--entry-parchment)] shadow-[0_12px_40px_color-mix(in_srgb,var(--ink)_40%,transparent)] sm:px-6">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[color:var(--entry-accent-soft)]">
-                  1단계 · 브리핑
-                </p>
-                <h1 className="mt-1 text-xl font-bold text-[color:var(--entry-parchment)]">사건 파일 &amp; 부원증</h1>
+                <h1 className="mt-1 text-xl font-bold text-[color:var(--entry-parchment)]">
+                  1단계 - 사건 파악
+                </h1>
                 <p className="mt-1 max-w-xl text-sm text-[color:var(--entry-parchment-muted)]">
-                  아래 정보를 확인한 뒤 선생님 안내에 따라 다음 단계로 진행합니다.
+                  부원증을 확인한 후, 같은 팀끼리 모여 앉아 사건 파일을 확인하세요.
                 </p>
               </div>
               <TeamBadge teamName={teamName} className="shrink-0 self-start sm:self-center" />
-            </div>
-            <div className="mt-4 rounded-lg border border-[color-mix(in_srgb,var(--primary)_35%,transparent)] bg-[color-mix(in_srgb,var(--primary)_10%,#151512)] px-4 py-3 text-left text-sm leading-relaxed text-[color:var(--entry-parchment)]">
-              <p className="font-semibold text-[color:var(--entry-accent-soft)]">
-                {jigsawSeatingCopy.studentBriefingLead}
-              </p>
-              <p className="mt-1.5 text-xs text-[color:var(--entry-parchment-muted)]">
-                {jigsawSeatingCopy.studentBriefingSub}
-              </p>
             </div>
           </header>
 
           <div className="grid gap-8 lg:grid-cols-[minmax(280px,380px)_1fr] lg:items-start">
             <section className="space-y-2 motion-safe:animate-[playRevealUp_0.6s_cubic-bezier(0.22,1,0.36,1)_both] motion-safe:[animation-delay:80ms]">
-              <h2 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[color:var(--entry-accent-soft)]">
-                내 부원증
-              </h2>
               {playerQuery.isLoading ? (
                 <div className="rounded-xl border border-dashed border-[color-mix(in_srgb,var(--primary)_28%,transparent)] bg-[color-mix(in_srgb,var(--ink)_28%,#11100e)]">
                   <LoadingState
                     variant="section"
                     tone="play"
-                    label="역할·구역 정보를 불러오는 중…"
+                    label="역할·장소 정보를 불러오는 중…"
                     className="min-h-[200px]"
                   />
                 </div>
-              ) : playerQuery.data?.club_role && patrolLocationId ? (
+              ) : playerQuery.data?.club_role && investigationLocationId ? (
                 <PlayerIdCard
                   nickname={nickname.trim() || "참가자"}
                   teamName={teamName}
@@ -572,16 +558,13 @@ function PlaySessionShell({
                 <LoadingState
                   variant="section"
                   tone="play"
-                  label="역할·구역 배정을 불러오는 중입니다…"
+                  label="역할·장소 배정을 불러오는 중입니다…"
                   className="min-h-[8rem] rounded-lg border border-[color-mix(in_srgb,var(--primary)_22%,transparent)] bg-[color-mix(in_srgb,var(--mystery)_40%,#12100e)] py-8"
                 />
               )}
             </section>
 
             <section className="space-y-2 motion-safe:animate-[playRevealUp_0.6s_cubic-bezier(0.22,1,0.36,1)_both] motion-safe:[animation-delay:160ms]">
-              <h2 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[color:var(--entry-accent-soft)]">
-                공유 사건 정보
-              </h2>
               <SessionInfoLayout sessionQuery={sessionQuery} />
             </section>
           </div>
@@ -634,7 +617,7 @@ function PlaySessionShell({
             <div className="w-full max-w-md rounded-xl border border-[color-mix(in_srgb,var(--primary)_26%,transparent)] bg-[color-mix(in_srgb,var(--mystery)_78%,var(--ink))] p-6 text-[color:var(--entry-parchment)] shadow-[0_12px_40px_color-mix(in_srgb,var(--ink)_45%,transparent)] ring-1 ring-[color-mix(in_srgb,var(--primary)_14%,transparent)] motion-safe:animate-[playModalRise_0.55s_cubic-bezier(0.22,1,0.36,1)_both]">
               <h3 className="text-lg font-semibold text-[color:var(--entry-parchment)]">닉네임 설정</h3>
               <p className="mt-1 text-sm text-[color:var(--entry-parchment-muted)]">
-                입장 후 부원 배정·브리핑이 진행됩니다.
+                입장 후 부원 배정·사건 파악이 진행됩니다.
               </p>
               <form
                 className="mt-4 space-y-3"
@@ -681,20 +664,16 @@ function PlaySessionShell({
 }
 
 const WAITING_LOBBY: Record<
-  "session_loading" | "host_not_started" | "assigning",
+  "session_loading" | "waiting",
   { title: string; body: string }
 > = {
   session_loading: {
     title: "사건 정보를 불러오는 중",
     body: "잠시만 기다려 주세요.",
   },
-  host_not_started: {
+  waiting: {
     title: "선생님이 시작할 때까지 대기",
-    body: "팀·역할·조사 구역은 시작 후 자동 배정됩니다. 배정 후 브리핑에서는 같은 팀 동료와 한 자리에 모입니다 (홈 집단).",
-  },
-  assigning: {
-    title: "팀·역할 배정 중",
-    body: "곧 동아리 직책과 순찰 구역이 정해지면, 브리핑에서는 같은 소속 팀끼리 모여 앉습니다 (홈 집단).",
+    body: "팀, 역할, 조사 장소가 자동 배정됩니다. 배정이 완료되면 같은 팀끼리 모여 앉아주세요.",
   },
 };
 

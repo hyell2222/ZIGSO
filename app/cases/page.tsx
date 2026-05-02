@@ -88,7 +88,7 @@ export default function CasesPage() {
     const title = row.title?.trim() || "제목 없는 사건";
     if (
       !window.confirm(
-        `"${title}" 사건을 삭제할까요?\n담당 구역·단서 등 연결된 데이터도 모두 함께 삭제됩니다.`,
+        `"${title}" 사건을 삭제할까요?\n담당 장소·단서 등 연결된 데이터도 모두 함께 삭제됩니다.`,
       )
     ) {
       return;
@@ -163,10 +163,10 @@ export default function CasesPage() {
                         {startGameMutation.isPending ? (
                           <>
                             <Loader2 className="mr-2 h-4 w-4 shrink-0 animate-spin" aria-hidden />
-                            시작하는 중…
+                            플레이 시작하는 중…
                           </>
                         ) : (
-                          "시작하기"
+                          "플레이 시작"
                         )}
                       </Button>
                     </div>

@@ -85,12 +85,12 @@ export type CaseClueForMap = {
 };
 
 /**
- * `restrictToPatrolLocationId`: 본인 조사 구역 맵만.
+ * `restrictToInvestigationLocationId`: 본인 조사 장소 맵만.
  */
 export async function getCaseMapEntities(
   caseId: string,
   options?: {
-    restrictToPatrolLocationId?: string | null;
+    restrictToInvestigationLocationId?: string | null;
   },
 ) {
   const [locRes, clueRes] = await Promise.all([
@@ -111,9 +111,9 @@ export async function getCaseMapEntities(
   const allLocations = (locRes.data ?? []) as CaseLocationForMap[];
   const allClues = (clueRes.data ?? []) as CaseClueForMap[];
 
-  if (options?.restrictToPatrolLocationId) {
+  if (options?.restrictToInvestigationLocationId) {
     const filteredLocations = allLocations.filter(
-      (loc) => loc.id === options.restrictToPatrolLocationId,
+      (loc) => loc.id === options.restrictToInvestigationLocationId,
     );
     const allowedLocationIds = new Set(filteredLocations.map((loc) => loc.id));
     const filteredClues = allClues.filter((clue) =>
@@ -135,17 +135,17 @@ export type PlayerSelfRow = {
   session_id: string | null;
   team_id: string | null;
   club_role: string | null;
-  patrol_location_id: string | null;
+  investigation_location_id: string | null;
   is_online: boolean | null;
 };
 
 const PLAYER_SELECT =
-  "id,nickname,session_id,team_id,club_role,patrol_location_id,is_online";
+  "id,nickname,session_id,team_id,club_role,investigation_location_id,is_online";
 
-const PLAYER_SELECT_WITH_TEAM_PATROL = `${PLAYER_SELECT},teams(id,name,found_clue_ids,report_suspect_id,report_method,report_motive,report_decisive_clue,report_submitted_at),patrol_zone:locations!patrol_location_id(name)`;
+const PLAYER_SELECT_WITH_TEAM_PATROL = `${PLAYER_SELECT},teams(id,name,found_clue_ids,report_suspect_id,report_method,report_motive,report_decisive_clue,report_submitted_at),investigation_zone:locations!investigation_location_id(name)`;
 
 export type SessionPlayerRow = PlayerSelfRow & {
-  patrol_zone: { name: string | null } | null;
+  investigation_zone: { name: string | null } | null;
   teams: {
     id: string;
     name: string | null;
@@ -168,18 +168,18 @@ export async function getPlayerById(playerId: string) {
   return data as PlayerSelfRow;
 }
 
-export type PlayerWithPatrolRow = PlayerSelfRow & {
-  patrol_zone: { name: string | null } | null;
+export type PlayerWithInvestigationRow = PlayerSelfRow & {
+  investigation_zone: { name: string | null } | null;
 };
 
-export async function getPlayerWithPatrolZone(playerId: string) {
+export async function getPlayerWithInvestigationZone(playerId: string) {
   const { data, error } = await supabase
     .from("players")
-    .select(`${PLAYER_SELECT},patrol_zone:locations!patrol_location_id(name)`)
+    .select(`${PLAYER_SELECT},investigation_zone:locations!investigation_location_id(name)`)
     .eq("id", playerId)
     .single();
   if (error) throw error;
-  return data as unknown as PlayerWithPatrolRow;
+  return data as unknown as PlayerWithInvestigationRow;
 }
 
 export async function listSessionPlayers(sessionId: string) {
@@ -293,7 +293,7 @@ export async function addFoundClueToTeam(teamId: string, clueId: string) {
 }
 
 /**
- * 팀의 최종 보고서(1회). 이미 제출됐으면 에러.
+ * 팀의 범인 지목서(1회). 이미 제출됐으면 에러.
  */
 export async function submitTeamReport(teamId: string, report: TeamReportInput) {
   const { data: existing, error: getError } = await supabase
@@ -320,7 +320,7 @@ export async function submitTeamReport(teamId: string, report: TeamReportInput) 
 }
 
 // =====================================================================
-// 팀·역할(부장/차장/부원)·조사 구역(랜덤)
+// 팀·역할(부장/차장/부원)·조사 장소(랜덤)
 // =====================================================================
 
 function shuffleInPlace<T>(arr: T[]) {
@@ -345,9 +345,9 @@ function roleForMemberIndex(i: number): ClubRole {
 }
 
 /**
- * 세션 시작 시: 팀 편성 + 팀마다 부장1·차장1·나머지 부원 + 조사 구역(사건 장소) 랜덤.
+ * 세션 시작 시: 팀 편성 + 팀마다 부장1·차장1·나머지 부원 + 조사 장소(사건 장소) 랜덤.
  */
-export async function assignTeamsAndPatrol(sessionId: string) {
+export async function assignTeamsAndInvestigation(sessionId: string) {
   const { data: session, error: sessionError } = await supabase
     .from("game_sessions")
     .select("case_id")
@@ -366,19 +366,19 @@ export async function assignTeamsAndPatrol(sessionId: string) {
   if (locErr) throw locErr;
   const investigationIds = (locRows ?? []).map((r) => r.id as string);
   if (investigationIds.length === 0) {
-    throw new Error("이 사건에 조사 구역이 없습니다. 맵 단계에서 구역을 추가해 주세요.");
+    throw new Error("이 사건에 조사 장소이 없습니다. 맵 단계에서 장소을 추가해 주세요.");
   }
 
   const { data: allPlayers, error: pErr } = await supabase
     .from("players")
-    .select("id,team_id,club_role,patrol_location_id")
+    .select("id,team_id,club_role,investigation_location_id")
     .eq("session_id", sessionId);
   if (pErr) throw pErr;
   const players = allPlayers ?? [];
   if (players.length === 0) return;
 
   const needsAssign = players.filter(
-    (p) => !p.team_id || !p.club_role || !p.patrol_location_id,
+    (p) => !p.team_id || !p.club_role || !p.investigation_location_id,
   );
   if (needsAssign.length === 0) return;
 
@@ -429,15 +429,15 @@ export async function assignTeamsAndPatrol(sessionId: string) {
     for (let j = 0; j < memberIds.length; j++) {
       const playerId = memberIds[j]!;
       const role = roleForMemberIndex(j);
-      const patrolId = shuffledZones[j % shuffledZones.length]!;
+      const investigationId = shuffledZones[j % shuffledZones.length]!;
       const { error: upErr } = await supabase
         .from("players")
-        .update({ team_id: teamId, club_role: role, patrol_location_id: patrolId })
+        .update({ team_id: teamId, club_role: role, investigation_location_id: investigationId })
         .eq("id", playerId);
       if (upErr) throw upErr;
     }
   }
 }
 
-export const assignTeamsAndClubSlots = assignTeamsAndPatrol;
-export const assignTeamsAndCharacters = assignTeamsAndPatrol;
+export const assignTeamsAndClubSlots = assignTeamsAndInvestigation;
+export const assignTeamsAndCharacters = assignTeamsAndInvestigation;

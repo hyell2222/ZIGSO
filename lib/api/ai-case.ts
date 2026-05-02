@@ -3,7 +3,7 @@ import type { SuspectEntry } from "@/lib/suspects";
 /**
  * /api/ai/generate-case 호출 클라이언트.
  *
- * 응답: 제목·브리핑 설명·용의자 로스터·난이도·조사 구역·맵 단서(구역 인덱스·좌표).
+ * 응답: 제목·사건 파악 설명·용의자 로스터·난이도·조사 장소·맵 단서(장소 인덱스·좌표).
  * 호출자가 tempId 를 붙여 작성 화면 초안 형태로 변환한다.
  */
 
@@ -18,7 +18,7 @@ export type PropCatalogEntry = {
 export type AICaseRequest = {
   /** 사용자가 입력한 주제/키워드 (선택) */
   prompt?: string;
-  /** 사용 가능한 prop asset 식별자 목록 (필수) */
+  /** 사용 가능한 소품asset 식별자 목록 (필수) */
   propAssets: string[];
   /**
    * asset_metadata 기준 맵상 픽셀 크기(선택).
@@ -27,7 +27,7 @@ export type AICaseRequest = {
   propCatalog?: PropCatalogEntry[];
   /** 목표 난이도 (선택) */
   difficulty?: "Easy" | "Normal" | "Hard";
-  /** 조사 구역당 권장 단서 개수 (선택) */
+  /** 조사 장소당 권장 단서 개수 (선택) */
   cluesPerZone?: number;
   /** 팀당 학생 인원(협동 규모 힌트), 보통 2~12 */
   teamSize?: number;

@@ -65,13 +65,11 @@ type LocationLayout = { id: string; name: string | null; x: number; y: number; w
 /** placeholder 표시용 텍스처 키 (asset 미지정 단서에 쓰임) */
 const PLACEHOLDER_TEXTURE_KEY = "map_prop:__placeholder__";
 
-type EvidenceEntry = {
+type ClueEntry = {
   id: string;
   locationId: string;
   locationName: string;
-  /** 사용할 prop asset 식별자 (없으면 placeholder) */
   asset: string | null;
-  /** 모달 헤더에 표시할 라벨 (기본 "조사") */
   propLabel: string;
   x: number;
   y: number;
@@ -81,13 +79,13 @@ type EvidenceEntry = {
   clues: CaseClueForMap[];
 };
 
-type ActiveEvidenceState = {
+type ActiveClueState = {
   label: string;
   clueCount: number;
 } | null;
 
-type PlacedEvidenceObject = {
-  entry: EvidenceEntry;
+type PlacedClueObject = {
+  entry: ClueEntry;
   /** 시각 + Matter 정적 몸체(다각형 실루엣) — Arcade 사각 히트박스 없음 */
   image: Phaser.GameObjects.Image;
 };
@@ -133,7 +131,7 @@ function autoPlaceInsideLocation(
   };
 }
 
-function buildEvidenceEntries(layouts: LocationLayout[], clues: CaseClueForMap[]): EvidenceEntry[] {
+function buildClueEntries(layouts: LocationLayout[], clues: CaseClueForMap[]): ClueEntry[] {
   const layoutById = new Map(layouts.map((l) => [l.id, l]));
 
   const fallbackCounts = new Map<string, number>();
@@ -144,7 +142,7 @@ function buildEvidenceEntries(layouts: LocationLayout[], clues: CaseClueForMap[]
     fallbackTotals.set(key, (fallbackTotals.get(key) ?? 0) + 1);
   }
 
-  const out: EvidenceEntry[] = [];
+  const out: ClueEntry[] = [];
   clues.forEach((clue) => {
     const L = clue.location_id ? layoutById.get(clue.location_id) : undefined;
     const locationName = L?.name?.trim() || "장소";
@@ -153,7 +151,7 @@ function buildEvidenceEntries(layouts: LocationLayout[], clues: CaseClueForMap[]
 
     // 어드민은 단서의 x/y/w/h 를 MAP_EDITOR_SPACE(= 800×600) 좌표로 저장한다.
     // 학생 맵은 여러 장소를 한 월드에 배치하므로, 각 장소 박스 L.w/L.h 크기에 맞춰
-    // 편집기 좌표를 장소 내부 좌표로 선형 매핑해야 prop 이 장소 안에 그려진다.
+    // 편집기 좌표를 장소 내부 좌표로 선형 매핑해야 소품이 장소 안에 그려진다.
     let cx: number;
     let cy: number;
     let w: number;
@@ -209,7 +207,7 @@ function buildEvidenceEntries(layouts: LocationLayout[], clues: CaseClueForMap[]
       locationId: clue.location_id ?? "",
       locationName,
       asset,
-      propLabel: "조사",
+      propLabel: "단서",
       x: cx,
       y: cy,
       w,
@@ -224,8 +222,8 @@ function rectsTouchOrOverlap(a: Phaser.Geom.Rectangle, b: Phaser.Geom.Rectangle)
   return a.x <= b.right && a.right >= b.x && a.y <= b.bottom && a.bottom >= b.y;
 }
 
-function placeLocationProps2D(scene: Phaser.Scene, entries: EvidenceEntry[]) {
-  const objects: PlacedEvidenceObject[] = [];
+function placeLocationProps2D(scene: Phaser.Scene, entries: ClueEntry[]) {
+  const objects: PlacedClueObject[] = [];
   for (const entry of entries) {
     const textureKey = entry.asset ? mapPropTextureKey(entry.asset) : PLACEHOLDER_TEXTURE_KEY;
     // 텍스처가 로딩되지 않았으면 placeholder 로 대체 (404 에셋 보호)
@@ -243,7 +241,7 @@ function placeLocationProps2D(scene: Phaser.Scene, entries: EvidenceEntry[]) {
     });
     image.setDisplaySize(entry.w, entry.h);
     image.setDepth(1);
-    image.setData("evidenceEntry", entry);
+    image.setData("clueEntry", entry);
     objects.push({ entry, image });
   }
   return objects;
@@ -259,12 +257,12 @@ function buildLocationLayouts(locations: CaseLocationForMap[]): LocationLayout[]
 }
 
 /** 인벤토리에서 다시 열 때: 원래 소품 정보를 유지하되 본문에는 해당 clue만 표시 */
-function evidenceEntryForSingleClue(
+function clueEntryForSingleClue(
   clue: CaseClueForMap,
-  evidenceEntries: EvidenceEntry[],
+  clueEntries: ClueEntry[],
   layouts: LocationLayout[],
-): EvidenceEntry {
-  const entry = evidenceEntries.find((e) => e.clues.some((c) => c.id === clue.id));
+): ClueEntry {
+  const entry = clueEntries.find((e) => e.clues.some((c) => c.id === clue.id));
   if (entry) {
     return { ...entry, id: `${entry.id}:inv:${clue.id}`, clues: [clue] };
   }
@@ -274,7 +272,7 @@ function evidenceEntryForSingleClue(
     locationId: clue.location_id ?? "",
     locationName: L?.name?.trim() ?? "장소",
     asset: null,
-    propLabel: "증거",
+    propLabel: "단서",
     x: 0,
     y: 0,
     w: 0,
@@ -299,8 +297,8 @@ function layoutClusterBounds(layouts: LocationLayout[]): { x: number; y: number;
   return { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
 }
 
-/** 기본 월드보다 장소·증거가 밖으로 나가면 bounds 확장 */
-function computeWorldSize(layouts: LocationLayout[], entries: EvidenceEntry[]) {
+/** 기본 월드보다 장소·단서가 밖으로 나가면 bounds 확장 */
+function computeWorldSize(layouts: LocationLayout[], entries: ClueEntry[]) {
   let w = DEFAULT_WORLD_W;
   let h = DEFAULT_WORLD_H;
   for (const L of layouts) {
@@ -314,44 +312,25 @@ function computeWorldSize(layouts: LocationLayout[], entries: EvidenceEntry[]) {
   return { w, h };
 }
 
-/**
- * "조사 모드": 최종 미션 단계에서 미션 타겟을 지목하는 별도 입력 경로.
- *
- * - F 키는 investigateMode 와 **무관하게 항상 단서 수집**(evidence 모달 + 인벤토리 추가).
- * - E 키는 investigateMode 가 활성일 때만 동작하며
- *   호버 중인 prop 의 clue id 들로 `onInvestigate(clueIds)` 를 호출한다
- *   (성공·실패 판정은 부모가 책임).
- * - 호버 중인 prop 이 없으면 E 입력은 무시된다.
- */
-type InvestigateMode = {
-  /** 상단 안내 텍스트 (예: "미션 타겟 조사 · 남은 기회 3") */
-  topBarLabel?: string;
-  /** E 키 입력 시 호출. 보통 1개의 clue id 가 들어온다. */
-  onInvestigate: (clueIds: string[]) => void;
-};
-
 /** React 래퍼 props — Phaser 인스턴스는 내부 useEffect에서만 생성 */
 type InvestigationMapProps = {
   className?: string;
   variant?: "embedded" | "fullscreen";
-  /** 상단 상태줄에 표시 (예: 1차 현장 / 2차 현장) */
-  phaseLabel?: string;
   locations?: CaseLocationForMap[];
   clues?: CaseClueForMap[];
-  onEvidenceProgress?: (found: number, total: number) => void;
+  onClueProgress?: (found: number, total: number) => void;
   /** 부모에서 단서 인벤토리 상태를 유지하고 싶을 때 초기값으로 전달 */
   initialDiscoveredClueIds?: string[];
   /** 발견 단서 변경을 부모로 전달 (phase 전환 후 briefing 인벤토리 표시용) */
   onDiscoveredClueIdsChange?: (ids: string[]) => void;
   /**
    * 우측 인벤토리 패널에 표시할 단서를 외부에서 제어한다.
-   * - 미지정(undefined): F 로 직접 발견한 단서들(`discoveredClueIds`)만 노출 (investigation phase 기본).
+   * - 미지정(undefined): F 로 직접 수집한 단서들(`discoveredClueIds`)만 노출 (investigation phase 기본).
    * - 지정 시: 해당 배열을 그대로 노출 (호스트/특수 UI에서 팀 전체 단서를 모아 보여줄 때).
    *   배열이 빈 배열이면 "수집한 단서 없음" 안내가 뜬다.
    */
   inventoryClues?: CaseClueForMap[];
   /** 최종 미션: 미션 타겟 조사 모드 — 지정 시 E 키로 타겟 제출 */
-  investigateMode?: InvestigateMode;
 };
 
 /** 풀스크린 시 부모 div 실제 크기로 캔버스 맞춤 (getBoundingClientRect + 최소값 보정) */
@@ -370,14 +349,12 @@ function readHostSize(el: HTMLElement) {
 export function InvestigationMap({
   className,
   variant = "embedded",
-  phaseLabel = "1차 현장",
   locations: locationsProp,
   clues: cluesProp,
-  onEvidenceProgress,
+  onClueProgress,
   initialDiscoveredClueIds,
   onDiscoveredClueIdsChange,
   inventoryClues,
-  investigateMode,
 }: InvestigationMapProps) {
   const locations = useMemo(() => locationsProp ?? [], [locationsProp]);
   const clues = useMemo(() => cluesProp ?? [], [cluesProp]);
@@ -385,28 +362,23 @@ export function InvestigationMap({
   /** Phaser Game 이 붙는 DOM (고정 높이 embedded / flex-1 fullscreen) */
   const hostRef = useRef<HTMLDivElement>(null);
   /** 콜백은 매 렌더마다 바뀔 수 있어 ref로 최신만 유지 (effect 의존성 최소화) */
-  const progressRef = useRef(onEvidenceProgress);
+  const progressRef = useRef(onClueProgress);
   const modalOpenRef = useRef(false);
-  const [activeEvidence, setActiveEvidence] = useState<ActiveEvidenceState>(null);
-  const [selectedEvidence, setSelectedEvidence] = useState<EvidenceEntry | null>(null);
+  const [activeClue, setActiveClue] = useState<ActiveClueState>(null);
+  const [selectedClue, setSelectedClue] = useState<ClueEntry | null>(null);
   /** F로 조사해 획득한 clue id (인벤토리 표시용) */
   const [discoveredClueIds, setDiscoveredClueIds] = useState<string[]>(initialDiscoveredClueIds ?? []);
   const registerDiscoveriesRef = useRef<(ids: string[]) => void>(() => {});
-  /** investigateMode 의 최신 참조를 Phaser scene 에서 쓰기 위해 ref 로 유지 */
-  const investigateModeRef = useRef<InvestigateMode | undefined>(investigateMode);
-  useEffect(() => {
-    investigateModeRef.current = investigateMode;
-  }, [investigateMode]);
 
   /** locations/clues 가 바뀔 때만 맵 레이아웃·월드 크기 재계산 */
   const layoutData = useMemo(() => {
     const layouts = buildLocationLayouts(locations);
-    const evidenceEntries = buildEvidenceEntries(layouts, clues);
-    const { w, h } = computeWorldSize(layouts, evidenceEntries);
-    return { layouts, evidenceEntries, worldW: w, worldH: h };
+    const clueEntries = buildClueEntries(layouts, clues);
+    const { w, h } = computeWorldSize(layouts, clueEntries);
+    return { layouts, clueEntries, worldW: w, worldH: h };
   }, [locations, clues]);
 
-  const totalEvidence = clues.length;
+  const totalClue = clues.length;
 
   const discoveredClues = useMemo(() => {
     const byId = new Map(clues.map((c) => [c.id, c]));
@@ -426,10 +398,10 @@ export function InvestigationMap({
     return [...source].sort((a, b) => (a.name ?? "").localeCompare(b.name ?? ""));
   }, [inventoryClues, discoveredClues]);
 
-  /** 부모에 전달하는 onEvidenceProgress 항상 최신 참조 유지 */
+  /** 부모에 전달하는 onClueProgress 항상 최신 참조 유지 */
   useEffect(() => {
-    progressRef.current = onEvidenceProgress;
-  }, [onEvidenceProgress]);
+    progressRef.current = onClueProgress;
+  }, [onClueProgress]);
 
   useEffect(() => {
     registerDiscoveriesRef.current = (ids: string[]) => {
@@ -443,12 +415,12 @@ export function InvestigationMap({
   }, []);
 
   useEffect(() => {
-    modalOpenRef.current = selectedEvidence !== null;
-  }, [selectedEvidence]);
+    modalOpenRef.current = selectedClue !== null;
+  }, [selectedClue]);
 
   useEffect(() => {
-    progressRef.current?.(discoveredClueIds.length, totalEvidence);
-  }, [discoveredClueIds.length, totalEvidence]);
+    progressRef.current?.(discoveredClueIds.length, totalClue);
+  }, [discoveredClueIds.length, totalClue]);
 
   useEffect(() => {
     onDiscoveredClueIdsChange?.(discoveredClueIds);
@@ -460,23 +432,23 @@ export function InvestigationMap({
   }, [initialDiscoveredClueIds]);
 
   useEffect(() => {
-    if (!selectedEvidence) return;
+    if (!selectedClue) return;
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setSelectedEvidence(null);
+      if (event.key === "Escape") setSelectedClue(null);
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [selectedEvidence]);
+  }, [selectedClue]);
 
   const notifyProgress = useCallback((found: number, total: number) => {
     progressRef.current?.(found, total);
   }, []);
 
-  const openEvidenceFromInventory = useCallback(
+  const openClueFromInventory = useCallback(
     (clue: CaseClueForMap) => {
-      setSelectedEvidence(evidenceEntryForSingleClue(clue, layoutData.evidenceEntries, layoutData.layouts));
+      setSelectedClue(clueEntryForSingleClue(clue, layoutData.clueEntries, layoutData.layouts));
     },
-    [layoutData.evidenceEntries, layoutData.layouts],
+    [layoutData.clueEntries, layoutData.layouts],
   );
 
   /**
@@ -484,14 +456,14 @@ export function InvestigationMap({
    * layoutData / variant 가 바뀌면 전체 재생성(간단·안전).
    */
   useEffect(() => {
-    setActiveEvidence(null);
+    setActiveClue(null);
     const parent = hostRef.current;
     if (!parent) return;
 
-    const { layouts, evidenceEntries, worldW, worldH } = layoutData;
+    const { layouts, clueEntries, worldW, worldH } = layoutData;
     const assetIdsInUse: string[] = Array.from(
       new Set(
-        evidenceEntries
+        clueEntries
           .map((e) => e.asset)
           .filter((a): a is string => typeof a === "string" && a.length > 0),
       ),
@@ -502,12 +474,12 @@ export function InvestigationMap({
     class InvestigationScene extends Phaser.Scene {
       private player!: MatterSpritePlayer;
       private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
-      /** F — 항상 "단서 수집" (증거 모달 + 인벤토리 추가) */
+      /** F — 항상 "단서 수집" (단서 모달 + 인벤토리 추가) */
       private interactKey!: Phaser.Input.Keyboard.Key;
       /** E — `investigateMode` 가 있을 때만 "target clue 조사 시도" */
       private investigateKey!: Phaser.Input.Keyboard.Key;
-      private evidenceObjects: PlacedEvidenceObject[] = [];
-      private activeEvidenceId: string | null = null;
+      private clueObjects: PlacedClueObject[] = [];
+      private activeClueId: string | null = null;
       /** 강조 중인 소품 스프라이트 — 별도 사각형이 아니라 텍스처 경계 기준 postFX */
       private highlightedPropImage: Phaser.GameObjects.Image | null = null;
       /** 장소 박스들을 감싼 영역 안에서만 플레이어 중심이 움직이도록 제한 */
@@ -529,15 +501,15 @@ export function InvestigationMap({
        * 소품 강조: 월드 좌표 사각형이 아니라 스프라이트 픽셀(알파) 윤곽에 맞는 Glow FX
        * (WebGL에서만 postFX 사용, Canvas 폴백은 tint)
        */
-      private setActive(entry: EvidenceEntry | null, target: PlacedEvidenceObject | null) {
+      private setActive(entry: ClueEntry | null, target: PlacedClueObject | null) {
         const nextId = entry?.id ?? null;
-        if (this.activeEvidenceId === nextId) return;
-        this.activeEvidenceId = nextId;
+        if (this.activeClueId === nextId) return;
+        this.activeClueId = nextId;
 
         this.clearPropHighlightFx();
 
         if (!entry || !target) {
-          setActiveEvidence(null);
+          setActiveClue(null);
           return;
         }
 
@@ -549,7 +521,7 @@ export function InvestigationMap({
         }
         this.highlightedPropImage = img;
 
-        setActiveEvidence({
+        setActiveClue({
           label: entry.propLabel,
           clueCount: entry.clues.length,
         });
@@ -558,35 +530,35 @@ export function InvestigationMap({
       /** 웹폰트 + 플레이어용 작은 텍스처(둥근 사각형) + asset 미지정 시 쓸 placeholder 생성 */
       preload() {
         this.load.font(FONT_KEY, FONT_URL, "opentype");
-
+      
         const g = this.make.graphics({ x: 0, y: 0 });
-        g.fillStyle(0x1b4a3a, 1);
-        g.fillRoundedRect(0, 0, PLAYER_SIZE, PLAYER_SIZE, 6);
-        g.lineStyle(2, 0xa8c9bc, 0.95);
-        g.strokeRoundedRect(0, 0, PLAYER_SIZE, PLAYER_SIZE, 6);
+        const r = PLAYER_SIZE / 2;
+      
+        g.fillStyle(0xffffff, 1);
+        g.fillCircle(r, r, r);
+        g.lineStyle(2, 0xcccccc, 1);
+        g.strokeCircle(r, r, r);
         g.generateTexture("player", PLAYER_SIZE, PLAYER_SIZE);
         g.destroy();
-
-        // asset 미지정 / 로딩 실패 시 폴백 — 노란 다이아몬드
+      
+        // asset 미지정 / 로딩 실패 시 폴백 — rounded rect
         if (!this.textures.exists(PLACEHOLDER_TEXTURE_KEY)) {
           const PH = 64;
+          const RADIUS = 10;
           const ph = this.make.graphics({ x: 0, y: 0 });
+
           ph.fillStyle(0xc9a156, 1);
-          ph.fillTriangle(PH / 2, 0, PH, PH / 2, PH / 2, PH);
-          ph.fillTriangle(PH / 2, 0, 0, PH / 2, PH / 2, PH);
+          ph.fillRoundedRect(0, 0, PH, PH, RADIUS);
           ph.lineStyle(2, 0x5c4528, 1);
-          ph.strokeTriangle(PH / 2, 0, PH, PH / 2, PH / 2, PH);
-          ph.strokeTriangle(PH / 2, 0, 0, PH / 2, PH / 2, PH);
+          ph.strokeRoundedRect(0, 0, PH, PH, RADIUS);
           ph.generateTexture(PLACEHOLDER_TEXTURE_KEY, PH, PH);
           ph.destroy();
         }
-
-        // 사건에서 실제로 쓰이는 asset 만 동적으로 로딩
+      
         preloadMapPropImages(this, assetIdsInUse);
-
-        // 누락된 asset 은 무시하고 placeholder 로 폴백 (Phaser 가 게임 정지하지 않도록)
+      
         this.load.on("loaderror", (file: Phaser.Loader.File) => {
-          console.warn(`[map] failed to load prop asset: ${file.key} (${file.src})`);
+          console.warn(`[map] failed to load 소품asset: ${file.key} (${file.src})`);
         });
       }
 
@@ -658,8 +630,8 @@ export function InvestigationMap({
             .setDepth(2);
         });
 
-        // 단서(증거) 에셋 — 각 단서의 props 로 배치
-        this.evidenceObjects.push(...placeLocationProps2D(this, evidenceEntries));
+        // 단서(단서) 에셋 — 각 단서의 props 로 배치
+        this.clueObjects.push(...placeLocationProps2D(this, clueEntries));
 
         // 첫 번째 장소 중앙에서 시작 (장소 없으면 월드 중앙)
         const startX =
@@ -667,7 +639,7 @@ export function InvestigationMap({
         const startY =
           layouts.length > 0 ? layouts[0].y + layouts[0].h / 2 : worldH / 2;
         this.player = this.matter.add.sprite(startX, startY, "player", undefined, {
-          shape: { type: "rectangle", width: PLAYER_SIZE, height: PLAYER_SIZE },
+          shape: { type: "circle", radius: PLAYER_SIZE / 2 },
           friction: 0.85,
           frictionStatic: 1,
           restitution: 0,
@@ -680,7 +652,6 @@ export function InvestigationMap({
 
         this.cursors = this.input.keyboard!.createCursorKeys();
         this.interactKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.F);
-        this.investigateKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.E);
 
         // 카메라가 플레이어 추적, 데드존으로 미세 흔들림 완화
         this.cameras.main.setBounds(0, 0, worldW, worldH);
@@ -713,10 +684,10 @@ export function InvestigationMap({
 
       /** 방향키 입력 → 대각선 이동 시 속도 정규화(√2) */
       update() {
-        let hovered: PlacedEvidenceObject | null = null;
+        let hovered: PlacedClueObject | null = null;
         let hoveredDistance = Number.POSITIVE_INFINITY;
 
-        for (const candidate of this.evidenceObjects) {
+        for (const candidate of this.clueObjects) {
           const playerBounds = this.player.getBounds();
           const targetBounds = candidate.image.getBounds();
           if (!rectsTouchOrOverlap(playerBounds, targetBounds)) continue;
@@ -734,16 +705,8 @@ export function InvestigationMap({
           const clueIds = hovered.entry.clues.map((c) => c.id);
           // F: 항상 단서 수집
           if (Phaser.Input.Keyboard.JustDown(this.interactKey)) {
-            setSelectedEvidence(hovered.entry);
+            setSelectedClue(hovered.entry);
             registerDiscoveriesRef.current(clueIds);
-          }
-          // E: investigateMode 가 활성일 때만 "target clue 조사 시도".
-          //    (정답·오답 판정은 부모의 onInvestigate 가 책임)
-          if (
-            investigateModeRef.current &&
-            Phaser.Input.Keyboard.JustDown(this.investigateKey)
-          ) {
-            investigateModeRef.current.onInvestigate(clueIds);
           }
         }
 
@@ -836,15 +799,10 @@ export function InvestigationMap({
             : "mb-2 border-b border-[var(--border)] px-0 text-xs text-[var(--muted-foreground)]",
         )}
       >
-        <span className={cn(isFull && "font-medium text-[color:var(--entry-parchment)]")}>
-          {investigateMode?.topBarLabel
-            ? investigateMode.topBarLabel
-            : `${phaseLabel} — 탐색 중`}
-        </span>
         <div className="flex min-w-0 max-w-[55%] items-center justify-end gap-3 sm:max-w-[65%]">
           <span className="text-right text-[10px] sm:text-[11px]">
-            {activeEvidence
-              ? `${activeEvidence.label} · F 수집`
+            {activeClue
+              ? `${activeClue.label} · F 단서 확인`
               : "소품에 가까이 다가가세요"}
           </span>
         </div>
@@ -863,7 +821,7 @@ export function InvestigationMap({
             isFull ? "min-h-0 bg-transparent" : "min-h-[420px] rounded-md border border-[var(--border)] bg-[var(--background)]",
           )}
         />
-        {/* 발견 증거 인벤토리 */}
+        {/* 발견 단서 인벤토리 */}
         <aside
           className={cn(
             "flex min-h-0 shrink-0 flex-col",
@@ -893,7 +851,7 @@ export function InvestigationMap({
                 isFull ? "text-[color:var(--entry-parchment)]" : "text-[var(--foreground)]",
               )}
             >
-              발견한 증거
+              수집한 단서
             </span>
           </div>
           <ul className="min-h-0 flex-1 list-none overflow-y-auto overscroll-contain p-2">
@@ -906,7 +864,7 @@ export function InvestigationMap({
                     : "border-[var(--border)] text-[var(--muted-foreground)]",
                 )}
               >
-                소품을 조사하면 증거가 여기에 쌓입니다.
+                단서를 수집하면 단서가 여기에 쌓입니다.
               </li>
             ) : (
               inventoryDisplayClues.map((clue) => (
@@ -915,7 +873,7 @@ export function InvestigationMap({
                     type="button"
                     variant="ghost"
                     size="sm"
-                    onClick={() => openEvidenceFromInventory(clue)}
+                    onClick={() => openClueFromInventory(clue)}
                     className={cn(
                       "h-auto w-full justify-start rounded border px-2.5 py-2 text-left text-xs transition-colors",
                       isFull
@@ -931,7 +889,7 @@ export function InvestigationMap({
           </ul>
         </aside>
       </div>
-      {selectedEvidence ? (
+      {selectedClue ? (
         <div className="absolute inset-0 z-[120] flex items-center justify-center bg-[var(--overlay-scrim)] p-4 backdrop-blur-[1px]">
           <div
             className={cn(
@@ -951,15 +909,15 @@ export function InvestigationMap({
                 <p
                   className={cn("text-xs", isFull ? "text-[var(--accent)]" : "text-[var(--muted-foreground)]")}
                 >
-                  {selectedEvidence.locationName}
+                  {selectedClue.locationName}
                 </p>
                 <h2 className={cn("text-lg", isFull ? "text-[var(--mystery)]" : "text-[var(--foreground)]")}>
-                  {selectedEvidence.propLabel} 조사 결과
+                  {selectedClue.propLabel} 수집한 단서
                 </h2>
               </div>
               <Button
                 type="button"
-                onClick={() => setSelectedEvidence(null)}
+                onClick={() => setSelectedClue(null)}
                 variant="ghost"
                 size="sm"
                 className="h-8 px-2"
@@ -968,21 +926,21 @@ export function InvestigationMap({
               </Button>
             </div>
             <div className="max-h-[65vh] space-y-4 overflow-y-auto px-4 py-4">
-              {selectedEvidence.clues.length > 0 ? (
-                selectedEvidence.clues.map((clue) => (
+              {selectedClue.clues.length > 0 ? (
+                selectedClue.clues.map((clue) => (
                   <section key={clue.id} className="rounded-md border border-[var(--border)] bg-[var(--tint-accent-weak)] p-4">
-                    <h3 className="text-base text-[var(--foreground)]">{clue.name?.trim() || "이름 없는 증거"}</h3>
+                    <h3 className="text-base text-[var(--foreground)]">{clue.name?.trim() || "이름 없는 단서"}</h3>
                     {clue.content?.trim() ? (
                       <p className="mt-3 whitespace-pre-wrap break-words text-sm text-[var(--foreground)]">
                         {clue.content}
                       </p>
                     ) : (
-                      <p className="mt-2 text-sm text-[var(--muted-foreground)]">등록된 증거 내용이 없습니다.</p>
+                      <p className="mt-2 text-sm text-[var(--muted-foreground)]">등록된 단서 내용이 없습니다.</p>
                     )}
                   </section>
                 ))
               ) : (
-                <p className="text-sm text-[var(--muted-foreground)]">이 소품에는 연결된 증거가 없습니다.</p>
+                <p className="text-sm text-[var(--muted-foreground)]">이 소품에는 연결된 단서가 없습니다.</p>
               )}
             </div>
           </div>

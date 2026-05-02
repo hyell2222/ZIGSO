@@ -22,7 +22,7 @@ export function groupPlayersByTeam(players: SessionPlayerRow[], teams: TeamRow[]
         const ra = clubRoleSortKey(a.club_role);
         const rb = clubRoleSortKey(b.club_role);
         if (ra !== rb) return ra - rb;
-        return (a.patrol_zone?.name ?? "").localeCompare(b.patrol_zone?.name ?? "", "ko");
+        return (a.investigation_zone?.name ?? "").localeCompare(b.investigation_zone?.name ?? "", "ko");
       }),
     }));
 }

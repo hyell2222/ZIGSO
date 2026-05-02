@@ -1,8 +1,8 @@
 /**
  * AI 사건 생성 라우트 — POST /api/ai/generate-case
  *
- * prop 목록 + 선택 주제·난이도·구역당 단서 개수 → OpenAI structured output 으로
- * 사건 작성 화면에 넣을 초안 JSON (기본 정보 / 용의자 텍스트 / 구역 / 맵 단서 좌표).
+ * 소품목록 + 선택 주제·난이도·장소당 단서 개수 → OpenAI structured output 으로
+ * 사건 작성 화면에 넣을 초안 JSON (기본 정보 / 용의자 텍스트 / 장소 / 맵 단서 좌표).
  *
  * 요구 환경변수:
  * - OPENAI_API_KEY  (필수)
@@ -117,15 +117,15 @@ function buildSystemPrompt(
   const sizeHint = hasCatalog
     ? [
         "  - w, h: 응답에 숫자로 넣되, 실제 크기는 위 [각 asset 의 맵 표시 크기]와 일치시키는 것이 좋다(서버가 동일 값으로 통일).",
-        "  - 같은 구역 안에서는 위 크기를 고려해 서로 겹치지 않게, 가장자리에서 반폭·반높이 이상 안쪽에 배치.",
+        "  - 같은 장소 안에서는 위 크기를 고려해 서로 겹치지 않게, 가장자리에서 반폭·반높이 이상 안쪽에 배치.",
       ]
     : [
-        "  - w, h: 48~128(짝수 선호). 같은 구역 안에서는 서로 겹치지 않게 최소 72px 이상 간격.",
+        "  - w, h: 48~128(짝수 선호). 같은 장소 안에서는 서로 겹치지 않게 최소 72px 이상 간격.",
       ];
 
   const localeRule = cluesInEnglish
-    ? "사건 제목(title)·브리핑(description)·조사 구역명·용의자(name·detail)는 한국어. clues 배열의 각 name·content 만 영어로 작성한다."
-    : "제목·설명·구역·용의자·단서 본문까지 모두 한국어로 통일한다.";
+    ? "사건 제목(title)·사건 파악(description)·조사 장소명·용의자(name·detail)는 한국어. clues 배열의 각 name·content 만 영어로 작성한다."
+    : "제목·설명·장소·용의자·단서 본문까지 모두 한국어로 통일한다.";
 
   return [
     "너는 '미스터리 클럽(MYSTERY CLUB)' 협동 추리 사건을 설계하는 작가다.",
@@ -133,9 +133,9 @@ function buildSystemPrompt(
     "선생님이 웹 작성 화면에 붙여 넣을 초안 JSON 만 출력한다. 범인 지정·수사 세션 운영은 선생님 몫이다.",
     "",
     "[제품 맥락]",
-    "- 편집 단계: (1) 사건 기본 정보 — 제목·사건 개요(브리핑)·난이도 (2) 용의자·범인 후보 (3) 조사 구역 이름 (4) 맵에 올릴 단서=소품.",
-    "- 학생 플로우: 참가 코드 입장 → 브리핑(사건 개요·용의자·부원증) → 팀별 조사 구역에서 단서 수집 → 최종 보고에서 등록된 용의자 중 한 명만 범인 선택.",
-    "- 조사 구역마다 별도 맵이 있고, 단서는 해당 구역 맵에만 배치된다. 부장·차장·부원 역할과 순찰 구역은 세션 시작 시 랜덤 배정(여기서 지정하지 않음).",
+    "- 편집 단계: (1) 사건 기본 정보 — 제목·사건 개요(사건 파악)·난이도 (2) 용의자·범인 후보 (3) 조사 장소 이름 (4) 맵에 올릴 단서=소품.",
+    "- 학생 플로우: 참가 코드 입장 → 사건 파악(사건 개요·용의자·부원증) → 팀별 조사 장소에서 단서 수집 → 범인 지목에서 등록된 용의자 중 한 명만 범인 선택.",
+    "- 조사 장소마다 별도 맵이 있고, 단서는 해당 장소 맵에만 배치된다. 부장·차장·부원 역할과 조사 장소은 세션 시작 시 랜덤 배정(여기서 지정하지 않음).",
     `- 맵 월드: 가로 ${WORLD_W}px × 세로 ${WORLD_H}px, 탑다운. 좌표는 격자 40px에 맞추면 좋다(가능하면 x·y를 40의 배수로).`,
     "",
     "[난이도]",
@@ -143,14 +143,14 @@ function buildSystemPrompt(
     "",
     "[필드별 규칙]",
     `· title: 한국어 8~28자. 학교·동아리 미스터리 톤, 스포일러 없음.`,
-    "· description: 한국어 180~320자. 브리핑에 그대로 보이므로 범인 실명·범행 확정 서술은 금지. 의뢰 맥락·알려진 사실·긴장감만.",
+    "· description: 한국어 180~320자. 사건 파악에 그대로 보이므로 범인 실명·범행 확정 서술은 금지. 의뢰 맥락·알려진 사실·긴장감만.",
     "· suspect_roster: 2~4명. 각 항목에 id(영문·숫자·하이픈 등 URL-safe한 짧은 식별자, 사건 내 고유), name(이름), detail(역할·알리바이·특징 한두 문장).",
     "  id 예: su_min, su_jae (한글 금지). 용의자들만 넣고, description 에서 범인이 누구인지 드러내지 말 것.",
     "· difficulty: 정확히 \"Easy\" | \"Normal\" | \"Hard\".",
     "· investigation_zones: 2~5개. zone_name만. 학교 안 장소 한국어, 서로 절대 중복 금지, 비슷한 이름도 피할 것.",
     "· clues:",
-    "  - assignment_index: investigation_zones 배열의 0부터 시작하는 인덱스. 구역마다 단서 개수를 가능한 한 균등하게 맞출 것. 사용자가 [구역별 단서 개수]를 요청하면 각 구역의 clues 개수가 그 값에 가깝도록(구역별 ±1). 요청이 없으면 구역당 대략 3~6개 수준으로 균등 배분.",
-    "  - asset: 반드시 아래 [사용 가능한 prop asset 목록]에 있는 문자열만. 없는 이름·변형 금지.",
+    "  - assignment_index: investigation_zones 배열의 0부터 시작하는 인덱스. 장소마다 단서 개수를 가능한 한 균등하게 맞출 것. 사용자가 [장소별 단서 개수]를 요청하면 각 장소의 clues 개수가 그 값에 가깝도록(장소별 ±1). 요청이 없으면 장소당 대략 3~6개 수준으로 균등 배분.",
+    "  - asset: 반드시 아래 [사용 가능한 소품asset 목록]에 있는 문자열만. 없는 이름·변형 금지.",
     `  - x, y: 소품 중심 좌표. ${WORLD_W}×${WORLD_H} 안에 완전히 들어오게. 권장: x는 ${40}~${WORLD_W - 40}, y는 ${40}~${WORLD_H - 40}.`,
     ...sizeHint,
     ...(cluesInEnglish
@@ -164,10 +164,10 @@ function buildSystemPrompt(
         ]),
     "",
     "[일관성]",
-    "- 제목·개요·구역명·단서·용의자가 하나의 사건으로 맞물릴 것.",
+    "- 제목·개요·장소명·단서·용의자가 하나의 사건으로 맞물릴 것.",
     "- 현실 학교에서 벌어질 법한 사건(폭력·혐오 과도 묘사 금지).",
     "",
-    "[사용 가능한 prop asset 목록 — 이 중에서만 asset 선택]",
+    "[사용 가능한 소품asset 목록 — 이 중에서만 asset 선택]",
     propAssets.join(", "),
     ...formatPropSizeLines(sizeByAsset),
   ].join("\n");
@@ -201,13 +201,13 @@ function buildUserPrompt(
   if (cluesPerZone !== undefined && cluesPerZone > 0) {
     lines.push("");
     lines.push(
-      `[구역별 단서 개수] 각 조사 구역(investigation_zones의 각 슬롯)마다, 그 구역 assignment_index에 배정된 clues가 대략 ${cluesPerZone}개씩 되도록 할 것(구역별 ±1). 구역 간 개수 편차를 최소화.`,
+      `[장소별 단서 개수] 각 조사 장소(investigation_zones의 각 슬롯)마다, 그 장소 assignment_index에 배정된 clues가 대략 ${cluesPerZone}개씩 되도록 할 것(장소별 ±1). 장소 간 개수 편차를 최소화.`,
     );
   }
   if (options.teamSize !== undefined && options.teamSize >= 2) {
     lines.push("");
     lines.push(
-      `[협동 규모] 한 팀당 약 ${options.teamSize}명이 협력한다는 전제로 단서 분산·난이도·브리핑 톤을 조정할 것. investigation_zones 개수는 2~5 범위에서 이 인원과 자연스럽게 맞출 것.`,
+      `[협동 규모] 한 팀당 약 ${options.teamSize}명이 협력한다는 전제로 단서 분산·난이도·사건 파악 톤을 조정할 것. investigation_zones 개수는 2~5 범위에서 이 인원과 자연스럽게 맞출 것.`,
     );
   }
   if (options.learningObjective.trim()) {
@@ -251,7 +251,7 @@ export async function POST(req: NextRequest) {
     : [];
   if (propAssets.length === 0) {
     return NextResponse.json(
-      { error: "사용 가능한 prop asset 목록이 비어있습니다." },
+      { error: "사용 가능한 소품asset 목록이 비어있습니다." },
       { status: 400 },
     );
   }

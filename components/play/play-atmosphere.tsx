@@ -22,7 +22,7 @@ const PLAY_ENTRY_BG: CSSProperties = {
 };
 
 /**
- * 학생 `/play` 본편(브리핑·최종보고·로비) 공통: 랜딩과 맞는 어두운 셸 + 콘텐츠.
+ * 학생 `/play` 본편(사건 파악·최종보고·로비) 공통: 랜딩과 맞는 어두운 셸 + 콘텐츠.
  */
 export function PlayAtmosphere({ children, className, variant = "default" }: PlayAtmosphereProps) {
   const topGlow =

@@ -76,7 +76,7 @@ body {
   color: var(--foreground);
 }
 
-/* —— 학생 play 본편(브리핑·보고·로비) 몰입 레이어 —— */
+/* —— 학생 play 본편(사건 파악·보고·로비) 몰입 레이어 —— */
 @keyframes playAmbientPulse {
   0%,
   100% {

@@ -29,10 +29,10 @@ import { type DraftClue, type DraftInvestigationZone } from "../new/steps/types"
 
 type StepIndex = 0 | 1 | 2 | 3;
 
-const STEP_LABELS = ["기본 정보", "용의자 프로필", "조사 구역", "맵 에디터"] as const;
+const STEP_LABELS = ["기본 정보", "용의자 프로필", "조사 장소", "맵 에디터"] as const;
 
 function locationNameFor(zone: DraftInvestigationZone) {
-  return zone.zoneName.trim() || "미정 구역";
+  return zone.zoneName.trim() || "미정 장소";
 }
 
 export type CaseDraft = {
@@ -131,7 +131,7 @@ export function CaseSteps(props: Props) {
     if (
       hasExistingDraft &&
       !window.confirm(
-        "AI 가 생성한 결과로 현재 입력(제목/설명/용의자/조사 구역/단서 등)이 대체됩니다. 계속할까요?",
+        "AI 가 생성한 결과로 현재 입력(제목/설명/용의자/조사 장소/단서 등)이 대체됩니다. 계속할까요?",
       )
     ) {
       return;
@@ -210,13 +210,13 @@ export function CaseSteps(props: Props) {
     mutationFn: async () => {
       if (!title.trim()) throw new Error("제목을 입력해주세요.");
       if (!description.trim()) throw new Error("사건 개요(설명)를 입력해주세요.");
-      if (investigationZones.length === 0) throw new Error("조사 구역을 한 곳 이상 추가해주세요.");
+      if (investigationZones.length === 0) throw new Error("조사 장소을 한 곳 이상 추가해주세요.");
       if (investigationZones.some((c) => !c.zoneName.trim())) {
-        throw new Error("모든 구역에 장소명을 입력해주세요.");
+        throw new Error("모든 장소에 장소명을 입력해주세요.");
       }
       const normalizedZones = investigationZones.map((c) => c.zoneName.trim().toLocaleLowerCase());
       if (new Set(normalizedZones).size !== normalizedZones.length) {
-        throw new Error("조사 구역 이름이 겹칩니다.");
+        throw new Error("조사 장소 이름이 겹칩니다.");
       }
       if (clues.length > 0 && clues.some((c) => !c.name.trim())) {
         throw new Error("맵에 올린 모든 단서에 이름을 입력해주세요.");
@@ -283,14 +283,14 @@ export function CaseSteps(props: Props) {
     if (!title.trim()) lines.push("제목을 입력하세요. (1단계: 기본 정보)");
     if (!description.trim()) lines.push("사건 개요(설명)을 입력하세요. (1단계: 기본 정보)");
     if (investigationZones.length === 0) {
-      lines.push("조사 구역을 한 곳 이상 추가하세요. (3단계: 조사 구역)");
+      lines.push("조사 장소을 한 곳 이상 추가하세요. (3단계: 조사 장소)");
     } else {
       if (investigationZones.some((c) => !c.zoneName.trim())) {
-        lines.push("모든 조사 구역에 장소명을 입력하세요. (3단계: 조사 구역)");
+        lines.push("모든 조사 장소에 장소명을 입력하세요. (3단계: 조사 장소)");
       } else {
         const normalized = investigationZones.map((c) => c.zoneName.trim().toLocaleLowerCase());
         if (new Set(normalized).size !== normalized.length) {
-          lines.push("조사 구역 이름이 서로 겹치지 않게 하세요. (3단계: 조사 구역)");
+          lines.push("조사 장소 이름이 서로 겹치지 않게 하세요. (3단계: 조사 장소)");
         }
       }
     }
@@ -368,7 +368,7 @@ export function CaseSteps(props: Props) {
               }}
             />
           </div>
-          <Button type="button" variant="default" onClick={openAiAssist} disabled={saveMutation.isPending}>
+          <Button type="button" variant="default" onClick={openAiAssist} disabled={saveMutation.isPending} className="gap-2">
             <Sparkles className="mr-1 h-4 w-4" />
             AI로 생성하기
           </Button>

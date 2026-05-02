@@ -38,12 +38,11 @@ import {
 } from "@/lib/realtime/session-presence";
 import { clubRoleLabelKr } from "@/lib/club-role";
 import { hasSupabaseEnv, supabase } from "@/lib/supabase";
-import { jigsawSeatingCopy } from "@/lib/jigsaw-seating-guidance";
 
 const PHASES: { key: CasePhase; label: string }[] = [
-  { key: "briefing", label: "1. 브리핑" },
-  { key: "investigation", label: "2. 조사" },
-  { key: "final_report", label: "3. 최종 보고" },
+  { key: "briefing", label: "1. 사건 파악" },
+  { key: "investigation", label: "2. 단서 수집" },
+  { key: "final_report", label: "3. 범인 지목" },
 ];
 
 type TimedPhase = Exclude<CasePhase, "waiting" | "session_end">;
@@ -228,19 +227,6 @@ function TeamAssignmentDashboard({
   return (
     <section className="space-y-3 rounded-lg border border-[var(--border)] bg-[var(--card-bg)] p-6 shadow-[var(--elevation-sm)]">
       <div className="rounded-md border border-[var(--mystery)]/30 bg-[var(--tint-accent-weak)] p-4 text-xs leading-relaxed text-[var(--foreground)]">
-        <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--mystery)]">
-          {jigsawSeatingCopy.teacherPanelTitle}
-        </p>
-        <ul className="mt-2 list-inside list-disc space-y-1.5 text-[var(--muted-foreground)]">
-          <li>
-            <span className="font-semibold text-[var(--foreground)]">{jigsawSeatingCopy.homeGroupTerm}</span> —{" "}
-            {jigsawSeatingCopy.homeGroupExplain}
-          </li>
-          <li>
-            <span className="font-semibold text-[var(--foreground)]">{jigsawSeatingCopy.expertGroupTerm}</span> —{" "}
-            {jigsawSeatingCopy.expertGroupExplain}
-          </li>
-        </ul>
         <p
           className={
             "mt-3 rounded border px-3 py-2 font-medium " +
@@ -250,12 +236,12 @@ function TeamAssignmentDashboard({
           }
         >
           {phase === "briefing"
-            ? jigsawSeatingCopy.briefingNowForTeacher
-            : jigsawSeatingCopy.investigationNowForTeacher}
+            ? "지금은 사건 파악 단계입니다. 학생들은 같은 팀끼리 모여 앉아주세요."
+            : "지금은 단서 수집 단계입니다. 같은 조사 장소를 맡은 학생들끼리 다시 모여 앉아주세요."}
         </p>
       </div>
       <header className="flex items-baseline justify-between">
-        <h2 className="text-sm font-semibold text-[var(--foreground)]">팀·역할·순찰 구역</h2>
+        <h2 className="text-sm font-semibold text-[var(--foreground)]">팀·역할·조사 장소</h2>
         <span className="text-xs text-[var(--muted-foreground)]">총 {players.length}명</span>
       </header>
       {loading ? (
@@ -291,7 +277,7 @@ function TeamAssignmentDashboard({
                         </span>
                       </span>
                       <span className="shrink-0 text-[var(--accent)]">
-                        {m.patrol_zone?.name ?? "—"}
+                        {m.investigation_zone?.name ?? "—"}
                       </span>
                     </li>
                   ))
@@ -329,7 +315,7 @@ function TeamReportDashboard({
   return (
     <section className="space-y-3 rounded-lg border border-[var(--border)] bg-[var(--card-bg)] p-6 shadow-[var(--elevation-sm)]">
       <header className="flex items-baseline justify-between">
-        <h2 className="text-sm font-semibold text-[var(--foreground)]">최종 보고</h2>
+        <h2 className="text-sm font-semibold text-[var(--foreground)]">범인 지목</h2>
         <span className="text-xs text-[var(--muted-foreground)]">
           제출 {submittedCount} / {teams.length}
         </span>
@@ -427,7 +413,7 @@ function TeamReportDashboard({
                         </span>
                       </span>
                       <span className="shrink-0 text-[var(--accent)]">
-                        {m.patrol_zone?.name ?? "—"}
+                        {m.investigation_zone?.name ?? "—"}
                       </span>
                     </li>
                   ))}

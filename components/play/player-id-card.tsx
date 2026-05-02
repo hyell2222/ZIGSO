@@ -45,7 +45,7 @@ function Row({
 }
 
 /**
- * 플레이어 부원증 — 브리핑에서 본인 역할·순찰 구역을 ID 카드로 표시.
+ * 플레이어 부원증 — 사건 파악에서 본인 역할·조사 장소을 ID 카드로 표시.
  */
 export function PlayerIdCard({ nickname, teamName, zoneName, roleKey, className }: Props) {
   const role = clubRoleLabelKr(roleKey);
@@ -71,7 +71,7 @@ export function PlayerIdCard({ nickname, teamName, zoneName, roleKey, className 
         <p className="text-center text-[11px] font-bold tracking-[0.22em] text-[color:var(--entry-accent-soft)]">
           MYSTERY CLUB
         </p>
-        <p className="mt-1 text-center text-xs text-[color:var(--entry-parchment-muted)]">부원증 · 브리핑 1단계</p>
+        <p className="mt-1 text-center text-xs text-[color:var(--entry-parchment-muted)]">부원증</p>
       </div>
       <div className="space-y-3 p-4">
         <Row icon={User} label="닉네임" value={nickname} />
@@ -82,7 +82,7 @@ export function PlayerIdCard({ nickname, teamName, zoneName, roleKey, className 
           valueClassName="font-mono text-[color:var(--entry-accent-soft)]"
         />
         <Row icon={Shield} label="이번 사건 동아리 직책" value={role} />
-        <Row icon={MapPin} label="순찰·조사 구역 (이 맵만 조사)" value={zoneName} />
+        <Row icon={MapPin} label="조사·조사 장소 (이 맵만 조사)" value={zoneName} />
       </div>
       <div className="border-t border-[color-mix(in_srgb,var(--primary)_14%,transparent)] bg-[color-mix(in_srgb,var(--mystery)_35%,#0f0d0b)] px-4 py-2.5 text-center">
         <p className="text-[10px] text-[color:var(--entry-parchment-muted)]">의뢰 종료 시 폐기 · 외부 유출 금지</p>

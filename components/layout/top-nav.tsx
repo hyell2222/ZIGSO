@@ -18,6 +18,8 @@ function showTeacherSubNav(pathname: string) {
   if (p.startsWith("/signup")) return false;
   if (p.startsWith("/play")) return false;
   if (p.startsWith("/sessions")) return false;
+  if (p.startsWith("/cases/new")) return false;
+  if (p.startsWith("/cases/edit")) return false;
   if (p.startsWith("/cases") || p.startsWith("/reports")) return true;
   return false;
 }

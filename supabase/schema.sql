@@ -4,14 +4,14 @@ create extension if not exists pgcrypto;
 -- Tables
 -- =====================================================================
 -- 3단계 게임: briefing → investigation → final_report
--- 역할(부장/차장/부원)·순찰 구역: 세션 시작 시 랜덤 (assignTeamsAndPatrol)
+-- 역할(부장/차장/부원)·조사 장소: 세션 시작 시 랜덤 (assignTeamsAndInvestigation)
 -- =====================================================================
 
 create table if not exists public.cases (
   id uuid primary key default gen_random_uuid(),
   title text not null,
   description text,
-  -- [{ "id", "name", "detail" }] — 브리핑·범인 선택·정답 id 기준
+  -- [{ "id", "name", "detail" }] — 사건 파악·범인 선택·정답 id 기준
   suspect_roster jsonb not null default '[]'::jsonb,
   -- 용의자 id 중 범인 1명 (suspect_roster[].id)
   answer_suspect_id text,
@@ -66,7 +66,7 @@ create table if not exists public.players (
   team_id uuid references public.teams(id) on delete set null,
   club_role text
     check (club_role is null or club_role in ('president', 'vice_president', 'member')),
-  patrol_location_id uuid,
+  investigation_location_id uuid,
   is_online boolean default true
 );
 
@@ -76,11 +76,11 @@ begin
     select 1 from information_schema.table_constraints
     where table_schema = 'public'
       and table_name = 'players'
-      and constraint_name = 'players_patrol_location_id_fkey'
+      and constraint_name = 'players_investigation_location_id_fkey'
   ) then
     alter table public.players
-      add constraint players_patrol_location_id_fkey
-      foreign key (patrol_location_id)
+      add constraint players_investigation_location_id_fkey
+      foreign key (investigation_location_id)
       references public.locations(id)
       on delete set null;
   end if;
@@ -118,7 +118,7 @@ create index if not exists game_sessions_active_idx on public.game_sessions (is_
 create index if not exists teams_session_id_idx on public.teams (session_id);
 create index if not exists players_session_id_idx on public.players (session_id);
 create index if not exists players_team_id_idx on public.players (team_id);
-create index if not exists players_patrol_location_id_idx on public.players (patrol_location_id);
+create index if not exists players_investigation_location_id_idx on public.players (investigation_location_id);
 create index if not exists players_club_role_idx on public.players (club_role);
 create index if not exists teams_report_submitted_at_idx on public.teams (report_submitted_at);
 

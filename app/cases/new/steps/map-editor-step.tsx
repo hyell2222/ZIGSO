@@ -82,8 +82,8 @@ export function MapEditorStep({
 
     const tabs: LocationTabItem[] = investigationZones.map((z) => ({
       id: z.tempId,
-      tabLabel: z.zoneName.trim() || "미정 구역",
-      canvasLabel: `${z.zoneName.trim() || "미정 구역"} (조사 구역)`,
+      tabLabel: z.zoneName.trim() || "미정 장소",
+      canvasLabel: `${z.zoneName.trim() || "미정 장소"} (조사 장소)`,
       clueCount: countByLocation.get(z.tempId) ?? 0,
     }));
 
@@ -149,7 +149,7 @@ export function MapEditorStep({
       <CardContent className="space-y-4">
         {investigationZones.length === 0 ? (
           <StepHint>
-            조사 구역이 1곳 이상 필요합니다. <strong>3단계</strong>에서 구역을 추가한 뒤 맵에 소품을 올려 주세요.
+            조사 장소이 1곳 이상 필요합니다. <strong>3단계</strong>에서 장소을 추가한 뒤 맵에 소품을 올려 주세요.
           </StepHint>
         ) : (
           <StepHint>
@@ -294,7 +294,7 @@ function PropSidebar({
         <LoadingState variant="compact" label="소품을 불러오는 중…" className="min-h-[6rem]" />
       ) : assets.length === 0 ? (
         <p className="text-xs text-[var(--muted-foreground,#94a3b8)]">
-          사용 가능한 prop 이 없어요. Supabase Storage 의 prop bucket 을 확인해주세요.
+          사용 가능한 소품이 없어요. Supabase Storage 의 소품bucket 을 확인해주세요.
         </p>
       ) : (
         <ul className="grid max-h-[520px] grid-cols-2 gap-1 overflow-y-auto pr-1">
@@ -582,7 +582,7 @@ function MapCanvas({
       >
         {clues.length === 0 ? (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center text-xs text-[var(--muted-foreground,#94a3b8)]">
-            왼쪽 사이드바의 prop 을 이곳으로 드래그해서 단서를 배치하세요.
+            왼쪽 사이드바의 소품을 이곳으로 드래그해서 단서를 배치하세요.
           </div>
         ) : null}
 
@@ -674,7 +674,7 @@ function ClueEditorPanel({
   if (!clue) {
     return (
       <aside className="rounded-md border border-dashed border-[var(--border)] bg-[var(--card-bg)] p-4 text-center text-xs text-[var(--muted-foreground,#94a3b8)]">
-        맵에 배치된 prop 을 클릭하면 여기서 단서 이름과 내용을 편집할 수 있어요.
+        맵에 배치된 소품을 클릭하면 여기서 단서 이름과 내용을 편집할 수 있어요.
       </aside>
     );
   }

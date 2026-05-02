@@ -34,7 +34,7 @@ type ListSectionProps = {
   className?: string;
 };
 
-/** 제목 + 「추가」 + 카드 목록 — 구역·용의자 등 편집용 */
+/** 제목 + 「추가」 + 카드 목록 — 장소·용의자 등 편집용 */
 export function StepListSection({
   title,
   description,

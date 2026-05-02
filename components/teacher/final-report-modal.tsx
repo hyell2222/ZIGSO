@@ -17,7 +17,7 @@ type Props = {
 };
 
 /** 팀 최종 보고 내용 — 읽기 전용. */
-export function TeamFinalReportModal({ isOpen, onClose, team, teamDisplayName, suspectRoster }: Props) {
+export function FinalReportModal({ isOpen, onClose, team, teamDisplayName, suspectRoster }: Props) {
   const submitted = Boolean(team?.report_submitted_at);
   const suspectName =
     (findSuspectName(suspectRoster, team?.report_suspect_id ?? null) ??

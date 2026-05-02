@@ -24,8 +24,8 @@ export type PlayerRecord = {
   team_id: string | null;
   /** 세션 호스트가 시작한 뒤: 부장/차장/부원 */
   club_role: string | null;
-  /** 조사 맵(장소) id — `locations` */
-  patrol_location_id: string | null;
+  /** 조사 장소 맵 id — `locations` */
+  investigation_location_id: string | null;
 };
 
 export type GameSession = {

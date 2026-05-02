@@ -2,7 +2,7 @@
 
 import { supabase } from "@/lib/supabase";
 import type { CaseRecord } from "@/lib/api/cases";
-import { assignTeamsAndPatrol } from "@/lib/api/play";
+import { assignTeamsAndInvestigation } from "@/lib/api/play";
 
 export type StartedGameSession = {
   sessionId: string;
@@ -63,7 +63,7 @@ export async function startGameSession(caseRecord: CaseRecord, hostId?: string |
 
   if (locError) throw locError;
   if (!locRows?.length) {
-    throw new Error("이 사건에 조사 구역이 없습니다. 맵 에디터에서 구역을 추가하세요.");
+    throw new Error("이 사건에 조사 장소이 없습니다. 맵 에디터에서 장소을 추가하세요.");
   }
 
   const joinCode = generateJoinCode(6);
@@ -99,7 +99,7 @@ export function getNextPhase(current: string | null): CasePhase | null {
 }
 
 export async function beginHostingSession(sessionId: string) {
-  await assignTeamsAndPatrol(sessionId);
+  await assignTeamsAndInvestigation(sessionId);
   const { error } = await supabase
     .from("game_sessions")
     .update({ phase: "briefing" })

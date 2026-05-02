@@ -3,9 +3,9 @@ import type { Scene } from "phaser";
 import { hasSupabaseEnv, supabase } from "@/lib/supabase";
 
 /**
- * 탐색 맵 소품 — Supabase Storage 의 prop bucket 에서 동적으로 로딩.
+ * 탐색 맵 소품 — Supabase Storage 의 소품bucket 에서 동적으로 로딩.
  *
- * 어떤 prop 이 사용 가능한지 코드에 박지 않는다.
+ * 어떤 소품이 사용 가능한지 코드에 박지 않는다.
  * - 사건의 단서(`clues.props.asset`) 가 가리키는 파일을 런타임에 로딩한다.
  * - 충돌 모양은 표시 크기 기반 사각형으로 자동 계산한다 (별도 vertex 정의 불필요).
  * - asset 식별자에 확장자가 포함되어 있으면 그대로, 없으면 기본 `.png` 를 붙인다.
@@ -35,7 +35,7 @@ export const MAP_PROP_DEFAULT_SIZE = { w: 80, h: 80 };
  * 어드민 맵 에디터 1장(=캐릭터 1명분)이 사용하는 좌표 공간.
  * 단서의 `props.x/y/w/h` 값은 이 공간(0..w, 0..h) 기준으로 저장된다.
  * 학생 맵은 여러 장소를 한 월드에 배치하므로, 이 좌표를 각 장소 박스 크기로
- * 변환해 써야 한다 (`investigation-map.tsx` 의 `buildEvidenceEntries` 참고).
+ * 변환해 써야 한다 (`investigation-map.tsx` 의 `buildClueEntries` 참고).
  */
 export const MAP_EDITOR_SPACE = { w: 800, h: 600 } as const;
 
@@ -71,7 +71,7 @@ export function mapPropAssetUrl(asset: string): string {
 /**
  * Scene.preload 안에서 호출.
  * 실제 사용되는 asset 들의 키 집합만 받아 로딩한다.
- * (수백 개 prop 이 있어도 사건에서 쓰는 것만 다운로드)
+ * (수백 개 소품이 있어도 사건에서 쓰는 것만 다운로드)
  */
 export function preloadMapPropImages(scene: Scene, assets: Iterable<string>): void {
   const seen = new Set<string>();

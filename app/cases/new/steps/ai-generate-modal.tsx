@@ -25,7 +25,7 @@ export type AIGenerateResult = {
 type Props = {
   open: boolean;
   onClose: () => void;
-  /** 모델에 전달할 사용 가능한 prop 식별자 목록 */
+  /** 모델에 전달할 사용 가능한 소품식별자 목록 */
   propAssets: string[];
   /** DB `asset_metadata` 기준 맵상 크기 — 있으면 AI 배치가 이 크기를 따름 */
   propCatalog?: PropCatalogEntry[];
@@ -162,7 +162,7 @@ export function AIGenerateModal({
               disabled={isLoading}
             />
             <p className="text-[11px] text-[var(--muted-foreground,#94a3b8)]">
-              비워 두면 학교·동아리 미스터리를 AI 가 제안합니다. 생성 결과는 1~4단계(기본 정보·용의자·구역·맵)에 한꺼번에 채워집니다. 범인 지정은 2단계에서 직접 해 주세요.
+              비워 두면 학교·동아리 미스터리를 AI 가 제안합니다. 생성 결과는 1~4단계(기본 정보·용의자·장소·맵)에 한꺼번에 채워집니다. 범인 지정은 2단계에서 직접 해 주세요.
             </p>
           </div>
 
@@ -196,7 +196,7 @@ export function AIGenerateModal({
               </Button>
             </div>
             <p className="text-[11px] text-[var(--muted-foreground,#94a3b8)]">
-              한 팀 협동 인원을 정하면 단서 분산·구역 수·난이도 힌트에 반영됩니다.
+              한 팀 협동 인원을 정하면 단서 분산·장소 수·난이도 힌트에 반영됩니다.
             </p>
           </div>
 
@@ -226,7 +226,7 @@ export function AIGenerateModal({
             <label htmlFor="ai-clues-english" className="cursor-pointer text-left text-sm leading-snug">
               <span className="font-medium text-[var(--foreground)]">단서를 영어로 생성</span>
               <span className="mt-0.5 block text-[11px] text-[var(--muted-foreground,#94a3b8)]">
-                맵 단서 이름·본문만 영어. 제목·브리핑·구역명·용의자는 한국어로 유지합니다.
+                맵 단서 이름·본문만 영어. 제목·사건 파악·장소명·용의자는 한국어로 유지합니다.
               </span>
             </label>
           </div>
@@ -259,7 +259,7 @@ export function AIGenerateModal({
             </div>
             <div className="space-y-2">
               <label className="text-xs font-medium text-[var(--accent)]">
-                구역당 단서 개수
+                장소당 단서 개수
               </label>
               <input
                 type="number"
@@ -279,20 +279,10 @@ export function AIGenerateModal({
                 className="w-full rounded-md border border-[var(--border)] bg-[var(--input,transparent)] px-2 py-1 text-sm text-[var(--foreground)] focus:border-[var(--accent)] focus:outline-none"
               />
               <p className="text-[11px] text-[var(--muted-foreground,#94a3b8)]">
-                조사 구역 하나마다 배치할 단서 수의 기대치입니다(2~10).
+                조사 장소 하나마다 배치할 단서 수의 기대치입니다(2~10).
               </p>
             </div>
           </div>
-
-          {propAssets.length === 0 ? (
-            <p className="rounded-md border border-yellow-500/40 bg-yellow-500/10 px-3 py-2 text-xs text-yellow-300">
-              사용 가능한 prop asset 이 없습니다. Supabase Storage 의 props 버킷을 확인하세요.
-            </p>
-          ) : (
-            <p className="text-[11px] text-[var(--muted-foreground,#94a3b8)]">
-              Storage 에 등록된 prop {propAssets.length}개 식별자만 사용해 단서를 배치합니다(목록에 없는 이름은 서버에서 제거됩니다).
-            </p>
-          )}
 
           {error ? (
             <p className="rounded-md border border-[var(--danger)]/40 bg-[var(--danger)]/10 px-3 py-2 text-xs text-[var(--danger)]">

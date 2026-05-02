@@ -50,7 +50,7 @@ function toPropAsset(
 }
 
 /**
- * Supabase Storage 의 prop bucket 안에 있는 SVG/이미지 자산 목록을 반환.
+ * Supabase Storage 의 props bucket 안에 있는 목록을 반환.
  * Supabase env 가 없으면 빈 배열을 돌려준다 (호출자가 폴백 처리).
  */
 export async function listPropAssets(): Promise<PropAsset[]> {

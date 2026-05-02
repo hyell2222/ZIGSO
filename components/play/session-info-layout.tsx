@@ -35,7 +35,7 @@ function FieldLabel({ children, className }: { children: ReactNode; className?: 
 }
 
 /**
- * 1단계(브리핑): 사건 개요 + 용의자
+ * 1단계(사건 파악): 사건 개요 + 용의자
  */
 export function SessionInfoLayout({ sessionQuery }: SessionInfoLayoutProps) {
   const cases = sessionQuery.data?.cases;
@@ -56,7 +56,7 @@ export function SessionInfoLayout({ sessionQuery }: SessionInfoLayoutProps) {
             </span>
             <div>
               <CardTitle className={cn("text-base font-semibold", playTitle)}>사건 파일</CardTitle>
-              <p className={cn("text-xs", playMuted)}>브리핑에 공개되는 제목·개요입니다.</p>
+              <p className={cn("text-xs", playMuted)}>사건 파악에 공개되는 제목·개요입니다.</p>
             </div>
           </div>
         </CardHeader>
@@ -103,7 +103,7 @@ export function SessionInfoLayout({ sessionQuery }: SessionInfoLayoutProps) {
               </span>
               <div>
                 <CardTitle className={cn("text-base font-semibold", playTitle)}>용의자 목록</CardTitle>
-                <p className={cn("text-xs", playMuted)}>최종 보고에서 아래 인물 중 범인을 고릅니다.</p>
+                <p className={cn("text-xs", playMuted)}>범인 지목에서 아래 인물 중 범인을 고릅니다.</p>
               </div>
             </div>
             {roster.length > 0 ? (

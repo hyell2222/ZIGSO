@@ -16,7 +16,6 @@ import {
 } from "@/lib/api/play";
 import { useRequireTeacherSession } from "@/lib/auth/use-require-teacher-session";
 import { KebabMenu } from "@/components/ui/kebab-menu";
-import { TeamFinalReportModal } from "@/components/teacher/team-final-report-modal";
 import { PageHeader } from "@/components/layout/page-header";
 import { TopNav } from "@/components/layout/top-nav";
 import { Button } from "@/components/ui/button";
@@ -24,14 +23,15 @@ import { LoadingState } from "@/components/ui/loading-state";
 import { clubRoleLabelKr, clubRoleSortKey } from "@/lib/club-role";
 import { isCulpritCorrect } from "@/lib/report-compare";
 import { ROUTES } from "@/lib/routes";
+import { FinalReportModal } from "@/components/teacher/final-report-modal";
 import { findSuspectName, parseSuspectRosterFromCase } from "@/lib/suspects";
 import { cn } from "@/lib/utils";
 
 const PHASE_KR: Record<string, string> = {
   waiting: "대기",
-  briefing: "브리핑",
+  briefing: "사건 파악",
   investigation: "조사",
-  final_report: "최종 보고",
+  final_report: "범인 지목",
   session_end: "종료",
 };
 
@@ -94,7 +94,7 @@ function ReportsSessionsListPanel({ teacherUserId }: { teacherUserId: string }) 
         <>
           <PageHeader
             title="활동 리포트"
-            description="진행한 세션별로 참가자 현황과 팀 최종 보고를 확인하고, CSV로 내려받을 수 있습니다."
+            description="진행한 세션별로 참가자 현황과 팀 범인 지목를 확인하고, 파일로 내려받을 수 있습니다."
           />
           {listQuery.isLoading ? (
             <LoadingState variant="section" label="목록을 불러오는 중…" />
@@ -106,7 +106,7 @@ function ReportsSessionsListPanel({ teacherUserId }: { teacherUserId: string }) 
               <Link className="font-medium text-[var(--accent)] underline" href={ROUTES.cases}>
                 내 사건
               </Link>
-              에서「시작하기」를 눌러 주세요.
+              에서「플레이 시작」를 눌러 주세요.
             </p>
           ) : (
             <ul className="space-y-3">
@@ -175,7 +175,7 @@ type PlayerReportLine = {
   nickname: string;
   teamName: string;
   roleLabel: string;
-  patrolZone: string;
+  investigationZone: string;
   reportSubmitted: boolean;
   /** null: 미제출 또는 정답 미등록으로 판정 불가 */
   isCorrect: boolean | null;
@@ -188,7 +188,7 @@ type SortKey =
   | "nickname"
   | "teamName"
   | "roleLabel"
-  | "patrolZone"
+  | "investigationZone"
   | "reportSubmitted"
   | "isCorrect"
   | "finalReport"
@@ -221,8 +221,8 @@ function compareReportLines(
     case "roleLabel":
       cmp = a.roleLabel.localeCompare(b.roleLabel, "ko");
       break;
-    case "patrolZone":
-      cmp = a.patrolZone.localeCompare(b.patrolZone, "ko");
+    case "investigationZone":
+      cmp = a.investigationZone.localeCompare(b.investigationZone, "ko");
       break;
     case "reportSubmitted":
       cmp = Number(a.reportSubmitted) - Number(b.reportSubmitted);
@@ -267,7 +267,7 @@ function buildSessionReportCsv(
     "닉네임",
     "팀",
     "역할",
-    "순찰 구역",
+    "조사 장소",
     "팀 제출",
     "정답",
     "제출 시각",
@@ -296,7 +296,7 @@ function buildSessionReportCsv(
       line.nickname,
       line.teamName,
       line.roleLabel,
-      line.patrolZone,
+      line.investigationZone,
       line.reportSubmitted ? "제출" : "—",
       correctLabel,
       line.submittedAt ?? "—",
@@ -345,7 +345,7 @@ function buildReportLines(
       nickname: p.nickname?.trim() || "—",
       teamName: team?.name?.trim() || "—",
       roleLabel: clubRoleLabelKr(p.club_role),
-      patrolZone: p.patrol_zone?.name?.trim() || "—",
+      investigationZone: p.investigation_zone?.name?.trim() || "—",
       reportSubmitted: submitted,
       isCorrect,
       submittedAt: submittedAtRaw ? new Date(submittedAtRaw).toLocaleString("ko-KR") : null,
@@ -546,7 +546,7 @@ function SessionReportContent() {
                 </Link>
                 <Button type="button" variant="secondary" size="sm" className="gap-2" onClick={handleDownloadCsv}>
                   <Download className="h-4 w-4" aria-hidden />
-                  CSV 다운로드
+                  파일 다운로드
                 </Button>
               </div>
             }
@@ -566,7 +566,7 @@ function SessionReportContent() {
                   <SortableTh label="닉네임" column="nickname" current={sort} onSort={handleSort} />
                   <SortableTh label="팀" column="teamName" current={sort} onSort={handleSort} />
                   <SortableTh label="역할" column="roleLabel" current={sort} onSort={handleSort} />
-                  <SortableTh label="순찰 구역" column="patrolZone" current={sort} onSort={handleSort} />
+                  <SortableTh label="조사 장소" column="investigationZone" current={sort} onSort={handleSort} />
                   <SortableTh label="보고 제출" column="reportSubmitted" current={sort} onSort={handleSort} />
                   <SortableTh label="정답" column="isCorrect" current={sort} onSort={handleSort} />
                   <SortableTh label="제출 내용" column="finalReport" current={sort} onSort={handleSort} />
@@ -582,7 +582,7 @@ function SessionReportContent() {
                     <td className="px-3 py-2.5 font-medium text-[var(--foreground)]">{line.nickname}</td>
                     <td className="px-3 py-2.5 font-mono text-[var(--accent)]">{line.teamName}</td>
                     <td className="px-3 py-2.5 text-[var(--foreground)]">{line.roleLabel}</td>
-                    <td className="px-3 py-2.5 text-[var(--foreground)]">{line.patrolZone}</td>
+                    <td className="px-3 py-2.5 text-[var(--foreground)]">{line.investigationZone}</td>
                     <td className="px-3 py-2.5">
                       <span
                         className={cn(
@@ -631,7 +631,7 @@ function SessionReportContent() {
             </div>
           </div>
         )}
-        <TeamFinalReportModal
+        <FinalReportModal
           isOpen={viewingTeamId !== null}
           onClose={() => setViewingTeamId(null)}
           team={viewingTeam}
