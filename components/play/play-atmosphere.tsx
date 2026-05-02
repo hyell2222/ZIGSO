@@ -57,6 +57,13 @@ export const playPhaseHeaderChromeShell = cn(
 export const playPhaseHeaderChromeInner =
   "mx-auto w-full max-w-6xl px-4 py-4 text-left sm:px-6";
 
+/**
+ * 로딩·대기 — 카드 없이 뷰포트 안에서 가로·세로 중앙.
+ * 부모는 `flex min-h-dvh flex-col` 등으로 높이를 넘겨 주면 `flex-1`로 남는 영역을 채움.
+ */
+export const playLoaderRegion =
+  "flex w-full min-h-0 flex-1 flex-col items-center justify-center px-4 py-10";
+
 export function PlayAtmosphere({ children, className }: PlayAtmosphereProps) {
   return (
     <div

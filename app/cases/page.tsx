@@ -2,7 +2,6 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, PlusIcon } from "lucide-react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -162,7 +161,7 @@ export default function CasesPage() {
                       >
                         {startGameMutation.isPending ? (
                           <>
-                            <Loader2 className="mr-2 h-4 w-4 shrink-0 animate-spin" aria-hidden />
+                            <Loader2 className="mr-2 h-4 w-4 shrink-0 animate-spin text-[var(--primary)]" aria-hidden />
                             플레이 시작하는 중…
                           </>
                         ) : (

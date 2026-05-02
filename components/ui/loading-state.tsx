@@ -45,14 +45,18 @@ export function LoadingState({
   const isOnPrimary = tone === "onPrimary";
 
   const labelTone = isPlay
-    ? "tracking-wide text-[var(--muted-foreground)]"
+    ? "tracking-wide text-[color-mix(in_srgb,var(--entry-parchment)_88%,white)]"
     : isOnPrimary
       ? "font-medium text-[var(--on-primary)]/90"
       : "text-[var(--muted-foreground)]";
 
   const spinnerStyle: CSSProperties | undefined = undefined;
 
-  const spinnerColor = isOnPrimary ? "text-[var(--on-primary)]" : "text-[var(--primary)]";
+  const spinnerColor = isOnPrimary
+    ? "text-[var(--on-primary)]"
+    : isPlay
+      ? "text-[color-mix(in_srgb,var(--on-primary)_82%,var(--primary))]"
+      : "text-[var(--primary)]";
 
   return (
     <div className={cn(VARIANT_WRAPPER[variant], className)} role="status" aria-live="polite">

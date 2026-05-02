@@ -33,6 +33,14 @@ const playTitle = "text-[var(--foreground)]";
  * 1단계(사건 파악): 사건 개요 + 용의자
  */
 export function SessionInfoLayout({ sessionQuery }: SessionInfoLayoutProps) {
+  if (sessionQuery.isLoading) {
+    return (
+      <div className="flex min-h-[min(20rem,46dvh)] flex-1 flex-col items-center justify-center py-6">
+        <LoadingState variant="section" tone="play" label="사건 정보를 불러오는 중…" className="min-h-0 py-4" />
+      </div>
+    );
+  }
+
   const cases = sessionQuery.data?.cases;
   const roster = parseSuspectRosterFromCase(cases?.suspect_roster);
 
@@ -53,29 +61,23 @@ export function SessionInfoLayout({ sessionQuery }: SessionInfoLayoutProps) {
           </div>
         </CardHeader>
         <CardContent className="space-y-4 pt-5">
-          {sessionQuery.data ? (
-            <>
-              <div className="space-y-1.5">
-                <p className={cn("text-lg font-semibold leading-snug", playTitle)}>
-                  {sessionQuery.data.cases?.title ?? "제목 없음"}
-                </p>
-              </div>
-              <div className="space-y-1.5">
-                <div
-                  className={cn(
-                    "rounded-lg border border-[var(--border)] bg-[var(--background)] p-4 text-sm leading-relaxed shadow-[inset_var(--input-inset)]",
-                    playTitle,
-                  )}
-                >
-                  <p className="whitespace-pre-wrap">
-                    {sessionQuery.data.cases?.description ?? "설명이 없습니다."}
-                  </p>
-                </div>
-              </div>
-            </>
-          ) : (
-            <LoadingState variant="section" tone="default" label="사건 정보를 불러오는 중…" />
-          )}
+          <div className="space-y-1.5">
+            <p className={cn("text-lg font-semibold leading-snug", playTitle)}>
+              {sessionQuery.data?.cases?.title ?? "제목 없음"}
+            </p>
+          </div>
+          <div className="space-y-1.5">
+            <div
+              className={cn(
+                "rounded-lg border border-[var(--border)] bg-[var(--background)] p-4 text-sm leading-relaxed shadow-[inset_var(--input-inset)]",
+                playTitle,
+              )}
+            >
+              <p className="whitespace-pre-wrap">
+                {sessionQuery.data?.cases?.description ?? "설명이 없습니다."}
+              </p>
+            </div>
+          </div>
         </CardContent>
       </Card>
 

@@ -5,6 +5,7 @@ import type { CSSProperties } from "react";
 
 import {
   PLAY_PAGE_BLACK_BG,
+  playLoaderRegion,
   playPhaseHeaderChromeInner,
   playPhaseHeaderChromeShell,
 } from "@/components/play/play-atmosphere";
@@ -19,9 +20,9 @@ const InvestigationMap = dynamic(
   {
     ssr: false,
     loading: () => (
-        <div className="flex justify-center px-2 py-4">
-          <LoadingState variant="section" tone="default" label="맵 데이터를 불러오는 중…" />
-        </div>
+      <div className={`${playLoaderRegion} min-h-[12rem] shrink-0`}>
+        <LoadingState variant="section" tone="play" label="맵 데이터를 불러오는 중…" />
+      </div>
     ),
   },
 );
@@ -63,17 +64,15 @@ export function InvestigationMapShell({
           </div>
         </div>
         {mapLoading ? (
-          <div className="relative flex min-h-0 flex-1 items-center justify-center p-6">
-            <div className="w-full max-w-md rounded-xl border border-[var(--border)] bg-[var(--card-bg)] px-6 py-10 shadow-[var(--elevation-sm)]">
-              <LoadingState variant="page" tone="default" label="장소·단서 정보를 불러오는 중…" className="min-h-[12rem]" />
-            </div>
+          <div className={playLoaderRegion}>
+            <LoadingState variant="section" tone="play" label="장소·단서 정보를 불러오는 중…" />
           </div>
         ) : mapError ? (
-          <div className="relative flex flex-1 items-center justify-center p-6">
-            <div className="max-w-md rounded-xl border border-[var(--panel-warn-border)] bg-[var(--panel-warn-bg)] px-6 py-8 text-center text-sm text-[var(--danger)] shadow-[var(--elevation-sm)]">
+          <div className={playLoaderRegion}>
+            <p className="max-w-md text-center text-sm leading-relaxed text-[var(--danger)]">
               맵 데이터를 불러오지 못했습니다.
               {mapError instanceof Error ? ` ${mapError.message}` : null}
-            </div>
+            </p>
           </div>
         ) : (
           <InvestigationMap

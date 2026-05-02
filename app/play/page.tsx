@@ -17,9 +17,9 @@ import {
   PlayAtmosphere,
   playPhaseHeaderChromeInner,
   playPhaseHeaderChromeShell,
+  playLoaderRegion,
   playSurfaceCool,
   playSurfacePanel,
-  playSurfaceWarm,
 } from "@/components/play/play-atmosphere";
 import { PlayerIdCard } from "@/components/play/player-id-card";
 import { SessionInfoLayout } from "@/components/play/session-info-layout";
@@ -542,7 +542,7 @@ function PlaySessionShell({
                   >
                     {reportMutation.isPending ? (
                       <>
-                        <Loader2 className="mr-2 h-4 w-4 shrink-0 animate-spin" aria-hidden />
+                        <Loader2 className="mr-2 h-4 w-4 shrink-0 animate-spin text-[var(--primary)]" aria-hidden />
                         제출 중…
                       </>
                     ) : (
@@ -573,18 +573,23 @@ function PlaySessionShell({
             </div>
           </header>
 
-          <main className="mx-auto w-full max-w-6xl flex-1 space-y-6 px-4 py-8 pb-12">
-          <div className="grid gap-8 lg:grid-cols-[minmax(280px,380px)_1fr] lg:items-start">
-            <section className="space-y-2 motion-safe:animate-[playRevealUp_0.6s_cubic-bezier(0.22,1,0.36,1)_both] motion-safe:[animation-delay:80ms]">
+          <main className="mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col space-y-6 px-4 py-8 pb-12">
+          <div className="grid min-h-0 flex-1 gap-8 lg:grid-cols-[minmax(280px,380px)_1fr] lg:items-stretch">
+            <section
+              className={cn(
+                "motion-safe:animate-[playRevealUp_0.6s_cubic-bezier(0.22,1,0.36,1)_both] motion-safe:[animation-delay:80ms]",
+                playerQuery.data?.club_role && investigationLocationId
+                  ? "space-y-2"
+                  : "flex min-h-[min(22rem,48dvh)] flex-col items-center justify-center",
+              )}
+            >
               {playerQuery.isLoading ? (
-                <div className={cn(playSurfacePanel, "border-dashed")}>
-                  <LoadingState
-                    variant="section"
-                    tone="default"
-                    label="역할·장소 정보를 불러오는 중…"
-                    className="min-h-[200px]"
-                  />
-                </div>
+                <LoadingState
+                  variant="section"
+                  tone="play"
+                  label="역할·장소 정보를 불러오는 중…"
+                  className="min-h-0 py-4"
+                />
               ) : playerQuery.data?.club_role && investigationLocationId ? (
                 <PlayerIdCard
                   nickname={nickname.trim() || "참가자"}
@@ -595,14 +600,14 @@ function PlaySessionShell({
               ) : (
                 <LoadingState
                   variant="section"
-                  tone="default"
+                  tone="play"
                   label="역할·장소 배정을 불러오는 중입니다…"
-                  className={cn("min-h-[8rem] rounded-lg py-8", playSurfacePanel)}
+                  className="min-h-0 py-4"
                 />
               )}
             </section>
 
-            <section className="space-y-2 motion-safe:animate-[playRevealUp_0.6s_cubic-bezier(0.22,1,0.36,1)_both] motion-safe:[animation-delay:160ms]">
+            <section className="flex min-h-0 flex-col motion-safe:animate-[playRevealUp_0.6s_cubic-bezier(0.22,1,0.36,1)_both] motion-safe:[animation-delay:160ms] lg:min-h-[min(22rem,48dvh)]">
               <SessionInfoLayout sessionQuery={sessionQuery} />
             </section>
           </div>
@@ -633,7 +638,8 @@ function PlaySessionShell({
 
   return (
     <PlayAtmosphere>
-      <main className="mx-auto w-full max-w-7xl px-4 py-8 pb-12">
+      <div className="flex min-h-dvh flex-col">
+        <main className="mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col px-4 py-8 pb-12">
         {showResumeModal && resumeQuery.data ? (
           <ResumeModal
             record={resumeQuery.data}
@@ -645,11 +651,11 @@ function PlaySessionShell({
         {!hasJoinedSession && !showResumeModal && initialNickname.trim() && joinAndRegisterMutation.isPending ? (
           <section
             className={cn(
-              "flex min-h-[40vh] items-center justify-center overflow-hidden p-6 motion-safe:animate-[playRevealUp_0.5s_ease-out_both]",
-              playSurfacePanel,
+              playLoaderRegion,
+              "motion-safe:animate-[playRevealUp_0.5s_ease-out_both]",
             )}
           >
-            <LoadingState variant="page" tone="default" label="보안 승인 확인 중…" className="min-h-[32vh]" />
+            <LoadingState variant="page" tone="play" label="보안 승인 확인 중…" className="min-h-0 py-0" />
           </section>
         ) : null}
 
@@ -657,7 +663,7 @@ function PlaySessionShell({
         !showResumeModal &&
         !(initialNickname.trim() && joinAndRegisterMutation.isPending) &&
         (!initialNickname.trim() || joinAndRegisterMutation.isError) ? (
-          <section className="flex items-center justify-center p-1">
+          <section className="flex flex-1 flex-col items-center justify-center p-1">
             <div
               className={cn(
                 "w-full max-w-md p-6 motion-safe:animate-[playModalRise_0.55s_cubic-bezier(0.22,1,0.36,1)_both]",
@@ -699,14 +705,17 @@ function PlaySessionShell({
         ) : null}
 
         {hasJoinedSession && isWaitingLobby ? (
-          <WaitingLobbyBlock
-            joinCode={joinCode}
-            nickname={nickname}
-            caseTitle={sessionQuery.data?.cases?.title ?? null}
-            state={waitingLobbyState}
-          />
+          <section className={playLoaderRegion}>
+            <WaitingLobbyBlock
+              joinCode={joinCode}
+              nickname={nickname}
+              caseTitle={sessionQuery.data?.cases?.title ?? null}
+              state={waitingLobbyState}
+            />
+          </section>
         ) : null}
-      </main>
+        </main>
+      </div>
     </PlayAtmosphere>
   );
 }
@@ -770,27 +779,10 @@ function WaitingLobbyBlock({
   return (
     <div
       className={cn(
-        "relative mt-2 flex flex-col items-center gap-4 overflow-hidden px-6 py-8 text-center",
-        "motion-safe:animate-[playRevealUp_0.65s_cubic-bezier(0.22,1,0.36,1)_both]",
-        "before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-[color-mix(in_srgb,var(--accent)_30%,transparent)] before:to-transparent",
-        playSurfaceWarm,
+        "relative flex max-w-md flex-col items-center gap-4 px-6 py-4 text-center",
         className,
       )}
     >
-      <div
-        className="pointer-events-none flex justify-center gap-4 opacity-80 motion-safe:animate-pulse"
-        aria-hidden
-      >
-        <span className="h-1.5 w-1.5 rounded-full bg-[var(--primary)] shadow-[0_0_10px_color-mix(in_srgb,var(--primary)_50%,transparent)]" />
-        <span
-          className="h-1.5 w-1.5 rounded-full bg-[var(--primary)] shadow-[0_0_10px_color-mix(in_srgb,var(--primary)_50%,transparent)] motion-safe:animate-pulse"
-          style={{ animationDelay: "0.2s" }}
-        />
-        <span
-          className="h-1.5 w-1.5 rounded-full bg-[var(--accent)] shadow-[0_0_8px_color-mix(in_srgb,var(--accent)_40%,transparent)] motion-safe:animate-pulse"
-          style={{ animationDelay: "0.4s" }}
-        />
-      </div>
       <Loader2
         className="h-10 w-10 shrink-0 animate-spin text-[var(--primary)]"
         style={{
@@ -799,12 +791,19 @@ function WaitingLobbyBlock({
         aria-hidden
       />
       <div className="w-full max-w-sm space-y-2">
-        <p className="text-base font-semibold tracking-tight text-[var(--foreground)]">{copy.title}</p>
-        {caseTitle ? <p className="text-sm text-[var(--muted-foreground)]">{caseTitle}</p> : null}
-        <p className="text-xs text-[var(--muted-foreground)]">
-          <span className="font-mono text-[var(--primary)]">{joinCode}</span> · {nickname}
+        <p className="text-base font-semibold tracking-tight text-[var(--entry-parchment)]">{copy.title}</p>
+        {caseTitle ? (
+          <p className="text-sm text-[color-mix(in_srgb,var(--entry-parchment)_72%,var(--entry-parchment-muted))]">
+            {caseTitle}
+          </p>
+        ) : null}
+        <p className="text-xs text-[color-mix(in_srgb,var(--entry-parchment)_68%,var(--entry-parchment-muted))]">
+          <span className="font-mono text-[color-mix(in_srgb,var(--on-primary)_75%,var(--primary))]">{joinCode}</span>{" "}
+          · {nickname}
         </p>
-        <p className="text-sm leading-relaxed text-[var(--muted-foreground)]">{copy.body}</p>
+        <p className="text-xs leading-relaxed text-[color-mix(in_srgb,var(--entry-parchment)_40%,var(--entry-parchment-muted))]">
+          {copy.body}
+        </p>
       </div>
     </div>
   );
@@ -872,10 +871,10 @@ export default function PlayPage() {
     <Suspense
       fallback={
         <div
-          className="flex min-h-dvh flex-col px-4 text-[var(--foreground)] play-shell"
+          className="play-shell flex min-h-dvh flex-col items-center justify-center px-4"
           style={PLAY_PAGE_BLACK_BG}
         >
-          <LoadingState variant="page" tone="default" className="min-h-dvh" />
+          <LoadingState variant="page" tone="play" className="min-h-0 py-8" />
         </div>
       }
     >

@@ -442,7 +442,7 @@ export function CaseSteps(props: Props) {
             >
               {saveMutation.isPending ? (
                 <>
-                  <Loader2 className="mr-1 h-4 w-4 shrink-0 animate-spin" aria-hidden />
+                  <Loader2 className="mr-1 h-4 w-4 shrink-0 animate-spin text-[var(--primary)]" aria-hidden />
                   저장 중…
                 </>
               ) : (
