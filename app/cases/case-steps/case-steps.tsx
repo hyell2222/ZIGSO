@@ -65,7 +65,7 @@ export function CaseSteps(props: Props) {
           description: "",
           suspects: [{ id: makeTempId(), name: "", detail: "" }],
           answerSuspectId: "",
-          difficulty: "보통",
+          difficulty: "Normal",
           investigationZones: [{ tempId: makeTempId(), zoneName: "" }],
           clues: [],
         };

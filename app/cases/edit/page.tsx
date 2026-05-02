@@ -6,7 +6,7 @@ import { Suspense, useEffect, useMemo } from "react";
 
 import { TopNav } from "@/components/layout/top-nav";
 import { LoadingState } from "@/components/ui/loading-state";
-import { getCaseFull } from "@/lib/api/cases";
+import { getCaseFull, normalizeDifficultyValue } from "@/lib/api/cases";
 import { ROUTES } from "@/lib/routes";
 import { parseSuspectRosterFromCase } from "@/lib/suspects";
 import { makeTempId } from "@/lib/temp-id";
@@ -25,7 +25,7 @@ import {
 import { CaseSteps, type CaseDraft } from "../case-steps/case-steps";
 
 function toDifficulty(value: string | null | undefined): Difficulty {
-  return value === "Easy" || value === "Hard" ? value : "Normal";
+  return normalizeDifficultyValue(value);
 }
 
 export default function CaseEditPage() {

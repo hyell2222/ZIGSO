@@ -78,6 +78,33 @@ function normalizeText(value: string | null | undefined) {
   return trimmed ? trimmed : null;
 }
 
+/** DB `cases_difficulty_check` — 'Easy' | 'Normal' | 'Hard' 만 허용 */
+const DB_DIFFICULTIES = ["Easy", "Normal", "Hard"] as const;
+type DbDifficulty = (typeof DB_DIFFICULTIES)[number];
+
+function coerceDifficultyForDb(value: string | null | undefined): DbDifficulty | null {
+  const t = normalizeText(value);
+  if (!t) return null;
+  if ((DB_DIFFICULTIES as readonly string[]).includes(t)) return t as DbDifficulty;
+  const legacyKr: Record<string, DbDifficulty> = {
+    쉬움: "Easy",
+    보통: "Normal",
+    어려움: "Hard",
+  };
+  if (legacyKr[t]) return legacyKr[t];
+  const lo = t.toLowerCase();
+  if (lo === "easy") return "Easy";
+  if (lo === "normal") return "Normal";
+  if (lo === "hard") return "Hard";
+  return "Normal";
+}
+
+/** UI·AI 응답 등 임의 값을 항상 DB 허용 값으로 */
+export function normalizeDifficultyValue(value: unknown): DbDifficulty {
+  if (typeof value !== "string") return "Normal";
+  return coerceDifficultyForDb(value) ?? "Normal";
+}
+
 function buildIdMap(rows: Array<{ id: string; name: string | null }>) {
   return new Map(
     rows
@@ -162,7 +189,7 @@ export async function createCase(input: CreateCaseInput) {
       description: normalizeText(input.description),
       suspect_roster: input.suspect_roster,
       answer_suspect_id: normalizeText(input.answer_suspect_id),
-      difficulty: normalizeText(input.difficulty),
+      difficulty: coerceDifficultyForDb(input.difficulty),
       creator_id: input.creator_id ?? null,
     })
     .select("id")
@@ -218,7 +245,7 @@ export async function updateCase(
       description: normalizeText(input.description),
       suspect_roster: input.suspect_roster,
       answer_suspect_id: normalizeText(input.answer_suspect_id),
-      difficulty: normalizeText(input.difficulty),
+      difficulty: coerceDifficultyForDb(input.difficulty),
       updated_at: new Date().toISOString(),
     })
     .eq("id", caseId);

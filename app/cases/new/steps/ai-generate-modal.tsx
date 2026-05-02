@@ -7,6 +7,7 @@ import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { generateCaseWithAI, type PropCatalogEntry } from "@/lib/api/ai-case";
+import { normalizeDifficultyValue } from "@/lib/api/cases";
 import { makeTempId } from "@/lib/temp-id";
 import type { SuspectEntry } from "@/lib/suspects";
 
@@ -115,7 +116,7 @@ export function AIGenerateModal({
           name: typeof s.name === "string" ? s.name : "",
           detail: typeof s.detail === "string" ? s.detail : "",
         })),
-        difficulty: data.difficulty,
+        difficulty: normalizeDifficultyValue(data.difficulty),
         investigationZones,
         clues,
       });
