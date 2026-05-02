@@ -27,7 +27,7 @@ export const ROUTES = {
   sessionHost: (sessionId: string) =>
     `/sessions/?session=${encodeURIComponent(sessionId)}`,
 
-  /** 세션 보고서 — static export: `session` 쿼리 */
+  /** 활동 리포트 (학생) — static export: `session` 쿼리 */
   reports: "/reports/",
   reportsForSession: (sessionId: string) =>
     `/reports/?session=${encodeURIComponent(sessionId)}`,

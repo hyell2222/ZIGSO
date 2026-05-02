@@ -7,8 +7,7 @@ import { usePathname, useRouter } from "next/navigation";
 
 import { getCurrentSession, signOutTeacher } from "@/lib/api/auth";
 import { TeacherSubNav } from "@/components/layout/teacher-sub-nav";
-import { Button } from "@/components/ui/button";
-import { LoadingState } from "@/components/ui/loading-state";
+import { Button, ButtonLink } from "@/components/ui/button";
 import { AUTH_SESSION_QUERY_KEY } from "@/lib/auth-session-query";
 import { ROUTES } from "@/lib/routes";
 import { hasSupabaseEnv } from "@/lib/supabase";
@@ -47,7 +46,7 @@ export function TopNav() {
         pathname.startsWith("/reports") ||
         pathname.startsWith("/sessions");
       if (onTeacherSite) {
-        router.replace(ROUTES.login);
+        router.replace(ROUTES.home);
       }
     },
   });
@@ -71,35 +70,21 @@ export function TopNav() {
             >
               학생 참가
             </Link>
-            {sessionQuery.isPending ? (
-              <LoadingState
-                variant="inline"
-                tone="onPrimary"
-                className="!w-auto shrink-0 py-0 [&>p]:text-left [&>p]:whitespace-nowrap"
-              />
-            ) : sessionQuery.data ? (
+            {sessionQuery.data ? (
               <Button
-                variant="secondary"
+                variant="transparent"
                 onClick={() => signOutMutation.mutate()}
                 disabled={signOutMutation.isPending}
-                className="border-[var(--on-primary)]/30 bg-[var(--on-primary)]/12 text-[var(--on-primary)] hover:bg-[var(--on-primary)]/18 hover:text-[var(--on-primary)]"
               >
-                {signOutMutation.isPending ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 shrink-0 animate-spin" aria-hidden />
-                    종료 중…
-                  </>
-                ) : (
-                  "로그아웃"
-                )}
+                로그아웃
               </Button>
             ) : (
-              <Link
+              <ButtonLink
                 href={ROUTES.login}
-                className="rounded-md bg-[var(--on-primary)] px-4 py-2.5 text-sm font-bold tracking-tight text-[var(--primary)] shadow-md ring-1 ring-[var(--on-primary)]/30 transition hover:brightness-95"
+                variant="transparent"
               >
                 지금 시작하기
-              </Link>
+              </ButtonLink>
             )}
           </nav>
         </div>

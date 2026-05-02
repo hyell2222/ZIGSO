@@ -27,8 +27,14 @@ export type AICaseRequest = {
   propCatalog?: PropCatalogEntry[];
   /** 목표 난이도 (선택) */
   difficulty?: "Easy" | "Normal" | "Hard";
-  /** 권장 단서 총 개수 (선택) */
-  targetClueCount?: number;
+  /** 조사 구역당 권장 단서 개수 (선택) */
+  cluesPerZone?: number;
+  /** 팀당 학생 인원(협동 규모 힌트), 보통 2~12 */
+  teamSize?: number;
+  /** 학습 목표 — 사건·단서에 반영 */
+  learningObjective?: string;
+  /** true면 clues[].name·content만 영어, 나머지 필드는 한국어 유지 */
+  cluesInEnglish?: boolean;
 };
 
 export type AICaseResponse = {

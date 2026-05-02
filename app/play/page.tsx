@@ -423,7 +423,7 @@ function PlaySessionShell({
                     </p>
                   )}
                   <p className="text-sm text-[color:var(--entry-parchment-muted)]">
-                    선생님이 수사를 마칠 때까지 잠시 기다려 주세요.
+                    선생님이 세션을 종료할 때까지 잠시 기다려 주세요.
                   </p>
                 </div>
               ) : (
@@ -685,11 +685,11 @@ const WAITING_LOBBY: Record<
   { title: string; body: string }
 > = {
   session_loading: {
-    title: "수사 정보를 불러오는 중",
+    title: "사건 정보를 불러오는 중",
     body: "잠시만 기다려 주세요.",
   },
   host_not_started: {
-    title: "선생님이 수사를 시작할 때까지 대기",
+    title: "선생님이 시작할 때까지 대기",
     body: "팀·역할·조사 구역은 시작 후 자동 배정됩니다. 배정 후 브리핑에서는 같은 팀 동료와 한 자리에 모입니다 (홈 집단).",
   },
   assigning: {

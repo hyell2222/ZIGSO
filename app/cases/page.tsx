@@ -104,7 +104,7 @@ export default function CasesPage() {
           <div className="space-y-6">
             <PageHeader
               title="내 사건"
-              description="사건을 만든 뒤 수사 세션을 열면, 학생이 참가 코드로 입장합니다."
+              description="사건을 만든 뒤 수사 세션을 열면 학생이 참가 코드로 입장합니다."
               actions={
                 (casesQuery.data?.length ?? 0) > 0 ? (
                   <Button
@@ -163,10 +163,10 @@ export default function CasesPage() {
                         {startGameMutation.isPending ? (
                           <>
                             <Loader2 className="mr-2 h-4 w-4 shrink-0 animate-spin" aria-hidden />
-                            세션 여는 중…
+                            시작하는 중…
                           </>
                         ) : (
-                          "수사 세션 시작"
+                          "시작하기"
                         )}
                       </Button>
                     </div>

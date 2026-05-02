@@ -79,7 +79,7 @@ function ReportsSessionsListPanel({ teacherUserId }: { teacherUserId: string }) 
     const label = row.cases?.title?.trim() || "제목 없는 사건";
     if (
       !window.confirm(
-        `「${label}」수사 세션을 삭제할까요?\n팀·참가 기록·보고 내용이 모두 삭제되며 되돌릴 수 없습니다.\n사건 원본은 그대로 남습니다.`,
+        `「${label}」세션을 삭제할까요?\n팀·참가 기록·보고 내용이 모두 삭제되며 되돌릴 수 없습니다.\n사건 원본은 그대로 남습니다.`,
       )
     ) {
       return;
@@ -93,8 +93,8 @@ function ReportsSessionsListPanel({ teacherUserId }: { teacherUserId: string }) 
       <main className="mx-auto w-full max-w-7xl space-y-6 px-4 py-8">
         <>
           <PageHeader
-            title="수사 기록"
-            description="진행한 수사 세션별로 참가자 현황과 팀 최종 보고를 확인하고, CSV로 내려받을 수 있습니다."
+            title="활동 리포트"
+            description="진행한 세션별로 참가자 현황과 팀 최종 보고를 확인하고, CSV로 내려받을 수 있습니다."
           />
           {listQuery.isLoading ? (
             <LoadingState variant="section" label="목록을 불러오는 중…" />
@@ -102,11 +102,11 @@ function ReportsSessionsListPanel({ teacherUserId }: { teacherUserId: string }) 
             <p className="text-sm text-[var(--danger)]">목록을 불러오지 못했습니다.</p>
           ) : (listQuery.data?.length ?? 0) === 0 ? (
             <p className="rounded-lg border border-dashed border-[var(--border)] bg-[var(--tint-accent-weak)] px-4 py-8 text-center text-sm text-[var(--muted-foreground)]">
-              아직 연 수사가 없습니다.{" "}
+              아직 연 세션이 없습니다.{" "}
               <Link className="font-medium text-[var(--accent)] underline" href={ROUTES.cases}>
                 내 사건
               </Link>
-              에서「수사 세션 시작」을 눌러 주세요.
+              에서「시작하기」를 눌러 주세요.
             </p>
           ) : (
             <ul className="space-y-3">

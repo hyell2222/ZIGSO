@@ -1,7 +1,7 @@
 /**
  * AI 사건 생성 라우트 — POST /api/ai/generate-case
  *
- * prop 목록 + 선택 주제·난이도·단서 개수 → OpenAI structured output 으로
+ * prop 목록 + 선택 주제·난이도·구역당 단서 개수 → OpenAI structured output 으로
  * 사건 작성 화면에 넣을 초안 JSON (기본 정보 / 용의자 텍스트 / 구역 / 맵 단서 좌표).
  *
  * 요구 환경변수:
@@ -111,6 +111,7 @@ function formatPropSizeLines(sizeByAsset: Map<string, { w: number; h: number }>)
 function buildSystemPrompt(
   propAssets: string[],
   sizeByAsset: Map<string, { w: number; h: number }>,
+  cluesInEnglish: boolean,
 ): string {
   const hasCatalog = sizeByAsset.size > 0;
   const sizeHint = hasCatalog
@@ -122,8 +123,13 @@ function buildSystemPrompt(
         "  - w, h: 48~128(짝수 선호). 같은 구역 안에서는 서로 겹치지 않게 최소 72px 이상 간격.",
       ];
 
+  const localeRule = cluesInEnglish
+    ? "사건 제목(title)·브리핑(description)·조사 구역명·용의자(name·detail)는 한국어. clues 배열의 각 name·content 만 영어로 작성한다."
+    : "제목·설명·구역·용의자·단서 본문까지 모두 한국어로 통일한다.";
+
   return [
-    "너는 '미스터리 클럽(MYSTERY CLUB)' 협동 추리 사건을 한국어로 설계하는 작가다.",
+    "너는 '미스터리 클럽(MYSTERY CLUB)' 협동 추리 사건을 설계하는 작가다.",
+    localeRule,
     "선생님이 웹 작성 화면에 붙여 넣을 초안 JSON 만 출력한다. 범인 지정·수사 세션 운영은 선생님 몫이다.",
     "",
     "[제품 맥락]",
@@ -143,12 +149,19 @@ function buildSystemPrompt(
     "· difficulty: 정확히 \"Easy\" | \"Normal\" | \"Hard\".",
     "· investigation_zones: 2~5개. zone_name만. 학교 안 장소 한국어, 서로 절대 중복 금지, 비슷한 이름도 피할 것.",
     "· clues:",
-    "  - assignment_index: investigation_zones 배열의 0부터 시작하는 인덱스. 구역마다 개수가 비슷하게 분배(대략 구역당 3~6개).",
+    "  - assignment_index: investigation_zones 배열의 0부터 시작하는 인덱스. 구역마다 단서 개수를 가능한 한 균등하게 맞출 것. 사용자가 [구역별 단서 개수]를 요청하면 각 구역의 clues 개수가 그 값에 가깝도록(구역별 ±1). 요청이 없으면 구역당 대략 3~6개 수준으로 균등 배분.",
     "  - asset: 반드시 아래 [사용 가능한 prop asset 목록]에 있는 문자열만. 없는 이름·변형 금지.",
     `  - x, y: 소품 중심 좌표. ${WORLD_W}×${WORLD_H} 안에 완전히 들어오게. 권장: x는 ${40}~${WORLD_W - 40}, y는 ${40}~${WORLD_H - 40}.`,
     ...sizeHint,
-    "  - name: 맵 목록에 보이는 짧은 단서 제목(한국어 2~12자), 고유하게.",
-    "  - content: 플레이어가 읽는 본문. 1~3문장. 분위기+추리 단서. description 과 모순 없게.",
+    ...(cluesInEnglish
+      ? [
+          "  - name: Short clue title for the map list (English, about 2~12 words or concise phrase), unique per clue.",
+          "  - content: Body text players read. 1~3 sentences in English. Atmosphere + deductive hint. Must not contradict description.",
+        ]
+      : [
+          "  - name: 맵 목록에 보이는 짧은 단서 제목(한국어 2~12자), 고유하게.",
+          "  - content: 플레이어가 읽는 본문. 1~3문장. 분위기+추리 단서. description 과 모순 없게.",
+        ]),
     "",
     "[일관성]",
     "- 제목·개요·구역명·단서·용의자가 하나의 사건으로 맞물릴 것.",
@@ -160,7 +173,15 @@ function buildSystemPrompt(
   ].join("\n");
 }
 
-function buildUserPrompt(theme: string, difficulty?: string, propCountTarget?: number): string {
+function buildUserPrompt(
+  theme: string,
+  difficulty: string | undefined,
+  cluesPerZone: number | undefined,
+  options: {
+    teamSize: number | undefined;
+    learningObjective: string;
+  },
+): string {
   const lines: string[] = [];
   lines.push(
     "위 시스템 규칙을 모두 지켜, 스키마에 맞는 JSON 객체 하나만 생성해줘. 마크다운·코드 펜스·주석 없이 순수 JSON만.",
@@ -177,11 +198,24 @@ function buildUserPrompt(theme: string, difficulty?: string, propCountTarget?: n
     lines.push("");
     lines.push(`[요청 난이도] ${difficulty} (difficulty 필드에 동일 값)`);
   }
-  if (propCountTarget && propCountTarget > 0) {
+  if (cluesPerZone !== undefined && cluesPerZone > 0) {
     lines.push("");
     lines.push(
-      `[단서 개수] clues 배열 총합이 대략 ${propCountTarget}개에 가깝게(±3). 구역 수를 고려해 나눌 것.`,
+      `[구역별 단서 개수] 각 조사 구역(investigation_zones의 각 슬롯)마다, 그 구역 assignment_index에 배정된 clues가 대략 ${cluesPerZone}개씩 되도록 할 것(구역별 ±1). 구역 간 개수 편차를 최소화.`,
     );
+  }
+  if (options.teamSize !== undefined && options.teamSize >= 2) {
+    lines.push("");
+    lines.push(
+      `[협동 규모] 한 팀당 약 ${options.teamSize}명이 협력한다는 전제로 단서 분산·난이도·브리핑 톤을 조정할 것. investigation_zones 개수는 2~5 범위에서 이 인원과 자연스럽게 맞출 것.`,
+    );
+  }
+  if (options.learningObjective.trim()) {
+    lines.push("");
+    lines.push(
+      "[학습 목표 — 사건 개요·단서·역할 묘사에 자연스럽게 녹일 것. 교과서 문장을 그대로 베끼지 말고 내용으로 반영]",
+    );
+    lines.push(options.learningObjective.trim());
   }
   return lines.join("\n");
 }
@@ -206,7 +240,10 @@ export async function POST(req: NextRequest) {
     propAssets?: unknown;
     propCatalog?: unknown;
     difficulty?: unknown;
-    targetClueCount?: unknown;
+    cluesPerZone?: unknown;
+    teamSize?: unknown;
+    learningObjective?: unknown;
+    cluesInEnglish?: unknown;
   };
 
   const propAssets: string[] = Array.isArray(input.propAssets)
@@ -243,10 +280,24 @@ export async function POST(req: NextRequest) {
     ["Easy", "Normal", "Hard"].includes(input.difficulty)
       ? input.difficulty
       : undefined;
-  const targetClueCount =
-    typeof input.targetClueCount === "number" && Number.isFinite(input.targetClueCount)
-      ? Math.max(0, Math.floor(input.targetClueCount))
+  const cluesPerZoneRaw =
+    typeof input.cluesPerZone === "number" && Number.isFinite(input.cluesPerZone)
+      ? Math.floor(input.cluesPerZone)
       : undefined;
+  const cluesPerZone =
+    cluesPerZoneRaw !== undefined ? clamp(cluesPerZoneRaw, 2, 10) : undefined;
+
+  const teamSizeRaw =
+    typeof input.teamSize === "number" && Number.isFinite(input.teamSize)
+      ? Math.floor(input.teamSize)
+      : undefined;
+  const teamSize =
+    teamSizeRaw !== undefined ? clamp(teamSizeRaw, 2, 12) : undefined;
+
+  const learningObjective =
+    typeof input.learningObjective === "string" ? input.learningObjective.trim() : "";
+
+  const cluesInEnglish = input.cluesInEnglish === true;
 
   const openaiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
@@ -258,8 +309,14 @@ export async function POST(req: NextRequest) {
       model: OPENAI_MODEL,
       temperature: 0.9,
       messages: [
-        { role: "system", content: buildSystemPrompt(propAssets, sizeByAsset) },
-        { role: "user", content: buildUserPrompt(theme, difficulty, targetClueCount) },
+        { role: "system", content: buildSystemPrompt(propAssets, sizeByAsset, cluesInEnglish) },
+        {
+          role: "user",
+          content: buildUserPrompt(theme, difficulty, cluesPerZone, {
+            teamSize,
+            learningObjective,
+          }),
+        },
       ],
       response_format: {
         type: "json_schema",

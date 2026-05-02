@@ -5,22 +5,24 @@ import { ButtonHTMLAttributes, ComponentProps, forwardRef } from "react";
 import { cn } from "@/lib/utils";
 
 export const buttonVariants = cva(
-  "inline-flex items-center justify-center rounded-xl text-sm font-semibold transition duration-200 disabled:pointer-events-none disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ring-focus)] active:scale-[0.98]",
+  "inline-flex items-center justify-center rounded-md text-sm font-semibold transition duration-200 disabled:pointer-events-none disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ring-focus)] active:scale-[0.98]",
   {
     variants: {
       variant: {
         default:
-          "cursor-pointer bg-[var(--primary)] text-[var(--on-primary)] shadow-[0_6px_22px_color-mix(in_srgb,var(--primary)_28%,transparent)] hover:brightness-[0.96] hover:shadow-[0_10px_28px_color-mix(in_srgb,var(--primary)_22%,transparent)]",
+          "cursor-pointer bg-[var(--primary)] text-[var(--on-primary)] hover:brightness-95",
         secondary:
           "cursor-pointer border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] hover:bg-[var(--surface)]",
         outline:
           "cursor-pointer border border-[color-mix(in_srgb,var(--mystery)_32%,var(--border))] bg-[color-mix(in_srgb,var(--surface)_58%,var(--background))] text-[var(--mystery)] shadow-[0_4px_16px_color-mix(in_srgb,var(--mystery)_4%,transparent)] hover:border-[color-mix(in_srgb,var(--primary)_28%,var(--border))] hover:bg-[color-mix(in_srgb,var(--surface)_88%,var(--background))] hover:text-[color-mix(in_srgb,var(--mystery)_88%,var(--primary))]",
         ghost:
-          "cursor-pointer text-[var(--foreground)] shadow-none hover:bg-[var(--tint-accent)] hover:shadow-none",
+          "cursor-pointer text-[var(--foreground)] hover:bg-[var(--tint-accent)]",
         tab:
-          "cursor-pointer rounded-none border-b-2 bg-transparent text-[var(--muted-foreground,#94a3b8)] shadow-none hover:shadow-none active:scale-100",
+          "cursor-pointer rounded-none border-b-2 bg-transparent text-[var(--muted-foreground,#94a3b8)] hover:shadow-none active:scale-100",
         danger:
-          "cursor-pointer bg-[var(--danger)] text-[var(--on-danger)] shadow-[0_6px_20px_color-mix(in_srgb,var(--danger)_22%,transparent)] hover:brightness-90 hover:shadow-[0_8px_24px_color-mix(in_srgb,var(--danger)_18%,transparent)]",
+          "cursor-pointer bg-[var(--danger)] text-[var(--on-danger)] hover:brightness-90",
+        transparent:
+          "cursor-pointer rounded-lg border border-[var(--on-primary)]/20 bg-[var(--on-primary)]/10 px-4 text-sm font-semibold text-[var(--on-primary)] shadow-sm transition-colors hover:bg-[var(--on-primary)]/18 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-60",
       },
       size: {
         default: "h-10 px-4 py-2",

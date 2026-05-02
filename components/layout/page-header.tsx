@@ -3,23 +3,15 @@ import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 type PageHeaderProps = {
-  /** 상단 라벨 (예: 세션 보고서, 사건) */
   eyebrow?: string;
-  /** 본문 제목 */
   title: ReactNode;
-  /** `title`에 추가 클래스 (예: 사건명 모노·강조) */
   titleClassName?: string;
-  /** h1 권장 — 동일 레벨 페이지에서 통일 */
   titleAs?: "h1" | "h2";
   description?: ReactNode;
-  /** 제목 줄 오른쪽 액션(버튼 등) */
   actions?: ReactNode;
   className?: string;
 };
 
-/**
- * 본문 상단 제목 블록 — 사건 목록·세션 보고서 등 동일한 톤.
- */
 export function PageHeader({
   eyebrow,
   title,
