@@ -88,14 +88,20 @@ export async function startGameSession(caseRecord: CaseRecord, hostId?: string |
   } satisfies StartedGameSession;
 }
 
-const PHASE_ORDER: CasePhase[] = ["briefing", "investigation", "final_report"];
+/** 호스트가 `advanceSessionPhase`로 넘길 수 있는 진행 단계 (waiting 은 begin, session_end 는 종료) */
+const HOST_PHASE_PROGRESSION: Array<"briefing" | "investigation" | "final_report"> = [
+  "briefing",
+  "investigation",
+  "final_report",
+];
 
 export function getNextPhase(current: string | null): CasePhase | null {
-  if (current === "waiting" || current === "session_end") return null;
-  if (current === "final_report") return "session_end";
-  const idx = PHASE_ORDER.indexOf((current as CasePhase) ?? "briefing");
-  if (idx < 0 || idx >= PHASE_ORDER.length - 1) return null;
-  return PHASE_ORDER[idx + 1]!;
+  const c = (current as CasePhase) ?? "waiting";
+  if (c === "waiting" || c === "session_end") return null;
+  const idx = HOST_PHASE_PROGRESSION.indexOf(c);
+  if (idx < 0) return null;
+  if (idx === HOST_PHASE_PROGRESSION.length - 1) return "session_end";
+  return HOST_PHASE_PROGRESSION[idx + 1]!;
 }
 
 export async function beginHostingSession(sessionId: string) {
@@ -116,10 +122,6 @@ export async function endSession(sessionId: string) {
 }
 
 export async function advanceSessionPhase(sessionId: string, nextPhase: CasePhase) {
-  if (nextPhase === "session_end") {
-    await endSession(sessionId);
-    return;
-  }
   const { error } = await supabase
     .from("game_sessions")
     .update({ phase: nextPhase })

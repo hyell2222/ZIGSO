@@ -1,20 +1,9 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  BookOpen,
-  Check,
-  ClipboardList,
-  Hourglass,
-  Loader2,
-  Megaphone,
-  Search,
-  Timer,
-  UserPlus,
-  Users,
-} from "lucide-react";
+import { Check, Loader2, Timer } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useMemo, useRef, useState, type ComponentType, type ReactNode } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 import {
   getHostSessionDetails,
@@ -59,64 +48,31 @@ type StepDef = {
   key: TimedPhase;
   number: number;
   label: string;
-  icon: ComponentType<{ className?: string }>;
 };
 
 const PHASES: StepDef[] = [
-  { key: "briefing", number: 1, label: "사건 파악", icon: BookOpen },
-  { key: "investigation", number: 2, label: "단서 수집", icon: Search },
-  { key: "final_report", number: 3, label: "범인 지목", icon: ClipboardList },
+  { key: "briefing", number: 1, label: "사건 파악" },
+  { key: "investigation", number: 2, label: "단서 수집" },
+  { key: "final_report", number: 3, label: "범인 지목" },
 ];
 
 type PhaseGuide = {
-  eyebrow: string;
   title: string;
   summary: string;
-  studentTask: string;
-  teacherTask: string;
-  icon: ComponentType<{ className?: string }>;
 };
 
-const PHASE_GUIDES: Record<CasePhase, PhaseGuide> = {
-  waiting: {
-    eyebrow: "준비 단계",
-    title: "학생들이 입장하기를 기다리고 있어요",
-    summary: "오른쪽의 참가 코드 또는 QR을 학생들에게 보여주세요. 모두 들어오면 수사를 시작합니다.",
-    studentTask: "참가 코드 또는 QR을 통해 게임에 입장하고 닉네임을 등록합니다.",
-    teacherTask: "오른쪽 아래 접속 인원이 모두 맞으면 ‘수사 시작’ 버튼을 눌러 진행합니다.",
-    icon: UserPlus,
-  },
+const PHASE_GUIDES: Record<TimedPhase, PhaseGuide> = {
   briefing: {
-    eyebrow: "Step 1 · 사건 파악",
-    title: "학생들이 사건 개요를 살펴보고 있어요",
-    summary: "팀별로 모여 앉아 사건의 배경과 등장인물을 함께 파악하는 시간입니다.",
-    studentTask: "같은 팀끼리 한자리에 모여 앉아 사건의 배경·등장인물·전개를 함께 읽습니다.",
-    teacherTask: "팀별 자리 이동이 끝나고 모두가 사건을 충분히 파악했다면 ‘다음 단계’를 눌러 단서 수집으로 넘어갑니다.",
-    icon: BookOpen,
+    title: "사건 파악",
+    summary: "팀별로 모여 사건 파일과 용의자 프로필을 확인합니다.",
   },
   investigation: {
-    eyebrow: "Step 2 · 단서 수집",
-    title: "팀별로 조사 장소를 탐색하고 있어요",
-    summary: "같은 조사 장소를 맡은 학생들끼리 모여 단서를 공유하는 시간입니다.",
-    studentTask: "각자 배정받은 조사 장소를 탐색하고, 같은 장소를 맡은 친구들과 단서를 공유합니다.",
-    teacherTask: "단서 공유가 충분히 이루어졌다면 ‘다음 단계’를 눌러 범인 지목으로 넘어갑니다.",
-    icon: Search,
+    title: "단서 수집",
+    summary: "배정 장소를 탐색하고 단서를 수집합니다.",
   },
   final_report: {
-    eyebrow: "Step 3 · 범인 지목",
-    title: "학생들이 최종 보고서를 작성하고 있어요",
-    summary: "팀끼리 토의한 후 한 명의 용의자를 지목해 보고서를 제출합니다.",
-    studentTask: "팀 토의를 거쳐 가장 의심되는 용의자를 지목하고 보고서를 제출합니다.",
-    teacherTask: "모든 학생이 제출하면 ‘수사 종료’를 눌러 결과를 함께 확인합니다.",
-    icon: ClipboardList,
-  },
-  session_end: {
-    eyebrow: "수사 종료",
-    title: "수사가 종료되었습니다",
-    summary: "팀별 결과를 확인하고 학생들과 함께 사건을 마무리해 주세요.",
-    studentTask: "결과를 확인하며 사건을 정리합니다.",
-    teacherTask: "팀별 다수결 결과를 함께 살펴보며 정답과 풀이를 공유합니다.",
-    icon: Megaphone,
+    title: "범인 지목",
+    summary: "팀 토의 후 범인을 지목합니다.",
   },
 };
 
@@ -297,24 +253,19 @@ function TeamAssignmentDashboard({
   phase: "briefing" | "investigation";
 }) {
   const groups = useMemo(() => groupPlayersByTeam(players, teams), [players, teams]);
-  const seatGuide =
-    phase === "briefing"
-      ? "같은 팀끼리 한자리에 모여 앉도록 안내해 주세요."
-      : "같은 조사 장소를 맡은 학생들끼리 다시 모여 앉도록 안내해 주세요.";
 
   return (
-    <section className="space-y-4 rounded-lg border border-[var(--border)] bg-[var(--card-bg)] p-6 shadow-[var(--elevation-sm)]">
-      <header className="flex flex-wrap items-end justify-between gap-3">
+    <section className="space-y-3 rounded-lg border border-[var(--border)] bg-[var(--card-bg)] p-4 shadow-[var(--elevation-sm)]">
+      <header className="flex flex-wrap items-center justify-between gap-2">
         <div className="min-w-0">
-          <h2 className="text-base font-semibold text-[var(--foreground)]">팀 · 역할 · 조사 장소</h2>
-          <p className="mt-1 text-xs text-[var(--muted-foreground)]">{seatGuide}</p>
+          <h2 className="text-sm font-semibold text-[var(--foreground)]">배정 결과</h2>
         </div>
-        <div className="flex items-center gap-2 text-xs text-[var(--muted-foreground)]">
-          <span className="rounded-full border border-[var(--border)] bg-[var(--surface)] px-2.5 py-1">
-            팀 <span className="ml-1 font-semibold text-[var(--foreground)]">{groups.length}</span>
+        <div className="flex shrink-0 gap-1.5 text-[11px] text-[var(--muted-foreground)]">
+          <span className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-2 py-0.5">
+            팀 {groups.length}
           </span>
-          <span className="rounded-full border border-[var(--border)] bg-[var(--surface)] px-2.5 py-1">
-            학생 <span className="ml-1 font-semibold text-[var(--foreground)]">{players.length}</span>
+          <span className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-2 py-0.5">
+            {players.length}명
           </span>
         </div>
       </header>
@@ -323,22 +274,17 @@ function TeamAssignmentDashboard({
       ) : groups.length === 0 ? (
         <p className="text-sm text-[var(--muted-foreground)]">배정된 팀이 없습니다.</p>
       ) : (
-        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {groups.map((g) => (
             <div
               key={g.team.id}
-              className="rounded-md border border-[var(--border)] bg-[var(--surface)] p-3 shadow-sm"
+              className="rounded-md border border-[var(--border)] bg-[var(--surface)] p-2.5 shadow-sm"
             >
-              <div className="flex items-baseline justify-between">
-                <div>
-                  <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--muted-foreground)]">
-                    Team
-                  </p>
-                  <p className="font-mono text-2xl font-semibold text-[var(--accent)]">{g.team.name ?? "—"}</p>
-                </div>
-                <span className="text-[11px] text-[var(--muted-foreground)]">{g.members.length}명</span>
+              <div className="flex items-baseline justify-between gap-2">
+                <p className="font-mono text-lg font-semibold text-[var(--accent)]">{g.team.name ?? "—"}</p>
+                <span className="text-[10px] text-[var(--muted-foreground)]">{g.members.length}명</span>
               </div>
-              <ul className="mt-2 space-y-1">
+              <ul className="mt-1.5 space-y-1">
                 {g.members.length === 0 ? (
                   <li className="rounded border border-dashed border-[var(--border)] px-2 py-1.5 text-xs text-[var(--muted-foreground)]">
                     아직 배정된 학생 없음
@@ -347,7 +293,7 @@ function TeamAssignmentDashboard({
                   g.members.map((m) => (
                     <li
                       key={m.id}
-                      className="flex items-center justify-between gap-2 rounded border border-[var(--border)] bg-[var(--tint-accent-weak)] px-2 py-1.5 text-xs"
+                      className="flex items-center justify-between gap-2 rounded border border-[var(--border)] bg-[var(--tint-accent-weak)] px-2 py-1 text-[11px]"
                     >
                       <span className="min-w-0 flex-1 text-[var(--foreground)]">
                         {m.nickname ?? "참가자"}
@@ -370,145 +316,28 @@ function TeamAssignmentDashboard({
   );
 }
 
-function PhaseStepper({ phase }: { phase: CasePhase }) {
-  const isEnded = phase === "session_end";
-  const currentIdx = PHASES.findIndex((p) => p.key === phase);
+function PhaseGuideCard({ phase, meta }: { phase: CasePhase; meta?: ReactNode }) {
+  if (phase === "waiting" || phase === "session_end") {
+    return null;
+  }
 
-  return (
-    <ol className="grid gap-2 sm:grid-cols-3 sm:gap-3" aria-label="수사 진행 단계">
-      {PHASES.map((step, idx) => {
-        const isDone = isEnded || (currentIdx >= 0 && idx < currentIdx);
-        const isCurrent = !isEnded && idx === currentIdx;
-        const Icon = step.icon;
-        return (
-          <li
-            key={step.key}
-            aria-current={isCurrent ? "step" : undefined}
-            className={cn(
-              "flex items-start gap-3 rounded-lg border p-3 transition",
-              isCurrent &&
-                "border-[var(--accent)] bg-[var(--tint-accent)] shadow-[var(--elevation-sm)]",
-              isDone &&
-                "border-[var(--primary)]/40 bg-[color-mix(in_srgb,var(--primary)_8%,var(--surface))]",
-              !isCurrent &&
-                !isDone &&
-                "border-[var(--border)] bg-[var(--surface)]",
-            )}
-          >
-            <span
-              aria-hidden
-              className={cn(
-                "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold",
-                isCurrent && "bg-[var(--accent)] text-[var(--background)]",
-                isDone && "bg-[var(--primary)] text-[var(--on-primary)]",
-                !isCurrent &&
-                  !isDone &&
-                  "border border-[var(--border)] bg-[var(--background)] text-[var(--muted-foreground)]",
-              )}
-            >
-              {isDone ? <Check className="h-4 w-4" /> : step.number}
-            </span>
-            <div className="min-w-0 flex-1">
-              <p
-                className={cn(
-                  "text-[10px] font-semibold uppercase tracking-[0.18em]",
-                  isCurrent && "text-[var(--accent)]",
-                  isDone && "text-[var(--primary)]",
-                  !isCurrent && !isDone && "text-[var(--muted-foreground)]",
-                )}
-              >
-                {isCurrent ? "진행 중" : isDone ? "완료" : "예정"}
-              </p>
-              <p className="mt-1 flex items-center gap-1.5 text-sm font-semibold text-[var(--foreground)]">
-                <Icon className="h-4 w-4 shrink-0 text-[var(--muted-foreground)]" aria-hidden />
-                {step.label}
-              </p>
-            </div>
-          </li>
-        );
-      })}
-    </ol>
-  );
-}
-
-function PhaseGuideCard({
-  phase,
-  primaryAction,
-  secondaryAction,
-  meta,
-}: {
-  phase: CasePhase;
-  primaryAction?: ReactNode;
-  secondaryAction?: ReactNode;
-  meta?: ReactNode;
-}) {
   const guide = PHASE_GUIDES[phase];
-  const HeroIcon = guide.icon;
+  const stepNumber = PHASES.find((s) => s.key === phase)?.number ?? 1;
+
   return (
-    <section className="overflow-hidden rounded-lg border border-[var(--accent)]/40 bg-[var(--card-bg)] shadow-[var(--elevation-sm)]">
-      <div className="flex flex-col gap-4 border-b border-[var(--accent)]/20 bg-[var(--tint-accent)] px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex min-w-0 items-start gap-3">
-          <span
-            aria-hidden
-            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--accent)] text-[var(--background)]"
-          >
-            <HeroIcon className="h-5 w-5" />
-          </span>
-          <div className="min-w-0">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--accent)]">
-              {guide.eyebrow}
-            </p>
-            <h2 className="mt-0.5 text-lg font-semibold leading-snug text-[var(--foreground)] sm:text-xl">
-              {guide.title}
-            </h2>
-            <p className="mt-1 text-sm leading-relaxed text-[var(--muted-foreground)]">
-              {guide.summary}
-            </p>
-            {meta ? <div className="mt-2">{meta}</div> : null}
-          </div>
-        </div>
-        {primaryAction || secondaryAction ? (
-          <div className="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">
-            {secondaryAction}
-            {primaryAction}
-          </div>
-        ) : null}
+    <div className="space-y-2 px-2 py-1">
+      {meta ? <div className="mt-1">{meta}</div> : null}
+      <div className="flex items-center gap-2.5">
+        <span
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[var(--primary)] bg-[var(--primary)] text-[12px] font-semibold tabular-nums text-[var(--on-primary)] shadow-sm"
+          aria-hidden
+        >
+          {stepNumber}
+        </span>
+        <h2 className="text-xl font-bold leading-tight text-[var(--foreground)]">{guide.title}</h2>
       </div>
-      <div className="grid gap-3 p-5 md:grid-cols-2">
-        <div className="rounded-md border border-[var(--border)] bg-[var(--surface)] p-4">
-          <div className="flex items-center gap-2">
-            <span
-              aria-hidden
-              className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--background)] text-[var(--muted-foreground)]"
-            >
-              <Users className="h-3.5 w-3.5" />
-            </span>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--muted-foreground)]">
-              학생이 할 일
-            </p>
-          </div>
-          <p className="mt-2 text-sm leading-relaxed text-[var(--foreground)]">
-            {guide.studentTask}
-          </p>
-        </div>
-        <div className="rounded-md border border-[var(--accent)]/40 bg-[var(--tint-accent-weak)] p-4">
-          <div className="flex items-center gap-2">
-            <span
-              aria-hidden
-              className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[var(--accent)] text-[var(--background)]"
-            >
-              <ClipboardList className="h-3.5 w-3.5" />
-            </span>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--accent)]">
-              선생님이 할 일
-            </p>
-          </div>
-          <p className="mt-2 text-sm leading-relaxed text-[var(--foreground)]">
-            {guide.teacherTask}
-          </p>
-        </div>
-      </div>
-    </section>
+      <p className="text-xs leading-snug text-[var(--muted-foreground)]">{guide.summary}</p>
+    </div>
   );
 }
 
@@ -572,38 +401,21 @@ function TeamReportDashboard({
     totalPlayers > 0 ? Math.round((submittedCount / totalPlayers) * 100) : 0;
 
   return (
-    <section className="space-y-4 rounded-lg border border-[var(--border)] bg-[var(--card-bg)] p-6 shadow-[var(--elevation-sm)]">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h2 className="text-base font-semibold text-[var(--foreground)]">범인 지목 (개별 제출)</h2>
-          <p className="mt-1 text-xs text-[var(--muted-foreground)]">
-            팀별 다수결과 학생별 지목 결과를 실시간으로 확인합니다.
-          </p>
-        </div>
-        <div className="flex w-full max-w-xs flex-col gap-1.5 sm:w-64">
-          <div className="flex items-baseline justify-between text-xs text-[var(--muted-foreground)]">
-            <span>제출 진행</span>
-            <span>
-              <span className="font-semibold text-[var(--foreground)]">{submittedCount}</span>
-              <span className="mx-0.5">/</span>
-              {totalPlayers}
-            </span>
-          </div>
-          <div className="h-1.5 overflow-hidden rounded-full bg-[var(--surface)]">
-            <div
-              className="h-full rounded-full bg-[var(--accent)] transition-[width] duration-500"
-              style={{ width: `${submissionRate}%` }}
-              aria-hidden
-            />
-          </div>
+    <section className="space-y-3 rounded-lg border border-[var(--border)] bg-[var(--card-bg)] p-4 shadow-[var(--elevation-sm)]">
+      <header className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="text-sm font-semibold text-[var(--foreground)]">범인 지목</h2>
+        <div className="flex text-xs text-[var(--muted-foreground)]">
+          <span className="font-medium text-[var(--foreground)]">
+            제출 {submittedCount}/{totalPlayers}
+          </span>
         </div>
       </header>
       {loading ? (
         <LoadingState variant="section" label="참가자·보고서를 불러오는 중…" />
       ) : groups.length === 0 ? (
-        <p className="text-sm text-[var(--muted-foreground)]">학생이 없습니다.</p>
+        <p className="text-sm text-[var(--muted-foreground)]">제출한 학생이 없습니다.</p>
       ) : (
-        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {groups.map((g) => {
             const teamReports = g.members
               .map((m) => reportByPlayerId.get(m.id))
@@ -617,16 +429,14 @@ function TeamReportDashboard({
             return (
               <div
                 key={g.team.id}
-                className={`rounded-md border p-3 ${
+                className={`rounded-md border p-2.5 ${
                   allSubmitted
                     ? "border-[var(--accent)] bg-[var(--tint-accent-medium)]"
                     : "border-[var(--border)] bg-[var(--surface)]"
                 }`}
               >
-                <div className="flex items-center justify-between">
-                  <p className="font-mono text-2xl font-semibold text-[var(--accent)]">
-                    Team {g.team.name ?? "—"}
-                  </p>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="font-mono text-lg font-semibold text-[var(--accent)]">{g.team.name ?? "—"}</p>
                   <span
                     className={`rounded px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.12em] ${
                       allSubmitted
@@ -654,7 +464,7 @@ function TeamReportDashboard({
                       : `${majorityName ?? majority.suspectId ?? "—"} (${majorityCorrect ? "검거 성공" : "검거 실패"})`}
                   </p>
                 ) : null}
-                <ul className="mt-3 space-y-1.5">
+                <ul className="mt-2 space-y-1">
                   {g.members.map((m) => {
                     const r = reportByPlayerId.get(m.id);
                     const submitted = Boolean(r);
@@ -666,7 +476,7 @@ function TeamReportDashboard({
                     return (
                       <li
                         key={m.id}
-                        className={`rounded border px-2 py-1.5 text-xs ${
+                        className={`rounded border px-2 py-1 text-[11px] ${
                           submitted
                             ? "border-[var(--accent)]/40 bg-[var(--tint-accent-weak)]"
                             : "border-[var(--border)] bg-[var(--surface)]"
@@ -1054,7 +864,6 @@ function SessionHostContent() {
       {beginMutation.isPending ? (
         <>
           <Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden />
-          시작하는 중…
         </>
       ) : (
         <>수사 시작</>
@@ -1073,7 +882,6 @@ function SessionHostContent() {
         {nextPhaseMutation.isPending ? (
           <>
             <Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden />
-            진행 중…
           </>
         ) : (
           <>{nextPhaseLabel}</>
@@ -1081,91 +889,80 @@ function SessionHostContent() {
       </Button>
     ) : null;
 
-  const endedBadge = sessionEnded ? (
-    <span className="rounded-full border border-[var(--border)] bg-[var(--surface)] px-3 py-1 text-xs text-[var(--muted-foreground)]">
-      종료됨
-    </span>
-  ) : null;
-
-  const guideMeta =
-    phase === "waiting" ? (
-      <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--card-bg)] px-2.5 py-1 text-[11px] text-[var(--muted-foreground)]">
-        <Hourglass className="h-3 w-3" aria-hidden />
-        지금까지
-        <span className="font-semibold text-[var(--accent)]">{playercount}</span>명 입장
-      </span>
-    ) : null;
+  const showPhaseGuide = phase !== "waiting" && phase !== "session_end";
+  const showPhaseActions = Boolean(timerButton || startButton || nextButton);
 
   return (
     <div className="min-h-screen">
-      <main className="mx-auto w-full max-w-7xl space-y-6 px-4 pb-12 pt-8">
-        <header className="flex flex-wrap items-start justify-between gap-6 border-b border-[var(--border)] pb-6">
+      <main className="mx-auto w-full max-w-7xl space-y-4 px-4 pb-10 pt-6">
+        <header className="flex flex-wrap items-start justify-between gap-4 border-b border-[var(--border)] pb-4">
           <div className="min-w-0 flex-1 space-y-1">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--muted-foreground)]">
-              실시간 수사 세션
-            </p>
-            <p className="font-mono text-3xl font-semibold tracking-[0.18em] text-[var(--accent)] sm:text-4xl">
+            <p className="font-mono text-[40px] font-semibold tracking-wide text-[var(--accent)]">
               {row.cases?.title}
             </p>
+            <p className="px-1 text-xs text-[var(--muted-foreground)]">
+              접속 <span className="font-semibold text-[var(--foreground)]">{playercount}</span>명
+            </p>
           </div>
-          <div className="flex w-full shrink-0 flex-col items-stretch gap-3 sm:w-auto sm:items-end">
-            <div className="flex items-center gap-3 rounded-lg border border-[var(--border)] bg-[var(--card-bg)] px-3 py-2 shadow-[var(--elevation-sm)]">
-              <div className="leading-tight">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--muted-foreground)]">
-                  참가 코드
-                </p>
-                <p className="font-mono text-2xl font-semibold tracking-[0.2em] text-[var(--accent)] sm:text-3xl">
-                  {row.join_code}
-                </p>
-              </div>
-              <span className="h-10 w-px bg-[var(--border)]" aria-hidden />
-              <PlayJoinQr joinCode={row.join_code} />
+          <div className="flex shrink-0 flex-col items-stretch gap-2 sm:w-auto sm:items-end">
+            <div
+              className={cn(
+                "flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--card-bg)] px-2.5 py-1.5 shadow-[var(--elevation-sm)]",
+                sessionEnded && "justify-center",
+              )}
+            >
+              {sessionEnded ? (
+                <div className="py-0.5 text-center sm:text-left">
+                  <p className="mt-0.5 font-mono text-sm font-semibold tracking-wide text-[var(--muted-foreground)] sm:text-md">
+                    종료된 세션
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div className="leading-tight">
+                    <p className="text-[9px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)]">
+                      참가 코드
+                    </p>
+                    <p className="font-mono text-xl font-semibold tracking-[0.15em] text-[var(--accent)] sm:text-2xl">
+                      {row.join_code}
+                    </p>
+                  </div>
+                  <span className="h-9 w-px bg-[var(--border)]" aria-hidden />
+                  <PlayJoinQr joinCode={row.join_code} />
+                </>
+              )}
             </div>
-            {endedBadge}
           </div>
         </header>
 
-        {sessionStarted || sessionEnded ? <PhaseStepper phase={phase} /> : null}
-
-        <PhaseGuideCard
-          phase={phase}
-          meta={guideMeta}
-          primaryAction={startButton ?? nextButton}
-          secondaryAction={timerButton}
-        />
+        {showPhaseGuide || showPhaseActions ? (
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 sm:flex-nowrap">
+            <div className="min-w-0 flex-1">
+              {showPhaseGuide ? <PhaseGuideCard phase={phase} /> : null}
+            </div>
+            {showPhaseActions ? (
+              <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                {timerButton}
+                {startButton ?? nextButton}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
 
         {phase === "waiting" ? (
-          <section className="space-y-3 rounded-lg border border-[var(--border)] bg-[var(--card-bg)] p-6 shadow-[var(--elevation-sm)]">
-            <header className="flex flex-wrap items-end justify-between gap-2">
-              <div>
-                <h2 className="text-base font-semibold text-[var(--foreground)]">입장한 학생</h2>
-                <p className="mt-1 text-xs text-[var(--muted-foreground)]">
-                  학생이 참가 코드 또는 QR로 입장하면 여기에 닉네임이 표시됩니다.
-                </p>
-              </div>
-              <span className="rounded-full border border-[var(--border)] bg-[var(--surface)] px-2.5 py-1 text-xs text-[var(--muted-foreground)]">
-                <span className="font-semibold text-[var(--foreground)]">{playercount}</span>명 접속 중
-              </span>
-            </header>
+          <section className="rounded-lg border border-[var(--border)] bg-[var(--card-bg)] p-3 shadow-[var(--elevation-sm)]">
+            <p className="mb-2 text-[11px] font-medium text-[var(--muted-foreground)]">입장한 학생</p>
             {onlinePlayers.length === 0 ? (
-              <div className="flex flex-col items-center gap-2 rounded-md border border-dashed border-[var(--border)] bg-[var(--surface)] px-4 py-8 text-center">
-                <UserPlus className="h-5 w-5 text-[var(--muted-foreground)]" aria-hidden />
-                <p className="text-sm text-[var(--muted-foreground)]">아직 입장한 학생이 없습니다</p>
-                <p className="text-xs text-[var(--muted-foreground)]">
-                  오른쪽 위의 참가 코드 또는 QR을 학생들에게 보여주세요.
-                </p>
-              </div>
+              <p className="py-2 text-center text-xs text-[var(--muted-foreground)]">아직 없음</p>
             ) : (
-              <ul className="flex w-full flex-wrap gap-2">
+              <ul className="flex flex-wrap gap-1.5">
                 {onlinePlayers.map((p) => (
                   <li
                     key={p.id}
-                    className="inline-flex w-fit items-center gap-2 rounded-md border border-[var(--border)] bg-[var(--tint-accent-weak)] px-3 py-2 text-sm"
+                    className="inline-flex items-center gap-1.5 rounded-md border border-[var(--border)] bg-[var(--tint-accent-weak)] px-2 py-1 text-xs"
                   >
-                    <span className="h-1.5 w-1.5 rounded-full bg-[var(--primary)]" aria-hidden />
-                    <span className="font-medium text-[var(--foreground)]">
-                      {p.nickname ?? "참가자"}
-                    </span>
+                    <span className="h-1 w-1 rounded-full bg-[var(--primary)]" aria-hidden />
+                    <span className="font-medium text-[var(--foreground)]">{p.nickname ?? "참가자"}</span>
                   </li>
                 ))}
               </ul>
@@ -1192,17 +989,6 @@ function SessionHostContent() {
           />
         ) : null}
       </main>
-
-      <div
-        className="fixed bottom-4 right-4 z-40 inline-flex items-center gap-2 rounded-full border-2 border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--foreground)] shadow-[var(--elevation-sm)]"
-        aria-live="polite"
-      >
-        <Users className="h-4 w-4 shrink-0 text-[var(--muted-foreground)]" aria-hidden />
-        <span>
-          접속{" "}
-          <span className="font-semibold text-[var(--primary)]">{playercount}</span>명
-        </span>
-      </div>
 
       <Modal
         open={timerToolOpen && shouldShowTimer}

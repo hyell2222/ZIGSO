@@ -36,7 +36,7 @@ export function PlayJoinQr({ joinCode, size = 52, className }: PlayJoinQrProps) 
         type="button"
         onClick={() => setModalOpen(true)}
         className={cn(
-          "group flex shrink-0 flex-col items-center justify-center gap-0.5 rounded-lg border border-[var(--border)] bg-[var(--card-bg)] p-1 shadow-sm transition hover:border-[var(--accent)] hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]",
+          "cursor-pointer group flex shrink-0 flex-col items-center justify-center gap-0.5 rounded-lg border border-[var(--border)] bg-[var(--card-bg)] p-1 shadow-sm transition hover:border-[var(--accent)] hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]",
           className,
         )}
       >
