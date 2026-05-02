@@ -1,6 +1,7 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import { useRouter } from "next/navigation";
 
 import { getSessionByJoinCode } from "@/lib/api/play";
@@ -30,10 +31,10 @@ async function typeChars(
   text: string,
   onUpdate: (s: string) => void,
   ms: number,
-  cancelled: () => boolean,
+  shouldAbort: () => boolean,
 ) {
   for (let i = 0; i <= text.length; i++) {
-    if (cancelled()) return;
+    if (shouldAbort()) return;
     onUpdate(text.slice(0, i));
     if (i < text.length) await new Promise((r) => setTimeout(r, ms));
   }
@@ -72,62 +73,71 @@ export function StudentBlackoutLanding() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
+  const preludeRunRef = useRef(0);
+
   useEffect(() => {
+    const run = ++preludeRunRef.current;
     let cancelled = false;
-    const done = () => cancelled;
+    const shouldAbort = () => cancelled || preludeRunRef.current !== run;
+
     const reduce =
       typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+    const titleMs = reduce ? 5 : 18;
+    const afterTitleMs = reduce ? 60 : 200;
+    const connectMs = reduce ? 6 : 20;
+    const afterConnectMs = reduce ? 80 : 240;
+    const loadSteps = reduce ? 10 : LOAD_BAR_STEPS;
+    const loadTotalMs = reduce ? 480 : LOAD_BAR_DURATION_MS;
+    const dwellMs = reduce ? 100 : PRELUDE_DWELL_MS;
+    const fadeMs = reduce ? 80 : PRELUDE_FADE_MS;
+    const postBeatMs = reduce ? 40 : POST_BEAT_MS;
+    const authMs = reduce ? 5 : 16;
+    const afterAuthMs = reduce ? 120 : 380;
+    const accessMs = reduce ? 4 : 11;
+
     void (async () => {
-      if (reduce) {
-        setShowPrelude(false);
-        setLoadPercent(null);
-        setClubTitle("");
-        setConnectLine("");
-        setAuthLine(LINE_AUTH_REQUIRED);
-        setAccessPromptText(ACCESS_PROMPT);
-        setAwaitingAccessKey(true);
-        return;
-      }
-      await typeChars(MYSTERY_CLUB_TAG, setClubTitle, 18, done);
-      if (cancelled) return;
-      await new Promise((r) => setTimeout(r, 200));
-      if (cancelled) return;
-      await typeChars(LINE_CONNECTING_REST, setConnectLine, 20, done);
-      if (cancelled) return;
-      await new Promise((r) => setTimeout(r, 240));
-      if (cancelled) return;
+      await typeChars(MYSTERY_CLUB_TAG, setClubTitle, titleMs, shouldAbort);
+      if (shouldAbort()) return;
+      await new Promise((r) => setTimeout(r, afterTitleMs));
+      if (shouldAbort()) return;
+      await typeChars(LINE_CONNECTING_REST, setConnectLine, connectMs, shouldAbort);
+      if (shouldAbort()) return;
+      await new Promise((r) => setTimeout(r, afterConnectMs));
+      if (shouldAbort()) return;
 
       setLoadPercent(0);
-      for (let s = 0; s <= LOAD_BAR_STEPS; s++) {
-        if (cancelled) return;
-        const t = s === LOAD_BAR_STEPS ? 1 : s / LOAD_BAR_STEPS;
-        setLoadPercent(t * 100);
-        await new Promise((r) => setTimeout(r, LOAD_BAR_DURATION_MS / LOAD_BAR_STEPS));
+      for (let s = 0; s <= loadSteps; s++) {
+        if (shouldAbort()) return;
+        const t = s === loadSteps ? 1 : s / loadSteps;
+        flushSync(() => {
+          if (!shouldAbort()) setLoadPercent(t * 100);
+        });
+        await new Promise((r) => setTimeout(r, loadTotalMs / loadSteps));
       }
-      if (cancelled) return;
-      await new Promise((r) => setTimeout(r, PRELUDE_DWELL_MS));
-      if (cancelled) return;
+      if (shouldAbort()) return;
+      await new Promise((r) => setTimeout(r, dwellMs));
+      if (shouldAbort()) return;
 
       setPreludeFadingOut(true);
-      await new Promise((r) => setTimeout(r, PRELUDE_FADE_MS));
-      if (cancelled) return;
+      await new Promise((r) => setTimeout(r, fadeMs));
+      if (shouldAbort()) return;
 
       setLoadPercent(null);
       setConnectLine("");
       setClubTitle(MYSTERY_CLUB_TAG);
       setShowPrelude(false);
       setPreludeFadingOut(false);
-      await new Promise((r) => setTimeout(r, POST_BEAT_MS));
-      if (cancelled) return;
+      await new Promise((r) => setTimeout(r, postBeatMs));
+      if (shouldAbort()) return;
 
-      await typeChars(LINE_AUTH_REQUIRED, setAuthLine, 16, done);
-      if (cancelled) return;
-      await new Promise((r) => setTimeout(r, 380));
-      if (cancelled) return;
+      await typeChars(LINE_AUTH_REQUIRED, setAuthLine, authMs, shouldAbort);
+      if (shouldAbort()) return;
+      await new Promise((r) => setTimeout(r, afterAuthMs));
+      if (shouldAbort()) return;
 
-      await typeChars(ACCESS_PROMPT, (chunk) => setAccessPromptText(chunk), 11, done);
-      if (cancelled) return;
+      await typeChars(ACCESS_PROMPT, (chunk) => setAccessPromptText(chunk), accessMs, shouldAbort);
+      if (shouldAbort()) return;
       setAwaitingAccessKey(true);
     })();
 
@@ -392,69 +402,6 @@ export function StudentBlackoutLanding() {
         </form>
         {error ? <p className="text-center text-sm font-medium text-[var(--danger)]">{error}</p> : null}
       </Modal>
-
-      <style>{`
-        @keyframes ledPulse {
-          0%,
-          100% {
-            opacity: 0.25;
-            transform: scale(1);
-          }
-          50% {
-            opacity: 0.88;
-            transform: scale(1.25);
-          }
-        }
-        @keyframes revealPost {
-          from {
-            opacity: 0;
-            transform: translateY(10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        @keyframes warnPulse {
-          0%,
-          100% {
-            border-color: color-mix(in srgb, var(--entry-warn-glow) 48%, transparent);
-            box-shadow:
-              0 0 0 1px color-mix(in srgb, var(--entry-warn-glow) 18%, transparent),
-              0 0 22px color-mix(in srgb, var(--danger) 22%, transparent),
-              inset 0 1px 0 color-mix(in srgb, var(--highlight) 10%, transparent);
-          }
-          50% {
-            border-color: color-mix(in srgb, var(--entry-warn-glow) 68%, transparent);
-            box-shadow:
-              0 0 0 1px color-mix(in srgb, var(--entry-warn-glow) 32%, transparent),
-              0 0 36px color-mix(in srgb, var(--danger) 34%, transparent),
-              inset 0 1px 0 color-mix(in srgb, var(--highlight) 18%, transparent);
-          }
-        }
-        @media (prefers-reduced-motion: reduce) {
-          @keyframes revealPost {
-            from {
-              opacity: 1;
-              transform: none;
-            }
-            to {
-              opacity: 1;
-              transform: none;
-            }
-          }
-          @keyframes warnPulse {
-            0%,
-            100% {
-              border-color: color-mix(in srgb, var(--entry-warn-glow) 55%, transparent);
-              box-shadow:
-                0 0 0 1px color-mix(in srgb, var(--entry-warn-glow) 22%, transparent),
-                0 0 28px color-mix(in srgb, var(--danger) 26%, transparent),
-                inset 0 1px 0 color-mix(in srgb, var(--highlight) 12%, transparent);
-            }
-          }
-        }
-      `}</style>
     </div>
   );
 }

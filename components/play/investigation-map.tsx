@@ -820,7 +820,7 @@ export function InvestigationMap({
             className={cn("h-full w-full", isFull ? "min-h-0 bg-transparent" : "")}
           />
           {activeClue && !selectedClue ? (
-            <div className="pointer-events-none absolute inset-x-0 bottom-3 z-[30] flex justify-center px-3 sm:bottom-4">
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[30] flex justify-center px-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] sm:pb-4">
               <div
                 key={`${activeClue.clueName}\0${activeClue.locationName}`}
                 className={cn(
@@ -857,7 +857,7 @@ export function InvestigationMap({
           className={cn(
             "flex min-h-0 shrink-0 flex-col",
             isFull
-              ? "w-[220px] border-l border-[color-mix(in_srgb,var(--primary)_55%,var(--border))] bg-[var(--background)] shadow-[inset_10px_0_32px_-12px_color-mix(in_srgb,var(--primary)_10%,transparent)]"
+              ? "w-52 border-l border-[color-mix(in_srgb,var(--primary)_55%,var(--border))] bg-[var(--background)] shadow-[inset_10px_0_32px_-12px_color-mix(in_srgb,var(--primary)_10%,transparent)] sm:w-56 md:w-60 md:min-w-[13.5rem]"
               : "max-h-[200px] w-full border-t border-[var(--border)] bg-[color-mix(in_srgb,var(--background)_55%,var(--card-bg))] md:max-h-none md:w-[200px] md:border-l md:border-t-0 md:border-l-[color-mix(in_srgb,var(--primary)_35%,var(--border))]",
           )}
         >

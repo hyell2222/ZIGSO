@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Loader2, Timer } from "lucide-react";
+import { Loader2, Timer } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
@@ -204,7 +204,7 @@ function PhaseTimerContent({ phase }: { phase: TimedPhase }) {
 
             e.preventDefault();
           }}
-          className="h-20 !w-[9ch] border-none px-0 text-center font-mono text-5xl tabular-nums text-[var(--muted-foreground)] sm:text-6xl"
+          className="h-20 !w-[9ch] border-none px-0 text-center font-mono text-5xl tabular-nums text-[var(--muted-foreground)] sm:h-24 sm:text-6xl md:text-7xl"
         />
       ) : (
         <Button
@@ -214,7 +214,7 @@ function PhaseTimerContent({ phase }: { phase: TimedPhase }) {
             setTimerInputDigits("");
             setIsEditing(true);
           }}
-          className="h-20 text-center font-mono text-5xl tabular-nums text-[var(--accent)] transition hover:text-[var(--highlight)] sm:text-6xl"
+          className="h-20 text-center font-mono text-5xl tabular-nums text-[var(--accent)] transition hover:text-[var(--highlight)] sm:h-24 sm:text-6xl md:text-7xl"
         >
           {formatTimerDisplay(timerRemainingSec)}
         </Button>
@@ -245,12 +245,10 @@ function TeamAssignmentDashboard({
   players,
   teams,
   loading,
-  phase,
 }: {
   players: SessionPlayerRow[];
   teams: TeamRow[];
   loading: boolean;
-  phase: "briefing" | "investigation";
 }) {
   const groups = useMemo(() => groupPlayersByTeam(players, teams), [players, teams]);
 
@@ -266,7 +264,7 @@ function TeamAssignmentDashboard({
       ) : groups.length === 0 ? (
         <p className="text-sm text-[var(--muted-foreground)]">배정된 팀이 없습니다.</p>
       ) : (
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:gap-3 lg:grid-cols-3">
           {groups.map((g) => (
             <div
               key={g.team.id}
@@ -321,14 +319,18 @@ function PhaseGuideCard({ phase, meta }: { phase: CasePhase; meta?: ReactNode })
       {meta ? <div className="mt-1">{meta}</div> : null}
       <div className="flex items-center gap-2.5">
         <span
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[var(--primary)] bg-[var(--primary)] text-[12px] font-semibold tabular-nums text-[var(--on-primary)] shadow-sm"
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[var(--primary)] bg-[var(--primary)] text-[12px] font-semibold tabular-nums text-[var(--on-primary)] shadow-sm md:h-8 md:w-8 md:text-sm"
           aria-hidden
         >
           {stepNumber}
         </span>
-        <h2 className="text-xl font-bold leading-tight text-[var(--foreground)]">{guide.title}</h2>
+        <h2 className="text-lg font-bold leading-tight text-[var(--foreground)] sm:text-xl md:text-2xl md:leading-snug">
+          {guide.title}
+        </h2>
       </div>
-      <p className="text-xs leading-snug text-[var(--muted-foreground)]">{guide.summary}</p>
+      <p className="text-xs leading-snug text-[var(--muted-foreground)] md:text-sm md:leading-relaxed">
+        {guide.summary}
+      </p>
     </div>
   );
 }
@@ -389,14 +391,11 @@ function TeamReportDashboard({
   const trueName = findSuspectName(answerRoster, answerId);
   const hasAnswer = Boolean(answerId?.trim() && trueName);
 
-  const submissionRate =
-    totalPlayers > 0 ? Math.round((submittedCount / totalPlayers) * 100) : 0;
-
   return (
     <section className="space-y-3 rounded-lg border border-[var(--border)] bg-[var(--card-bg)] p-4 shadow-[var(--elevation-sm)]">
       <header className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-sm font-semibold text-[var(--foreground)]">범인 지목</h2>
-        <div className="flex text-xs text-[var(--muted-foreground)]">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-[var(--muted-foreground)]">
           <span className="font-medium text-[var(--foreground)]">
             제출 {submittedCount}/{totalPlayers}
           </span>
@@ -407,7 +406,7 @@ function TeamReportDashboard({
       ) : groups.length === 0 ? (
         <p className="text-sm text-[var(--muted-foreground)]">제출한 학생이 없습니다.</p>
       ) : (
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:gap-3 lg:grid-cols-3">
           {groups.map((g) => {
             const teamReports = g.members
               .map((m) => reportByPlayerId.get(m.id))
@@ -523,7 +522,11 @@ function SessionHostContent() {
   const sessionId = searchParams.get("session")?.trim() ?? "";
   const queryClient = useQueryClient();
   const [presenceRows, setPresenceRows] = useState<SessionPresenceRow[]>([]);
-  const [timerToolOpen, setTimerToolOpen] = useState(false);
+  /** 단계가 바뀌면 열었던 단계와 달라져 모달이 닫히도록 phaseAtOpen 을 둠 (effect 내 setState 회피) */
+  const [timerModal, setTimerModal] = useState<{ open: boolean; phaseAtOpen: CasePhase | null }>({
+    open: false,
+    phaseAtOpen: null,
+  });
 
   const teacherSession = useRequireTeacherSession();
 
@@ -771,9 +774,18 @@ function SessionHostContent() {
   const sessionEnded = phase === "session_end";
   const shouldShowTimer = isTimedPhase(phase);
 
-  useEffect(() => {
-    setTimerToolOpen(false);
-  }, [phase]);
+  const timerToolOpen =
+    timerModal.open &&
+    timerModal.phaseAtOpen !== null &&
+    timerModal.phaseAtOpen === phase &&
+    shouldShowTimer;
+
+  const openTimerModal = () => {
+    if (!shouldShowTimer) return;
+    setTimerModal({ open: true, phaseAtOpen: phase });
+  };
+
+  const closeTimerModal = () => setTimerModal({ open: false, phaseAtOpen: null });
 
   if (!sessionId) {
     return (
@@ -839,7 +851,7 @@ function SessionHostContent() {
       className="shrink-0 gap-2"
       aria-haspopup="dialog"
       aria-expanded={timerToolOpen}
-      onClick={() => setTimerToolOpen(true)}
+      onClick={openTimerModal}
     >
       <Timer className="h-4 w-4 shrink-0 text-[var(--accent)]" aria-hidden />
       타이머
@@ -886,26 +898,26 @@ function SessionHostContent() {
 
   return (
     <div className="min-h-screen">
-      <main className="mx-auto w-full max-w-7xl space-y-4 px-4 pb-10 pt-6">
-        <header className="flex flex-wrap items-start justify-between gap-4 border-b border-[var(--border)] pb-4">
-          <div className="min-w-0 flex-1 space-y-1">
-            <p className="font-mono text-[40px] font-semibold tracking-wide text-[var(--accent)]">
+      <main className="mx-auto w-full max-w-7xl space-y-4 px-4 pb-[max(2.5rem,env(safe-area-inset-bottom,0px))] pt-5 sm:space-y-5 sm:px-6 sm:pt-6 md:space-y-6 md:px-8 md:pb-12 md:pt-8">
+        <header className="flex flex-col gap-4 border-b border-[var(--border)] pb-4 md:flex-row md:flex-wrap md:items-start md:justify-between md:gap-5">
+          <div className="min-w-0 flex-1 space-y-1 md:min-w-[12rem]">
+            <p className="break-words font-mono text-2xl font-semibold leading-tight tracking-wide text-[var(--accent)] sm:text-3xl md:text-4xl lg:text-[2.5rem] lg:leading-none">
               {row.cases?.title}
             </p>
-            <p className="px-1 text-xs text-[var(--muted-foreground)]">
+            <p className="px-0.5 text-xs text-[var(--muted-foreground)] md:text-sm">
               접속 <span className="font-semibold text-[var(--foreground)]">{playercount}</span>명
             </p>
           </div>
-          <div className="flex shrink-0 flex-col items-stretch gap-2 sm:w-auto sm:items-end">
+          <div className="w-full shrink-0 md:ml-auto md:w-auto md:max-w-[min(100%,26rem)]">
             <div
               className={cn(
-                "flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--card-bg)] px-2.5 py-1.5 shadow-[var(--elevation-sm)]",
+                "flex w-full min-w-0 items-center justify-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--card-bg)] px-2.5 py-2 shadow-[var(--elevation-sm)] sm:w-auto sm:justify-start sm:py-1.5 md:px-3 md:py-2.5",
                 sessionEnded && "justify-center",
               )}
             >
               {sessionEnded ? (
                 <div className="py-0.5 text-center sm:text-left">
-                  <p className="mt-0.5 font-mono text-sm font-semibold tracking-wide text-[var(--muted-foreground)] sm:text-md">
+                  <p className="mt-0.5 font-mono text-sm font-semibold tracking-wide text-[var(--muted-foreground)] sm:text-base">
                     종료된 세션
                   </p>
                 </div>
@@ -915,7 +927,7 @@ function SessionHostContent() {
                     <p className="text-[9px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)]">
                       참가 코드
                     </p>
-                    <p className="font-mono text-xl font-semibold tracking-[0.15em] text-[var(--accent)] sm:text-2xl">
+                    <p className="font-mono text-xl font-semibold tracking-[0.15em] text-[var(--accent)] sm:text-2xl md:text-3xl">
                       {row.join_code}
                     </p>
                   </div>
@@ -928,12 +940,12 @@ function SessionHostContent() {
         </header>
 
         {showPhaseGuide || showPhaseActions ? (
-          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 sm:flex-nowrap">
-            <div className="min-w-0 flex-1">
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between md:gap-4 lg:flex-nowrap">
+            <div className="min-w-0 flex-1 md:max-w-[min(100%,42rem)]">
               {showPhaseGuide ? <PhaseGuideCard phase={phase} /> : null}
             </div>
             {showPhaseActions ? (
-              <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+              <div className="flex w-full shrink-0 flex-wrap items-stretch gap-2 sm:w-auto sm:justify-end md:gap-3 [&_button]:min-h-11 [&_button]:touch-manipulation">
                 {timerButton}
                 {startButton ?? nextButton}
               </div>
@@ -942,8 +954,10 @@ function SessionHostContent() {
         ) : null}
 
         {phase === "waiting" ? (
-          <section className="rounded-lg border border-[var(--border)] bg-[var(--card-bg)] p-3 shadow-[var(--elevation-sm)]">
-            <p className="mb-2 text-[11px] font-medium text-[var(--muted-foreground)]">입장한 학생</p>
+          <section className="rounded-lg border border-[var(--border)] bg-[var(--card-bg)] p-3 shadow-[var(--elevation-sm)] md:p-4">
+            <p className="mb-2 text-[11px] font-medium text-[var(--muted-foreground)] md:mb-2.5 md:text-xs">
+              입장한 학생
+            </p>
             {onlinePlayers.length === 0 ? (
               <p className="py-2 text-center text-xs text-[var(--muted-foreground)]">아직 없음</p>
             ) : (
@@ -951,7 +965,7 @@ function SessionHostContent() {
                 {onlinePlayers.map((p) => (
                   <li
                     key={p.id}
-                    className="inline-flex items-center gap-1.5 rounded-md border border-[var(--border)] bg-[var(--tint-accent-weak)] px-2 py-1 text-xs"
+                    className="inline-flex min-h-9 touch-manipulation items-center gap-1.5 rounded-md border border-[var(--border)] bg-[var(--tint-accent-weak)] px-2 py-1 text-xs md:px-2.5 md:text-sm"
                   >
                     <span className="h-1 w-1 rounded-full bg-[var(--primary)]" aria-hidden />
                     <span className="font-medium text-[var(--foreground)]">{p.nickname ?? "참가자"}</span>
@@ -964,7 +978,6 @@ function SessionHostContent() {
 
         {phase === "briefing" || phase === "investigation" ? (
           <TeamAssignmentDashboard
-            phase={phase}
             players={onlinePlayers}
             teams={teamsQuery.data ?? []}
             loading={playersQuery.isLoading || teamsQuery.isLoading}
@@ -983,8 +996,8 @@ function SessionHostContent() {
       </main>
 
       <Modal
-        open={timerToolOpen && shouldShowTimer}
-        onClose={() => setTimerToolOpen(false)}
+        open={timerToolOpen}
+        onClose={closeTimerModal}
         title="타이머"
         titleId="host-timer-heading"
         maxWidthClassName="max-w-md"

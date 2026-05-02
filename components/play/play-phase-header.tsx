@@ -33,28 +33,30 @@ export function PlayPhaseHeader({
   return (
     <div
       className={cn(
-        "flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between",
+        "flex flex-col gap-3 md:flex-row md:items-center md:justify-between md:gap-5",
         className,
       )}
     >
-      <div className="flex min-w-0 items-start gap-3">
+      <div className="flex min-w-0 items-start gap-3 md:gap-4">
         <span
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--play-chip-cool)] text-[var(--primary)] shadow-sm ring-1 ring-[color-mix(in_srgb,var(--primary)_22%,transparent)]"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--play-chip-cool)] text-[var(--primary)] shadow-sm ring-1 ring-[color-mix(in_srgb,var(--primary)_22%,transparent)] md:h-11 md:w-11"
           aria-hidden
         >
-          <Icon className="h-5 w-5" />
+          <Icon className="h-5 w-5 md:h-6 md:w-6" />
         </span>
         <div className="min-w-0 pt-0.5">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--accent)]">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--accent)] md:text-xs">
             {phase}단계
           </p>
-          <h1 className="text-lg font-bold leading-tight text-[var(--foreground)]">{title}</h1>
-          <p className="mt-1 max-w-2xl text-sm leading-relaxed text-[var(--muted-foreground)]">
+          <h1 className="text-lg font-bold leading-tight text-[var(--foreground)] md:text-xl md:leading-snug">
+            {title}
+          </h1>
+          <p className="mt-1 max-w-2xl text-sm leading-relaxed text-[var(--muted-foreground)] md:mt-1.5 md:text-[0.95rem] md:leading-relaxed">
             {description}
           </p>
         </div>
       </div>
-      {rightSlot ? <div className="shrink-0 self-start sm:self-center">{rightSlot}</div> : null}
+      {rightSlot ? <div className="shrink-0 self-start md:self-center">{rightSlot}</div> : null}
     </div>
   );
 }

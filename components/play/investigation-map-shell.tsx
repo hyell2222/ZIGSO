@@ -46,7 +46,7 @@ export function InvestigationMapShell({
 }: Props) {
   return (
     <div
-      className="font-sans play-shell relative fixed inset-0 z-[100] flex h-dvh max-h-dvh flex-col overflow-hidden text-[var(--foreground)]"
+      className="font-sans play-shell relative fixed inset-0 z-[100] flex h-dvh max-h-dvh flex-col overflow-hidden pt-[env(safe-area-inset-top,0px)] text-[var(--foreground)]"
       style={MAP_SHELL_BG}
     >
       <div

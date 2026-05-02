@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 const panel =
   "border-[var(--border)] bg-[var(--card-bg)] text-[var(--foreground)] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.35)]";
 const divider = "border-[var(--border)]";
-const title = "text-base font-semibold text-[var(--foreground)]";
+const titleHeadingClass = "text-base font-semibold text-[var(--foreground)]";
 const closeMuted =
   "text-[var(--muted-foreground)] hover:bg-[var(--tint-accent)] hover:text-[var(--foreground)]";
 
@@ -72,6 +72,7 @@ export function Modal({
     <div
       className={cn(
         "fixed inset-0 flex p-4 backdrop-blur-[2px] transition-colors",
+        "pb-[max(1rem,env(safe-area-inset-bottom,0px))] pl-[max(1rem,env(safe-area-inset-left,0px))] pr-[max(1rem,env(safe-area-inset-right,0px))] pt-[max(1rem,env(safe-area-inset-top,0px))]",
         sheetOnNarrow ? "items-end justify-center sm:items-center" : "items-center justify-center",
         "bg-[var(--overlay-scrim)]/85",
         zIndexClassName,
@@ -95,7 +96,7 @@ export function Modal({
         <header className={cn("flex shrink-0 items-center justify-between gap-3 border-b px-4 py-3 pl-5", divider)}>
           <div className="flex min-w-0 items-center gap-2">
             {titlePrefix ?? null}
-            <h2 id={titleId} className={cn("truncate tracking-tight", title)}>
+            <h2 id={titleId} className={cn("truncate tracking-tight", titleHeadingClass)}>
               {title}
             </h2>
           </div>

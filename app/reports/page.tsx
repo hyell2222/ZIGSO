@@ -553,14 +553,6 @@ function SessionReportContent() {
             titleClassName="font-mono text-[var(--accent)]"
             actions={
               <div className="flex flex-wrap items-center gap-2">
-                <Link
-                  href={ROUTES.reports}
-                  className={cn(
-                    "inline-flex h-8 shrink-0 items-center justify-center rounded-md border border-[var(--mystery)]/45 px-3 text-xs font-semibold text-[var(--mystery)] transition-colors hover:bg-[var(--tint-mystery)]",
-                  )}
-                >
-                  기록 목록
-                </Link>
                 <Button type="button" variant="secondary" size="sm" className="gap-2" onClick={handleDownloadCsv}>
                   <Download className="h-4 w-4" aria-hidden />
                   파일 다운로드

@@ -1,7 +1,6 @@
 "use client";
 
 import { FileText, Users } from "lucide-react";
-import type { ReactNode } from "react";
 import type { UseQueryResult } from "@tanstack/react-query";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -45,7 +44,7 @@ export function SessionInfoLayout({ sessionQuery }: SessionInfoLayoutProps) {
   const roster = parseSuspectRosterFromCase(cases?.suspect_roster);
 
   return (
-    <div className="grid gap-5 lg:grid-cols-2">
+    <div className="grid gap-4 sm:gap-5 md:grid-cols-2 md:gap-6">
       <Card
         className={cn(
           "overflow-hidden motion-safe:animate-[playRevealUp_0.55s_cubic-bezier(0.22,1,0.36,1)_both]",

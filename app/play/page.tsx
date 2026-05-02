@@ -457,7 +457,7 @@ function PlaySessionShell({
               />
             </div>
           </header>
-          <main className="mx-auto w-full max-w-2xl flex-1 space-y-6 px-4 py-8 pb-12">
+          <main className="mx-auto w-full max-w-2xl flex-1 space-y-5 px-4 py-6 pb-[max(3rem,env(safe-area-inset-bottom,0px))] sm:space-y-6 sm:px-6 sm:py-8 md:max-w-3xl md:px-8">
           <div
             className={cn(
               "overflow-hidden px-5 pb-6 pt-6 motion-safe:animate-[playRevealUp_0.6s_cubic-bezier(0.22,1,0.36,1)_both] motion-safe:[animation-delay:60ms]",
@@ -573,14 +573,14 @@ function PlaySessionShell({
             </div>
           </header>
 
-          <main className="mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col space-y-6 px-4 py-8 pb-12">
-          <div className="grid min-h-0 flex-1 gap-8 lg:grid-cols-[minmax(280px,380px)_1fr] lg:items-stretch">
+          <main className="mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col space-y-5 px-4 py-6 pb-[max(3rem,env(safe-area-inset-bottom,0px))] sm:space-y-6 sm:px-6 sm:py-8 md:px-8">
+          <div className="grid min-h-0 flex-1 gap-6 md:grid-cols-[minmax(260px,min(380px,38vw))_minmax(0,1fr)] md:items-stretch md:gap-8 lg:grid-cols-[minmax(280px,380px)_1fr]">
             <section
               className={cn(
                 "motion-safe:animate-[playRevealUp_0.6s_cubic-bezier(0.22,1,0.36,1)_both] motion-safe:[animation-delay:80ms]",
                 playerQuery.data?.club_role && investigationLocationId
                   ? "space-y-2"
-                  : "flex min-h-[min(22rem,48dvh)] flex-col items-center justify-center",
+                  : "flex min-h-[min(20rem,44dvh)] flex-col items-center justify-center md:min-h-[min(22rem,48dvh)]",
               )}
             >
               {playerQuery.isLoading ? (
@@ -607,7 +607,7 @@ function PlaySessionShell({
               )}
             </section>
 
-            <section className="flex min-h-0 flex-col motion-safe:animate-[playRevealUp_0.6s_cubic-bezier(0.22,1,0.36,1)_both] motion-safe:[animation-delay:160ms] lg:min-h-[min(22rem,48dvh)]">
+            <section className="flex min-h-0 flex-col motion-safe:animate-[playRevealUp_0.6s_cubic-bezier(0.22,1,0.36,1)_both] motion-safe:[animation-delay:160ms] md:min-h-[min(20rem,46dvh)] lg:min-h-[min(22rem,48dvh)]">
               <SessionInfoLayout sessionQuery={sessionQuery} />
             </section>
           </div>
@@ -639,7 +639,7 @@ function PlaySessionShell({
   return (
     <PlayAtmosphere>
       <div className="flex min-h-dvh flex-col">
-        <main className="mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col px-4 py-8 pb-12">
+        <main className="mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col px-4 py-6 pb-[max(3rem,env(safe-area-inset-bottom,0px))] sm:px-6 sm:py-8 md:px-8">
         {showResumeModal && resumeQuery.data ? (
           <ResumeModal
             record={resumeQuery.data}
@@ -849,9 +849,9 @@ function ResumeModal({
 function TeamBadge({ teamName, className }: { teamName: string | null; className?: string }) {
   if (!teamName) return null;
   return (
-    <div
+      <div
       className={cn(
-        "flex flex-col gap-0.5 rounded-lg border border-[var(--border)] bg-[var(--card-bg)] px-4 py-3 text-[var(--foreground)]",
+        "flex flex-col gap-0.5 rounded-lg border border-[var(--border)] bg-[var(--card-bg)] px-3 py-2.5 text-[var(--foreground)] sm:px-4 sm:py-3",
         "shadow-[var(--elevation-sm)] motion-safe:animate-[playRevealUp_0.5s_cubic-bezier(0.22,1,0.36,1)_both]",
         className,
       )}
@@ -859,7 +859,7 @@ function TeamBadge({ teamName, className }: { teamName: string | null; className
       <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--muted-foreground)]">
         소속 팀
       </span>
-      <span className="font-mono text-2xl font-bold tracking-tight text-[var(--primary)]">
+      <span className="font-mono text-xl font-bold tracking-tight text-[var(--primary)] sm:text-2xl">
         {teamName}
       </span>
     </div>

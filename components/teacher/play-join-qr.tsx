@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState, useSyncExternalStore } from "react";
 import QRCode from "react-qr-code";
 
 import { Modal } from "@/components/ui/modal";
@@ -14,14 +14,34 @@ type PlayJoinQrProps = {
   className?: string;
 };
 
+let playJoinOriginCache = "";
+
+function subscribePlayJoinOrigin(onStoreChange: () => void) {
+  queueMicrotask(() => {
+    if (typeof window !== "undefined") {
+      playJoinOriginCache = window.location.origin;
+    }
+    onStoreChange();
+  });
+  return () => {};
+}
+
+function getPlayJoinOriginSnapshot() {
+  return playJoinOriginCache;
+}
+
+function getPlayJoinOriginServerSnapshot() {
+  return "";
+}
+
 /** 학생 입장 URL QR — 썸네일 탭 시 모달로 확대 */
 export function PlayJoinQr({ joinCode, size = 52, className }: PlayJoinQrProps) {
   const [modalOpen, setModalOpen] = useState(false);
-  const [origin, setOrigin] = useState("");
-
-  useEffect(() => {
-    setOrigin(window.location.origin);
-  }, []);
+  const origin = useSyncExternalStore(
+    subscribePlayJoinOrigin,
+    getPlayJoinOriginSnapshot,
+    getPlayJoinOriginServerSnapshot,
+  );
 
   const playUrl = useMemo(() => {
     if (!joinCode || !origin) return "";
@@ -40,8 +60,12 @@ export function PlayJoinQr({ joinCode, size = 52, className }: PlayJoinQrProps) 
           className,
         )}
       >
-        <span className="block rounded-sm bg-white p-0.5">
-          <QRCode value={playUrl} size={size} style={{ width: "100%", maxWidth: size, height: "auto" }} />
+        <span className="block h-[52px] w-[52px] rounded-sm bg-white p-0.5 md:h-[4.5rem] md:w-[4.5rem]">
+          <QRCode
+            value={playUrl}
+            size={Math.max(size, 180)}
+            style={{ width: "100%", height: "100%", display: "block" }}
+          />
         </span>
       </button>
 
@@ -50,7 +74,7 @@ export function PlayJoinQr({ joinCode, size = 52, className }: PlayJoinQrProps) 
         onClose={() => setModalOpen(false)}
         title="학생 참가 QR"
         titleId="play-join-qr-title"
-        maxWidthClassName="max-w-sm"
+        maxWidthClassName="max-w-sm md:max-w-md"
         bodyClassName="space-y-4"
       >
         <p className="break-all text-center text-sm text-[var(--muted-foreground)]">{playUrl}</p>

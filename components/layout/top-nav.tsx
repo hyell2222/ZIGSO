@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 
 import { getCurrentSession, signOutTeacher } from "@/lib/api/auth";

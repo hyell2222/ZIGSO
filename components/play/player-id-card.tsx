@@ -56,7 +56,7 @@ export function PlayerIdCard({ nickname, teamName, zoneName, roleKey, className 
   return (
     <div
       className={cn(
-        "mx-auto w-full max-w-md overflow-hidden rounded-2xl border-2 border-[var(--border)]",
+        "mx-auto w-full max-w-md overflow-hidden rounded-2xl border-2 border-[var(--border)] md:mx-0 md:max-w-none",
         "bg-[var(--card-bg)] shadow-[var(--elevation-sm)]",
         "motion-safe:animate-[playRevealUp_0.7s_cubic-bezier(0.22,1,0.36,1)_both]",
         className,

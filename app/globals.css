@@ -151,6 +151,72 @@ body {
   }
 }
 
+/* 학생 참가 게이트(blackout landing) — Tailwind arbitrary animation이 참조 */
+@keyframes ledPulse {
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.88;
+    transform: scale(1.25);
+  }
+}
+
+@keyframes revealPost {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes warnPulse {
+  0%,
+  100% {
+    border-color: color-mix(in srgb, var(--entry-warn-glow) 48%, transparent);
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--entry-warn-glow) 18%, transparent),
+      0 0 22px color-mix(in srgb, var(--danger) 22%, transparent),
+      inset 0 1px 0 color-mix(in srgb, var(--highlight) 10%, transparent);
+  }
+  50% {
+    border-color: color-mix(in srgb, var(--entry-warn-glow) 68%, transparent);
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--entry-warn-glow) 32%, transparent),
+      0 0 36px color-mix(in srgb, var(--danger) 34%, transparent),
+      inset 0 1px 0 color-mix(in srgb, var(--highlight) 18%, transparent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  @keyframes revealPost {
+    from {
+      opacity: 1;
+      transform: none;
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes warnPulse {
+    0%,
+    100% {
+      border-color: color-mix(in srgb, var(--entry-warn-glow) 55%, transparent);
+      box-shadow:
+        0 0 0 1px color-mix(in srgb, var(--entry-warn-glow) 22%, transparent),
+        0 0 28px color-mix(in srgb, var(--danger) 26%, transparent),
+        inset 0 1px 0 color-mix(in srgb, var(--highlight) 12%, transparent);
+    }
+  }
+}
+
 .play-film-grain {
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='a'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23a)' opacity='0.55'/%3E%3C/svg%3E");
   background-size: 128px 128px;

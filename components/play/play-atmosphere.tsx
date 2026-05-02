@@ -55,7 +55,7 @@ export const playPhaseHeaderChromeShell = cn(
  * (3단계 본문이 `max-w-2xl`이어도 헤더 밴드는 1·2단계와 같은 룰로 맞춤.)
  */
 export const playPhaseHeaderChromeInner =
-  "mx-auto w-full max-w-6xl px-4 py-4 text-left sm:px-6";
+  "mx-auto w-full max-w-6xl px-4 py-4 text-left sm:px-6 md:px-8 md:py-5";
 
 /**
  * 로딩·대기 — 카드 없이 뷰포트 안에서 가로·세로 중앙.
@@ -74,7 +74,7 @@ export function PlayAtmosphere({ children, className }: PlayAtmosphereProps) {
         className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[color-mix(in_srgb,black_25%,transparent)] to-transparent"
         aria-hidden
       />
-      <div className="relative z-10 min-h-dvh">{children}</div>
+      <div className="relative z-10 min-h-dvh pb-[env(safe-area-inset-bottom,0px)]">{children}</div>
     </div>
   );
 }

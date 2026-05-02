@@ -7,7 +7,7 @@ import { StepHeading } from "./step-blocks";
 import { Button } from "@/components/ui/button";
 import { LoadingState } from "@/components/ui/loading-state";
 import { Modal } from "@/components/ui/modal";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { PropAsset } from "@/lib/api/storage-props";
@@ -180,10 +180,6 @@ export function MapEditorStep({
     [clues, draftClueModalId],
   );
 
-  useEffect(() => {
-    if (draftClueModalId) setClueModalNameError(false);
-  }, [draftClueModalId]);
-
   const closeDraftClueModal = useCallback(() => {
     setDraftClueModalId(null);
     setClueModalNameError(false);
@@ -244,6 +240,7 @@ export function MapEditorStep({
                 content: "",
               });
               setSelectedClueId(newId);
+              setClueModalNameError(false);
               setDraftClueModalId(newId);
             }}
             onUpdateClue={onUpdateClue}
@@ -296,6 +293,7 @@ export function MapEditorStep({
                 const thumb = propAssets.find((a) => a.asset === draftClueForModal.asset)?.url;
                 return thumb ? (
                   <div className="w-fit mx-auto flex items-center rounded-md border border-[var(--border)] bg-[var(--muted)]/20 p-2">
+                    {/* eslint-disable-next-line @next/next/no-img-element -- 동적 소품 URL, 최적화 Image 도메인 미등록 */}
                     <img src={thumb} alt="" className="h-14 w-14 shrink-0 object-contain [image-rendering:pixelated]" />
                   </div>
                 ) : null;
@@ -945,6 +943,7 @@ function MapCanvas({
                     height: `${innerHeightPct}%`,
                   }}
                 >
+                  {/* eslint-disable-next-line @next/next/no-img-element -- 맵 에디터 동적 에셋 URL */}
                   <img
                     src={url}
                     alt={clue.asset}
@@ -1120,6 +1119,7 @@ function ClueEditorPanel({
   onChange: (patch: Partial<DraftClue>) => void;
   onRemove: () => void;
 }) {
+  void onRemove;
   if (!clue) {
     return (
       <aside className="rounded-md border border-dashed border-[var(--border)] bg-[var(--card-bg)] p-4 text-center text-xs text-[var(--muted-foreground,#94a3b8)]">
