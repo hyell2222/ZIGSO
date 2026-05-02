@@ -31,14 +31,16 @@ import { Input } from "@/components/ui/input";
 import {
   addFoundClueToTeam,
   getPlayerById,
+  getPlayerReport,
   getPlayerWithInvestigationZone,
   getPlaySessionDetails,
   getCaseMapEntities,
   getSessionByJoinCode,
   getTeamById,
   joinPlayerSession,
+  listTeamReports,
   setPlayerOnline,
-  submitTeamReport,
+  submitPlayerReport,
 } from "@/lib/api/play";
 import {
   clearResumeRecord,
@@ -109,7 +111,24 @@ function PlaySessionShell({
   });
 
   const teamName = teamQuery.data?.name ?? null;
-  const reportSubmitted = Boolean(teamQuery.data?.report_submitted_at);
+
+  const playerReportQuery = useQuery({
+    queryKey: ["play-player-report", playerId],
+    queryFn: async () => getPlayerReport(playerId as string),
+    enabled: Boolean(playerId),
+    refetchInterval: playerId ? 5_000 : false,
+    refetchIntervalInBackground: true,
+  });
+  const playerReport = playerReportQuery.data ?? null;
+  const reportSubmitted = Boolean(playerReport);
+
+  const teamReportsQuery = useQuery({
+    queryKey: ["play-team-reports", teamId],
+    queryFn: async () => listTeamReports(teamId as string),
+    enabled: Boolean(teamId && reportSubmitted),
+    refetchInterval: teamId && reportSubmitted ? 5_000 : false,
+    refetchIntervalInBackground: true,
+  });
 
   const sessionQuery = useQuery({
     queryKey: ["play-session", sessionId],
@@ -128,10 +147,14 @@ function PlaySessionShell({
     [sessionQuery.data?.cases?.suspect_roster],
   );
   const answerSuspectId = sessionQuery.data?.cases?.answer_suspect_id ?? null;
-  const submittedSuspectId = teamQuery.data?.report_suspect_id ?? null;
-  const culpritCorrect = isCulpritCorrect(answerSuspectId, submittedSuspectId);
+  const teamMajority = useMemo(
+    () => computeTeamMajority(teamReportsQuery.data ?? []),
+    [teamReportsQuery.data],
+  );
+  const culpritCorrect = isCulpritCorrect(answerSuspectId, teamMajority.suspectId);
   const trueCulpritName = findSuspectName(caseRoster, answerSuspectId);
-  const chosenSuspectName = findSuspectName(caseRoster, submittedSuspectId);
+  const majoritySuspectName = findSuspectName(caseRoster, teamMajority.suspectId);
+  const ownSuspectName = findSuspectName(caseRoster, playerReport?.suspect_id ?? null);
 
   const resumeQuery = useQuery({
     queryKey: ["play-resume", joinCode],
@@ -188,6 +211,16 @@ function PlaySessionShell({
         { event: "*", schema: "public", table: "teams", filter: `session_id=eq.${sessionId}` },
         () => {
           if (teamId) void queryClient.invalidateQueries({ queryKey: ["play-team", teamId] });
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "player_reports", filter: `session_id=eq.${sessionId}` },
+        () => {
+          if (playerId)
+            void queryClient.invalidateQueries({ queryKey: ["play-player-report", playerId] });
+          if (teamId)
+            void queryClient.invalidateQueries({ queryKey: ["play-team-reports", teamId] });
         },
       )
       .subscribe((status) => {
@@ -332,16 +365,22 @@ function PlaySessionShell({
 
   const reportMutation = useMutation({
     mutationFn: async () => {
-      if (!teamId) throw new Error("팀 정보가 없습니다.");
-      await submitTeamReport(teamId, {
-        suspectId: reportValues.suspectId,
-        method: reportValues.method,
-        motive: reportValues.motive,
-        decisiveClue: reportValues.decisiveClue,
-      });
+      if (!playerId) throw new Error("부원 정보가 없습니다.");
+      if (!sessionId) throw new Error("세션 정보가 없습니다.");
+      await submitPlayerReport(
+        { playerId, sessionId, teamId },
+        {
+          suspectId: reportValues.suspectId,
+          method: reportValues.method,
+          motive: reportValues.motive,
+          decisiveClue: reportValues.decisiveClue,
+        },
+      );
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["play-team", teamId] });
+      void queryClient.invalidateQueries({ queryKey: ["play-player-report", playerId] });
+      if (teamId)
+        void queryClient.invalidateQueries({ queryKey: ["play-team-reports", teamId] });
     },
     onError: (e: Error) => setMessage(e.message),
   });
@@ -396,8 +435,12 @@ function PlaySessionShell({
               {reportSubmitted ? (
                 <div className="space-y-5 text-sm text-[var(--foreground)]">
                   <FinalReportSubmittedBanner
-                    submittedAt={teamQuery.data?.report_submitted_at}
-                    description="각자 범인 지목이 접수되었습니다."
+                    submittedAt={playerReport?.submitted_at ?? null}
+                    description={
+                      ownSuspectName
+                        ? `${ownSuspectName}을(를) 범인으로 지목했습니다.`
+                        : "범인 지목이 접수되었습니다."
+                    }
                   />
                   {answerSuspectId ? (
                     <div
@@ -409,15 +452,23 @@ function PlaySessionShell({
                       }
                     >
                       <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--accent)]">
-                        범인 검거 결과
+                        범인 검거 결과 (팀 다수결)
                       </p>
                       <p className="mt-2 text-xl font-bold text-[var(--foreground)]">
-                        {culpritCorrect ? "검거 성공" : "검거 실패"}
+                        {teamMajority.tied
+                          ? "검거 실패 (의견 불일치)"
+                          : culpritCorrect
+                            ? "검거 성공"
+                            : "검거 실패"}
                       </p>
                       <dl className="mt-3 grid gap-2 text-sm">
                         <div className="flex flex-wrap justify-between gap-2 border-t border-[var(--border)] pt-2">
-                          <dt className="text-[var(--muted-foreground)]">팀이 지목한 사람</dt>
-                          <dd className="font-semibold text-[var(--foreground)]">{chosenSuspectName ?? "—"}</dd>
+                          <dt className="text-[var(--muted-foreground)]">팀 다수가 지목한 사람</dt>
+                          <dd className="font-semibold text-[var(--foreground)]">
+                            {teamMajority.tied
+                              ? "의견 불일치"
+                              : (majoritySuspectName ?? teamMajority.suspectId ?? "—")}
+                          </dd>
                         </div>
                         <div className="flex flex-wrap justify-between gap-2">
                           <dt className="text-[var(--muted-foreground)]">사건 정답(범인)</dt>
@@ -626,6 +677,34 @@ function PlaySessionShell({
       </main>
     </PlayAtmosphere>
   );
+}
+
+/**
+ * 팀 다수결: 가장 많이 지목된 용의자. 동률(의견 불일치)이면 tied=true.
+ */
+function computeTeamMajority(reports: ReadonlyArray<{ suspect_id: string }>) {
+  if (reports.length === 0) {
+    return { suspectId: null as string | null, tied: false, count: 0 };
+  }
+  const counts = new Map<string, number>();
+  for (const r of reports) {
+    const id = r.suspect_id?.trim();
+    if (!id) continue;
+    counts.set(id, (counts.get(id) ?? 0) + 1);
+  }
+  let bestId: string | null = null;
+  let bestCount = 0;
+  let tied = false;
+  for (const [id, count] of counts) {
+    if (count > bestCount) {
+      bestId = id;
+      bestCount = count;
+      tied = false;
+    } else if (count === bestCount) {
+      tied = true;
+    }
+  }
+  return { suspectId: bestId, tied, count: bestCount };
 }
 
 const WAITING_LOBBY: Record<

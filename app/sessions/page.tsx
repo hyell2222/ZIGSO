@@ -7,9 +7,11 @@ import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   getHostSessionDetails,
+  listSessionPlayerReports,
   listSessionPlayers,
   listSessionTeams,
   setPlayersOnline,
+  type PlayerReportRow,
   type SessionDetailsRow,
   type SessionPlayerRow,
   type TeamRow,
@@ -291,19 +293,54 @@ function TeamAssignmentDashboard({
   );
 }
 
+/**
+ * 팀 다수결: 가장 많이 지목된 용의자. 동률(의견 불일치)이면 tied=true.
+ */
+function computeTeamMajority(reports: ReadonlyArray<{ suspect_id: string }>) {
+  if (reports.length === 0) {
+    return { suspectId: null as string | null, tied: false, count: 0 };
+  }
+  const counts = new Map<string, number>();
+  for (const r of reports) {
+    const id = r.suspect_id?.trim();
+    if (!id) continue;
+    counts.set(id, (counts.get(id) ?? 0) + 1);
+  }
+  let bestId: string | null = null;
+  let bestCount = 0;
+  let tied = false;
+  for (const [id, count] of counts) {
+    if (count > bestCount) {
+      bestId = id;
+      bestCount = count;
+      tied = false;
+    } else if (count === bestCount) {
+      tied = true;
+    }
+  }
+  return { suspectId: bestId, tied, count: bestCount };
+}
+
 function TeamReportDashboard({
   reportKey,
   players,
   teams,
+  reports,
   loading,
 }: {
   reportKey: SessionDetailsRow["cases"];
   players: SessionPlayerRow[];
   teams: TeamRow[];
+  reports: PlayerReportRow[];
   loading: boolean;
 }) {
   const groups = useMemo(() => groupPlayersByTeam(players, teams), [players, teams]);
-  const submittedCount = teams.filter((t) => t.report_submitted_at).length;
+  const reportByPlayerId = useMemo(
+    () => new Map(reports.map((r) => [r.player_id, r])),
+    [reports],
+  );
+  const submittedCount = reports.length;
+  const totalPlayers = players.length;
   const answerRoster = useMemo(
     () => parseSuspectRosterFromCase(reportKey?.suspect_roster),
     [reportKey?.suspect_roster],
@@ -315,9 +352,9 @@ function TeamReportDashboard({
   return (
     <section className="space-y-3 rounded-lg border border-[var(--border)] bg-[var(--card-bg)] p-6 shadow-[var(--elevation-sm)]">
       <header className="flex items-baseline justify-between">
-        <h2 className="text-sm font-semibold text-[var(--foreground)]">범인 지목</h2>
+        <h2 className="text-sm font-semibold text-[var(--foreground)]">범인 지목 (개별 제출)</h2>
         <span className="text-xs text-[var(--muted-foreground)]">
-          제출 {submittedCount} / {teams.length}
+          제출 {submittedCount} / {totalPlayers}
         </span>
       </header>
       {hasAnswer ? (
@@ -332,21 +369,26 @@ function TeamReportDashboard({
         </p>
       )}
       {loading ? (
-        <LoadingState variant="section" label="참가자·팀 정보를 불러오는 중…" />
+        <LoadingState variant="section" label="참가자·보고서를 불러오는 중…" />
       ) : groups.length === 0 ? (
         <p className="text-sm text-[var(--muted-foreground)]">학생이 없습니다.</p>
       ) : (
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
           {groups.map((g) => {
-            const t = g.team;
-            const submitted = Boolean(t.report_submitted_at);
-            const subName = findSuspectName(answerRoster, t.report_suspect_id);
-            const ok = isCulpritCorrect(answerId, t.report_suspect_id);
+            const teamReports = g.members
+              .map((m) => reportByPlayerId.get(m.id))
+              .filter((r): r is PlayerReportRow => Boolean(r));
+            const teamSubmitted = teamReports.length;
+            const majority = computeTeamMajority(teamReports);
+            const majorityName = findSuspectName(answerRoster, majority.suspectId);
+            const majorityCorrect =
+              !majority.tied && isCulpritCorrect(answerId, majority.suspectId);
+            const allSubmitted = teamSubmitted === g.members.length && g.members.length > 0;
             return (
               <div
                 key={g.team.id}
                 className={`rounded-md border p-3 ${
-                  submitted
+                  allSubmitted
                     ? "border-[var(--accent)] bg-[var(--tint-accent-medium)]"
                     : "border-[var(--border)] bg-[var(--surface)]"
                 }`}
@@ -357,66 +399,82 @@ function TeamReportDashboard({
                   </p>
                   <span
                     className={`rounded px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.12em] ${
-                      submitted
+                      allSubmitted
                         ? "bg-[var(--accent)] text-[var(--background)]"
                         : "border border-[var(--border)] text-[var(--muted-foreground)]"
                     }`}
                   >
-                    {submitted ? "제출됨" : "대기"}
+                    제출 {teamSubmitted}/{g.members.length}
                   </span>
                 </div>
-                {t.report_submitted_at ? (
-                  <p className="mt-1 text-[11px] text-[var(--muted-foreground)]">
-                    {new Date(t.report_submitted_at).toLocaleString("ko-KR")}
-                  </p>
-                ) : null}
-                {submitted && hasAnswer ? (
+                {teamReports.length > 0 && hasAnswer ? (
                   <p
                     className={
                       "mt-2 text-[11px] font-semibold " +
-                      (ok ? "text-[var(--primary)]" : "text-[var(--danger)]")
+                      (majority.tied
+                        ? "text-[var(--muted-foreground)]"
+                        : majorityCorrect
+                          ? "text-[var(--primary)]"
+                          : "text-[var(--danger)]")
                     }
                   >
-                    범인 검거: {ok ? "성공" : "실패"} — 제출: {subName ?? "—"}
+                    팀 다수결:{" "}
+                    {majority.tied
+                      ? "의견 불일치"
+                      : `${majorityName ?? majority.suspectId ?? "—"} (${majorityCorrect ? "검거 성공" : "검거 실패"})`}
                   </p>
                 ) : null}
-                {submitted ? (
-                  <dl className="mt-3 space-y-2 text-xs text-[var(--foreground)]">
-                    <div>
-                      <dt className="text-[10px] uppercase tracking-wide text-[var(--muted-foreground)]">지목한 범인</dt>
-                      <dd className="whitespace-pre-wrap break-words">{subName ?? t.report_suspect_id ?? "—"}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-[10px] uppercase tracking-wide text-[var(--muted-foreground)]">도구·방법</dt>
-                      <dd className="whitespace-pre-wrap break-words">{t.report_method ?? "—"}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-[10px] uppercase tracking-wide text-[var(--muted-foreground)]">동기</dt>
-                      <dd className="whitespace-pre-wrap break-words">{t.report_motive ?? "—"}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-[10px] uppercase tracking-wide text-[var(--muted-foreground)]">결정적 단서</dt>
-                      <dd className="whitespace-pre-wrap break-words">{t.report_decisive_clue ?? "—"}</dd>
-                    </div>
-                  </dl>
-                ) : null}
-                <ul className="mt-2 space-y-1">
-                  {g.members.map((m) => (
-                    <li
-                      key={m.id}
-                      className="flex items-center justify-between gap-2 rounded border border-[var(--border)] bg-[var(--tint-accent-weak)] px-2 py-1.5 text-xs"
-                    >
-                      <span className="min-w-0 flex-1 text-[var(--foreground)]">
-                        {m.nickname ?? "참가자"}
-                        <span className="ml-1 text-[10px] text-[var(--muted-foreground)]">
-                          {clubRoleLabelKr(m.club_role)}
-                        </span>
-                      </span>
-                      <span className="shrink-0 text-[var(--accent)]">
-                        {m.investigation_zone?.name ?? "—"}
-                      </span>
-                    </li>
-                  ))}
+                <ul className="mt-3 space-y-1.5">
+                  {g.members.map((m) => {
+                    const r = reportByPlayerId.get(m.id);
+                    const submitted = Boolean(r);
+                    const memberSuspectName = findSuspectName(answerRoster, r?.suspect_id);
+                    const memberCorrect =
+                      submitted && hasAnswer && r
+                        ? isCulpritCorrect(answerId, r.suspect_id)
+                        : null;
+                    return (
+                      <li
+                        key={m.id}
+                        className={`rounded border px-2 py-1.5 text-xs ${
+                          submitted
+                            ? "border-[var(--accent)]/40 bg-[var(--tint-accent-weak)]"
+                            : "border-[var(--border)] bg-[var(--surface)]"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="min-w-0 flex-1 text-[var(--foreground)]">
+                            {m.nickname ?? "참가자"}
+                            <span className="ml-1 text-[10px] text-[var(--muted-foreground)]">
+                              {clubRoleLabelKr(m.club_role)}
+                            </span>
+                          </span>
+                          <span
+                            className={`shrink-0 text-[10px] font-semibold uppercase tracking-wide ${
+                              submitted ? "text-[var(--accent)]" : "text-[var(--muted-foreground)]"
+                            }`}
+                          >
+                            {submitted ? "제출" : "대기"}
+                          </span>
+                        </div>
+                        {submitted ? (
+                          <p
+                            className={
+                              "mt-1 text-[11px] " +
+                              (hasAnswer
+                                ? memberCorrect
+                                  ? "text-[var(--primary)]"
+                                  : "text-[var(--danger)]"
+                                : "text-[var(--foreground)]")
+                            }
+                          >
+                            지목: {memberSuspectName ?? r?.suspect_id ?? "—"}
+                            {hasAnswer ? ` · ${memberCorrect ? "맞음" : "틀림"}` : ""}
+                          </p>
+                        ) : null}
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
             );
@@ -454,6 +512,14 @@ function SessionHostContent() {
   const teamsQuery = useQuery({
     queryKey: ["host-session-teams", sessionId],
     queryFn: () => listSessionTeams(sessionId),
+    enabled: Boolean(sessionId && teacherSession.data),
+    refetchInterval: sessionId ? 3_000 : false,
+    refetchIntervalInBackground: true,
+  });
+
+  const reportsQuery = useQuery({
+    queryKey: ["host-session-player-reports", sessionId],
+    queryFn: () => listSessionPlayerReports(sessionId),
     enabled: Boolean(sessionId && teacherSession.data),
     refetchInterval: sessionId ? 3_000 : false,
     refetchIntervalInBackground: true,
@@ -497,6 +563,13 @@ function SessionHostContent() {
         { event: "*", schema: "public", table: "teams", filter: `session_id=eq.${sessionId}` },
         () => {
           void queryClient.invalidateQueries({ queryKey: ["host-session-teams", sessionId] });
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "player_reports", filter: `session_id=eq.${sessionId}` },
+        () => {
+          void queryClient.invalidateQueries({ queryKey: ["host-session-player-reports", sessionId] });
         },
       )
       .on("presence", { event: "sync" }, () => {
@@ -861,7 +934,10 @@ function SessionHostContent() {
                 reportKey={row.cases}
                 players={onlinePlayers}
                 teams={teamsQuery.data ?? []}
-                loading={playersQuery.isLoading || teamsQuery.isLoading}
+                reports={reportsQuery.data ?? []}
+                loading={
+                  playersQuery.isLoading || teamsQuery.isLoading || reportsQuery.isLoading
+                }
               />
             ) : null}
           </>

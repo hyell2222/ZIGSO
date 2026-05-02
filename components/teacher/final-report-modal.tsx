@@ -8,42 +8,49 @@ import {
 } from "@/components/play/final-report-fields";
 import { Modal } from "@/components/ui/modal";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { TeamRow } from "@/lib/api/play";
+import type { PlayerReportRow } from "@/lib/api/play";
 import { findSuspectName, type SuspectEntry } from "@/lib/suspects";
 
 type Props = {
   isOpen: boolean;
   onClose: () => void;
-  team: TeamRow | null;
+  report: PlayerReportRow | null;
+  /** 보고서를 작성한 부원 닉네임. 없으면 "—". */
+  playerNickname: string;
+  /** 부원이 속한 팀 이름. */
   teamDisplayName: string;
   suspectRoster: SuspectEntry[];
 };
 
-/** 팀 최종 보고 내용 — 읽기 전용. */
-export function FinalReportModal({ isOpen, onClose, team, teamDisplayName, suspectRoster }: Props) {
-  const submitted = Boolean(team?.report_submitted_at);
+/** 부원 1명의 최종 보고서 — 읽기 전용. */
+export function FinalReportModal({
+  isOpen,
+  onClose,
+  report,
+  playerNickname,
+  teamDisplayName,
+  suspectRoster,
+}: Props) {
   const recordedSuspectName =
-    findSuspectName(suspectRoster, team?.report_suspect_id ?? null) ??
-    team?.report_suspect_id?.trim() ??
+    findSuspectName(suspectRoster, report?.suspect_id ?? null) ??
+    report?.suspect_id?.trim() ??
     "";
 
   return (
     <Modal
       open={isOpen}
       onClose={onClose}
-      title={`${teamDisplayName} — 최종 보고`}
-      titleId="team-report-modal-title"
+      title={`${playerNickname} (${teamDisplayName}) — 최종 보고`}
+      titleId="player-report-modal-title"
       sheetOnNarrow
       maxWidthClassName="max-w-2xl"
       zIndexClassName="z-[200]"
       bodyClassName="p-4 sm:p-5"
       panelClassName="shadow-[0_24px_60px_color-mix(in_srgb,var(--ink)_50%,transparent)]"
     >
-      {!team ? (
-        <p className="text-sm text-[var(--muted-foreground)]">팀 정보를 찾을 수 없습니다.</p>
-      ) : !submitted ? (
+      {!report ? (
         <p className="text-sm text-[var(--muted-foreground)]">
-          이 팀은 아직 최종 보고를 제출하지 않았습니다.
+          이 부원은 아직 최종 보고를 제출하지 않았습니다.
         </p>
       ) : (
         <Card className="overflow-hidden border-[color-mix(in_srgb,var(--primary)_26%,transparent)] bg-[color-mix(in_srgb,var(--mystery)_72%,var(--ink))] text-[color:var(--entry-parchment)] shadow-none">
@@ -57,7 +64,7 @@ export function FinalReportModal({ isOpen, onClose, team, teamDisplayName, suspe
                   3단계 · 최종 보고
                 </CardTitle>
                 <p className="text-xs font-normal text-[color:var(--entry-parchment-muted)]">
-                  팀 단위로 1회 제출합니다. 범인은 등록된 용의자 중에서만 선택할 수 있습니다.
+                  부원이 개별로 제출한 범인 지목서입니다.
                 </p>
               </div>
             </div>
@@ -65,20 +72,20 @@ export function FinalReportModal({ isOpen, onClose, team, teamDisplayName, suspe
           <CardContent className="space-y-5 px-4 pb-5 pt-5 sm:px-5">
             <FinalReportSubmittedBanner
               theme="parchment"
-              submittedAt={team.report_submitted_at}
-              description="팀 최종 보고가 접수되었습니다."
+              submittedAt={report.submitted_at}
+              description={`${playerNickname} 부원의 보고가 접수되었습니다.`}
             />
             <FinalReportFields
               theme="parchment"
               readOnly
-              idPrefix="team-report"
+              idPrefix={`player-report-${report.id}`}
               suspectRoster={suspectRoster}
               emptyRosterSuspectName={recordedSuspectName}
               values={{
-                suspectId: team.report_suspect_id ?? "",
-                method: team.report_method?.trim() ?? "",
-                motive: team.report_motive?.trim() ?? "",
-                decisiveClue: team.report_decisive_clue?.trim() ?? "",
+                suspectId: report.suspect_id ?? "",
+                method: report.method?.trim() ?? "",
+                motive: report.motive?.trim() ?? "",
+                decisiveClue: report.decisive_clue?.trim() ?? "",
               }}
             />
           </CardContent>

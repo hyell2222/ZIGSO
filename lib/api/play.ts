@@ -142,7 +142,7 @@ export type PlayerSelfRow = {
 const PLAYER_SELECT =
   "id,nickname,session_id,team_id,club_role,investigation_location_id,is_online";
 
-const PLAYER_SELECT_WITH_TEAM_PATROL = `${PLAYER_SELECT},teams(id,name,found_clue_ids,report_suspect_id,report_method,report_motive,report_decisive_clue,report_submitted_at),investigation_zone:locations!investigation_location_id(name)`;
+const PLAYER_SELECT_WITH_TEAM_INVESTIGATION = `${PLAYER_SELECT},teams(id,name,found_clue_ids),investigation_zone:locations!investigation_location_id(name)`;
 
 export type SessionPlayerRow = PlayerSelfRow & {
   investigation_zone: { name: string | null } | null;
@@ -150,11 +150,6 @@ export type SessionPlayerRow = PlayerSelfRow & {
     id: string;
     name: string | null;
     found_clue_ids: string[] | null;
-    report_suspect_id: string | null;
-    report_method: string | null;
-    report_motive: string | null;
-    report_decisive_clue: string | null;
-    report_submitted_at: string | null;
   } | null;
 };
 
@@ -185,7 +180,7 @@ export async function getPlayerWithInvestigationZone(playerId: string) {
 export async function listSessionPlayers(sessionId: string) {
   const { data, error } = await supabase
     .from("players")
-    .select(PLAYER_SELECT_WITH_TEAM_PATROL)
+    .select(PLAYER_SELECT_WITH_TEAM_INVESTIGATION)
     .eq("session_id", sessionId)
     .order("nickname", { ascending: true });
   if (error) throw error;
@@ -235,26 +230,34 @@ export type TeamRow = {
   session_id: string | null;
   name: string | null;
   found_clue_ids: string[];
-  report_suspect_id: string | null;
-  report_method: string | null;
-  report_motive: string | null;
-  report_decisive_clue: string | null;
-  report_submitted_at: string | null;
 };
 
-export type TeamReportInput = {
+export type PlayerReportInput = {
   suspectId: string;
   method: string;
   motive: string;
   decisiveClue: string;
 };
 
+export type PlayerReportRow = {
+  id: string;
+  session_id: string;
+  team_id: string | null;
+  player_id: string;
+  suspect_id: string;
+  method: string;
+  motive: string;
+  decisive_clue: string;
+  submitted_at: string;
+};
+
+const PLAYER_REPORT_SELECT =
+  "id,session_id,team_id,player_id,suspect_id,method,motive,decisive_clue,submitted_at";
+
 export async function listSessionTeams(sessionId: string) {
   const { data, error } = await supabase
     .from("teams")
-    .select(
-      "id,session_id,name,found_clue_ids,report_suspect_id,report_method,report_motive,report_decisive_clue,report_submitted_at",
-    )
+    .select("id,session_id,name,found_clue_ids")
     .eq("session_id", sessionId)
     .order("name", { ascending: true });
   if (error) throw error;
@@ -264,9 +267,7 @@ export async function listSessionTeams(sessionId: string) {
 export async function getTeamById(teamId: string) {
   const { data, error } = await supabase
     .from("teams")
-    .select(
-      "id,session_id,name,found_clue_ids,report_suspect_id,report_method,report_motive,report_decisive_clue,report_submitted_at",
-    )
+    .select("id,session_id,name,found_clue_ids")
     .eq("id", teamId)
     .single();
   if (error) throw error;
@@ -292,30 +293,69 @@ export async function addFoundClueToTeam(teamId: string, clueId: string) {
   if (updateError) throw updateError;
 }
 
+// =====================================================================
+// 범인 지목서(부원별 1회)
+// =====================================================================
+
+/** 본인 보고서 1건. 미제출이면 null. */
+export async function getPlayerReport(playerId: string) {
+  const { data, error } = await supabase
+    .from("player_reports")
+    .select(PLAYER_REPORT_SELECT)
+    .eq("player_id", playerId)
+    .maybeSingle();
+  if (error) throw error;
+  return (data ?? null) as PlayerReportRow | null;
+}
+
+/** 같은 팀 부원 전원의 보고서. 다수결 판정·진행 모니터링용. */
+export async function listTeamReports(teamId: string) {
+  const { data, error } = await supabase
+    .from("player_reports")
+    .select(PLAYER_REPORT_SELECT)
+    .eq("team_id", teamId)
+    .order("submitted_at", { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as PlayerReportRow[];
+}
+
+/** 호스트(선생님) 화면용. 세션의 모든 부원 보고서. */
+export async function listSessionPlayerReports(sessionId: string) {
+  const { data, error } = await supabase
+    .from("player_reports")
+    .select(PLAYER_REPORT_SELECT)
+    .eq("session_id", sessionId)
+    .order("submitted_at", { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as PlayerReportRow[];
+}
+
 /**
- * 팀의 범인 지목서(1회). 이미 제출됐으면 에러.
+ * 부원의 범인 지목서(1회). 이미 제출됐으면 에러.
  */
-export async function submitTeamReport(teamId: string, report: TeamReportInput) {
+export async function submitPlayerReport(
+  args: { playerId: string; sessionId: string; teamId: string | null },
+  report: PlayerReportInput,
+) {
   const { data: existing, error: getError } = await supabase
-    .from("teams")
-    .select("report_submitted_at")
-    .eq("id", teamId)
-    .single();
+    .from("player_reports")
+    .select("id")
+    .eq("player_id", args.playerId)
+    .maybeSingle();
   if (getError) throw getError;
-  if (existing?.report_submitted_at) {
+  if (existing?.id) {
     throw new Error("이미 제출한 보고서가 있습니다.");
   }
 
-  const { error } = await supabase
-    .from("teams")
-    .update({
-      report_suspect_id: report.suspectId.trim(),
-      report_method: report.method.trim(),
-      report_motive: report.motive.trim(),
-      report_decisive_clue: report.decisiveClue.trim(),
-      report_submitted_at: new Date().toISOString(),
-    })
-    .eq("id", teamId);
+  const { error } = await supabase.from("player_reports").insert({
+    player_id: args.playerId,
+    session_id: args.sessionId,
+    team_id: args.teamId,
+    suspect_id: report.suspectId.trim(),
+    method: report.method.trim(),
+    motive: report.motive.trim(),
+    decisive_clue: report.decisiveClue.trim(),
+  });
   if (error) throw error;
 }
 

@@ -9,8 +9,10 @@ import { Suspense, useMemo, useState } from "react";
 import { deleteGameSession, listHostSessions, type HostSessionListRow } from "@/lib/api/game-sessions";
 import {
   getHostSessionDetails,
+  listSessionPlayerReports,
   listSessionPlayers,
   listSessionTeams,
+  type PlayerReportRow,
   type SessionPlayerRow,
   type TeamRow,
 } from "@/lib/api/play";
@@ -94,7 +96,7 @@ function ReportsSessionsListPanel({ teacherUserId }: { teacherUserId: string }) 
         <>
           <PageHeader
             title="활동 리포트"
-            description="진행한 세션별로 참가자 현황과 팀 범인 지목를 확인하고, 파일로 내려받을 수 있습니다."
+            description="진행한 세션별로 참가자 현황과 부원별 범인 지목을 확인하고, 파일로 내려받을 수 있습니다."
           />
           {listQuery.isLoading ? (
             <LoadingState variant="section" label="목록을 불러오는 중…" />
@@ -182,6 +184,8 @@ type PlayerReportLine = {
   submittedAt: string | null;
   /** 제출 시각 정렬용 (ms) */
   submittedAtMs: number | null;
+  /** 본인 보고서. 미제출이면 null. */
+  report: PlayerReportRow | null;
 };
 
 type SortKey =
@@ -231,8 +235,8 @@ function compareReportLines(
       cmp = isCorrectSortRank(a, hasAnswer) - isCorrectSortRank(b, hasAnswer);
       break;
     case "finalReport": {
-      const av = a.reportSubmitted && a.teamId ? 1 : 0;
-      const bv = b.reportSubmitted && b.teamId ? 1 : 0;
+      const av = a.report ? 1 : 0;
+      const bv = b.report ? 1 : 0;
       cmp = av - bv;
       break;
     }
@@ -259,7 +263,6 @@ function escapeCsvField(value: string): string {
 
 function buildSessionReportCsv(
   lines: PlayerReportLine[],
-  teamById: Map<string, TeamRow>,
   answerRoster: ReturnType<typeof parseSuspectRosterFromCase>,
   hasAnswer: boolean,
 ): string {
@@ -268,7 +271,7 @@ function buildSessionReportCsv(
     "팀",
     "역할",
     "조사 장소",
-    "팀 제출",
+    "제출",
     "정답",
     "제출 시각",
     "지목한 범인",
@@ -278,11 +281,10 @@ function buildSessionReportCsv(
   ];
   const rows: string[][] = [header];
   for (const line of lines) {
-    const team = line.teamId ? teamById.get(line.teamId) : undefined;
-    const suspectName =
-      team?.report_suspect_id
-        ? (findSuspectName(answerRoster, team.report_suspect_id) ?? team.report_suspect_id)
-        : "";
+    const r = line.report;
+    const suspectName = r?.suspect_id
+      ? (findSuspectName(answerRoster, r.suspect_id) ?? r.suspect_id)
+      : "";
     const correctLabel = !line.reportSubmitted
       ? "—"
       : !hasAnswer
@@ -300,10 +302,10 @@ function buildSessionReportCsv(
       line.reportSubmitted ? "제출" : "—",
       correctLabel,
       line.submittedAt ?? "—",
-      team?.report_suspect_id ? suspectName : "",
-      (team?.report_method ?? "").trim(),
-      (team?.report_motive ?? "").trim(),
-      (team?.report_decisive_clue ?? "").trim(),
+      suspectName,
+      (r?.method ?? "").trim(),
+      (r?.motive ?? "").trim(),
+      (r?.decisive_clue ?? "").trim(),
     ]);
   }
   return rows.map((r) => r.map(escapeCsvField).join(",")).join("\r\n");
@@ -312,9 +314,11 @@ function buildSessionReportCsv(
 function buildReportLines(
   players: SessionPlayerRow[],
   teams: TeamRow[],
+  reports: PlayerReportRow[],
   answerSuspectId: string | null,
 ): PlayerReportLine[] {
   const teamById = new Map(teams.map((t) => [t.id, t]));
+  const reportByPlayerId = new Map(reports.map((r) => [r.player_id, r]));
   const hasRegisteredAnswer = Boolean(answerSuspectId?.trim());
 
   const list = [...players];
@@ -330,15 +334,14 @@ function buildReportLines(
 
   return list.map((p) => {
     const team = p.team_id ? teamById.get(p.team_id) : undefined;
-    const submitted = Boolean(team?.report_submitted_at);
+    const report = reportByPlayerId.get(p.id) ?? null;
+    const submitted = Boolean(report);
     let isCorrect: boolean | null = null;
-    if (submitted && hasRegisteredAnswer && team) {
-      isCorrect = isCulpritCorrect(answerSuspectId, team.report_suspect_id);
-    } else if (submitted && !hasRegisteredAnswer) {
-      isCorrect = null;
+    if (submitted && hasRegisteredAnswer && report) {
+      isCorrect = isCulpritCorrect(answerSuspectId, report.suspect_id);
     }
 
-    const submittedAtRaw = team?.report_submitted_at;
+    const submittedAtRaw = report?.submitted_at ?? null;
     return {
       playerId: p.id,
       teamId: p.team_id ?? null,
@@ -350,6 +353,7 @@ function buildReportLines(
       isCorrect,
       submittedAt: submittedAtRaw ? new Date(submittedAtRaw).toLocaleString("ko-KR") : null,
       submittedAtMs: submittedAtRaw ? Date.parse(submittedAtRaw) : null,
+      report,
     };
   });
 }
@@ -415,6 +419,12 @@ function SessionReportContent() {
     enabled: Boolean(sessionId && teacherSession.data),
   });
 
+  const reportsQuery = useQuery({
+    queryKey: ["host-session-player-reports", sessionId],
+    queryFn: () => listSessionPlayerReports(sessionId),
+    enabled: Boolean(sessionId && teacherSession.data),
+  });
+
   const row = sessionQuery.data;
 
   const cases = row?.cases;
@@ -425,20 +435,27 @@ function SessionReportContent() {
   const trueName = findSuspectName(answerRoster, cases?.answer_suspect_id);
   const hasAnswer = Boolean(cases?.answer_suspect_id?.trim() && trueName);
 
-  const [viewingTeamId, setViewingTeamId] = useState<string | null>(null);
+  const [viewingPlayerId, setViewingPlayerId] = useState<string | null>(null);
   const [sort, setSort] = useState<{ key: SortKey; dir: "asc" | "desc" } | null>(null);
 
   const lines = useMemo(
-    () => buildReportLines(playersQuery.data ?? [], teamsQuery.data ?? [], cases?.answer_suspect_id ?? null),
-    [playersQuery.data, teamsQuery.data, cases?.answer_suspect_id],
+    () =>
+      buildReportLines(
+        playersQuery.data ?? [],
+        teamsQuery.data ?? [],
+        reportsQuery.data ?? [],
+        cases?.answer_suspect_id ?? null,
+      ),
+    [playersQuery.data, teamsQuery.data, reportsQuery.data, cases?.answer_suspect_id],
   );
 
-  const teamById = useMemo(
-    () => new Map((teamsQuery.data ?? []).map((t) => [t.id, t])),
-    [teamsQuery.data],
+  const linesByPlayerId = useMemo(
+    () => new Map(lines.map((line) => [line.playerId, line])),
+    [lines],
   );
-  const viewingTeam = viewingTeamId ? teamById.get(viewingTeamId) ?? null : null;
-  const viewingTeamDisplayName = viewingTeam?.name?.trim() || viewingTeamId || "팀";
+  const viewingLine = viewingPlayerId ? linesByPlayerId.get(viewingPlayerId) ?? null : null;
+  const viewingPlayerNickname = viewingLine?.nickname || "—";
+  const viewingTeamDisplayName = viewingLine?.teamName || "팀";
 
   const displayedLines = useMemo(() => {
     if (!sort) return lines;
@@ -505,7 +522,7 @@ function SessionReportContent() {
     );
   }
 
-  const loading = playersQuery.isLoading || teamsQuery.isLoading;
+  const loading = playersQuery.isLoading || teamsQuery.isLoading || reportsQuery.isLoading;
 
   const handleSort = (key: SortKey) => {
     setSort((prev) => {
@@ -515,7 +532,7 @@ function SessionReportContent() {
   };
 
   const handleDownloadCsv = () => {
-    const csv = buildSessionReportCsv(displayedLines, teamById, answerRoster, hasAnswer);
+    const csv = buildSessionReportCsv(displayedLines, answerRoster, hasAnswer);
     const blob = new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -607,13 +624,13 @@ function SessionReportContent() {
                       )}
                     </td>
                     <td className="px-3 py-2.5">
-                      {line.reportSubmitted && line.teamId ? (
+                      {line.reportSubmitted && line.report ? (
                         <Button
                           type="button"
                           size="sm"
                           variant="secondary"
                           className="h-8 text-xs"
-                          onClick={() => setViewingTeamId(line.teamId)}
+                          onClick={() => setViewingPlayerId(line.playerId)}
                         >
                           펼치기
                         </Button>
@@ -632,9 +649,10 @@ function SessionReportContent() {
           </div>
         )}
         <FinalReportModal
-          isOpen={viewingTeamId !== null}
-          onClose={() => setViewingTeamId(null)}
-          team={viewingTeam}
+          isOpen={viewingPlayerId !== null}
+          onClose={() => setViewingPlayerId(null)}
+          report={viewingLine?.report ?? null}
+          playerNickname={viewingPlayerNickname}
           teamDisplayName={viewingTeamDisplayName}
           suspectRoster={answerRoster}
         />

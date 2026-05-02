@@ -50,14 +50,15 @@ create table if not exists public.teams (
   id uuid primary key default gen_random_uuid(),
   session_id uuid references public.game_sessions(id) on delete cascade,
   name text,
-  found_clue_ids uuid[] not null default '{}',
-  -- cases.suspect_roster[].id 중 선택
-  report_suspect_id text,
-  report_method text,
-  report_motive text,
-  report_decisive_clue text,
-  report_submitted_at timestamptz
+  found_clue_ids uuid[] not null default '{}'
 );
+
+-- 이전 스키마 호환: 팀 단위 보고서 컬럼이 남아있다면 정리.
+alter table if exists public.teams drop column if exists report_suspect_id;
+alter table if exists public.teams drop column if exists report_method;
+alter table if exists public.teams drop column if exists report_motive;
+alter table if exists public.teams drop column if exists report_decisive_clue;
+alter table if exists public.teams drop column if exists report_submitted_at;
 
 create table if not exists public.players (
   id uuid primary key default gen_random_uuid(),
@@ -68,6 +69,21 @@ create table if not exists public.players (
     check (club_role is null or club_role in ('president', 'vice_president', 'member')),
   investigation_location_id uuid,
   is_online boolean default true
+);
+
+-- 부원별로 1회 제출하는 최종 범인 지목서.
+create table if not exists public.player_reports (
+  id uuid primary key default gen_random_uuid(),
+  session_id uuid not null references public.game_sessions(id) on delete cascade,
+  team_id uuid references public.teams(id) on delete set null,
+  player_id uuid not null references public.players(id) on delete cascade,
+  -- cases.suspect_roster[].id 중 선택
+  suspect_id text not null,
+  method text not null,
+  motive text not null,
+  decisive_clue text not null,
+  submitted_at timestamptz not null default timezone('utc', now()),
+  unique (player_id)
 );
 
 do $$
@@ -120,7 +136,12 @@ create index if not exists players_session_id_idx on public.players (session_id)
 create index if not exists players_team_id_idx on public.players (team_id);
 create index if not exists players_investigation_location_id_idx on public.players (investigation_location_id);
 create index if not exists players_club_role_idx on public.players (club_role);
-create index if not exists teams_report_submitted_at_idx on public.teams (report_submitted_at);
+create index if not exists player_reports_session_id_idx on public.player_reports (session_id);
+create index if not exists player_reports_team_id_idx on public.player_reports (team_id);
+create index if not exists player_reports_submitted_at_idx on public.player_reports (submitted_at);
+
+-- 이전 인덱스 정리.
+drop index if exists teams_report_submitted_at_idx;
 
 -- =====================================================================
 -- Row Level Security
@@ -132,6 +153,7 @@ alter table if exists public.clues enable row level security;
 alter table if exists public.game_sessions enable row level security;
 alter table if exists public.teams enable row level security;
 alter table if exists public.players enable row level security;
+alter table if exists public.player_reports enable row level security;
 
 drop policy if exists "cases are publicly readable" on public.cases;
 drop policy if exists "teachers insert own cases" on public.cases;
@@ -257,6 +279,25 @@ create policy "anyone can update player" on public.players
 create policy "anyone can leave player" on public.players
   for delete using (true);
 
+drop policy if exists "player reports are publicly readable" on public.player_reports;
+drop policy if exists "anyone can insert player report" on public.player_reports;
+drop policy if exists "host can delete player report" on public.player_reports;
+
+create policy "player reports are publicly readable" on public.player_reports
+  for select using (true);
+create policy "anyone can insert player report" on public.player_reports
+  for insert with check (
+    exists (select 1 from public.game_sessions g where g.id = player_reports.session_id)
+  );
+create policy "host can delete player report" on public.player_reports
+  for delete to authenticated
+  using (
+    exists (
+      select 1 from public.game_sessions g
+      where g.id = player_reports.session_id and g.host_id = auth.uid()
+    )
+  );
+
 -- =====================================================================
 -- Grants
 -- =====================================================================
@@ -269,6 +310,7 @@ grant select on public.clues to anon, authenticated;
 grant select on public.game_sessions to anon, authenticated;
 grant select on public.teams to anon, authenticated;
 grant select on public.players to anon, authenticated;
+grant select on public.player_reports to anon, authenticated;
 
 grant insert, update, delete on public.cases to authenticated;
 grant insert, update, delete on public.locations to authenticated;
@@ -278,6 +320,9 @@ grant insert, update, delete on public.game_sessions to authenticated;
 -- 익명 학생이 팀·플레이어 행을 만들고 갱신할 수 있어야 함
 grant insert, update on public.teams to anon, authenticated;
 grant insert, update, delete on public.players to anon, authenticated;
+-- 부원이 본인 보고서 1회 제출, 호스트만 삭제
+grant insert on public.player_reports to anon, authenticated;
+grant delete on public.player_reports to authenticated;
 
 -- =====================================================================
 -- Realtime publication
@@ -310,6 +355,13 @@ begin
     where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'players'
   ) then
     alter publication supabase_realtime add table public.players;
+  end if;
+
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'player_reports'
+  ) then
+    alter publication supabase_realtime add table public.player_reports;
   end if;
 end
 $$;
