@@ -3,12 +3,13 @@
 import { useEffect, useRef } from "react";
 
 import {
+  StepHeading,
   StepListItemCard,
   StepListRemoveButton,
   StepListSection,
   StepHint,
 } from "./step-blocks";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
 import type { DraftInvestigationZone } from "./types";
@@ -45,7 +46,11 @@ export function InvestigationZonesStep({ zones, onAdd, onUpdate, onRemove }: Pro
   return (
     <Card>
       <CardHeader>
-        <CardTitle>3. 조사 장소</CardTitle>
+        <StepHeading
+          step={3}
+          title="조사 장소"
+          subtitle="장소마다 맵이 하나씩 붙습니다. 이름은 겹치지 않게 적어 주세요."
+        />
       </CardHeader>
       <CardContent className="space-y-5">
         <StepHint>

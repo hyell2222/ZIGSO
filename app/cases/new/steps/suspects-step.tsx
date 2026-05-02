@@ -1,12 +1,13 @@
 "use client";
 
 import {
+  StepHeading,
   StepListItemCard,
   StepListRemoveButton,
   StepListSection,
   StepHint,
 } from "./step-blocks";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { SuspectEntry } from "@/lib/suspects";
@@ -49,7 +50,11 @@ export function SuspectsStep({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>2. 용의자 프로필</CardTitle>
+        <StepHeading
+          step={2}
+          title="용의자 프로필"
+          subtitle="사건 파악에 공개되는 인물 목록과 범인(정답) 한 명을 지정합니다."
+        />
       </CardHeader>
       <CardContent className="space-y-5">
         <StepHint>

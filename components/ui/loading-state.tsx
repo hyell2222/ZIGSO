@@ -45,16 +45,12 @@ export function LoadingState({
   const isOnPrimary = tone === "onPrimary";
 
   const labelTone = isPlay
-    ? "tracking-wide text-[color:var(--entry-parchment-muted)]"
+    ? "tracking-wide text-[var(--muted-foreground)]"
     : isOnPrimary
       ? "font-medium text-[var(--on-primary)]/90"
       : "text-[var(--muted-foreground)]";
 
-  const spinnerStyle: CSSProperties | undefined = isPlay
-    ? {
-        filter: "drop-shadow(0 0 10px color-mix(in srgb, var(--primary) 38%, transparent))",
-      }
-    : undefined;
+  const spinnerStyle: CSSProperties | undefined = undefined;
 
   const spinnerColor = isOnPrimary ? "text-[var(--on-primary)]" : "text-[var(--primary)]";
 

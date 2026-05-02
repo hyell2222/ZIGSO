@@ -3,7 +3,7 @@
 import { Trash2 } from "lucide-react";
 import { useCallback, useMemo, useRef, useState } from "react";
 
-import { StepHint } from "./step-blocks";
+import { StepHeading, StepHint } from "./step-blocks";
 import { Button } from "@/components/ui/button";
 import { LoadingState } from "@/components/ui/loading-state";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -144,7 +144,11 @@ export function MapEditorStep({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>4. 맵 에디터</CardTitle>
+        <StepHeading
+          step={4}
+          title="맵 에디터"
+          subtitle="소품을 맵에 올리고, 배치한 단서의 이름·내용을 편집합니다."
+        />
       </CardHeader>
       <CardContent className="space-y-4">
         {investigationZones.length === 0 ? (

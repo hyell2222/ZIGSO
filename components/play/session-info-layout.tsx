@@ -14,18 +14,26 @@ type SessionInfoLayoutProps = {
   sessionQuery: UseQueryResult<SessionDetailsRow, Error>;
 };
 
-const playCard =
-  "border-[color-mix(in_srgb,var(--primary)_26%,transparent)] bg-[color-mix(in_srgb,var(--mystery)_78%,var(--ink))] text-[color:var(--entry-parchment)] shadow-[0_12px_40px_color-mix(in_srgb,var(--ink)_45%,transparent)]";
-const playCardHeader =
-  "border-b border-[color-mix(in_srgb,var(--primary)_18%,transparent)] bg-[color-mix(in_srgb,var(--mystery)_55%,#151210)]";
-const playMuted = "text-[color:var(--entry-parchment-muted)]";
-const playTitle = "text-[color:var(--entry-parchment)]";
+/** 사건 파일 — 살짝 그린 미스트 (공문 느낌) */
+const fileCard =
+  "border-[var(--play-border-cool)] bg-[var(--play-panel-cool)] text-[var(--foreground)] shadow-[var(--play-shadow-soft)]";
+const fileCardHeader =
+  "border-b border-[var(--play-border-cool)] bg-[var(--play-veil)]";
+
+/** 용의자 — 앰버 톤 (인물·리스트) */
+const rosterCard =
+  "border-[var(--play-border-warm)] bg-[var(--play-panel-warm)] text-[var(--foreground)] shadow-[var(--play-shadow-lift)]";
+const rosterCardHeader =
+  "border-b border-[var(--border)] bg-[var(--panel-warn-bg)]";
+
+const playMuted = "text-[var(--muted-foreground)]";
+const playTitle = "text-[var(--foreground)]";
 
 function FieldLabel({ children, className }: { children: ReactNode; className?: string }) {
   return (
     <p
       className={cn(
-        "text-[11px] font-semibold uppercase tracking-[0.12em] text-[color:var(--entry-accent-soft)]",
+        "text-[11px] font-semibold uppercase tracking-[0.12em] text-[color-mix(in_srgb,var(--primary)_40%,var(--accent))]",
         className,
       )}
     >
@@ -46,12 +54,12 @@ export function SessionInfoLayout({ sessionQuery }: SessionInfoLayoutProps) {
       <Card
         className={cn(
           "overflow-hidden motion-safe:animate-[playRevealUp_0.55s_cubic-bezier(0.22,1,0.36,1)_both]",
-          playCard,
+          fileCard,
         )}
       >
-        <CardHeader className={cn("space-y-1 pb-4", playCardHeader)}>
+        <CardHeader className={cn("space-y-1 pb-4", fileCardHeader)}>
           <div className="flex items-center gap-2">
-            <span className="flex h-8 w-8 items-center justify-center rounded-md bg-[color-mix(in_srgb,var(--primary)_22%,transparent)] text-[color:var(--entry-accent-soft)] shadow-sm ring-1 ring-[color-mix(in_srgb,var(--primary)_30%,transparent)]">
+            <span className="flex h-8 w-8 items-center justify-center rounded-md bg-[var(--play-chip-cool)] text-[var(--primary)] ring-1 ring-[color-mix(in_srgb,var(--primary)_22%,transparent)]">
               <FileText className="h-4 w-4" aria-hidden />
             </span>
             <div>
@@ -73,7 +81,7 @@ export function SessionInfoLayout({ sessionQuery }: SessionInfoLayoutProps) {
                 <FieldLabel>사건 개요 · 의뢰 내용</FieldLabel>
                 <div
                   className={cn(
-                    "rounded-lg border border-[color-mix(in_srgb,var(--accent)_22%,transparent)] bg-[color-mix(in_srgb,var(--ink)_35%,#12100e)] p-4 text-sm leading-relaxed shadow-[inset_0_1px_0_color-mix(in_srgb,var(--entry-parchment)_6%,transparent)]",
+                    "rounded-lg border border-[var(--border)] bg-[var(--background)] p-4 text-sm leading-relaxed shadow-[inset_var(--input-inset)]",
                     playTitle,
                   )}
                 >
@@ -84,7 +92,7 @@ export function SessionInfoLayout({ sessionQuery }: SessionInfoLayoutProps) {
               </div>
             </>
           ) : (
-            <LoadingState variant="section" tone="play" label="사건 정보를 불러오는 중…" className="min-h-[12rem]" />
+            <LoadingState variant="section" tone="default" label="사건 정보를 불러오는 중…" className="min-h-[12rem]" />
           )}
         </CardContent>
       </Card>
@@ -92,13 +100,13 @@ export function SessionInfoLayout({ sessionQuery }: SessionInfoLayoutProps) {
       <Card
         className={cn(
           "overflow-hidden motion-safe:animate-[playRevealUp_0.6s_cubic-bezier(0.22,1,0.36,1)_both] motion-safe:[animation-delay:100ms]",
-          playCard,
+          rosterCard,
         )}
       >
-        <CardHeader className={cn("space-y-1 pb-4", playCardHeader)}>
+        <CardHeader className={cn("space-y-1 pb-4", rosterCardHeader)}>
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <span className="flex h-8 w-8 items-center justify-center rounded-md bg-[color-mix(in_srgb,var(--primary)_22%,transparent)] text-[color:var(--entry-accent-soft)] shadow-sm ring-1 ring-[color-mix(in_srgb,var(--primary)_30%,transparent)]">
+              <span className="flex h-8 w-8 items-center justify-center rounded-md bg-[var(--play-chip-warm)] text-[var(--accent)] ring-1 ring-[var(--border)]">
                 <Users className="h-4 w-4" aria-hidden />
               </span>
               <div>
@@ -107,7 +115,7 @@ export function SessionInfoLayout({ sessionQuery }: SessionInfoLayoutProps) {
               </div>
             </div>
             {roster.length > 0 ? (
-              <span className="shrink-0 rounded-full bg-[var(--primary)] px-2.5 py-0.5 text-xs font-semibold text-[var(--on-primary)] shadow-[0_0_12px_color-mix(in_srgb,var(--primary)_35%,transparent)]">
+              <span className="shrink-0 rounded-full bg-[var(--primary)] px-2.5 py-0.5 text-xs font-semibold text-[var(--on-primary)] shadow-sm">
                 {roster.length}명
               </span>
             ) : null}
@@ -119,16 +127,21 @@ export function SessionInfoLayout({ sessionQuery }: SessionInfoLayoutProps) {
               {roster.map((s, index) => (
                 <li
                   key={s.id}
-                  className="flex gap-3 rounded-lg border border-[color-mix(in_srgb,var(--accent)_24%,transparent)] bg-[color-mix(in_srgb,var(--ink)_28%,#141110)] p-3 shadow-sm"
+                  className={cn(
+                    "flex gap-3 rounded-lg border p-3 shadow-sm",
+                    index % 2 === 0
+                      ? "border-[var(--border)] bg-[var(--background)]"
+                      : "border-[var(--border)] bg-[var(--tint-accent-weak)]",
+                  )}
                 >
                   <span
-                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-[color-mix(in_srgb,var(--primary)_25%,transparent)] text-sm font-bold text-[color:var(--entry-accent-soft)] ring-1 ring-[color-mix(in_srgb,var(--primary)_35%,transparent)]"
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-[var(--tint-accent-medium)] text-sm font-bold text-[var(--primary)] ring-1 ring-[var(--border)]"
                     aria-hidden
                   >
                     {index + 1}
                   </span>
                   <div className="min-w-0 flex-1 space-y-1">
-                    <FieldLabel className="normal-case tracking-normal !text-[color:var(--entry-parchment-muted)]">
+                    <FieldLabel className="normal-case tracking-normal !text-[var(--muted-foreground)]">
                       이름
                     </FieldLabel>
                     <p className={cn("text-base font-semibold", playTitle)}>{s.name || "(이름 없음)"}</p>
@@ -151,7 +164,7 @@ export function SessionInfoLayout({ sessionQuery }: SessionInfoLayoutProps) {
           ) : (
             <p
               className={cn(
-                "rounded-md border border-dashed border-[color-mix(in_srgb,var(--primary)_28%,transparent)] bg-[color-mix(in_srgb,var(--mystery)_40%,#141110)] px-4 py-6 text-center text-sm",
+                "rounded-md border border-dashed border-[var(--play-border-cool)] bg-[var(--play-veil)] px-4 py-6 text-center text-sm",
                 playMuted,
               )}
             >

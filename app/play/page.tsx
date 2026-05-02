@@ -1,12 +1,24 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ClipboardList, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { FormEvent, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
+import {
+  FinalReportFields,
+  FinalReportSubmittedBanner,
+  type FinalReportFieldValues,
+} from "@/components/play/final-report-fields";
 import { InvestigationMapShell } from "@/components/play/investigation-map-shell";
-import { PlayAtmosphere } from "@/components/play/play-atmosphere";
+import { PlayPhaseHeader } from "@/components/play/play-phase-header";
+import {
+  PLAY_PAGE_BLACK_BG,
+  PlayAtmosphere,
+  playSurfaceCool,
+  playSurfacePanel,
+  playSurfaceWarm,
+} from "@/components/play/play-atmosphere";
 import { PlayerIdCard } from "@/components/play/player-id-card";
 import { SessionInfoLayout } from "@/components/play/session-info-layout";
 import { StudentBlackoutLanding } from "@/components/play/student-blackout-landing";
@@ -15,7 +27,6 @@ import { LoadingState } from "@/components/ui/loading-state";
 import { Modal } from "@/components/ui/modal";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 
 import {
   addFoundClueToTeam,
@@ -70,10 +81,12 @@ function PlaySessionShell({
   const [discoveredClueIds, setDiscoveredClueIds] = useState<string[]>([]);
   const [message, setMessage] = useState<string | null>(null);
   const [resumeDecided, setResumeDecided] = useState(false);
-  const [reportSuspectId, setReportSuspectId] = useState("");
-  const [reportMethod, setReportMethod] = useState("");
-  const [reportMotive, setReportMotive] = useState("");
-  const [reportDecisive, setReportDecisive] = useState("");
+  const [reportValues, setReportValues] = useState<FinalReportFieldValues>({
+    suspectId: "",
+    method: "",
+    motive: "",
+    decisiveClue: "",
+  });
 
   const playerQuery = useQuery({
     queryKey: ["play-player", playerId],
@@ -321,10 +334,10 @@ function PlaySessionShell({
     mutationFn: async () => {
       if (!teamId) throw new Error("팀 정보가 없습니다.");
       await submitTeamReport(teamId, {
-        suspectId: reportSuspectId,
-        method: reportMethod,
-        motive: reportMotive,
-        decisiveClue: reportDecisive,
+        suspectId: reportValues.suspectId,
+        method: reportValues.method,
+        motive: reportValues.motive,
+        decisiveClue: reportValues.decisiveClue,
       });
     },
     onSuccess: () => {
@@ -336,7 +349,8 @@ function PlaySessionShell({
   const handleReportSubmit = (e: FormEvent) => {
     e.preventDefault();
     setMessage(null);
-    if (!reportSuspectId.trim() || !reportMethod.trim() || !reportMotive.trim() || !reportDecisive.trim()) {
+    const { suspectId, method, motive, decisiveClue } = reportValues;
+    if (!suspectId.trim() || !method.trim() || !motive.trim() || !decisiveClue.trim()) {
       setMessage("용의자 선택과 나머지 항목을 모두 입력해 주세요.");
       return;
     }
@@ -360,141 +374,84 @@ function PlaySessionShell({
     return (
       <PlayAtmosphere>
         <main className="mx-auto w-full max-w-2xl space-y-6 px-4 py-8 pb-12">
-          <TeamBadge teamName={teamName} />
-          <Card className="overflow-hidden border-[color-mix(in_srgb,var(--primary)_26%,transparent)] bg-[color-mix(in_srgb,var(--mystery)_78%,var(--ink))] text-[color:var(--entry-parchment)] shadow-[0_12px_40px_color-mix(in_srgb,var(--ink)_45%,transparent)] motion-safe:animate-[playRevealUp_0.6s_cubic-bezier(0.22,1,0.36,1)_both] motion-safe:[animation-delay:60ms]">
-            <CardHeader className="space-y-1 border-b border-[color-mix(in_srgb,var(--primary)_18%,transparent)] bg-[color-mix(in_srgb,var(--mystery)_55%,#151210)]">
-              <div className="flex items-center gap-2">
-                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[color-mix(in_srgb,var(--primary)_22%,transparent)] text-[color:var(--entry-accent-soft)] shadow-sm ring-1 ring-[color-mix(in_srgb,var(--primary)_30%,transparent)]">
-                  <ClipboardList className="h-5 w-5" aria-hidden />
-                </span>
-                <div>
-                  <CardTitle className="text-lg text-[color:var(--entry-parchment)]">3단계 - 범인 지목</CardTitle>
-                  <p className="text-xs font-normal text-[color:var(--entry-parchment-muted)]">
-                    각자 한 번씩 제출합니다. 범인은 등록된 용의자 중에서만 선택할 수 있습니다.
-                  </p>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="pt-6">
+          <header
+            className={cn(
+              "motion-safe:animate-[playRevealUp_0.55s_cubic-bezier(0.22,1,0.36,1)_both] px-4 py-4 sm:px-6",
+              playSurfaceWarm,
+            )}
+          >
+            <PlayPhaseHeader
+              phase={3}
+              title="범인 지목"
+              description="각자 한 번씩 제출합니다. 범인은 등록된 용의자 중에서만 선택할 수 있습니다."
+              rightSlot={<TeamBadge teamName={teamName} />}
+            />
+          </header>
+          <div
+            className={cn(
+              "overflow-hidden px-5 pb-6 pt-6 motion-safe:animate-[playRevealUp_0.6s_cubic-bezier(0.22,1,0.36,1)_both] motion-safe:[animation-delay:60ms]",
+              playSurfaceCool,
+            )}
+          >
               {reportSubmitted ? (
-                <div className="space-y-5 text-sm text-[color:var(--entry-parchment)]">
-                  <div className="rounded-lg border border-[color-mix(in_srgb,var(--primary)_40%,transparent)] bg-[color-mix(in_srgb,var(--primary)_14%,#141a17)] px-4 py-3 shadow-[0_0_20px_color-mix(in_srgb,var(--primary)_12%,transparent)]">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-[color:var(--entry-accent-soft)]">
-                      제출 완료
-                    </p>
-                    <p className="mt-1 font-medium text-[color:var(--entry-parchment)]">각자 범인 지목이 접수되었습니다.</p>
-                    {teamQuery.data?.report_submitted_at ? (
-                      <p className="mt-1 text-xs text-[color:var(--entry-parchment-muted)]">
-                        {new Date(teamQuery.data.report_submitted_at).toLocaleString()}
-                      </p>
-                    ) : null}
-                  </div>
+                <div className="space-y-5 text-sm text-[var(--foreground)]">
+                  <FinalReportSubmittedBanner
+                    submittedAt={teamQuery.data?.report_submitted_at}
+                    description="각자 범인 지목이 접수되었습니다."
+                  />
                   {answerSuspectId ? (
                     <div
                       className={
                         "rounded-lg border-2 p-4 " +
                         (culpritCorrect
-                          ? "border-[color-mix(in_srgb,var(--primary)_55%,transparent)] bg-[color-mix(in_srgb,var(--primary)_12%,#121814)]"
-                          : "border-[color-mix(in_srgb,var(--highlight)_50%,#4a2a1a)] bg-[color-mix(in_srgb,var(--highlight)_8%,#1a1210)]")
+                          ? "border-[color-mix(in_srgb,var(--primary)_35%,var(--border))] bg-[var(--tint-accent-weak)]"
+                          : "border-[var(--panel-warn-border)] bg-[var(--panel-warn-bg)]")
                       }
                     >
-                      <p className="text-[11px] font-semibold uppercase tracking-wider text-[color:var(--entry-accent-soft)]">
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--accent)]">
                         범인 검거 결과
                       </p>
-                      <p className="mt-2 text-xl font-bold text-[color:var(--entry-parchment)]">
+                      <p className="mt-2 text-xl font-bold text-[var(--foreground)]">
                         {culpritCorrect ? "검거 성공" : "검거 실패"}
                       </p>
                       <dl className="mt-3 grid gap-2 text-sm">
-                        <div className="flex flex-wrap justify-between gap-2 border-t border-[color-mix(in_srgb,var(--entry-parchment)_12%,transparent)] pt-2">
-                          <dt className="text-[color:var(--entry-parchment-muted)]">팀이 지목한 사람</dt>
-                          <dd className="font-semibold text-[color:var(--entry-parchment)]">{chosenSuspectName ?? "—"}</dd>
+                        <div className="flex flex-wrap justify-between gap-2 border-t border-[var(--border)] pt-2">
+                          <dt className="text-[var(--muted-foreground)]">팀이 지목한 사람</dt>
+                          <dd className="font-semibold text-[var(--foreground)]">{chosenSuspectName ?? "—"}</dd>
                         </div>
                         <div className="flex flex-wrap justify-between gap-2">
-                          <dt className="text-[color:var(--entry-parchment-muted)]">사건 정답(범인)</dt>
-                          <dd className="font-semibold text-[color:var(--entry-parchment)]">{trueCulpritName ?? "—"}</dd>
+                          <dt className="text-[var(--muted-foreground)]">사건 정답(범인)</dt>
+                          <dd className="font-semibold text-[var(--foreground)]">{trueCulpritName ?? "—"}</dd>
                         </div>
                       </dl>
                     </div>
                   ) : (
-                    <p className="text-xs text-[color:var(--entry-parchment-muted)]">
+                    <p className="text-xs text-[var(--muted-foreground)]">
                       이 사건에는 정답 범인이 등록되지 않아 검거 여부를 표시하지 않습니다.
                     </p>
                   )}
-                  <p className="text-sm text-[color:var(--entry-parchment-muted)]">
+                  <p className="text-sm text-[var(--muted-foreground)]">
                     선생님이 세션을 종료할 때까지 잠시 기다려 주세요.
                   </p>
                 </div>
               ) : (
                 <form className="space-y-5" onSubmit={handleReportSubmit}>
-                  <p className="rounded-md border border-[color-mix(in_srgb,var(--primary)_22%,transparent)] bg-[color-mix(in_srgb,var(--primary)_10%,#141816)] px-3 py-2 text-sm text-[color:var(--entry-parchment)]">
-                    팀원과 논의한 뒤 <strong className="text-[color:var(--entry-accent-soft)]">한 번만</strong>{" "}
+                  <p className="rounded-md border border-[var(--border)] bg-[var(--tint-accent-weak)] px-3 py-2 text-sm text-[var(--foreground)] shadow-[inset_var(--input-inset)]">
+                    팀원과 논의한 뒤 <strong className="text-[var(--primary)]">한 번만</strong>{" "}
                     제출할 수 있습니다.
                   </p>
-                  {caseRoster.length === 0 ? (
-                    <p className="rounded-md border border-[color-mix(in_srgb,var(--highlight)_45%,#5c2e16)] bg-[color-mix(in_srgb,var(--highlight)_10%,#1a1410)] px-3 py-2 text-sm text-[color:var(--entry-parchment)]">
-                      이 사건에 용의자 목록이 없습니다. 담당 선생님께 문의하세요.
-                    </p>
-                  ) : (
-                    <div className="space-y-2">
-                      <label
-                        className="text-[11px] font-semibold uppercase tracking-wider text-[color:var(--entry-accent-soft)]"
-                        htmlFor="report-suspect"
-                      >
-                        지목한 범인 (용의자 중 1명)
-                      </label>
-                      <select
-                        id="report-suspect"
-                        className="flex h-11 w-full rounded-md border border-[color-mix(in_srgb,var(--accent)_28%,transparent)] bg-[color-mix(in_srgb,var(--mystery)_65%,var(--ink))] px-3 text-sm text-[color:var(--entry-parchment)] shadow-[inset_0_1px_0_color-mix(in_srgb,var(--entry-parchment)_5%,transparent)]"
-                        value={reportSuspectId}
-                        onChange={(ev) => setReportSuspectId(ev.target.value)}
-                        required
-                      >
-                        <option value="">용의자를 선택하세요</option>
-                        {caseRoster.map((s) => (
-                          <option key={s.id} value={s.id}>
-                            {s.name || s.id}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-                  <div className="space-y-2">
-                    <label className="text-[11px] font-semibold uppercase tracking-wider text-[color:var(--entry-accent-soft)]">
-                      범행 도구 · 수법
-                    </label>
-                    <Textarea
-                      value={reportMethod}
-                      onChange={(ev) => setReportMethod(ev.target.value)}
-                      rows={3}
-                      className="border-[color-mix(in_srgb,var(--accent)_28%,transparent)] bg-[color-mix(in_srgb,var(--ink)_32%,#12100e)] text-[color:var(--entry-parchment)]"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[11px] font-semibold uppercase tracking-wider text-[color:var(--entry-accent-soft)]">
-                      범행 동기
-                    </label>
-                    <Textarea
-                      value={reportMotive}
-                      onChange={(ev) => setReportMotive(ev.target.value)}
-                      rows={3}
-                      className="border-[color-mix(in_srgb,var(--accent)_28%,transparent)] bg-[color-mix(in_srgb,var(--ink)_32%,#12100e)] text-[color:var(--entry-parchment)]"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[11px] font-semibold uppercase tracking-wider text-[color:var(--entry-accent-soft)]">
-                      결정적 단서
-                    </label>
-                    <Textarea
-                      value={reportDecisive}
-                      onChange={(ev) => setReportDecisive(ev.target.value)}
-                      rows={3}
-                      className="border-[color-mix(in_srgb,var(--accent)_28%,transparent)] bg-[color-mix(in_srgb,var(--ink)_32%,#12100e)] text-[color:var(--entry-parchment)]"
-                      required
-                    />
-                  </div>
-                  {message ? <p className="text-sm text-[color:var(--entry-auth-notice)]">{message}</p> : null}
+                  <FinalReportFields
+                    idPrefix="report"
+                    values={reportValues}
+                    suspectRoster={caseRoster}
+                    onChange={setReportValues}
+                    emptyRosterEditFallback={
+                      <p className="rounded-md border border-[var(--panel-warn-border)] bg-[var(--panel-warn-bg)] px-3 py-2 text-sm text-[var(--foreground)]">
+                        이 사건에 용의자 목록이 없습니다. 담당 선생님께 문의하세요.
+                      </p>
+                    }
+                  />
+                  {message ? <p className="text-sm text-[var(--danger)]">{message}</p> : null}
                   <Button
                     type="submit"
                     className="w-full"
@@ -511,8 +468,7 @@ function PlaySessionShell({
                   </Button>
                 </form>
               )}
-            </CardContent>
-          </Card>
+          </div>
         </main>
       </PlayAtmosphere>
     );
@@ -522,27 +478,27 @@ function PlaySessionShell({
     return (
       <PlayAtmosphere>
         <main className="mx-auto w-full max-w-6xl space-y-6 px-4 py-8 pb-12">
-          <header className="motion-safe:animate-[playRevealUp_0.55s_cubic-bezier(0.22,1,0.36,1)_both] rounded-xl border border-[color-mix(in_srgb,var(--primary)_26%,transparent)] bg-[color-mix(in_srgb,var(--mystery)_78%,var(--ink))] px-4 py-4 text-[color:var(--entry-parchment)] shadow-[0_12px_40px_color-mix(in_srgb,var(--ink)_40%,transparent)] sm:px-6">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h1 className="mt-1 text-xl font-bold text-[color:var(--entry-parchment)]">
-                  1단계 - 사건 파악
-                </h1>
-                <p className="mt-1 max-w-xl text-sm text-[color:var(--entry-parchment-muted)]">
-                  부원증을 확인한 후, 같은 팀끼리 모여 앉아 사건 파일을 확인하세요.
-                </p>
-              </div>
-              <TeamBadge teamName={teamName} className="shrink-0 self-start sm:self-center" />
-            </div>
+          <header
+            className={cn(
+              "motion-safe:animate-[playRevealUp_0.55s_cubic-bezier(0.22,1,0.36,1)_both] px-4 py-4 sm:px-6",
+              playSurfaceWarm,
+            )}
+          >
+            <PlayPhaseHeader
+              phase={1}
+              title="사건 파악"
+              description="부원증을 확인한 후, 같은 팀끼리 모여 앉아 사건 파일을 확인하세요."
+              rightSlot={<TeamBadge teamName={teamName} />}
+            />
           </header>
 
           <div className="grid gap-8 lg:grid-cols-[minmax(280px,380px)_1fr] lg:items-start">
             <section className="space-y-2 motion-safe:animate-[playRevealUp_0.6s_cubic-bezier(0.22,1,0.36,1)_both] motion-safe:[animation-delay:80ms]">
               {playerQuery.isLoading ? (
-                <div className="rounded-xl border border-dashed border-[color-mix(in_srgb,var(--primary)_28%,transparent)] bg-[color-mix(in_srgb,var(--ink)_28%,#11100e)]">
+                <div className={cn(playSurfacePanel, "border-dashed")}>
                   <LoadingState
                     variant="section"
-                    tone="play"
+                    tone="default"
                     label="역할·장소 정보를 불러오는 중…"
                     className="min-h-[200px]"
                   />
@@ -557,9 +513,9 @@ function PlaySessionShell({
               ) : (
                 <LoadingState
                   variant="section"
-                  tone="play"
+                  tone="default"
                   label="역할·장소 배정을 불러오는 중입니다…"
-                  className="min-h-[8rem] rounded-lg border border-[color-mix(in_srgb,var(--primary)_22%,transparent)] bg-[color-mix(in_srgb,var(--mystery)_40%,#12100e)] py-8"
+                  className={cn("min-h-[8rem] rounded-lg py-8", playSurfacePanel)}
                 />
               )}
             </section>
@@ -575,13 +531,13 @@ function PlaySessionShell({
 
   if (!hasSupabaseEnv) {
     return (
-      <div className="min-h-screen bg-[var(--entry-shell-deep)] text-[color:var(--entry-parchment)]">
+      <div className="min-h-screen text-[var(--foreground)] play-shell" style={PLAY_PAGE_BLACK_BG}>
         <main className="mx-auto w-full max-w-7xl px-4 py-8">
-          <Card className="max-w-3xl border-[color-mix(in_srgb,var(--primary)_26%,transparent)] bg-[color-mix(in_srgb,var(--mystery)_78%,var(--ink))] text-[color:var(--entry-parchment)] shadow-[0_12px_40px_color-mix(in_srgb,var(--ink)_45%,transparent)]">
+          <Card className={cn("max-w-3xl", playSurfaceCool)}>
             <CardHeader>
-              <CardTitle className="text-[color:var(--entry-parchment)]">환경 설정 필요</CardTitle>
+              <CardTitle className="text-[var(--foreground)]">환경 설정 필요</CardTitle>
             </CardHeader>
-            <CardContent className="text-sm text-[color:var(--entry-parchment-muted)]">
+            <CardContent className="text-sm text-[var(--muted-foreground)]">
               교실 멀티플레이 모드를 쓰려면 Supabase 환경 변수를 .env에 설정해 주세요.
             </CardContent>
           </Card>
@@ -604,8 +560,13 @@ function PlaySessionShell({
         ) : null}
 
         {!hasJoinedSession && !showResumeModal && initialNickname.trim() && joinAndRegisterMutation.isPending ? (
-          <section className="flex min-h-[40vh] items-center justify-center overflow-hidden rounded-xl border border-[color-mix(in_srgb,var(--primary)_20%,var(--border))] bg-[color-mix(in_srgb,var(--entry-shell)_50%,var(--ink))] p-6 shadow-[0_0_0_1px_color-mix(in_srgb,var(--entry-accent)_12%,transparent),var(--elevation-sm)] motion-safe:animate-[playRevealUp_0.5s_ease-out_both]">
-            <LoadingState variant="page" tone="play" label="보안 승인 확인 중…" className="min-h-[32vh]" />
+          <section
+            className={cn(
+              "flex min-h-[40vh] items-center justify-center overflow-hidden p-6 motion-safe:animate-[playRevealUp_0.5s_ease-out_both]",
+              playSurfacePanel,
+            )}
+          >
+            <LoadingState variant="page" tone="default" label="보안 승인 확인 중…" className="min-h-[32vh]" />
           </section>
         ) : null}
 
@@ -614,9 +575,14 @@ function PlaySessionShell({
         !(initialNickname.trim() && joinAndRegisterMutation.isPending) &&
         (!initialNickname.trim() || joinAndRegisterMutation.isError) ? (
           <section className="flex items-center justify-center p-1">
-            <div className="w-full max-w-md rounded-xl border border-[color-mix(in_srgb,var(--primary)_26%,transparent)] bg-[color-mix(in_srgb,var(--mystery)_78%,var(--ink))] p-6 text-[color:var(--entry-parchment)] shadow-[0_12px_40px_color-mix(in_srgb,var(--ink)_45%,transparent)] ring-1 ring-[color-mix(in_srgb,var(--primary)_14%,transparent)] motion-safe:animate-[playModalRise_0.55s_cubic-bezier(0.22,1,0.36,1)_both]">
-              <h3 className="text-lg font-semibold text-[color:var(--entry-parchment)]">닉네임 설정</h3>
-              <p className="mt-1 text-sm text-[color:var(--entry-parchment-muted)]">
+            <div
+              className={cn(
+                "w-full max-w-md p-6 motion-safe:animate-[playModalRise_0.55s_cubic-bezier(0.22,1,0.36,1)_both]",
+                playSurfacePanel,
+              )}
+            >
+              <h3 className="text-lg font-semibold text-[var(--foreground)]">닉네임 설정</h3>
+              <p className="mt-1 text-sm text-[var(--muted-foreground)]">
                 입장 후 부원 배정·사건 파악이 진행됩니다.
               </p>
               <form
@@ -630,7 +596,6 @@ function PlaySessionShell({
                   placeholder="닉네임"
                   value={nickname}
                   onChange={(event) => setNickname(event.target.value)}
-                  className="border-[color-mix(in_srgb,var(--accent)_28%,transparent)] bg-[color-mix(in_srgb,var(--mystery)_65%,var(--ink))] text-[color:var(--entry-parchment)] placeholder:text-[color:var(--entry-parchment-muted)]"
                   required
                 />
                 <Button type="submit" className="w-full" disabled={joinAndRegisterMutation.isPending}>
@@ -638,14 +603,14 @@ function PlaySessionShell({
                 </Button>
               </form>
               {!joinCode.trim() ? (
-                <p className="mt-3 text-xs text-[color:var(--entry-accent-soft)]">
-                  <a className="underline hover:text-[color:var(--entry-parchment)]" href={ROUTES.play}>
+                <p className="mt-3 text-xs text-[var(--accent)]">
+                  <a className="underline hover:text-[var(--primary)]" href={ROUTES.play}>
                     입장 화면
                   </a>
                   에서 참가 코드를 입력해 주세요.
                 </p>
               ) : null}
-              {message ? <p className="mt-3 text-xs text-[color:var(--entry-parchment-muted)]">{message}</p> : null}
+              {message ? <p className="mt-3 text-xs text-[var(--muted-foreground)]">{message}</p> : null}
             </div>
           </section>
         ) : null}
@@ -694,10 +659,10 @@ function WaitingLobbyBlock({
   return (
     <div
       className={cn(
-        "relative mt-2 flex flex-col items-center gap-4 overflow-hidden rounded-xl border border-[color-mix(in_srgb,var(--primary)_26%,transparent)] bg-[color-mix(in_srgb,var(--mystery)_78%,var(--ink))] px-6 py-8 text-center text-[color:var(--entry-parchment)]",
-        "shadow-[0_12px_40px_color-mix(in_srgb,var(--ink)_40%,transparent)]",
-        "motion-safe:animate-[playRevealUp_0.65s_cubic-bezier(0.22,1,0.36,1)_both] motion-safe:shadow-[0_0_32px_-8px_color-mix(in_srgb,var(--primary)_30%,transparent)]",
-        "before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-[color-mix(in_srgb,var(--primary)_40%,transparent)] before:to-transparent",
+        "relative mt-2 flex flex-col items-center gap-4 overflow-hidden px-6 py-8 text-center",
+        "motion-safe:animate-[playRevealUp_0.65s_cubic-bezier(0.22,1,0.36,1)_both]",
+        "before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-gradient-to-r before:from-transparent before:via-[color-mix(in_srgb,var(--accent)_30%,transparent)] before:to-transparent",
+        playSurfaceWarm,
         className,
       )}
     >
@@ -711,7 +676,7 @@ function WaitingLobbyBlock({
           style={{ animationDelay: "0.2s" }}
         />
         <span
-          className="h-1.5 w-1.5 rounded-full bg-[var(--primary)] shadow-[0_0_8px_color-mix(in_srgb,var(--accent)_40%,transparent)] motion-safe:animate-pulse"
+          className="h-1.5 w-1.5 rounded-full bg-[var(--accent)] shadow-[0_0_8px_color-mix(in_srgb,var(--accent)_40%,transparent)] motion-safe:animate-pulse"
           style={{ animationDelay: "0.4s" }}
         />
       </div>
@@ -723,12 +688,12 @@ function WaitingLobbyBlock({
         aria-hidden
       />
       <div className="w-full max-w-sm space-y-2">
-        <p className="text-base font-semibold tracking-tight text-[color:var(--entry-parchment)]">{copy.title}</p>
-        {caseTitle ? <p className="text-sm text-[color:var(--entry-parchment-muted)]">{caseTitle}</p> : null}
-        <p className="text-xs text-[color:var(--entry-parchment-muted)]">
-          <span className="font-mono text-[color:var(--entry-accent-soft)]">{joinCode}</span> · {nickname}
+        <p className="text-base font-semibold tracking-tight text-[var(--foreground)]">{copy.title}</p>
+        {caseTitle ? <p className="text-sm text-[var(--muted-foreground)]">{caseTitle}</p> : null}
+        <p className="text-xs text-[var(--muted-foreground)]">
+          <span className="font-mono text-[var(--primary)]">{joinCode}</span> · {nickname}
         </p>
-        <p className="text-sm leading-relaxed text-[color:var(--entry-parchment-muted)]">{copy.body}</p>
+        <p className="text-sm leading-relaxed text-[var(--muted-foreground)]">{copy.body}</p>
       </div>
     </div>
   );
@@ -776,15 +741,15 @@ function TeamBadge({ teamName, className }: { teamName: string | null; className
   return (
     <div
       className={cn(
-        "flex flex-col gap-0.5 rounded-lg border-2 border-[color-mix(in_srgb,var(--primary)_45%,transparent)] bg-[color-mix(in_srgb,var(--mystery)_55%,#141210)] px-4 py-3 text-[color:var(--entry-parchment)]",
-        "shadow-[0_0_24px_-6px_color-mix(in_srgb,var(--primary)_35%,transparent)] motion-safe:animate-[playRevealUp_0.5s_cubic-bezier(0.22,1,0.36,1)_both]",
+        "flex flex-col gap-0.5 rounded-lg border border-[var(--border)] bg-[var(--card-bg)] px-4 py-3 text-[var(--foreground)]",
+        "shadow-[var(--elevation-sm)] motion-safe:animate-[playRevealUp_0.5s_cubic-bezier(0.22,1,0.36,1)_both]",
         className,
       )}
     >
-      <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[color:var(--entry-parchment-muted)]">
+      <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--muted-foreground)]">
         소속 팀
       </span>
-      <span className="font-mono text-2xl font-bold tracking-tight text-[color:var(--entry-accent-soft)]">
+      <span className="font-mono text-2xl font-bold tracking-tight text-[var(--primary)]">
         {teamName}
       </span>
     </div>
@@ -795,8 +760,11 @@ export default function PlayPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-dvh flex-col bg-[var(--entry-shell-deep)] px-4 text-[color:var(--entry-parchment)]">
-          <LoadingState variant="page" tone="play" className="min-h-dvh" />
+        <div
+          className="flex min-h-dvh flex-col px-4 text-[var(--foreground)] play-shell"
+          style={PLAY_PAGE_BLACK_BG}
+        >
+          <LoadingState variant="page" tone="default" className="min-h-dvh" />
         </div>
       }
     >

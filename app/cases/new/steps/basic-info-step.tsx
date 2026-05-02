@@ -1,8 +1,8 @@
 "use client";
 
-import { StepHint } from "./step-blocks";
+import { StepHeading, StepHint } from "./step-blocks";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -29,7 +29,11 @@ export function BasicInfoStep({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>1. 사건 기본 정보</CardTitle>
+        <StepHeading
+          step={1}
+          title="기본 정보"
+          subtitle="제목·사건 개요·난이도를 정합니다. 용의자는 다음 단계에서 등록합니다."
+        />
       </CardHeader>
       <CardContent className="space-y-5">
         <StepHint>

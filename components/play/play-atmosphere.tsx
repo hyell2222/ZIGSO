@@ -7,70 +7,46 @@ import { cn } from "@/lib/utils";
 type PlayAtmosphereProps = {
   children: ReactNode;
   className?: string;
-  /** 상단 광원 강도 (기본: 입장 랜딩과 유사) */
-  variant?: "default" | "dense";
 };
 
-/** 입장 랜딩(`StudentBlackoutLanding`)과 동일 계열: 짙은 셸 + 격자 + 은광, 베이지 본문 배경 없음 */
-const PLAY_ENTRY_BG: CSSProperties = {
+/** 학생 play 본페이지 바깥 레이어 — 짙은 그라데이션 배경 */
+export const PLAY_PAGE_BLACK_BG: CSSProperties = {
   backgroundColor: "var(--entry-shell-deep)",
   backgroundImage: `
-    linear-gradient(180deg, color-mix(in srgb, var(--entry-shell) 96%, transparent) 0%, var(--entry-shell-deep) 100%),
-    repeating-linear-gradient(0deg, transparent, transparent 1px, var(--entry-grid) 1px, var(--entry-grid) 2px),
-    repeating-linear-gradient(90deg, transparent, transparent 1px, var(--entry-grid) 1px, var(--entry-grid) 2px)
+    radial-gradient(ellipse 100% 70% at 50% -10%, color-mix(in srgb, var(--primary) 7%, transparent), transparent 50%),
+    linear-gradient(180deg, color-mix(in srgb, var(--ink) 55%, var(--entry-shell-deep)) 0%, var(--entry-shell-deep) 40%, var(--entry-shell-deep) 100%)
   `,
 };
 
-/**
- * 학생 `/play` 본편(사건 파악·최종보고·로비) 공통: 랜딩과 맞는 어두운 셸 + 콘텐츠.
- */
-export function PlayAtmosphere({ children, className, variant = "default" }: PlayAtmosphereProps) {
-  const topGlow =
-    variant === "dense"
-      ? "color-mix(in srgb, var(--primary) 20%, transparent)"
-      : "color-mix(in srgb, var(--primary) 12%, transparent)";
+/** 기본 패널 — 중립 베이지 */
+export const playSurfacePanel =
+  "rounded-xl border border-[var(--play-border-cool)] bg-[var(--play-panel)] text-[var(--foreground)] shadow-[var(--play-shadow-soft)]";
 
+/** 강조 패널 — 앰버 톤 (대기·브리핑 헤더·배지 류) */
+export const playSurfaceWarm =
+  "rounded-xl border border-[var(--play-border-warm)] bg-[var(--play-panel-warm)] text-[var(--foreground)] shadow-[var(--play-shadow-lift)]";
+
+/** 차분 패널 — 프라이머리 미스트 (보조·폼 컨테이너) */
+export const playSurfaceCool =
+  "rounded-xl border border-[var(--play-border-cool)] bg-[var(--play-panel-cool)] text-[var(--foreground)] shadow-[var(--play-shadow-soft)]";
+
+export const playSurfacePanelHeader =
+  "border-b border-[var(--border)] bg-[var(--tint-accent-weak)]";
+
+export const playSurfaceWarmHeader =
+  "border-b border-[var(--border)] bg-[var(--panel-warn-bg)]";
+
+export function PlayAtmosphere({ children, className }: PlayAtmosphereProps) {
   return (
     <div
-      className={cn("relative isolate min-h-dvh font-sans", className)}
-      style={PLAY_ENTRY_BG}
+      className={cn("play-shell relative isolate min-h-dvh font-sans", className)}
+      style={PLAY_PAGE_BLACK_BG}
     >
       <div
-        className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-[color-mix(in_srgb,var(--primary)_12%,transparent)] to-transparent"
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[color-mix(in_srgb,black_25%,transparent)] to-transparent"
         aria-hidden
       />
-      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden" aria-hidden>
-        <div
-          className="absolute inset-0 motion-safe:animate-[playAmbientPulse_11s_ease-in-out_infinite] motion-reduce:animate-none"
-          style={{
-            background: `radial-gradient(ellipse 85% 45% at 50% 0%, ${topGlow}, transparent 58%)`,
-          }}
-        />
-        <div
-          className="absolute inset-0 mix-blend-multiply"
-          style={{
-            background:
-              "radial-gradient(ellipse 95% 90% at 50% 55%, transparent 12%, color-mix(in srgb, var(--ink) 18%, transparent) 100%)",
-          }}
-        />
-        <div className="play-film-grain absolute inset-0" />
-        <div
-          className="absolute inset-0 motion-safe:animate-[playScanlineDrift_10s_ease-in-out_infinite] motion-reduce:animate-none opacity-[0.12] motion-reduce:opacity-0"
-          style={{
-            background: `repeating-linear-gradient(
-              0deg,
-              transparent,
-              transparent 2px,
-              color-mix(in srgb, var(--primary) 6%, transparent) 2px,
-              transparent 4px
-            )`,
-            maskImage: "radial-gradient(ellipse 100% 80% at 50% 50%, black 0%, transparent 88%)",
-          }}
-        />
-      </div>
-      <div className="relative z-10 min-h-dvh text-[color:var(--entry-parchment)] [&_input]:text-[color:var(--entry-parchment)] [&_input]:placeholder:text-[color:var(--entry-parchment-muted)] [&_textarea]:text-[color:var(--entry-parchment)] [&_textarea]:placeholder:text-[color:var(--entry-parchment-muted)] [&_select]:bg-[color-mix(in_srgb,var(--mystery)_70%,var(--ink))] [&_select]:text-[color:var(--entry-parchment)]">
-        {children}
-      </div>
+      <div className="relative z-10 min-h-dvh">{children}</div>
     </div>
   );
 }

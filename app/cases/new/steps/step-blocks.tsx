@@ -11,6 +11,34 @@ type HintProps = {
   className?: string;
 };
 
+type StepHeadingProps = {
+  /** 1-based 단계 번호 (상단 스테퍼와 동일) */
+  step: 1 | 2 | 3 | 4;
+  title: string;
+  subtitle?: string;
+  className?: string;
+};
+
+/** 사건 만들기 카드 상단 — 단계별 제목 UI 통일 (번호 + 제목 + 한 줄 설명) */
+export function StepHeading({ step, title, subtitle, className }: StepHeadingProps) {
+  return (
+    <div className={cn("flex items-start gap-3", className)}>
+      <span
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[var(--primary)] bg-[var(--primary)] text-[11px] font-semibold tabular-nums text-[var(--on-primary)] shadow-sm"
+        aria-hidden
+      >
+        {step}
+      </span>
+      <div className="min-w-0 flex-1 space-y-0.5 pt-0.5">
+        <h3 className="text-base font-semibold tracking-wide text-[var(--mystery)]">{title}</h3>
+        {subtitle ? (
+          <p className="text-xs leading-snug text-[var(--muted-foreground)]">{subtitle}</p>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 /** 단계 상단 안내 박스 — 톤·테두리 통일 */
 export function StepHint({ children, className }: HintProps) {
   return (

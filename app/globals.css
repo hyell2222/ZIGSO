@@ -50,6 +50,26 @@
   --depth-panel: color-mix(in srgb, var(--mystery) 82%, var(--ink));
 }
 
+/**
+ * 학생 play 화면 (.play-shell): 패널·테두리·칩 색은 교사/라이트 UI와 동일한 :root 토큰만 사용.
+ * 상위 컨테이너의 배경·그라데이션만 play 전용(짙은 멜딩)으로 둔다.
+ */
+.play-shell {
+  --play-paper: var(--card-bg);
+  --play-panel: var(--card-bg);
+  --play-panel-warm: var(--surface);
+  --play-panel-cool: var(--card-bg);
+  --play-inset: var(--background);
+  --play-veil: var(--tint-accent-weak);
+  --play-chip-warm: var(--tint-accent);
+  --play-chip-cool: var(--tint-accent-weak);
+  --play-border-warm: var(--border);
+  --play-border-cool: var(--border);
+  --play-border-paper: var(--border);
+  --play-shadow-soft: var(--elevation-sm);
+  --play-shadow-lift: var(--elevation-sm);
+}
+
 html {
   font-size: 18px;
 }

@@ -558,7 +558,7 @@ export function InvestigationMap({
         preloadMapPropImages(this, assetIdsInUse);
       
         this.load.on("loaderror", (file: Phaser.Loader.File) => {
-          console.warn(`[map] failed to load 소품asset: ${file.key} (${file.src})`);
+          console.warn(`[map] failed to load prop asset: ${file.key} (${file.src})`);
         });
       }
 
@@ -786,7 +786,7 @@ export function InvestigationMap({
     <div
       className={cn(
         "relative",
-        isFull ? "flex h-full min-h-0 w-full flex-col text-[color:var(--entry-parchment)]" : "",
+        isFull ? "flex h-full min-h-0 w-full flex-col text-[var(--foreground)]" : "",
         className,
       )}
     >
@@ -795,7 +795,7 @@ export function InvestigationMap({
         className={cn(
           "flex shrink-0 items-center justify-between gap-2",
           isFull
-            ? "border-b border-[color-mix(in_srgb,var(--primary)_28%,transparent)] bg-[color-mix(in_srgb,var(--mystery)_80%,var(--ink))] px-4 py-2.5 text-[11px] tracking-wide text-[color:var(--entry-parchment-muted)]"
+            ? "border-b border-[var(--play-border-cool)] bg-[var(--play-panel-cool)] px-4 py-2.5 text-[11px] tracking-wide text-[var(--muted-foreground)]"
             : "mb-2 border-b border-[var(--border)] px-0 text-xs text-[var(--muted-foreground)]",
         )}
       >
@@ -826,29 +826,27 @@ export function InvestigationMap({
           className={cn(
             "flex min-h-0 shrink-0 flex-col",
             isFull
-              ? "w-[220px] border-l border-[color-mix(in_srgb,var(--accent)_26%,transparent)] bg-[color-mix(in_srgb,var(--mystery)_78%,var(--ink))]"
-              : "max-h-[200px] w-full border-t border-[var(--border)] bg-[var(--depth-panel)] md:max-h-none md:w-[200px] md:border-l md:border-t-0",
+              ? "w-[220px] border-l border-[var(--play-border-cool)] bg-[var(--play-panel-warm)]"
+              : "max-h-[200px] w-full border-t border-[var(--border)] bg-[var(--card-bg)] md:max-h-none md:w-[200px] md:border-l md:border-t-0",
           )}
         >
           <div
             className={cn(
               "flex items-center gap-2 border-b px-2 py-2 pl-3",
-              isFull
-                ? "border-[color-mix(in_srgb,var(--primary)_22%,transparent)]"
-                : "border-[var(--border)]",
+              isFull ? "border-[var(--play-border-warm)]" : "border-[var(--border)]",
             )}
           >
             <Package
               className={cn(
                 "h-4 w-4 shrink-0",
-                isFull ? "text-[color:var(--entry-accent-soft)]" : "text-[var(--accent)]",
+                isFull ? "text-[var(--primary)]" : "text-[var(--accent)]",
               )}
               aria-hidden
             />
             <span
               className={cn(
                 "min-w-0 flex-1 text-xs font-medium",
-                isFull ? "text-[color:var(--entry-parchment)]" : "text-[var(--foreground)]",
+                isFull ? "text-[var(--foreground)]" : "text-[var(--foreground)]",
               )}
             >
               수집한 단서
@@ -860,7 +858,7 @@ export function InvestigationMap({
                 className={cn(
                   "rounded-md border border-dashed px-2 py-6 text-center text-[11px]",
                   isFull
-                    ? "border-[color-mix(in_srgb,var(--primary)_25%,transparent)] text-[color:var(--entry-parchment-muted)]"
+                    ? "border-[var(--play-border-cool)] text-[var(--muted-foreground)]"
                     : "border-[var(--border)] text-[var(--muted-foreground)]",
                 )}
               >
@@ -877,8 +875,8 @@ export function InvestigationMap({
                     className={cn(
                       "h-auto w-full justify-start rounded border px-2.5 py-2 text-left text-xs transition-colors",
                       isFull
-                        ? "border-[color-mix(in_srgb,var(--accent)_35%,transparent)] bg-[color-mix(in_srgb,var(--mystery)_25%,#1a1310)] text-[color:var(--entry-parchment)] hover:border-[color-mix(in_srgb,var(--entry-accent)_45%,transparent)] hover:bg-[color-mix(in_srgb,var(--primary)_18%,transparent)]"
-                        : "border-[var(--border)] bg-[var(--tint-mystery)] text-[var(--foreground)] hover:border-[var(--accent)] hover:bg-[color-mix(in_srgb,var(--mystery)_14%,var(--surface))]",
+                        ? "border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] hover:border-[color-mix(in_srgb,var(--primary)_35%,var(--border))] hover:bg-[var(--tint-accent-weak)]"
+                        : "border-[var(--border)] bg-[var(--tint-mystery)] text-[var(--foreground)] hover:border-[var(--accent)] hover:bg-[var(--tint-accent-weak)]",
                     )}
                   >
                     <span className="line-clamp-2">{clue.name?.trim() || "이름 없음"}</span>
@@ -893,25 +891,28 @@ export function InvestigationMap({
         <div className="absolute inset-0 z-[120] flex items-center justify-center bg-[var(--overlay-scrim)] p-4 backdrop-blur-[1px]">
           <div
             className={cn(
-              "w-full max-w-2xl rounded-md border bg-[var(--card-bg)] shadow-xl",
+              "w-full max-w-2xl rounded-md border shadow-xl",
               isFull
-                ? "border-[color-mix(in_srgb,var(--primary)_25%,var(--mystery))] shadow-[0_0_0_1px_color-mix(in_srgb,var(--entry-accent)_10%,transparent),var(--elevation-sm)]"
-                : "border-[var(--border)] bg-[var(--background)]",
+                ? "border-[var(--play-border-warm)] bg-[var(--play-paper)] shadow-[var(--play-shadow-lift)]"
+                : "border-[var(--border)] bg-[var(--card-bg)]",
             )}
           >
             <div
               className={cn(
                 "flex items-center justify-between border-b px-4 py-3",
-                isFull ? "border-[color-mix(in_srgb,var(--accent)_22%,transparent)]" : "border-[var(--border)]",
+                isFull ? "border-[var(--play-border-cool)] bg-[var(--play-veil)]" : "border-[var(--border)]",
               )}
             >
               <div>
                 <p
-                  className={cn("text-xs", isFull ? "text-[var(--accent)]" : "text-[var(--muted-foreground)]")}
+                  className={cn(
+                    "text-xs",
+                    isFull ? "font-medium text-[var(--primary)]" : "text-[var(--muted-foreground)]",
+                  )}
                 >
                   {selectedClue.locationName}
                 </p>
-                <h2 className={cn("text-lg", isFull ? "text-[var(--mystery)]" : "text-[var(--foreground)]")}>
+                <h2 className={cn("text-lg", isFull ? "text-[var(--foreground)]" : "text-[var(--foreground)]")}>
                   {selectedClue.propLabel} 수집한 단서
                 </h2>
               </div>
@@ -928,7 +929,15 @@ export function InvestigationMap({
             <div className="max-h-[65vh] space-y-4 overflow-y-auto px-4 py-4">
               {selectedClue.clues.length > 0 ? (
                 selectedClue.clues.map((clue) => (
-                  <section key={clue.id} className="rounded-md border border-[var(--border)] bg-[var(--tint-accent-weak)] p-4">
+                  <section
+                    key={clue.id}
+                    className={cn(
+                      "rounded-md border p-4",
+                      isFull
+                        ? "border-[var(--play-border-cool)] bg-[var(--play-inset)]"
+                        : "border-[var(--border)] bg-[var(--tint-accent-weak)]",
+                    )}
+                  >
                     <h3 className="text-base text-[var(--foreground)]">{clue.name?.trim() || "이름 없는 단서"}</h3>
                     {clue.content?.trim() ? (
                       <p className="mt-3 whitespace-pre-wrap break-words text-sm text-[var(--foreground)]">
