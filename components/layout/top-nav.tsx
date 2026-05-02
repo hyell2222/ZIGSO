@@ -69,7 +69,7 @@ export function TopNav() {
               href={ROUTES.play}
               className="rounded-md px-2.5 py-2 text-sm text-[var(--on-primary)]/90 underline-offset-4 transition hover:text-[var(--on-primary)] hover:underline"
             >
-              수사 참가
+              학생 참가
             </Link>
             {sessionQuery.isPending ? (
               <LoadingState

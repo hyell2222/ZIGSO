@@ -30,7 +30,7 @@ export default function NotFound() {
           href={ROUTES.play}
           className="inline-flex h-10 items-center rounded-md border border-[var(--mystery)]/45 px-5 text-sm font-semibold text-[var(--mystery)] hover:bg-[var(--tint-mystery)]"
         >
-          수사 참가하기
+          학생 참가하기
         </Link>
       </nav>
     </main>

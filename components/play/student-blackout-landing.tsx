@@ -327,7 +327,7 @@ export function StudentBlackoutLanding() {
           setModalOpen(false);
           setHardboiled("");
         }}
-        title="수사 참가 인증"
+        title="학생 참가 인증"
         titleId="landing-auth-title"
         variant="play"
         closeOnBackdrop={false}
@@ -388,7 +388,7 @@ export function StudentBlackoutLanding() {
             className="h-11 w-full text-sm"
             size="lg"
           >
-            {busy ? "참가 코드 확인 중…" : "사건으로 입장"}
+            {busy ? "참가 코드 확인 중…" : "참가 코드 입력"}
           </Button>
         </form>
         {error ? <p className="text-center text-sm font-medium text-[var(--danger)]">{error}</p> : null}
