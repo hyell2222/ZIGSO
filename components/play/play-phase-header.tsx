@@ -33,25 +33,25 @@ export function PlayPhaseHeader({
   return (
     <div
       className={cn(
-        "flex flex-col gap-3 md:flex-row md:items-center md:justify-between md:gap-5",
+        "flex flex-col gap-2.5 md:flex-row md:items-center md:justify-between md:gap-5",
         className,
       )}
     >
       <div className="flex min-w-0 flex-1 items-start gap-3 md:gap-4">
         <span
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--play-chip-cool)] text-[var(--primary)] shadow-sm ring-1 ring-[color-mix(in_srgb,var(--primary)_22%,transparent)] md:h-11 md:w-11"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--play-chip-cool)] text-[var(--primary)] shadow-sm ring-1 ring-[color-mix(in_srgb,var(--primary)_22%,transparent)] md:h-11 md:w-11"
           aria-hidden
         >
-          <Icon className="h-5 w-5 md:h-6 md:w-6" />
+          <Icon className="h-4 w-4 md:h-6 md:w-6" />
         </span>
         <div className="min-w-0 pt-0.5">
           <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--accent)] md:text-xs">
             {phase}단계
           </p>
-          <h1 className="text-lg font-bold leading-tight text-[var(--foreground)] md:text-xl md:leading-snug">
+          <h1 className="text-base font-bold leading-tight text-[var(--foreground)] md:text-xl md:leading-snug">
             {title}
           </h1>
-          <p className="mt-1 max-w-2xl text-sm leading-relaxed text-[var(--muted-foreground)] md:mt-1.5 md:text-[0.95rem] md:leading-relaxed">
+          <p className="mt-0.5 max-w-2xl text-[13px] leading-relaxed text-[var(--muted-foreground)] md:mt-1.5 md:text-[0.95rem] md:leading-relaxed">
             {description}
           </p>
         </div>

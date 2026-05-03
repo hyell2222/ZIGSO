@@ -49,25 +49,28 @@ export function TopNav() {
   return (
     <>
       <header className="sticky top-0 z-50 w-full border-b border-[color-mix(in_srgb,var(--primary)_78%,#000000)] bg-[var(--primary)] text-[var(--on-primary)] shadow-[0_1px_0_color-mix(in_srgb,var(--on-primary)_6%,transparent)]">
-        <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-3">
-          <div>
+        <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-3 px-4 py-3">
+          <div className="shrink-0">
             <Link
               href={ROUTES.home}
-              className="text-2xl font-semibold tracking-tight text-[var(--on-primary)] transition hover:brightness-110"
+              className="block whitespace-nowrap text-2xl font-semibold tracking-tight text-[var(--on-primary)] transition hover:brightness-110"
             >
               Mystery Club
             </Link>
           </div>
-          <nav className="flex flex-wrap items-center justify-end gap-2 text-sm">
-            <Link
-              href={ROUTES.play}
-              className="rounded-md px-2.5 py-2 text-sm text-[var(--on-primary)]/90 underline-offset-4 transition hover:text-[var(--on-primary)] hover:underline"
-            >
-              학생 참가
-            </Link>
+          <nav className="flex shrink-0 items-center justify-end gap-2 text-sm">
+            {!sessionQuery.data ? (
+              <Link
+                href={ROUTES.play}
+                className="inline-flex h-9 items-center rounded-md px-2.5 text-sm text-[var(--on-primary)]/90 underline-offset-4 transition hover:text-[var(--on-primary)] hover:underline"
+              >
+                학생 참가
+              </Link>
+            ) : null}
             {sessionQuery.data ? (
               <Button
                 variant="transparent"
+                size="sm"
                 onClick={() => signOutMutation.mutate()}
                 disabled={signOutMutation.isPending}
               >
@@ -77,6 +80,8 @@ export function TopNav() {
               <ButtonLink
                 href={ROUTES.login}
                 variant="transparent"
+                size="sm"
+                className="max-[560px]:hidden"
               >
                 지금 시작하기
               </ButtonLink>

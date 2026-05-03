@@ -71,8 +71,9 @@ export function Modal({
   return (
     <div
       className={cn(
-        "fixed inset-0 flex p-4 backdrop-blur-[2px] transition-colors",
-        "pb-[max(1rem,env(safe-area-inset-bottom,0px))] pl-[max(1rem,env(safe-area-inset-left,0px))] pr-[max(1rem,env(safe-area-inset-right,0px))] pt-[max(1rem,env(safe-area-inset-top,0px))]",
+        "fixed inset-0 flex backdrop-blur-[2px] transition-colors",
+        "pb-[max(1rem,env(safe-area-inset-bottom,0px))] pt-[max(1rem,env(safe-area-inset-top,0px))]",
+        "pl-[max(1.25rem,env(safe-area-inset-left,0px))] pr-[max(1.25rem,env(safe-area-inset-right,0px))] sm:pl-[max(1rem,env(safe-area-inset-left,0px))] sm:pr-[max(1rem,env(safe-area-inset-right,0px))]",
         sheetOnNarrow ? "items-end justify-center sm:items-center" : "items-center justify-center",
         "bg-[var(--overlay-scrim)]/85",
         zIndexClassName,

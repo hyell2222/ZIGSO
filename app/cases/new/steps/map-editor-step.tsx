@@ -57,6 +57,13 @@ type LocationTabItem = {
   clueCount: number;
 };
 
+type MobileAssetDragState = {
+  asset: string;
+  pointerId: number;
+  clientX: number;
+  clientY: number;
+};
+
 export function MapEditorStep({
   investigationZones,
   clues,
@@ -74,8 +81,10 @@ export function MapEditorStep({
   const [draftClueModalId, setDraftClueModalId] = useState<string | null>(null);
   const [clueModalNameError, setClueModalNameError] = useState(false);
   const [draggingAsset, setDraggingAsset] = useState<string | null>(null);
+  const [mobileAssetDrag, setMobileAssetDrag] = useState<MobileAssetDragState | null>(null);
   /** 소품 PNG 등 자연 크기 — 드롭 시 기본 w/h(격자 스냅) */
   const [naturalByAsset, setNaturalByAsset] = useState(() => new Map<string, { w: number; h: number }>());
+  const mapCanvasHostRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -179,6 +188,11 @@ export function MapEditorStep({
     () => (draftClueModalId ? clues.find((c) => c.tempId === draftClueModalId) ?? null : null),
     [clues, draftClueModalId],
   );
+  const assetUrlByName = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const asset of propAssets) map.set(asset.asset, asset.url);
+    return map;
+  }, [propAssets]);
 
   const closeDraftClueModal = useCallback(() => {
     setDraftClueModalId(null);
@@ -193,6 +207,107 @@ export function MapEditorStep({
     }
     closeDraftClueModal();
   }, [closeDraftClueModal, draftClueForModal]);
+
+  const handleDropAssetToCanvas = useCallback(
+    (asset: string, x: number, y: number, w: number, h: number) => {
+      if (!effectiveTabId) return;
+      const newId = onAddClue({
+        assignmentTempId: effectiveTabId,
+        asset,
+        x,
+        y,
+        w,
+        h,
+        name: "",
+        content: "",
+      });
+      setSelectedClueId(newId);
+      setClueModalNameError(false);
+      setDraftClueModalId(newId);
+    },
+    [effectiveTabId, onAddClue],
+  );
+
+  const dropMobileAssetAtClient = useCallback(
+    async (asset: string, clientX: number, clientY: number) => {
+      const host = mapCanvasHostRef.current;
+      if (!host) return false;
+      const rect = host.getBoundingClientRect();
+      if (
+        clientX < rect.left ||
+        clientX > rect.right ||
+        clientY < rect.top ||
+        clientY > rect.bottom
+      ) {
+        return false;
+      }
+
+      let nw = naturalByAsset.get(asset)?.w ?? 0;
+      let nh = naturalByAsset.get(asset)?.h ?? 0;
+      if (nw <= 0 || nh <= 0) {
+        const url = assetUrlByName.get(asset);
+        if (url) {
+          const s = await loadImageNaturalSize(url);
+          nw = s.w;
+          nh = s.h;
+        }
+      }
+      if (nw <= 0 || nh <= 0) {
+        nw = PROP_DEFAULT_DROP_SIZE.w;
+        nh = PROP_DEFAULT_DROP_SIZE.h;
+      }
+
+      const { w: sw, h: sh } = clampPropFootprintToEditorWorld(
+        nw,
+        nh,
+        MAP_EDITOR_WORLD.w,
+        MAP_EDITOR_WORLD.h,
+        MAP_GRID_STEP_PX,
+      );
+      const { x: rawX, y: rawY } = editorMapClientToWorld(
+        host,
+        clientX,
+        clientY,
+        MAP_EDITOR_WORLD.w,
+        MAP_EDITOR_WORLD.h,
+      );
+      const { dispW, dispH } = imageContainDisplaySize(sw, sh, nw, nh);
+      const pos = snapClueRectToGrid(rawX, rawY, dispW, dispH, MAP_GRID_STEP_PX);
+      handleDropAssetToCanvas(asset, pos.x, pos.y, sw, sh);
+      return true;
+    },
+    [assetUrlByName, handleDropAssetToCanvas, naturalByAsset],
+  );
+
+  useEffect(() => {
+    if (!mobileAssetDrag) return;
+    const onMove = (event: PointerEvent) => {
+      if (event.pointerId !== mobileAssetDrag.pointerId) return;
+      event.preventDefault();
+      setMobileAssetDrag((prev) =>
+        prev && prev.pointerId === event.pointerId
+          ? { ...prev, clientX: event.clientX, clientY: event.clientY }
+          : prev,
+      );
+    };
+
+    const onEnd = (event: PointerEvent) => {
+      if (event.pointerId !== mobileAssetDrag.pointerId) return;
+      event.preventDefault();
+      const snapshot = mobileAssetDrag;
+      setMobileAssetDrag(null);
+      void dropMobileAssetAtClient(snapshot.asset, event.clientX, event.clientY);
+    };
+
+    window.addEventListener("pointermove", onMove, { passive: false });
+    window.addEventListener("pointerup", onEnd, { passive: false });
+    window.addEventListener("pointercancel", onEnd, { passive: false });
+    return () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onEnd);
+      window.removeEventListener("pointercancel", onEnd);
+    };
+  }, [dropMobileAssetAtClient, mobileAssetDrag]);
 
   return (
     <Card>
@@ -221,33 +336,22 @@ export function MapEditorStep({
               setDraggingAsset(asset);
             }}
             onDragEndAsset={() => setDraggingAsset(null)}
+            onPointerStartAsset={(asset, pointerId, clientX, clientY) => {
+              setMobileAssetDrag({ asset, pointerId, clientX, clientY });
+            }}
           />
 
           <MapCanvas
             clues={cluesInLocation}
             selectedClueId={validSelectedClueId}
             onSelectClue={setSelectedClueId}
-            onDropAsset={(asset, x, y, w, h) => {
-              if (!effectiveTabId) return;
-              const newId = onAddClue({
-                assignmentTempId: effectiveTabId,
-                asset,
-                x,
-                y,
-                w,
-                h,
-                name: "",
-                content: "",
-              });
-              setSelectedClueId(newId);
-              setClueModalNameError(false);
-              setDraftClueModalId(newId);
-            }}
+            onDropAsset={handleDropAssetToCanvas}
             onUpdateClue={onUpdateClue}
             onRemoveClue={onRemoveClue}
             propAssets={propAssets}
             draggingAsset={draggingAsset}
             naturalByAsset={naturalByAsset}
+            canvasHostRef={mapCanvasHostRef}
           />
 
           <ClueEditorPanel
@@ -262,6 +366,24 @@ export function MapEditorStep({
             }}
           />
         </div>
+
+        {mobileAssetDrag ? (
+          <div
+            className="pointer-events-none fixed z-[220] -translate-x-1/2 -translate-y-1/2"
+            style={{ left: mobileAssetDrag.clientX, top: mobileAssetDrag.clientY }}
+            aria-hidden
+          >
+            {assetUrlByName.get(mobileAssetDrag.asset) ? (
+              <img
+                src={assetUrlByName.get(mobileAssetDrag.asset)}
+                alt=""
+                className="block max-h-12 w-auto opacity-90 [image-rendering:pixelated]"
+              />
+            ) : (
+              <div className="h-8 w-8 rounded border border-[var(--accent)] bg-[var(--tint-accent-weak)]" />
+            )}
+          </div>
+        ) : null}
 
         <Modal
           open={draftClueForModal != null}
@@ -357,11 +479,13 @@ function PropSidebar({
   isLoading,
   onDragStartAsset,
   onDragEndAsset,
+  onPointerStartAsset,
 }: {
   assets: PropAsset[];
   isLoading: boolean;
   onDragStartAsset?: (asset: string) => void;
   onDragEndAsset?: () => void;
+  onPointerStartAsset?: (asset: string, pointerId: number, clientX: number, clientY: number) => void;
 }) {
   return (
     <aside className="rounded-md border border-[var(--border)] bg-[var(--card-bg)] p-3 shadow-[var(--elevation-sm)]">
@@ -387,6 +511,7 @@ function PropSidebar({
                 asset={p}
                 onDragStartAsset={onDragStartAsset}
                 onDragEndAsset={onDragEndAsset}
+                onPointerStartAsset={onPointerStartAsset}
               />
             </li>
           ))}
@@ -400,10 +525,12 @@ function PropDraggable({
   asset,
   onDragStartAsset,
   onDragEndAsset,
+  onPointerStartAsset,
 }: {
   asset: PropAsset;
   onDragStartAsset?: (asset: string) => void;
   onDragEndAsset?: () => void;
+  onPointerStartAsset?: (asset: string, pointerId: number, clientX: number, clientY: number) => void;
 }) {
   return (
     <div
@@ -415,6 +542,12 @@ function PropDraggable({
         onDragStartAsset?.(asset.asset);
       }}
       onDragEnd={() => onDragEndAsset?.()}
+      onPointerDown={(event) => {
+        if (event.pointerType === "mouse") return;
+        if (event.button !== 0) return;
+        event.preventDefault();
+        onPointerStartAsset?.(asset.asset, event.pointerId, event.clientX, event.clientY);
+      }}
       className="cursor-grab"
     >
       {/* eslint-disable-next-line @next/next/no-img-element -- dynamic storage URLs; pixelated props */}
@@ -571,6 +704,7 @@ function MapCanvas({
   onDropAsset,
   onUpdateClue,
   onRemoveClue,
+  canvasHostRef,
 }: {
   clues: DraftClue[];
   selectedClueId: string | null;
@@ -581,6 +715,7 @@ function MapCanvas({
   onDropAsset: (asset: string, x: number, y: number, w: number, h: number) => void;
   onUpdateClue: (id: string, patch: Partial<Pick<DraftClue, "x" | "y" | "w" | "h">>) => void;
   onRemoveClue: (tempId: string) => void;
+  canvasHostRef?: { current: HTMLDivElement | null };
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   /**
@@ -781,7 +916,10 @@ function MapCanvas({
   return (
     <div className="space-y-2">
       <div
-        ref={containerRef}
+        ref={(node) => {
+          containerRef.current = node;
+          if (canvasHostRef) canvasHostRef.current = node;
+        }}
         onDragOver={(event) => {
           event.preventDefault();
           event.dataTransfer.dropEffect = "copy";
