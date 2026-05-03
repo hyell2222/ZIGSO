@@ -22,7 +22,6 @@ import { PageHeader } from "@/components/layout/page-header";
 import { TopNav } from "@/components/layout/top-nav";
 import { Button } from "@/components/ui/button";
 import { LoadingState } from "@/components/ui/loading-state";
-import { clubRoleLabelKr, clubRoleSortKey } from "@/lib/club-role";
 import { isCulpritCorrect } from "@/lib/report-compare";
 import { ROUTES } from "@/lib/routes";
 import { FinalReportModal } from "@/components/teacher/final-report-modal";
@@ -176,7 +175,6 @@ type PlayerReportLine = {
   teamId: string | null;
   nickname: string;
   teamName: string;
-  roleLabel: string;
   investigationZone: string;
   reportSubmitted: boolean;
   /** null: 미제출 또는 정답 미등록으로 판정 불가 */
@@ -191,7 +189,6 @@ type PlayerReportLine = {
 type SortKey =
   | "nickname"
   | "teamName"
-  | "roleLabel"
   | "investigationZone"
   | "reportSubmitted"
   | "isCorrect"
@@ -221,9 +218,6 @@ function compareReportLines(
       break;
     case "teamName":
       cmp = a.teamName.localeCompare(b.teamName, "ko");
-      break;
-    case "roleLabel":
-      cmp = a.roleLabel.localeCompare(b.roleLabel, "ko");
       break;
     case "investigationZone":
       cmp = a.investigationZone.localeCompare(b.investigationZone, "ko");
@@ -269,7 +263,6 @@ function buildSessionReportCsv(
   const header = [
     "닉네임",
     "팀",
-    "역할",
     "조사 장소",
     "제출",
     "정답",
@@ -297,7 +290,6 @@ function buildSessionReportCsv(
     rows.push([
       line.nickname,
       line.teamName,
-      line.roleLabel,
       line.investigationZone,
       line.reportSubmitted ? "제출" : "—",
       correctLabel,
@@ -326,9 +318,8 @@ function buildReportLines(
     const ta = teamSortName(a, teamById);
     const tb = teamSortName(b, teamById);
     if (ta !== tb) return ta.localeCompare(tb, "ko");
-    const ra = clubRoleSortKey(a.club_role);
-    const rb = clubRoleSortKey(b.club_role);
-    if (ra !== rb) return ra - rb;
+    const za = (a.investigation_zone?.name ?? "").localeCompare(b.investigation_zone?.name ?? "", "ko");
+    if (za !== 0) return za;
     return (a.nickname ?? "").localeCompare(b.nickname ?? "", "ko");
   });
 
@@ -347,7 +338,6 @@ function buildReportLines(
       teamId: p.team_id ?? null,
       nickname: p.nickname?.trim() || "—",
       teamName: team?.name?.trim() || "—",
-      roleLabel: clubRoleLabelKr(p.club_role),
       investigationZone: p.investigation_zone?.name?.trim() || "—",
       reportSubmitted: submitted,
       isCorrect,
@@ -569,12 +559,11 @@ function SessionReportContent() {
         ) : (
           <div className="space-y-2">
             <div className="overflow-x-auto rounded-lg border border-[var(--border)] shadow-[var(--elevation-sm)]">
-            <table className="w-full min-w-[720px] border-collapse text-left text-sm">
+            <table className="w-full min-w-[640px] border-collapse text-left text-sm">
               <thead>
                 <tr className="border-b border-[var(--border)] bg-[var(--tint-accent-weak)]">
                   <SortableTh label="닉네임" column="nickname" current={sort} onSort={handleSort} />
                   <SortableTh label="팀" column="teamName" current={sort} onSort={handleSort} />
-                  <SortableTh label="역할" column="roleLabel" current={sort} onSort={handleSort} />
                   <SortableTh label="조사 장소" column="investigationZone" current={sort} onSort={handleSort} />
                   <SortableTh label="보고 제출" column="reportSubmitted" current={sort} onSort={handleSort} />
                   <SortableTh label="정답" column="isCorrect" current={sort} onSort={handleSort} />
@@ -590,7 +579,6 @@ function SessionReportContent() {
                   >
                     <td className="px-3 py-2.5 font-medium text-[var(--foreground)]">{line.nickname}</td>
                     <td className="px-3 py-2.5 font-mono text-[var(--accent)]">{line.teamName}</td>
-                    <td className="px-3 py-2.5 text-[var(--foreground)]">{line.roleLabel}</td>
                     <td className="px-3 py-2.5 text-[var(--foreground)]">{line.investigationZone}</td>
                     <td className="px-3 py-2.5">
                       <span

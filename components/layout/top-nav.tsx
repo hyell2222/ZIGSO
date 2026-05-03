@@ -42,13 +42,7 @@ export function TopNav() {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: AUTH_SESSION_QUERY_KEY });
-      const onTeacherSite =
-        pathname.startsWith("/cases") ||
-        pathname.startsWith("/reports") ||
-        pathname.startsWith("/sessions");
-      if (onTeacherSite) {
-        router.replace(ROUTES.home);
-      }
+      router.replace(ROUTES.home);
     },
   });
 

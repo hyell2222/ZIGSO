@@ -4,7 +4,7 @@ create extension if not exists pgcrypto;
 -- Tables
 -- =====================================================================
 -- 3단계 게임: briefing → investigation → final_report
--- 역할(부장/차장/부원)·조사 장소: 세션 시작 시 랜덤 (assignTeamsAndInvestigation)
+-- 조사 장소: 세션 시작 시 랜덤 (assignTeamsAndInvestigation)
 -- =====================================================================
 
 create table if not exists public.cases (
@@ -65,11 +65,12 @@ create table if not exists public.players (
   nickname text,
   session_id uuid references public.game_sessions(id) on delete cascade,
   team_id uuid references public.teams(id) on delete set null,
-  club_role text
-    check (club_role is null or club_role in ('president', 'vice_president', 'member')),
   investigation_location_id uuid,
   is_online boolean default true
 );
+
+drop index if exists public.players_club_role_idx;
+alter table if exists public.players drop column if exists club_role;
 
 -- 부원별로 1회 제출하는 최종 범인 지목서.
 create table if not exists public.player_reports (
@@ -135,7 +136,6 @@ create index if not exists teams_session_id_idx on public.teams (session_id);
 create index if not exists players_session_id_idx on public.players (session_id);
 create index if not exists players_team_id_idx on public.players (team_id);
 create index if not exists players_investigation_location_id_idx on public.players (investigation_location_id);
-create index if not exists players_club_role_idx on public.players (club_role);
 create index if not exists player_reports_session_id_idx on public.player_reports (session_id);
 create index if not exists player_reports_team_id_idx on public.player_reports (team_id);
 create index if not exists player_reports_submitted_at_idx on public.player_reports (submitted_at);

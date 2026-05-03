@@ -1,4 +1,3 @@
-import { clubRoleSortKey } from "@/lib/club-role";
 import type { SessionPlayerRow, TeamRow } from "@/lib/api/play";
 
 export type TeamGroup = {
@@ -19,10 +18,9 @@ export function groupPlayersByTeam(players: SessionPlayerRow[], teams: TeamRow[]
     .map((team) => ({
       team,
       members: (playersByTeamId.get(team.id) ?? []).sort((a, b) => {
-        const ra = clubRoleSortKey(a.club_role);
-        const rb = clubRoleSortKey(b.club_role);
-        if (ra !== rb) return ra - rb;
-        return (a.investigation_zone?.name ?? "").localeCompare(b.investigation_zone?.name ?? "", "ko");
+        const zcmp = (a.investigation_zone?.name ?? "").localeCompare(b.investigation_zone?.name ?? "", "ko");
+        if (zcmp !== 0) return zcmp;
+        return (a.nickname ?? "").localeCompare(b.nickname ?? "", "ko");
       }),
     }));
 }

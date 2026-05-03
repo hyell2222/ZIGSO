@@ -1,6 +1,5 @@
 "use client";
 
-import type { ClubRole } from "@/lib/club-role";
 import type { SuspectEntry } from "@/lib/suspects";
 import { supabase } from "@/lib/supabase";
 
@@ -138,13 +137,12 @@ export type PlayerSelfRow = {
   nickname: string | null;
   session_id: string | null;
   team_id: string | null;
-  club_role: string | null;
   investigation_location_id: string | null;
   is_online: boolean | null;
 };
 
 const PLAYER_SELECT =
-  "id,nickname,session_id,team_id,club_role,investigation_location_id,is_online";
+  "id,nickname,session_id,team_id,investigation_location_id,is_online";
 
 const PLAYER_SELECT_WITH_TEAM_INVESTIGATION = `${PLAYER_SELECT},teams(id,name,found_clue_ids),investigation_zone:locations!investigation_location_id(name)`;
 
@@ -209,7 +207,7 @@ export async function joinPlayerSession(input: {
 }
 
 /**
- * 수사가 이미 시작된 뒤(`phase` ≠ waiting) 입장한 플레이어에게만 팀·역할·조사 장소를 붙입니다.
+ * 수사가 이미 시작된 뒤(`phase` ≠ waiting) 입장한 플레이어에게만 팀·조사 장소를 붙입니다.
  * 기존 플레이어의 배정은 변경하지 않습니다.
  */
 export async function assignOrphanPlayersForOngoingSession(sessionId: string) {
@@ -240,23 +238,16 @@ export async function assignOrphanPlayersForOngoingSession(sessionId: string) {
 
   const { data: playerRows, error: pe } = await supabase
     .from("players")
-    .select("id,team_id,club_role,investigation_location_id")
+    .select("id,team_id,investigation_location_id")
     .eq("session_id", sessionId);
   if (pe) throw pe;
   const rows = playerRows ?? [];
 
-  const orphans = rows.filter((p) => !p.team_id || !p.club_role || !p.investigation_location_id);
+  const orphans = rows.filter((p) => !p.team_id || !p.investigation_location_id);
   if (orphans.length === 0) return;
 
   type P = (typeof rows)[number];
   const state: P[] = rows.map((r) => ({ ...r }));
-
-  const pickRole = (teamId: string): ClubRole => {
-    const members = state.filter((p) => p.team_id === teamId);
-    if (!members.some((p) => p.club_role === "president")) return "president";
-    if (!members.some((p) => p.club_role === "vice_president")) return "vice_president";
-    return "member";
-  };
 
   const pickZone = (teamId: string): string => {
     const members = state.filter((p) => p.team_id === teamId);
@@ -285,19 +276,17 @@ export async function assignOrphanPlayersForOngoingSession(sessionId: string) {
       }
     }
 
-    const role = pickRole(bestTeam);
     const zone = pickZone(bestTeam);
 
     const { error: up } = await supabase
       .from("players")
-      .update({ team_id: bestTeam, club_role: role, investigation_location_id: zone })
+      .update({ team_id: bestTeam, investigation_location_id: zone })
       .eq("id", orphan.id);
     if (up) throw up;
 
     const st = state.find((p) => p.id === orphan.id);
     if (st) {
       st.team_id = bestTeam;
-      st.club_role = role;
       st.investigation_location_id = zone;
     }
   }
@@ -459,7 +448,7 @@ export async function submitPlayerReport(
 }
 
 // =====================================================================
-// 팀·역할(부장/차장/부원)·조사 장소(랜덤)
+// 팀·조사 장소(랜덤)
 // =====================================================================
 
 function shuffleInPlace<T>(arr: T[]) {
@@ -477,14 +466,9 @@ function teamLabel(index: number) {
   return `${String.fromCharCode(A + first)}${String.fromCharCode(A + second)}`;
 }
 
-function roleForMemberIndex(i: number): ClubRole {
-  if (i === 0) return "president";
-  if (i === 1) return "vice_president";
-  return "member";
-}
-
 /**
- * 세션 시작 시: 팀 편성 + 팀마다 부장1·차장1·나머지 부원 + 조사 장소(사건 장소) 랜덤.
+ * 세션 시작 시: 팀 편성 + 팀원마다 조사 장소(사건 장소) 랜덤.
+ * 팀 인원이 장소 수로 나누어떨어지지 않으면 한 팀 안에서 같은 장소를 여러 명에게 배정할 수 있습니다.
  */
 export async function assignTeamsAndInvestigation(sessionId: string) {
   const { data: session, error: sessionError } = await supabase
@@ -510,15 +494,13 @@ export async function assignTeamsAndInvestigation(sessionId: string) {
 
   const { data: allPlayers, error: pErr } = await supabase
     .from("players")
-    .select("id,team_id,club_role,investigation_location_id")
+    .select("id,team_id,investigation_location_id")
     .eq("session_id", sessionId);
   if (pErr) throw pErr;
   const players = allPlayers ?? [];
   if (players.length === 0) return;
 
-  const needsAssign = players.filter(
-    (p) => !p.team_id || !p.club_role || !p.investigation_location_id,
-  );
+  const needsAssign = players.filter((p) => !p.team_id || !p.investigation_location_id);
   if (needsAssign.length === 0) return;
 
   const { data: existingTeams, error: tErr } = await supabase
@@ -565,13 +547,13 @@ export async function assignTeamsAndInvestigation(sessionId: string) {
     shuffleInPlace(memberIds);
     const shuffledZones = [...investigationIds];
     shuffleInPlace(shuffledZones);
+    const zoneSlotCount = shuffledZones.length;
     for (let j = 0; j < memberIds.length; j++) {
       const playerId = memberIds[j]!;
-      const role = roleForMemberIndex(j);
-      const investigationId = shuffledZones[j % shuffledZones.length]!;
+      const investigationId = shuffledZones[j % zoneSlotCount]!;
       const { error: upErr } = await supabase
         .from("players")
-        .update({ team_id: teamId, club_role: role, investigation_location_id: investigationId })
+        .update({ team_id: teamId, investigation_location_id: investigationId })
         .eq("id", playerId);
       if (upErr) throw upErr;
     }

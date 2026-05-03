@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
 
 import {
   PLAY_PAGE_BLACK_BG,
@@ -34,6 +34,8 @@ type Props = {
   clues: CaseClueForMap[];
   discoveredClueIds?: string[];
   onDiscoveredClueIdsChange?: (ids: string[]) => void;
+  /** 헤더 우측(팀·담당 장소 등) */
+  headerRightSlot?: ReactNode;
 };
 
 export function InvestigationMapShell({
@@ -43,6 +45,7 @@ export function InvestigationMapShell({
   clues,
   discoveredClueIds,
   onDiscoveredClueIdsChange,
+  headerRightSlot,
 }: Props) {
   return (
     <div
@@ -60,6 +63,7 @@ export function InvestigationMapShell({
               phase={2}
               title="단서 수집"
               description="같은 조사 장소를 배정받은 학생들끼리 새롭게 모여 앉아 단서를 수집하고 해석하세요."
+              rightSlot={headerRightSlot}
             />
           </div>
         </div>

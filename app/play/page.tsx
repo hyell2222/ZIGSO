@@ -21,7 +21,6 @@ import {
   playSurfaceCool,
   playSurfacePanel,
 } from "@/components/play/play-atmosphere";
-import { PlayerIdCard } from "@/components/play/player-id-card";
 import { SessionInfoLayout } from "@/components/play/session-info-layout";
 import { StudentBlackoutLanding } from "@/components/play/student-blackout-landing";
 import { Button } from "@/components/ui/button";
@@ -348,7 +347,7 @@ function PlaySessionShell({
   }, [initialNickname, playerId, sessionId, resumeQuery.isLoading, resumeQuery.data, resumeDecided]);
 
   const hasJoinedSession = Boolean(playerId && sessionId);
-  const hasAssignment = Boolean(investigationLocationId && teamId && playerQuery.data?.club_role);
+  const hasAssignment = Boolean(investigationLocationId && teamId);
 
   const isWaitingLobby =
     hasJoinedSession &&
@@ -439,6 +438,13 @@ function PlaySessionShell({
         clues={mapQuery.data?.clues ?? []}
         discoveredClueIds={discoveredClueIds}
         onDiscoveredClueIdsChange={setDiscoveredClueIds}
+        headerRightSlot={
+          <PlayHeaderTeamPlace
+            teamName={teamName}
+            placeName={zoneName}
+            pending={playerQuery.isLoading}
+          />
+        }
       />
     );
   }
@@ -453,7 +459,13 @@ function PlaySessionShell({
                 phase={3}
                 title="범인 지목"
                 description="각자 한 번씩 제출합니다. 범인은 등록된 용의자 중에서만 선택할 수 있습니다."
-                rightSlot={<TeamBadge teamName={teamName} />}
+                rightSlot={
+                  <PlayHeaderTeamPlace
+                    teamName={teamName}
+                    placeName={zoneName}
+                    pending={playerQuery.isLoading || !hasAssignment}
+                  />
+                }
               />
             </div>
           </header>
@@ -468,7 +480,7 @@ function PlaySessionShell({
                 <LoadingState
                   variant="section"
                   tone="default"
-                  label="팀·역할 정보를 불러오는 중…"
+                  label="팀 정보를 불러오는 중…"
                   className="min-h-[12rem] py-10"
                 />
               ) : reportSubmitted ? (
@@ -567,50 +579,31 @@ function PlaySessionShell({
               <PlayPhaseHeader
                 phase={1}
                 title="사건 파악"
-                description="부원증을 확인한 후, 같은 팀끼리 모여 앉아 사건 파일을 확인하세요."
-                rightSlot={<TeamBadge teamName={teamName} />}
+                description="헤더에서 팀과 담당 조사 장소를 확인한 뒤, 같은 팀끼리 모여 앉아 사건 파일을 확인하세요."
+                rightSlot={
+                  <PlayHeaderTeamPlace
+                    teamName={teamName}
+                    placeName={zoneName}
+                    pending={playerQuery.isLoading || !hasAssignment}
+                  />
+                }
               />
             </div>
           </header>
 
           <main className="mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col space-y-5 px-4 py-6 pb-[max(3rem,env(safe-area-inset-bottom,0px))] sm:space-y-6 sm:px-6 sm:py-8 md:px-8">
-          <div className="grid min-h-0 flex-1 gap-6 md:grid-cols-[minmax(260px,min(380px,38vw))_minmax(0,1fr)] md:items-stretch md:gap-8 lg:grid-cols-[minmax(280px,380px)_1fr]">
-            <section
-              className={cn(
-                "motion-safe:animate-[playRevealUp_0.6s_cubic-bezier(0.22,1,0.36,1)_both] motion-safe:[animation-delay:80ms]",
-                playerQuery.data?.club_role && investigationLocationId
-                  ? "space-y-2"
-                  : "flex min-h-[min(20rem,44dvh)] flex-col items-center justify-center md:min-h-[min(22rem,48dvh)]",
-              )}
-            >
-              {playerQuery.isLoading ? (
+            <section className="flex min-h-[min(20rem,52dvh)] flex-1 flex-col motion-safe:animate-[playRevealUp_0.6s_cubic-bezier(0.22,1,0.36,1)_both] motion-safe:[animation-delay:80ms] md:min-h-[min(22rem,56dvh)]">
+              {playerQuery.isLoading && !hasAssignment ? (
                 <LoadingState
                   variant="section"
                   tone="play"
-                  label="역할·장소 정보를 불러오는 중…"
-                  className="min-h-0 py-4"
-                />
-              ) : playerQuery.data?.club_role && investigationLocationId ? (
-                <PlayerIdCard
-                  nickname={nickname.trim() || "참가자"}
-                  teamName={teamName}
-                  zoneName={zoneName ?? ""}
-                  roleKey={playerQuery.data.club_role}
+                  label="팀·조사 장소 배정을 불러오는 중…"
+                  className="min-h-0 flex-1 py-8"
                 />
               ) : (
-                <LoadingState
-                  variant="section"
-                  tone="play"
-                  label="역할·장소 배정을 불러오는 중입니다…"
-                  className="min-h-0 py-4"
-                />
+                <SessionInfoLayout sessionQuery={sessionQuery} />
               )}
             </section>
-
-            <section className="flex min-h-0 flex-col motion-safe:animate-[playRevealUp_0.6s_cubic-bezier(0.22,1,0.36,1)_both] motion-safe:[animation-delay:160ms] md:min-h-[min(20rem,46dvh)] lg:min-h-[min(22rem,48dvh)]">
-              <SessionInfoLayout sessionQuery={sessionQuery} />
-            </section>
-          </div>
           </main>
         </div>
       </PlayAtmosphere>
@@ -758,7 +751,7 @@ const WAITING_LOBBY: Record<
   },
   waiting: {
     title: "선생님이 시작할 때까지 대기",
-    body: "팀, 역할, 조사 장소가 자동 배정됩니다. 배정이 완료되면 같은 팀끼리 모여 앉아주세요.",
+    body: "팀과 조사 장소가 자동 배정됩니다. 배정이 완료되면 같은 팀끼리 모여 앉아주세요.",
   },
 };
 
@@ -846,22 +839,49 @@ function ResumeModal({
   );
 }
 
-function TeamBadge({ teamName, className }: { teamName: string | null; className?: string }) {
-  if (!teamName) return null;
+function PlayHeaderTeamPlace({
+  teamName,
+  placeName,
+  pending,
+  className,
+}: {
+  teamName: string | null;
+  placeName: string | null;
+  pending?: boolean;
+  className?: string;
+}) {
   return (
-      <div
+    <div
       className={cn(
-        "flex flex-col gap-0.5 rounded-lg border border-[var(--border)] bg-[var(--card-bg)] px-3 py-2.5 text-[var(--foreground)] sm:px-4 sm:py-3",
+        "flex max-w-[min(100%,18rem)] flex-col gap-2 rounded-lg border border-[var(--border)] bg-[var(--card-bg)] px-3 py-2.5 text-[var(--foreground)] sm:max-w-xs sm:px-4 sm:py-3",
         "shadow-[var(--elevation-sm)] motion-safe:animate-[playRevealUp_0.5s_cubic-bezier(0.22,1,0.36,1)_both]",
         className,
       )}
     >
-      <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--muted-foreground)]">
-        소속 팀
-      </span>
-      <span className="font-mono text-xl font-bold tracking-tight text-[var(--primary)] sm:text-2xl">
-        {teamName}
-      </span>
+      {pending ? (
+        <p className="text-center text-xs leading-snug text-[var(--muted-foreground)] sm:text-sm">
+          팀·담당 장소를 불러오는 중…
+        </p>
+      ) : (
+        <>
+          <div>
+            <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--muted-foreground)]">
+              팀
+            </span>
+            <p className="font-mono text-lg font-bold tracking-tight text-[var(--primary)] sm:text-xl">
+              {teamName?.trim() || "—"}
+            </p>
+          </div>
+          <div className="border-t border-[var(--play-border-cool)] pt-2">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--muted-foreground)]">
+              담당 장소
+            </span>
+            <p className="mt-0.5 break-words text-sm font-semibold leading-snug text-[var(--foreground)] sm:text-[0.95rem]">
+              {placeName?.trim() || "—"}
+            </p>
+          </div>
+        </>
+      )}
     </div>
   );
 }

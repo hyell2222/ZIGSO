@@ -38,7 +38,6 @@ import {
   getSessionRoomChannelName,
   type SessionPresenceRow,
 } from "@/lib/realtime/session-presence";
-import { clubRoleLabelKr } from "@/lib/club-role";
 import { hasSupabaseEnv, supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 
@@ -287,9 +286,6 @@ function TeamAssignmentDashboard({
                     >
                       <span className="min-w-0 flex-1 text-[var(--foreground)]">
                         {m.nickname ?? "참가자"}
-                        <span className="ml-1 text-[10px] text-[var(--muted-foreground)]">
-                          {clubRoleLabelKr(m.club_role)}
-                        </span>
                       </span>
                       <span className="shrink-0 text-[var(--accent)]">
                         {m.investigation_zone?.name ?? "—"}
@@ -476,9 +472,6 @@ function TeamReportDashboard({
                         <div className="flex items-center justify-between gap-2">
                           <span className="min-w-0 flex-1 text-[var(--foreground)]">
                             {m.nickname ?? "참가자"}
-                            <span className="ml-1 text-[10px] text-[var(--muted-foreground)]">
-                              {clubRoleLabelKr(m.club_role)}
-                            </span>
                           </span>
                           <span
                             className={`shrink-0 text-[10px] font-semibold uppercase tracking-wide ${
