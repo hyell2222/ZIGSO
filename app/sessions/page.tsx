@@ -949,7 +949,7 @@ function SessionHostContent() {
         {phase === "waiting" ? (
           <section className="rounded-lg border border-[var(--border)] bg-[var(--card-bg)] p-3 shadow-[var(--elevation-sm)] md:p-4">
             <p className="mb-2 text-[11px] font-medium text-[var(--muted-foreground)] md:mb-2.5 md:text-xs">
-              입장한 학생
+              대기 학생
             </p>
             {onlinePlayers.length === 0 ? (
               <p className="py-2 text-center text-xs text-[var(--muted-foreground)]">아직 없음</p>

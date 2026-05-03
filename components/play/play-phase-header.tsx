@@ -37,7 +37,7 @@ export function PlayPhaseHeader({
         className,
       )}
     >
-      <div className="flex min-w-0 items-start gap-3 md:gap-4">
+      <div className="flex min-w-0 flex-1 items-start gap-3 md:gap-4">
         <span
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--play-chip-cool)] text-[var(--primary)] shadow-sm ring-1 ring-[color-mix(in_srgb,var(--primary)_22%,transparent)] md:h-11 md:w-11"
           aria-hidden
@@ -56,7 +56,11 @@ export function PlayPhaseHeader({
           </p>
         </div>
       </div>
-      {rightSlot ? <div className="shrink-0 self-start md:self-center">{rightSlot}</div> : null}
+      {rightSlot ? (
+        <div className="flex w-full min-w-0 justify-end self-start pt-0.5 md:w-auto md:shrink-0 md:self-center md:pl-4 md:pt-0">
+          <div className="w-fit max-w-full">{rightSlot}</div>
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -579,7 +579,7 @@ function PlaySessionShell({
               <PlayPhaseHeader
                 phase={1}
                 title="사건 파악"
-                description="헤더에서 팀과 담당 조사 장소를 확인한 뒤, 같은 팀끼리 모여 앉아 사건 파일을 확인하세요."
+                description="우측에서 팀과 담당 조사 장소를 확인한 뒤, 같은 팀끼리 모여 앉아 사건 파일을 확인하세요."
                 rightSlot={
                   <PlayHeaderTeamPlace
                     teamName={teamName}
@@ -597,7 +597,6 @@ function PlaySessionShell({
                 <LoadingState
                   variant="section"
                   tone="play"
-                  label="팀·조사 장소 배정을 불러오는 중…"
                   className="min-h-0 flex-1 py-8"
                 />
               ) : (
@@ -743,15 +742,17 @@ function computeTeamMajority(reports: ReadonlyArray<{ suspect_id: string }>) {
 
 const WAITING_LOBBY: Record<
   "session_loading" | "waiting",
-  { title: string; body: string }
+  { title: string; body1: string; body2: string | null }
 > = {
   session_loading: {
     title: "사건 정보를 불러오는 중",
-    body: "잠시만 기다려 주세요.",
+    body1: "잠시만 기다려 주세요.",
+    body2: null,
   },
   waiting: {
     title: "선생님이 시작할 때까지 대기",
-    body: "팀과 조사 장소가 자동 배정됩니다. 배정이 완료되면 같은 팀끼리 모여 앉아주세요.",
+    body1: "팀과 조사 장소가 자동 배정됩니다.",
+    body2: "배정이 완료되면 같은 팀끼리 모여 앉아주세요.",
   },
 };
 
@@ -795,7 +796,8 @@ function WaitingLobbyBlock({
           · {nickname}
         </p>
         <p className="text-xs leading-relaxed text-[color-mix(in_srgb,var(--entry-parchment)_40%,var(--entry-parchment-muted))]">
-          {copy.body}
+          <span className="block">{copy.body1}</span>
+          {copy.body2 ? <span className="block">{copy.body2}</span> : null}
         </p>
       </div>
     </div>
@@ -850,34 +852,43 @@ function PlayHeaderTeamPlace({
   pending?: boolean;
   className?: string;
 }) {
+  const team = teamName?.trim() || "—";
+  const place = placeName?.trim() || "—";
+
   return (
     <div
       className={cn(
-        "flex max-w-[min(100%,18rem)] flex-col gap-2 rounded-lg border border-[var(--border)] bg-[var(--card-bg)] px-3 py-2.5 text-[var(--foreground)] sm:max-w-xs sm:px-4 sm:py-3",
-        "shadow-[var(--elevation-sm)] motion-safe:animate-[playRevealUp_0.5s_cubic-bezier(0.22,1,0.36,1)_both]",
+        playSurfaceCool,
+        "inline-flex w-fit min-w-0 max-w-full shrink-0 flex-row items-stretch px-3 py-2.5",
+        "motion-safe:animate-[playRevealUp_0.48s_cubic-bezier(0.22,1,0.36,1)_both]",
         className,
       )}
     >
       {pending ? (
-        <p className="text-center text-xs leading-snug text-[var(--muted-foreground)] sm:text-sm">
-          팀·담당 장소를 불러오는 중…
-        </p>
+        <div className="flex items-center gap-2 text-sm font-medium text-[var(--muted-foreground)]">
+          <Loader2 className="h-4 w-4 shrink-0 animate-spin opacity-90" aria-hidden />
+          불러오는 중…
+        </div>
       ) : (
         <>
-          <div>
-            <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--muted-foreground)]">
+          <div className="flex min-w-0 max-w-[6.5rem] shrink-0 flex-col justify-center sm:max-w-[7.5rem]">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--muted-foreground)]">
               팀
-            </span>
-            <p className="font-mono text-lg font-bold tracking-tight text-[var(--primary)] sm:text-xl">
-              {teamName?.trim() || "—"}
+            </p>
+            <p className="mt-1 truncate font-mono text-base font-semibold tabular-nums text-[var(--primary)]">
+              {team}
             </p>
           </div>
-          <div className="border-t border-[var(--play-border-cool)] pt-2">
-            <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--muted-foreground)]">
+          <div
+            className="mx-2.5 w-px shrink-0 self-stretch bg-[var(--play-border-cool)] sm:mx-3"
+            aria-hidden
+          />
+          <div className="flex min-w-0 max-w-[min(100%,14rem)] flex-1 flex-col justify-center sm:max-w-[16rem]">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--muted-foreground)]">
               담당 장소
-            </span>
-            <p className="mt-0.5 break-words text-sm font-semibold leading-snug text-[var(--foreground)] sm:text-[0.95rem]">
-              {placeName?.trim() || "—"}
+            </p>
+            <p className="mt-1 line-clamp-2 break-words text-base font-semibold leading-snug text-[var(--primary)]">
+              {place}
             </p>
           </div>
         </>
