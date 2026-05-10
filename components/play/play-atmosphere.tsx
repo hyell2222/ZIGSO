@@ -7,6 +7,12 @@ import { cn } from "@/lib/utils";
 type PlayAtmosphereProps = {
   children: ReactNode;
   className?: string;
+  /**
+   * 화면 점유 방식.
+   * - `viewport`(기본): 학생 본 화면 — 화면 전체 높이를 차지.
+   * - `contained`: 부모 컨테이너 높이만 채움 — 시뮬레이션 등 임베드 용도.
+   */
+  variant?: "viewport" | "contained";
 };
 
 /** 학생 play 본페이지 바깥 레이어 — 짙은 그라데이션 배경 */
@@ -64,17 +70,35 @@ export const playPhaseHeaderChromeInner =
 export const playLoaderRegion =
   "flex w-full min-h-0 flex-1 flex-col items-center justify-center px-4 py-10";
 
-export function PlayAtmosphere({ children, className }: PlayAtmosphereProps) {
+export function PlayAtmosphere({
+  children,
+  className,
+  variant = "viewport",
+}: PlayAtmosphereProps) {
+  const isContained = variant === "contained";
   return (
     <div
-      className={cn("play-shell relative isolate min-h-dvh font-sans", className)}
+      className={cn(
+        "play-shell relative isolate font-sans",
+        isContained ? "h-full min-h-0 w-full overflow-hidden" : "min-h-dvh",
+        className,
+      )}
       style={PLAY_PAGE_BLACK_BG}
     >
       <div
         className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[color-mix(in_srgb,black_25%,transparent)] to-transparent"
         aria-hidden
       />
-      <div className="relative z-10 min-h-dvh pb-[env(safe-area-inset-bottom,0px)]">{children}</div>
+      <div
+        className={cn(
+          "relative z-10",
+          isContained
+            ? "flex h-full min-h-0 flex-col overflow-y-auto"
+            : "min-h-dvh pb-[env(safe-area-inset-bottom,0px)]",
+        )}
+      >
+        {children}
+      </div>
     </div>
   );
 }

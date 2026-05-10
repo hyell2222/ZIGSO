@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, PlusIcon } from "lucide-react";
+import { FlaskConical, Loader2, PlusIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -79,6 +79,22 @@ export default function CasesPage() {
     startGameMutation.mutate({ caseRow, newTab });
   };
 
+  const handleSandbox = (caseRow: CaseListRow) => {
+    if (typeof window === "undefined") return;
+    const url = ROUTES.casesSandbox(caseRow.id);
+    /**
+     * 학생/교사 화면을 함께 시연하는 시뮬레이션은 항상 새 탭에서 띄웁니다.
+     * (popup window 가 차단당하면 noopener 새 탭으로 폴백)
+     */
+    const features =
+      "noopener,noreferrer," +
+      "width=1480,height=900,menubar=no,toolbar=no,location=no,status=no";
+    const popup = window.open(url, `mc-sandbox-${caseRow.id}`, features);
+    if (!popup) {
+      window.open(url, "_blank", "noopener,noreferrer");
+    }
+  };
+
   const handleEdit = (row: CaseListRow) => {
     router.push(ROUTES.casesEdit(row.id));
   };
@@ -150,24 +166,37 @@ export default function CasesPage() {
                           ? row.locations[0].count
                           : "—"}명
                       </p>
-                      <Button
-                        type="button"
-                        onClick={() => handleStartGame(row)}
-                        disabled={
-                          startGameMutation.isPending ||
-                          isDeleting ||
-                          !sessionQuery.data?.user.id
-                        }
-                      >
-                        {startGameMutation.isPending ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 shrink-0 animate-spin text-[var(--primary)]" aria-hidden />
-                            플레이 시작하는 중…
-                          </>
-                        ) : (
-                          "플레이 시작"
-                        )}
-                      </Button>
+                      <div className="flex flex-col gap-2">
+                        <Button
+                          type="button"
+                          onClick={() => handleStartGame(row)}
+                          disabled={
+                            startGameMutation.isPending ||
+                            isDeleting ||
+                            !sessionQuery.data?.user.id
+                          }
+                        >
+                          {startGameMutation.isPending ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 shrink-0 animate-spin text-[var(--primary)]" aria-hidden />
+                              플레이 시작하는 중…
+                            </>
+                          ) : (
+                            "플레이 시작"
+                          )}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          onClick={() => handleSandbox(row)}
+                          disabled={isDeleting}
+                          className="gap-2"
+                          title="DB에 데이터를 남기지 않고 사건 흐름을 혼자 시연·검수합니다."
+                        >
+                          <FlaskConical className="h-4 w-4 shrink-0 text-[var(--accent)]" aria-hidden />
+                          시뮬레이션 모드
+                        </Button>
+                      </div>
                     </div>
                   );
                 })}

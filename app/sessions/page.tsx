@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Timer } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   getHostSessionDetails,
@@ -11,13 +11,8 @@ import {
   listSessionPlayers,
   listSessionTeams,
   setPlayersOnline,
-  type PlayerReportRow,
-  type SessionDetailsRow,
-  type SessionPlayerRow,
-  type TeamRow,
 } from "@/lib/api/play";
-import { isCulpritCorrect } from "@/lib/report-compare";
-import { findSuspectName, parseSuspectRosterFromCase } from "@/lib/suspects";
+import { parseSuspectRosterFromCase } from "@/lib/suspects";
 import {
   advanceSessionPhase,
   beginHostingSession,
@@ -28,10 +23,19 @@ import {
 import { useRequireTeacherSession } from "@/lib/auth/use-require-teacher-session";
 import { groupPlayersByTeam } from "@/lib/teacher/group-players-by-team";
 import { PlayJoinQr } from "@/components/teacher/play-join-qr";
+import { PhaseGuideCard } from "@/components/teacher/phase-guide-card";
+import { PhaseTimerContent } from "@/components/teacher/phase-timer-content";
+import {
+  TeamAssignmentDashboard,
+  type TeamAssignmentGroup,
+} from "@/components/teacher/team-assignment-dashboard";
+import {
+  TeamReportDashboard,
+  type TeamReportGroup,
+} from "@/components/teacher/team-report-dashboard";
 import { Button } from "@/components/ui/button";
 import { LoadingState } from "@/components/ui/loading-state";
 import { Modal } from "@/components/ui/modal";
-import { Input } from "@/components/ui/input";
 import { ROUTES } from "@/lib/routes";
 import {
   flattenPresenceState,
@@ -39,475 +43,8 @@ import {
   type SessionPresenceRow,
 } from "@/lib/realtime/session-presence";
 import { hasSupabaseEnv, supabase } from "@/lib/supabase";
+import { isTimedPhase, type TimedPhase } from "@/lib/teacher/phase-guide";
 import { cn } from "@/lib/utils";
-
-type TimedPhase = Exclude<CasePhase, "waiting" | "session_end">;
-
-type StepDef = {
-  key: TimedPhase;
-  number: number;
-  label: string;
-};
-
-const PHASES: StepDef[] = [
-  { key: "briefing", number: 1, label: "사건 파악" },
-  { key: "investigation", number: 2, label: "단서 수집" },
-  { key: "final_report", number: 3, label: "범인 지목" },
-];
-
-type PhaseGuide = {
-  title: string;
-  summary: string;
-};
-
-const PHASE_GUIDES: Record<TimedPhase, PhaseGuide> = {
-  briefing: {
-    title: "사건 파악",
-    summary: "팀별로 모여 사건 파일과 용의자 프로필을 확인합니다.",
-  },
-  investigation: {
-    title: "단서 수집",
-    summary: "배정 장소를 탐색하고 단서를 수집합니다.",
-  },
-  final_report: {
-    title: "범인 지목",
-    summary: "팀 토의 후 범인을 지목합니다.",
-  },
-};
-
-const PHASE_MINUTES: Record<TimedPhase, number> = {
-  briefing: 10,
-  investigation: 12,
-  final_report: 10,
-};
-
-function isTimedPhase(phase: CasePhase): phase is TimedPhase {
-  return phase !== "waiting" && phase !== "session_end";
-}
-
-function formatHhMmSs(totalSeconds: number) {
-  const s = Math.max(0, Math.floor(totalSeconds));
-  const h = Math.floor(s / 3600);
-  const m = Math.floor((s % 3600) / 60);
-  const r = s % 60;
-  return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}:${r.toString().padStart(2, "0")}`;
-}
-
-function formatTimerDisplay(totalSeconds: number) {
-  const s = Math.max(0, Math.floor(totalSeconds));
-  const h = Math.floor(s / 3600);
-  const m = Math.floor((s % 3600) / 60);
-  const r = s % 60;
-  if (h === 0) {
-    return `${m.toString().padStart(2, "0")}:${r.toString().padStart(2, "0")}`;
-  }
-  return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}:${r.toString().padStart(2, "0")}`;
-}
-
-function timerDigitsToSeconds(digits: string) {
-  const padded = digits.replace(/\D/g, "").slice(-6).padStart(6, "0");
-  const hours = Number(padded.slice(0, 2));
-  const minutes = Number(padded.slice(2, 4));
-  const seconds = Number(padded.slice(4, 6));
-  return hours * 3600 + minutes * 60 + seconds;
-}
-
-function formatTimerDigits(digits: string) {
-  const padded = digits.replace(/\D/g, "").slice(-6).padStart(6, "0");
-  return `${padded.slice(0, 2)}:${padded.slice(2, 4)}:${padded.slice(4, 6)}`;
-}
-
-function secondsToTimerDigits(totalSeconds: number) {
-  const formatted = formatHhMmSs(totalSeconds).replace(/:/g, "");
-  return formatted.replace(/^0+/, "");
-}
-
-function PhaseTimerContent({ phase }: { phase: TimedPhase }) {
-  const defaultMinutes = PHASE_MINUTES[phase];
-  const [timerRemainingSec, setTimerRemainingSec] = useState<number>(defaultMinutes * 60);
-  const [resetBaselineSec, setResetBaselineSec] = useState<number>(defaultMinutes * 60);
-  const [isTimerRunning, setIsTimerRunning] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [timerInputDigits, setTimerInputDigits] = useState(secondsToTimerDigits(defaultMinutes * 60));
-  const timerInputRef = useRef<HTMLInputElement | null>(null);
-
-  useEffect(() => {
-    if (!isTimerRunning) return;
-    const id = window.setInterval(() => {
-      setTimerRemainingSec((prev) => {
-        if (prev <= 1) {
-          setIsTimerRunning(false);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    return () => window.clearInterval(id);
-  }, [isTimerRunning]);
-
-  useEffect(() => {
-    if (!isEditing || !timerInputRef.current) return;
-    const length = timerInputRef.current.value.length;
-    timerInputRef.current.setSelectionRange(length, length);
-  }, [isEditing, timerInputDigits]);
-
-  const commitTimerValue = () => {
-    const nextSeconds = timerDigitsToSeconds(timerInputDigits);
-    setTimerRemainingSec(nextSeconds);
-    setResetBaselineSec(nextSeconds);
-    setIsTimerRunning(false);
-    setTimerInputDigits(secondsToTimerDigits(nextSeconds));
-    setIsEditing(false);
-  };
-
-  return (
-    <div className="flex flex-col items-center gap-4">
-      {isEditing ? (
-        <Input
-          ref={timerInputRef}
-          autoFocus
-          value={formatTimerDigits(timerInputDigits)}
-          inputMode="numeric"
-          onChange={(e) => {
-            const digits = e.target.value.replace(/\D/g, "").slice(-6);
-            setTimerInputDigits(digits);
-          }}
-          onBlur={commitTimerValue}
-          onKeyDown={(e) => {
-            if (/^\d$/.test(e.key)) {
-              e.preventDefault();
-              setTimerInputDigits((prev) => (prev + e.key).slice(-6));
-              return;
-            }
-
-            if (e.key === "Backspace") {
-              e.preventDefault();
-              setTimerInputDigits((prev) => prev.slice(0, -1));
-              return;
-            }
-
-            if (e.key === "Enter") {
-              e.preventDefault();
-              commitTimerValue();
-              return;
-            }
-
-            if (e.key === "Escape") {
-              e.preventDefault();
-              setTimerInputDigits(secondsToTimerDigits(timerRemainingSec));
-              setIsEditing(false);
-              return;
-            }
-
-            if (e.key === "Tab" || e.key.startsWith("Arrow")) return;
-
-            e.preventDefault();
-          }}
-          className="h-20 !w-[9ch] border-none px-0 text-center font-mono text-5xl tabular-nums text-[var(--muted-foreground)] sm:h-24 sm:text-6xl md:text-7xl"
-        />
-      ) : (
-        <Button
-          type="button"
-          variant="ghost"
-          onClick={() => {
-            setTimerInputDigits("");
-            setIsEditing(true);
-          }}
-          className="h-20 text-center font-mono text-5xl tabular-nums text-[var(--accent)] transition hover:text-[var(--highlight)] sm:h-24 sm:text-6xl md:text-7xl"
-        >
-          {formatTimerDisplay(timerRemainingSec)}
-        </Button>
-      )}
-      <div className="flex flex-wrap items-center justify-center gap-2">
-        <Button type="button" size="sm" onClick={() => setIsTimerRunning((v) => !v)}>
-          {isTimerRunning ? "일시정지" : "시작"}
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => {
-            setTimerRemainingSec(resetBaselineSec);
-            setIsTimerRunning(false);
-            setTimerInputDigits(secondsToTimerDigits(resetBaselineSec));
-            setIsEditing(false);
-          }}
-        >
-          초기화
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-function TeamAssignmentDashboard({
-  players,
-  teams,
-  loading,
-}: {
-  players: SessionPlayerRow[];
-  teams: TeamRow[];
-  loading: boolean;
-}) {
-  const groups = useMemo(() => groupPlayersByTeam(players, teams), [players, teams]);
-
-  return (
-    <section className="space-y-3 rounded-lg border border-[var(--border)] bg-[var(--card-bg)] p-4 shadow-[var(--elevation-sm)]">
-      <header className="flex flex-wrap items-center justify-between gap-2">
-        <div className="min-w-0">
-          <h2 className="text-sm font-semibold text-[var(--foreground)]">배정 결과</h2>
-        </div>
-      </header>
-      {loading ? (
-        <LoadingState variant="section" label="참가자·팀 정보를 불러오는 중…" />
-      ) : groups.length === 0 ? (
-        <p className="text-sm text-[var(--muted-foreground)]">배정된 팀이 없습니다.</p>
-      ) : (
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:gap-3 lg:grid-cols-3">
-          {groups.map((g) => (
-            <div
-              key={g.team.id}
-              className="rounded-md border border-[var(--border)] bg-[var(--surface)] p-2.5 shadow-sm"
-            >
-              <div className="flex items-baseline justify-between gap-2">
-                <p className="font-mono text-lg font-semibold text-[var(--accent)]">{g.team.name ?? "—"}</p>
-                <span className="text-[10px] text-[var(--muted-foreground)]">{g.members.length}명</span>
-              </div>
-              <ul className="mt-1.5 space-y-1">
-                {g.members.length === 0 ? (
-                  <li className="rounded border border-dashed border-[var(--border)] px-2 py-1.5 text-xs text-[var(--muted-foreground)]">
-                    아직 배정된 학생 없음
-                  </li>
-                ) : (
-                  g.members.map((m) => (
-                    <li
-                      key={m.id}
-                      className="flex items-center justify-between gap-2 rounded border border-[var(--border)] bg-[var(--tint-accent-weak)] px-2 py-1 text-[11px]"
-                    >
-                      <span className="min-w-0 flex-1 text-[var(--foreground)]">
-                        {m.nickname ?? "참가자"}
-                      </span>
-                      <span className="shrink-0 text-[var(--accent)]">
-                        {m.investigation_zone?.name ?? "—"}
-                      </span>
-                    </li>
-                  ))
-                )}
-              </ul>
-            </div>
-          ))}
-        </div>
-      )}
-    </section>
-  );
-}
-
-function PhaseGuideCard({ phase, meta }: { phase: CasePhase; meta?: ReactNode }) {
-  if (phase === "waiting" || phase === "session_end") {
-    return null;
-  }
-
-  const guide = PHASE_GUIDES[phase];
-  const stepNumber = PHASES.find((s) => s.key === phase)?.number ?? 1;
-
-  return (
-    <div className="space-y-2 px-2 py-1">
-      {meta ? <div className="mt-1">{meta}</div> : null}
-      <div className="flex items-center gap-2.5">
-        <span
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[var(--primary)] bg-[var(--primary)] text-[12px] font-semibold tabular-nums text-[var(--on-primary)] shadow-sm md:h-8 md:w-8 md:text-sm"
-          aria-hidden
-        >
-          {stepNumber}
-        </span>
-        <h2 className="text-lg font-bold leading-tight text-[var(--foreground)] sm:text-xl md:text-2xl md:leading-snug">
-          {guide.title}
-        </h2>
-      </div>
-      <p className="text-xs leading-snug text-[var(--muted-foreground)] md:text-sm md:leading-relaxed">
-        {guide.summary}
-      </p>
-    </div>
-  );
-}
-
-/**
- * 팀 다수결: 가장 많이 지목된 용의자. 동률(의견 불일치)이면 tied=true.
- */
-function computeTeamMajority(reports: ReadonlyArray<{ suspect_id: string }>) {
-  if (reports.length === 0) {
-    return { suspectId: null as string | null, tied: false, count: 0 };
-  }
-  const counts = new Map<string, number>();
-  for (const r of reports) {
-    const id = r.suspect_id?.trim();
-    if (!id) continue;
-    counts.set(id, (counts.get(id) ?? 0) + 1);
-  }
-  let bestId: string | null = null;
-  let bestCount = 0;
-  let tied = false;
-  for (const [id, count] of counts) {
-    if (count > bestCount) {
-      bestId = id;
-      bestCount = count;
-      tied = false;
-    } else if (count === bestCount) {
-      tied = true;
-    }
-  }
-  return { suspectId: bestId, tied, count: bestCount };
-}
-
-function TeamReportDashboard({
-  reportKey,
-  players,
-  teams,
-  reports,
-  loading,
-}: {
-  reportKey: SessionDetailsRow["cases"];
-  players: SessionPlayerRow[];
-  teams: TeamRow[];
-  reports: PlayerReportRow[];
-  loading: boolean;
-}) {
-  const groups = useMemo(() => groupPlayersByTeam(players, teams), [players, teams]);
-  const reportByPlayerId = useMemo(
-    () => new Map(reports.map((r) => [r.player_id, r])),
-    [reports],
-  );
-  const submittedCount = reports.length;
-  const totalPlayers = players.length;
-  const answerRoster = useMemo(
-    () => parseSuspectRosterFromCase(reportKey?.suspect_roster),
-    [reportKey?.suspect_roster],
-  );
-  const answerId = reportKey?.answer_suspect_id;
-  const trueName = findSuspectName(answerRoster, answerId);
-  const hasAnswer = Boolean(answerId?.trim() && trueName);
-
-  return (
-    <section className="space-y-3 rounded-lg border border-[var(--border)] bg-[var(--card-bg)] p-4 shadow-[var(--elevation-sm)]">
-      <header className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-sm font-semibold text-[var(--foreground)]">범인 지목</h2>
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-[var(--muted-foreground)]">
-          <span className="font-medium text-[var(--foreground)]">
-            제출 {submittedCount}/{totalPlayers}
-          </span>
-        </div>
-      </header>
-      {loading ? (
-        <LoadingState variant="section" label="참가자·보고서를 불러오는 중…" />
-      ) : groups.length === 0 ? (
-        <p className="text-sm text-[var(--muted-foreground)]">제출한 학생이 없습니다.</p>
-      ) : (
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:gap-3 lg:grid-cols-3">
-          {groups.map((g) => {
-            const teamReports = g.members
-              .map((m) => reportByPlayerId.get(m.id))
-              .filter((r): r is PlayerReportRow => Boolean(r));
-            const teamSubmitted = teamReports.length;
-            const majority = computeTeamMajority(teamReports);
-            const majorityName = findSuspectName(answerRoster, majority.suspectId);
-            const majorityCorrect =
-              !majority.tied && isCulpritCorrect(answerId, majority.suspectId);
-            const allSubmitted = teamSubmitted === g.members.length && g.members.length > 0;
-            return (
-              <div
-                key={g.team.id}
-                className={`rounded-md border p-2.5 ${
-                  allSubmitted
-                    ? "border-[var(--accent)] bg-[var(--tint-accent-medium)]"
-                    : "border-[var(--border)] bg-[var(--surface)]"
-                }`}
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <p className="font-mono text-lg font-semibold text-[var(--accent)]">{g.team.name ?? "—"}</p>
-                  <span
-                    className={`rounded px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.12em] ${
-                      allSubmitted
-                        ? "bg-[var(--accent)] text-[var(--background)]"
-                        : "border border-[var(--border)] text-[var(--muted-foreground)]"
-                    }`}
-                  >
-                    제출 {teamSubmitted}/{g.members.length}
-                  </span>
-                </div>
-                {teamReports.length > 0 && hasAnswer ? (
-                  <p
-                    className={
-                      "mt-2 text-[11px] font-semibold " +
-                      (majority.tied
-                        ? "text-[var(--muted-foreground)]"
-                        : majorityCorrect
-                          ? "text-[var(--primary)]"
-                          : "text-[var(--danger)]")
-                    }
-                  >
-                    팀 다수결:{" "}
-                    {majority.tied
-                      ? "의견 불일치"
-                      : `${majorityName ?? majority.suspectId ?? "—"} (${majorityCorrect ? "검거 성공" : "검거 실패"})`}
-                  </p>
-                ) : null}
-                <ul className="mt-2 space-y-1">
-                  {g.members.map((m) => {
-                    const r = reportByPlayerId.get(m.id);
-                    const submitted = Boolean(r);
-                    const memberSuspectName = findSuspectName(answerRoster, r?.suspect_id);
-                    const memberCorrect =
-                      submitted && hasAnswer && r
-                        ? isCulpritCorrect(answerId, r.suspect_id)
-                        : null;
-                    return (
-                      <li
-                        key={m.id}
-                        className={`rounded border px-2 py-1 text-[11px] ${
-                          submitted
-                            ? "border-[var(--accent)]/40 bg-[var(--tint-accent-weak)]"
-                            : "border-[var(--border)] bg-[var(--surface)]"
-                        }`}
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="min-w-0 flex-1 text-[var(--foreground)]">
-                            {m.nickname ?? "참가자"}
-                          </span>
-                          <span
-                            className={`shrink-0 text-[10px] font-semibold uppercase tracking-wide ${
-                              submitted ? "text-[var(--accent)]" : "text-[var(--muted-foreground)]"
-                            }`}
-                          >
-                            {submitted ? "제출" : "대기"}
-                          </span>
-                        </div>
-                        {submitted ? (
-                          <p
-                            className={
-                              "mt-1 text-[11px] " +
-                              (hasAnswer
-                                ? memberCorrect
-                                  ? "text-[var(--primary)]"
-                                  : "text-[var(--danger)]"
-                                : "text-[var(--foreground)]")
-                            }
-                          >
-                            지목: {memberSuspectName ?? r?.suspect_id ?? "—"}
-                            {hasAnswer ? ` · ${memberCorrect ? "맞음" : "틀림"}` : ""}
-                          </p>
-                        ) : null}
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </section>
-  );
-}
 
 function SessionHostContent() {
   const router = useRouter();
@@ -758,7 +295,62 @@ function SessionHostContent() {
     [playersQuery.data],
   );
 
+  /** 대기 칩: DB `created_at` 기준 최근 참가가 앞 (같은 시각이면 닉네임) */
+  const waitingLobbyPlayers = useMemo(
+    () =>
+      [...onlinePlayers].sort((a, b) => {
+        const ta = Date.parse(a.created_at);
+        const tb = Date.parse(b.created_at);
+        const na = Number.isNaN(ta) ? 0 : ta;
+        const nb = Number.isNaN(tb) ? 0 : tb;
+        if (na !== nb) return nb - na;
+        return (a.nickname ?? "").localeCompare(b.nickname ?? "", "ko");
+      }),
+    [onlinePlayers],
+  );
+
   const playercount = onlinePlayers.length;
+
+  const teamRows = useMemo(() => teamsQuery.data ?? [], [teamsQuery.data]);
+  const reportRows = useMemo(
+    () => reportsQuery.data ?? [],
+    [reportsQuery.data],
+  );
+
+  const assignmentGroups = useMemo<TeamAssignmentGroup[]>(() => {
+    return groupPlayersByTeam(onlinePlayers, teamRows).map((g) => ({
+      team: { id: g.team.id, name: g.team.name },
+      members: g.members.map((m) => ({
+        id: m.id,
+        nickname: m.nickname,
+        zoneName: m.investigation_zone?.name ?? null,
+      })),
+    }));
+  }, [onlinePlayers, teamRows]);
+
+  const reportByPlayerId = useMemo(
+    () => new Map(reportRows.map((r) => [r.player_id, r])),
+    [reportRows],
+  );
+
+  const reportGroups = useMemo<TeamReportGroup[]>(() => {
+    return groupPlayersByTeam(onlinePlayers, teamRows).map((g) => ({
+      team: { id: g.team.id, name: g.team.name },
+      members: g.members.map((m) => {
+        const r = reportByPlayerId.get(m.id);
+        return {
+          id: m.id,
+          nickname: m.nickname,
+          report: r ? { suspectId: r.suspect_id } : null,
+        };
+      }),
+    }));
+  }, [onlinePlayers, teamRows, reportByPlayerId]);
+
+  const reportRoster = useMemo(
+    () => parseSuspectRosterFromCase(sessionQuery.data?.cases?.suspect_roster),
+    [sessionQuery.data?.cases?.suspect_roster],
+  );
 
   const phase = (sessionQuery.data?.phase as CasePhase) ?? "waiting";
   const nextPhase = getNextPhase(phase);
@@ -951,11 +543,11 @@ function SessionHostContent() {
             <p className="mb-2 text-[11px] font-medium text-[var(--muted-foreground)] md:mb-2.5 md:text-xs">
               대기 학생
             </p>
-            {onlinePlayers.length === 0 ? (
+            {waitingLobbyPlayers.length === 0 ? (
               <p className="py-2 text-center text-xs text-[var(--muted-foreground)]">아직 없음</p>
             ) : (
               <ul className="flex flex-wrap gap-1.5">
-                {onlinePlayers.map((p) => (
+                {waitingLobbyPlayers.map((p) => (
                   <li
                     key={p.id}
                     className="inline-flex min-h-9 touch-manipulation items-center gap-1.5 rounded-md border border-[var(--border)] bg-[var(--tint-accent-weak)] px-2 py-1 text-xs md:px-2.5 md:text-sm"
@@ -971,19 +563,19 @@ function SessionHostContent() {
 
         {phase === "briefing" || phase === "investigation" ? (
           <TeamAssignmentDashboard
-            players={onlinePlayers}
-            teams={teamsQuery.data ?? []}
+            groups={assignmentGroups}
             loading={playersQuery.isLoading || teamsQuery.isLoading}
           />
         ) : null}
 
         {phase === "final_report" || phase === "session_end" ? (
           <TeamReportDashboard
-            reportKey={row.cases}
-            players={onlinePlayers}
-            teams={teamsQuery.data ?? []}
-            reports={reportsQuery.data ?? []}
+            groups={reportGroups}
             loading={playersQuery.isLoading || teamsQuery.isLoading || reportsQuery.isLoading}
+            roster={reportRoster}
+            answerSuspectId={row.cases?.answer_suspect_id ?? null}
+            totalPlayers={onlinePlayers.length}
+            submittedCount={reportRows.length}
           />
         ) : null}
       </main>

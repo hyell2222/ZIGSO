@@ -12,7 +12,7 @@ export const buttonVariants = cva(
         default:
           "cursor-pointer bg-[var(--primary)] text-[var(--on-primary)] hover:brightness-95",
         secondary:
-          "cursor-pointer border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] hover:bg-[var(--surface)]",
+          "cursor-pointer border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] hover:border-[color-mix(in_srgb,var(--mystery)_55%,var(--border))] hover:bg-[var(--tint-accent-medium)]",
         outline:
           "cursor-pointer border border-[color-mix(in_srgb,var(--mystery)_32%,var(--border))] bg-[color-mix(in_srgb,var(--surface)_58%,var(--background))] text-[var(--mystery)] shadow-[0_4px_16px_color-mix(in_srgb,var(--mystery)_4%,transparent)] hover:border-[color-mix(in_srgb,var(--primary)_28%,var(--border))] hover:bg-[color-mix(in_srgb,var(--surface)_88%,var(--background))] hover:text-[color-mix(in_srgb,var(--mystery)_88%,var(--primary))]",
         ghost:

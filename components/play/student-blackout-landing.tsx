@@ -444,7 +444,7 @@ export function StudentBlackoutLanding() {
             className="h-11 w-full text-sm"
             size="lg"
           >
-            {busy ? "참가 코드 확인 중…" : "참가 코드 입력"}
+            {busy ? "참가 정보 확인 중…" : "참가하기"}
           </Button>
         </form>
         {error ? <p className="text-center text-sm font-medium text-[var(--danger)]">{error}</p> : null}

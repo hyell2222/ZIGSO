@@ -21,8 +21,10 @@ import {
   playSurfaceCool,
   playSurfacePanel,
 } from "@/components/play/play-atmosphere";
+import { PlayHeaderTeamPlace } from "@/components/play/play-header-team-place";
 import { SessionInfoLayout } from "@/components/play/session-info-layout";
 import { StudentBlackoutLanding } from "@/components/play/student-blackout-landing";
+import { WaitingLobbyBlock } from "@/components/play/waiting-lobby-block";
 import { Button } from "@/components/ui/button";
 import { LoadingState } from "@/components/ui/loading-state";
 import { Modal } from "@/components/ui/modal";
@@ -600,7 +602,10 @@ function PlaySessionShell({
                   className="min-h-0 flex-1 py-8"
                 />
               ) : (
-                <SessionInfoLayout sessionQuery={sessionQuery} />
+                <SessionInfoLayout
+                  loading={sessionQuery.isLoading}
+                  caseData={sessionQuery.data?.cases ?? null}
+                />
               )}
             </section>
           </main>
@@ -740,70 +745,6 @@ function computeTeamMajority(reports: ReadonlyArray<{ suspect_id: string }>) {
   return { suspectId: bestId, tied, count: bestCount };
 }
 
-const WAITING_LOBBY: Record<
-  "session_loading" | "waiting",
-  { title: string; body1: string; body2: string | null }
-> = {
-  session_loading: {
-    title: "사건 정보를 불러오는 중",
-    body1: "잠시만 기다려 주세요.",
-    body2: null,
-  },
-  waiting: {
-    title: "선생님이 시작할 때까지 대기",
-    body1: "팀과 조사 장소가 자동 배정됩니다.",
-    body2: "배정이 완료되면 같은 팀끼리 모여 앉아주세요.",
-  },
-};
-
-function WaitingLobbyBlock({
-  joinCode,
-  nickname,
-  caseTitle,
-  state,
-  className,
-}: {
-  joinCode: string;
-  nickname: string;
-  caseTitle: string | null;
-  state: keyof typeof WAITING_LOBBY;
-  className?: string;
-}) {
-  const copy = WAITING_LOBBY[state];
-  return (
-    <div
-      className={cn(
-        "relative flex max-w-md flex-col items-center gap-4 px-6 py-4 text-center",
-        className,
-      )}
-    >
-      <Loader2
-        className="h-10 w-10 shrink-0 animate-spin text-[var(--primary)]"
-        style={{
-          filter: "drop-shadow(0 0 10px color-mix(in srgb, var(--primary) 40%, transparent))",
-        }}
-        aria-hidden
-      />
-      <div className="w-full max-w-sm space-y-2">
-        <p className="text-base font-semibold tracking-tight text-[var(--entry-parchment)]">{copy.title}</p>
-        {caseTitle ? (
-          <p className="text-sm text-[color-mix(in_srgb,var(--entry-parchment)_72%,var(--entry-parchment-muted))]">
-            {caseTitle}
-          </p>
-        ) : null}
-        <p className="text-xs text-[color-mix(in_srgb,var(--entry-parchment)_68%,var(--entry-parchment-muted))]">
-          <span className="font-mono text-[color-mix(in_srgb,var(--on-primary)_75%,var(--primary))]">{joinCode}</span>{" "}
-          · {nickname}
-        </p>
-        <p className="text-xs leading-relaxed text-[color-mix(in_srgb,var(--entry-parchment)_40%,var(--entry-parchment-muted))]">
-          <span className="block">{copy.body1}</span>
-          {copy.body2 ? <span className="block">{copy.body2}</span> : null}
-        </p>
-      </div>
-    </div>
-  );
-}
-
 function ResumeModal({
   record,
   onContinue,
@@ -838,62 +779,6 @@ function ResumeModal({
         </Button>
       </div>
     </Modal>
-  );
-}
-
-function PlayHeaderTeamPlace({
-  teamName,
-  placeName,
-  pending,
-  className,
-}: {
-  teamName: string | null;
-  placeName: string | null;
-  pending?: boolean;
-  className?: string;
-}) {
-  const team = teamName?.trim() || "—";
-  const place = placeName?.trim() || "—";
-
-  return (
-    <div
-      className={cn(
-        playSurfaceCool,
-        "inline-flex w-fit min-w-0 max-w-full shrink-0 flex-row items-stretch px-3 py-2.5",
-        "motion-safe:animate-[playRevealUp_0.48s_cubic-bezier(0.22,1,0.36,1)_both]",
-        className,
-      )}
-    >
-      {pending ? (
-        <div className="flex items-center gap-2 text-sm font-medium text-[var(--muted-foreground)]">
-          <Loader2 className="h-4 w-4 shrink-0 animate-spin opacity-90" aria-hidden />
-          불러오는 중…
-        </div>
-      ) : (
-        <>
-          <div className="flex min-w-0 max-w-[6.5rem] shrink-0 flex-col justify-center sm:max-w-[7.5rem]">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--muted-foreground)]">
-              팀
-            </p>
-            <p className="mt-1 truncate font-mono text-base font-semibold tabular-nums text-[var(--primary)]">
-              {team}
-            </p>
-          </div>
-          <div
-            className="mx-2.5 w-px shrink-0 self-stretch bg-[var(--play-border-cool)] sm:mx-3"
-            aria-hidden
-          />
-          <div className="flex min-w-0 max-w-[min(100%,14rem)] flex-1 flex-col justify-center sm:max-w-[16rem]">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--muted-foreground)]">
-              담당 장소
-            </p>
-            <p className="mt-1 line-clamp-2 break-words text-base font-semibold leading-snug text-[var(--primary)]">
-              {place}
-            </p>
-          </div>
-        </>
-      )}
-    </div>
   );
 }
 

@@ -320,6 +320,11 @@ function buildReportLines(
     if (ta !== tb) return ta.localeCompare(tb, "ko");
     const za = (a.investigation_zone?.name ?? "").localeCompare(b.investigation_zone?.name ?? "", "ko");
     if (za !== 0) return za;
+    const ca = Date.parse(a.created_at);
+    const cb = Date.parse(b.created_at);
+    const na = Number.isNaN(ca) ? 0 : ca;
+    const nb = Number.isNaN(cb) ? 0 : cb;
+    if (na !== nb) return nb - na;
     return (a.nickname ?? "").localeCompare(b.nickname ?? "", "ko");
   });
 

@@ -921,10 +921,10 @@ export function InvestigationMap({
         </aside>
       </div>
       {selectedClue ? (
-        <div className="absolute inset-0 z-[120] flex items-center justify-center bg-[var(--overlay-scrim)] p-4 backdrop-blur-[2px] motion-safe:animate-[playRevealUp_0.28s_ease-out_both]">
+        <div className="absolute inset-0 z-[120] flex items-center justify-center bg-[var(--overlay-scrim)] p-4 backdrop-blur-[2px]">
           <div
             className={cn(
-              "w-full max-w-2xl rounded-md border shadow-xl motion-safe:animate-[playModalRise_0.48s_cubic-bezier(0.22,1,0.36,1)_both]",
+              "w-full max-w-2xl rounded-md border shadow-xl",
               isFull
                 ? "border-[var(--play-border-warm)] bg-[var(--play-paper)] shadow-[var(--play-shadow-lift)]"
                 : "border-[var(--border)] bg-[var(--card-bg)]",
@@ -965,16 +965,15 @@ export function InvestigationMap({
             </div>
             <div className="max-h-[65vh] space-y-4 overflow-y-auto px-4 py-4">
               {selectedClue.clues.length > 0 ? (
-                selectedClue.clues.map((clue, idx) => (
+                selectedClue.clues.map((clue) => (
                   <section
                     key={clue.id}
                     className={cn(
-                      "rounded-md border p-4 motion-safe:animate-[playRevealUp_0.45s_cubic-bezier(0.22,1,0.36,1)_both]",
+                      "rounded-md border p-4",
                       isFull
                         ? "border-[var(--play-border-cool)] bg-[var(--play-inset)]"
                         : "border-[var(--border)] bg-[var(--tint-accent-weak)]",
                     )}
-                    style={{ animationDelay: `${60 + idx * 40}ms` }}
                   >
                     {clue.content?.trim() ? (
                       <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-[var(--foreground)]">

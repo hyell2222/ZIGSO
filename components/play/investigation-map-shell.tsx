@@ -12,6 +12,7 @@ import {
 import { PlayPhaseHeader } from "@/components/play/play-phase-header";
 import { LoadingState } from "@/components/ui/loading-state";
 import type { CaseClueForMap, CaseLocationForMap } from "@/lib/api/play";
+import { cn } from "@/lib/utils";
 
 const MAP_SHELL_BG: CSSProperties = PLAY_PAGE_BLACK_BG;
 
@@ -36,6 +37,14 @@ type Props = {
   onDiscoveredClueIdsChange?: (ids: string[]) => void;
   /** 헤더 우측(팀·담당 장소 등) */
   headerRightSlot?: ReactNode;
+  /**
+   * 화면 점유 방식.
+   * - `viewport`(기본): 학생 본 화면 — `fixed inset-0` 로 뷰포트를 점유.
+   * - `contained`: 부모 컨테이너 안에서만 채움 — 시뮬레이션 등 임베드 용도.
+   */
+  variant?: "viewport" | "contained";
+  /** `contained`(샌드박스 등)에서 단계 헤더 타이포를 줄입니다 */
+  compactHeader?: boolean;
 };
 
 export function InvestigationMapShell({
@@ -46,10 +55,18 @@ export function InvestigationMapShell({
   discoveredClueIds,
   onDiscoveredClueIdsChange,
   headerRightSlot,
+  variant = "viewport",
+  compactHeader = false,
 }: Props) {
+  const isContained = variant === "contained";
   return (
     <div
-      className="font-sans play-shell relative fixed inset-0 z-[100] flex h-dvh max-h-dvh flex-col overflow-hidden pt-[env(safe-area-inset-top,0px)] text-[var(--foreground)]"
+      className={cn(
+        "font-sans play-shell relative flex flex-col overflow-hidden text-[var(--foreground)]",
+        isContained
+          ? "h-full min-h-0 w-full"
+          : "fixed inset-0 z-[100] h-dvh max-h-dvh pt-[env(safe-area-inset-top,0px)]",
+      )}
       style={MAP_SHELL_BG}
     >
       <div
@@ -64,6 +81,7 @@ export function InvestigationMapShell({
               title="단서 수집"
               description="같은 조사 장소를 배정받은 학생들끼리 새롭게 모여 앉아 단서를 수집하고 해석하세요."
               rightSlot={headerRightSlot}
+              compact={compactHeader}
             />
           </div>
         </div>

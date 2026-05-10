@@ -139,10 +139,11 @@ export type PlayerSelfRow = {
   team_id: string | null;
   investigation_location_id: string | null;
   is_online: boolean | null;
+  created_at: string;
 };
 
 const PLAYER_SELECT =
-  "id,nickname,session_id,team_id,investigation_location_id,is_online";
+  "id,nickname,session_id,team_id,investigation_location_id,is_online,created_at";
 
 const PLAYER_SELECT_WITH_TEAM_INVESTIGATION = `${PLAYER_SELECT},teams(id,name,found_clue_ids),investigation_zone:locations!investigation_location_id(name)`;
 
@@ -184,6 +185,7 @@ export async function listSessionPlayers(sessionId: string) {
     .from("players")
     .select(PLAYER_SELECT_WITH_TEAM_INVESTIGATION)
     .eq("session_id", sessionId)
+    .order("created_at", { ascending: false })
     .order("nickname", { ascending: true });
   if (error) throw error;
   return (data ?? []) as unknown as SessionPlayerRow[];

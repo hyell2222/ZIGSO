@@ -1,16 +1,28 @@
 "use client";
 
 import { FileText, Users } from "lucide-react";
-import type { UseQueryResult } from "@tanstack/react-query";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LoadingState } from "@/components/ui/loading-state";
 import { cn } from "@/lib/utils";
-import type { SessionDetailsRow } from "@/lib/api/play";
+import type { SuspectEntry } from "@/lib/suspects";
 import { parseSuspectRosterFromCase } from "@/lib/suspects";
 
+export type SessionInfoLayoutCase = {
+  title: string | null;
+  description: string | null;
+  suspect_roster: SuspectEntry[] | null | unknown;
+};
+
 type SessionInfoLayoutProps = {
-  sessionQuery: UseQueryResult<SessionDetailsRow, Error>;
+  loading: boolean;
+  /**
+   * 사건 메타데이터. 실 플레이는 `getPlaySessionDetails(...).cases`,
+   * 시뮬레이션은 `CaseRecord` 에서 같은 모양으로 채워서 넘깁니다.
+   */
+  caseData: SessionInfoLayoutCase | null | undefined;
+  /** 샌드박스 등 좁은 뷰 — 제목·그리드 간격 축소 */
+  compact?: boolean;
 };
 
 /** 사건 파일 — 살짝 그린 미스트 (공문 느낌) */
@@ -31,49 +43,95 @@ const playTitle = "text-[var(--foreground)]";
 /**
  * 1단계(사건 파악): 사건 개요 + 용의자
  */
-export function SessionInfoLayout({ sessionQuery }: SessionInfoLayoutProps) {
-  if (sessionQuery.isLoading) {
+export function SessionInfoLayout({
+  loading,
+  caseData,
+  compact = false,
+}: SessionInfoLayoutProps) {
+  if (loading) {
     return (
-      <div className="flex min-h-[min(20rem,46dvh)] flex-1 flex-col items-center justify-center py-6">
-        <LoadingState variant="section" tone="play" label="사건 정보를 불러오는 중…" className="min-h-0 py-4" />
+      <div
+        className={cn(
+          "flex flex-1 flex-col items-center justify-center",
+          compact
+            ? "min-h-[min(11rem,36dvh)] py-4"
+            : "min-h-[min(20rem,46dvh)] py-6",
+        )}
+      >
+        <LoadingState
+          variant="section"
+          tone="play"
+          label="사건 정보를 불러오는 중…"
+          className="min-h-0 py-4"
+        />
       </div>
     );
   }
 
-  const cases = sessionQuery.data?.cases;
+  const cases = caseData;
   const roster = parseSuspectRosterFromCase(cases?.suspect_roster);
 
   return (
-    <div className="grid gap-4 sm:gap-5 md:grid-cols-2 md:gap-6">
+    <div
+      className={cn(
+        "grid md:grid-cols-2",
+        compact ? "gap-3 sm:gap-3 md:gap-4" : "gap-4 sm:gap-5 md:gap-6",
+      )}
+    >
       <Card
         className={cn(
           "overflow-hidden motion-safe:animate-[playRevealUp_0.55s_cubic-bezier(0.22,1,0.36,1)_both]",
           fileCard,
         )}
       >
-        <CardHeader className={cn("space-y-1 pb-4", fileCardHeader)}>
+        <CardHeader
+          className={cn("space-y-1", fileCardHeader, compact ? "pb-3" : "pb-4")}
+        >
           <div className="flex items-center gap-2">
-            <span className="flex h-8 w-8 items-center justify-center rounded-md bg-[var(--play-chip-cool)] text-[var(--primary)] ring-1 ring-[color-mix(in_srgb,var(--primary)_22%,transparent)]">
-              <FileText className="h-4 w-4" aria-hidden />
+            <span
+              className={cn(
+                "flex items-center justify-center rounded-md bg-[var(--play-chip-cool)] text-[var(--primary)] ring-1 ring-[color-mix(in_srgb,var(--primary)_22%,transparent)]",
+                compact ? "h-7 w-7" : "h-8 w-8",
+              )}
+            >
+              <FileText
+                className={cn(compact ? "h-3.5 w-3.5" : "h-4 w-4")}
+                aria-hidden
+              />
             </span>
-            <CardTitle className={cn("text-base font-semibold", playTitle)}>사건 파일</CardTitle>
+            <CardTitle
+              className={cn(
+                "font-semibold",
+                playTitle,
+                compact ? "text-sm" : "text-base",
+              )}
+            >
+              사건 파일
+            </CardTitle>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4 pt-5">
+        <CardContent className={cn(compact ? "space-y-3 pt-3" : "space-y-4 pt-5")}>
           <div className="space-y-1.5">
-            <p className={cn("text-lg font-semibold leading-snug", playTitle)}>
-              {sessionQuery.data?.cases?.title ?? "제목 없음"}
+            <p
+              className={cn(
+                "font-semibold leading-snug",
+                playTitle,
+                compact ? "text-sm" : "text-lg",
+              )}
+            >
+              {cases?.title ?? "제목 없음"}
             </p>
           </div>
           <div className="space-y-1.5">
             <div
               className={cn(
-                "rounded-lg border border-[var(--border)] bg-[var(--background)] p-4 text-sm leading-relaxed shadow-[inset_var(--input-inset)]",
+                "rounded-lg border border-[var(--border)] bg-[var(--background)] text-sm leading-relaxed shadow-[inset_var(--input-inset)]",
                 playTitle,
+                compact ? "p-3 text-[13px] leading-snug" : "p-4",
               )}
             >
               <p className="whitespace-pre-wrap">
-                {sessionQuery.data?.cases?.description ?? "설명이 없습니다."}
+                {cases?.description ?? "설명이 없습니다."}
               </p>
             </div>
           </div>
@@ -86,15 +144,35 @@ export function SessionInfoLayout({ sessionQuery }: SessionInfoLayoutProps) {
           rosterCard,
         )}
       >
-        <CardHeader className={cn("space-y-1 pb-4", rosterCardHeader)}>
+        <CardHeader
+          className={cn("space-y-1", rosterCardHeader, compact ? "pb-3" : "pb-4")}
+        >
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <span className="flex h-8 w-8 items-center justify-center rounded-md bg-[var(--play-chip-warm)] text-[var(--accent)] ring-1 ring-[var(--border)]">
-                <Users className="h-4 w-4" aria-hidden />
+              <span
+                className={cn(
+                  "flex items-center justify-center rounded-md bg-[var(--play-chip-warm)] text-[var(--accent)] ring-1 ring-[var(--border)]",
+                  compact ? "h-7 w-7" : "h-8 w-8",
+                )}
+              >
+                <Users
+                  className={cn(compact ? "h-3.5 w-3.5" : "h-4 w-4")}
+                  aria-hidden
+                />
               </span>
               <div>
-                <CardTitle className={cn("text-base font-semibold", playTitle)}>용의자 목록</CardTitle>
-                <p className={cn("text-xs", playMuted)}>범인 지목에서 아래 인물 중 범인을 고릅니다.</p>
+                <CardTitle
+                  className={cn(
+                    "font-semibold",
+                    playTitle,
+                    compact ? "text-sm" : "text-base",
+                  )}
+                >
+                  용의자 목록
+                </CardTitle>
+                <p className={cn(compact ? "text-[11px]" : "text-xs", playMuted)}>
+                  범인 지목에서 아래 인물 중 범인을 고릅니다.
+                </p>
               </div>
             </div>
             {roster.length > 0 ? (
@@ -104,29 +182,47 @@ export function SessionInfoLayout({ sessionQuery }: SessionInfoLayoutProps) {
             ) : null}
           </div>
         </CardHeader>
-        <CardContent className="pt-5">
+        <CardContent className={compact ? "pt-3" : "pt-5"}>
           {roster.length > 0 ? (
-            <ul className="space-y-3">
+            <ul className={cn(compact ? "space-y-2" : "space-y-3")}>
               {roster.map((s, index) => (
                 <li
                   key={s.id}
                   className={cn(
-                    "flex gap-3 rounded-lg border p-3 shadow-sm",
+                    "flex rounded-lg border shadow-sm",
+                    compact ? "gap-2 p-2" : "gap-3 p-3",
                     index % 2 === 0
                       ? "border-[var(--border)] bg-[var(--background)]"
                       : "border-[var(--border)] bg-[var(--tint-accent-weak)]",
                   )}
                 >
                   <span
-                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-[var(--tint-accent-medium)] text-sm font-bold text-[var(--primary)] ring-1 ring-[var(--border)]"
+                    className={cn(
+                      "flex shrink-0 items-center justify-center rounded-md bg-[var(--tint-accent-medium)] font-bold text-[var(--primary)] ring-1 ring-[var(--border)]",
+                      compact ? "h-7 w-7 text-xs" : "h-9 w-9 text-sm",
+                    )}
                     aria-hidden
                   >
                     {index + 1}
                   </span>
                   <div className="min-w-0 flex-1 space-y-1">
-                    <p className={cn("text-base font-semibold", playTitle)}>{s.name || "(이름 없음)"}</p>
+                    <p
+                      className={cn(
+                        "font-semibold",
+                        playTitle,
+                        compact ? "text-sm" : "text-base",
+                      )}
+                    >
+                      {s.name || "(이름 없음)"}
+                    </p>
                     {s.detail ? (
-                      <p className={cn("whitespace-pre-wrap text-sm leading-relaxed", playTitle)}>
+                      <p
+                        className={cn(
+                          "whitespace-pre-wrap leading-relaxed",
+                          playTitle,
+                          compact ? "text-xs" : "text-sm",
+                        )}
+                      >
                         {s.detail}
                       </p>
                     ) : null}
@@ -137,8 +233,9 @@ export function SessionInfoLayout({ sessionQuery }: SessionInfoLayoutProps) {
           ) : (
             <p
               className={cn(
-                "rounded-md border border-dashed border-[var(--play-border-cool)] bg-[var(--play-veil)] px-4 py-6 text-center text-sm",
+                "rounded-md border border-dashed border-[var(--play-border-cool)] bg-[var(--play-veil)] text-center",
                 playMuted,
+                compact ? "px-3 py-4 text-xs" : "px-4 py-6 text-sm",
               )}
             >
               선생님이 이 사건에 용의자 정보를 넣지 않았습니다.

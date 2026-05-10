@@ -66,8 +66,12 @@ create table if not exists public.players (
   session_id uuid references public.game_sessions(id) on delete cascade,
   team_id uuid references public.teams(id) on delete set null,
   investigation_location_id uuid,
-  is_online boolean default true
+  is_online boolean default true,
+  created_at timestamptz not null default timezone('utc', now())
 );
+
+alter table if exists public.players
+  add column if not exists created_at timestamptz not null default timezone('utc', now());
 
 drop index if exists public.players_club_role_idx;
 alter table if exists public.players drop column if exists club_role;
