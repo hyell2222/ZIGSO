@@ -484,7 +484,7 @@ function SessionHostContent() {
   return (
     <div className="min-h-screen">
       <main className="mx-auto w-full max-w-7xl space-y-4 px-4 pb-[max(2.5rem,env(safe-area-inset-bottom,0px))] pt-5 sm:space-y-5 sm:px-6 sm:pt-6 md:space-y-6 md:px-8 md:pb-12 md:pt-8">
-        <header className="flex flex-col gap-4 border-b border-[var(--border)] pb-4 md:flex-row md:flex-wrap md:items-start md:justify-between md:gap-5">
+        <header className="flex flex-col gap-4 border-b border-[var(--border)] pb-4 md:flex-row md:flex-wrap md:items-start md:gap-5">
           <div className="min-w-0 flex-1 space-y-1 md:min-w-[12rem]">
             <p className="break-words font-mono text-2xl font-semibold leading-tight tracking-wide text-[var(--accent)] sm:text-3xl md:text-4xl lg:text-[2.5rem] lg:leading-none">
               {row.cases?.title}
@@ -525,12 +525,12 @@ function SessionHostContent() {
         </header>
 
         {showPhaseGuide || showPhaseActions ? (
-          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between md:gap-4 lg:flex-nowrap">
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center md:gap-4 lg:flex-nowrap">
             <div className="min-w-0 flex-1 md:max-w-[min(100%,42rem)]">
               {showPhaseGuide ? <PhaseGuideCard phase={phase} /> : null}
             </div>
             {showPhaseActions ? (
-              <div className="flex w-full shrink-0 flex-wrap items-stretch gap-2 sm:w-auto sm:justify-end md:gap-3 [&_button]:min-h-11 [&_button]:touch-manipulation">
+              <div className="flex w-full shrink-0 flex-wrap items-stretch justify-end gap-2 sm:ml-auto sm:w-auto md:gap-3 [&_button]:min-h-11 [&_button]:touch-manipulation">
                 {timerButton}
                 {startButton ?? nextButton}
               </div>

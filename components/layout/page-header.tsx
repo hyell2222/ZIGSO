@@ -24,8 +24,8 @@ export function PageHeader({
   const Heading = titleAs === "h2" ? "h2" : "h1";
   return (
     <header className={cn("space-y-1", className)}>
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div className="min-w-0 space-y-1">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+        <div className="min-w-0 flex-1 space-y-1">
           {eyebrow ? (
             <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--muted-foreground)]">
               {eyebrow}
@@ -43,7 +43,11 @@ export function PageHeader({
             <div className="pt-0.5 text-sm leading-relaxed text-[var(--muted-foreground)]">{description}</div>
           ) : null}
         </div>
-        {actions ? <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">{actions}</div> : null}
+        {actions ? (
+          <div className="flex w-full shrink-0 flex-wrap items-center justify-end gap-2 sm:ml-auto sm:w-auto">
+            {actions}
+          </div>
+        ) : null}
       </div>
     </header>
   );

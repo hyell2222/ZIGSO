@@ -36,7 +36,7 @@ export function PhaseGuideCard({
             "flex shrink-0 items-center justify-center rounded-full border border-[var(--primary)] bg-[var(--primary)] font-semibold tabular-nums text-[var(--on-primary)] shadow-sm",
             compact
               ? "h-6 w-6 text-[11px]"
-              : "h-7 w-7 text-[12px] md:h-8 md:w-8 md:text-sm",
+              : "h-7 w-7 text-[12px] sm:h-8 sm:w-8 sm:text-sm",
           )}
           aria-hidden
         >
@@ -58,7 +58,7 @@ export function PhaseGuideCard({
           "leading-snug text-[var(--muted-foreground)]",
           compact
             ? "text-[11px] leading-snug sm:text-xs"
-            : "text-xs md:text-sm md:leading-relaxed",
+            : "text-xs sm:text-sm sm:leading-relaxed",
         )}
       >
         {guide.summary}

@@ -190,7 +190,7 @@ export function SandboxTeacherPanel({
   return (
     <div className="h-full w-full overflow-y-auto bg-[var(--background)]">
       <main className="mx-auto w-full max-w-7xl space-y-3 px-3 pb-[max(1.5rem,env(safe-area-inset-bottom,0px))] pt-4 sm:space-y-4 sm:px-4 sm:pt-5 md:space-y-5 md:px-6 md:pb-10 md:pt-6 lg:px-8">
-        <header className="flex flex-col gap-3 border-b border-[var(--border)] pb-3 sm:gap-3.5 md:flex-row md:flex-wrap md:items-start md:justify-between md:gap-4">
+        <header className="flex flex-col gap-3 border-b border-[var(--border)] pb-3 sm:gap-3.5 md:flex-row md:flex-wrap md:items-start md:gap-4">
           <div className="min-w-0 flex-1 space-y-0.5 md:min-w-[12rem]">
             <p className="break-words font-mono text-base font-semibold leading-snug tracking-wide text-[var(--accent)] sm:text-lg md:text-xl">
               {caseRecord.title?.trim() || "제목 없는 사건"}
@@ -235,12 +235,12 @@ export function SandboxTeacherPanel({
         </header>
 
         {showPhaseGuide || showPhaseActions ? (
-          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between md:gap-3 lg:flex-nowrap">
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center md:gap-3 lg:flex-nowrap">
             <div className="min-w-0 flex-1 md:max-w-[min(100%,42rem)]">
               {showPhaseGuide ? <PhaseGuideCard phase={phase} compact /> : null}
             </div>
             {showPhaseActions ? (
-              <div className="flex w-full shrink-0 flex-wrap items-stretch gap-2 sm:w-auto sm:justify-end md:gap-3 [&_button]:min-h-11 [&_button]:touch-manipulation">
+              <div className="flex w-full shrink-0 flex-wrap items-stretch justify-end gap-2 sm:ml-auto sm:w-auto md:gap-3 [&_button]:min-h-11 [&_button]:touch-manipulation">
                 {timerButton}
                 {startButton ?? nextButton ?? restartButton}
               </div>

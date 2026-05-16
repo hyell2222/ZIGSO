@@ -23,6 +23,10 @@ export type PlayPhaseHeaderProps = {
   compact?: boolean;
 };
 
+/**
+ * 레이아웃 브레이크포인트는 앱 공통과 맞춤: 가로 정렬은 `sm:`(640px+)부터.
+ * (`md:`만 쓰면 640–767px 구간이 세로 스택으로 남아 태블릿 세로와 불일치)
+ */
 export function PlayPhaseHeader({
   phase,
   title,
@@ -36,27 +40,27 @@ export function PlayPhaseHeader({
   return (
     <div
       className={cn(
-        "flex flex-col md:flex-row md:items-center md:justify-between",
-        compact ? "gap-1.5 md:gap-3" : "gap-2.5 md:gap-5",
+        "flex flex-col sm:flex-row sm:items-center",
+        compact ? "gap-1.5 sm:gap-3" : "gap-2.5 sm:gap-5",
         className,
       )}
     >
       <div
         className={cn(
           "flex min-w-0 flex-1 items-start",
-          compact ? "gap-2 md:gap-2.5" : "gap-3 md:gap-4",
+          compact ? "gap-2 sm:gap-2.5" : "gap-3 sm:gap-4",
         )}
       >
         <span
           className={cn(
             "flex shrink-0 items-center justify-center rounded-lg bg-[var(--play-chip-cool)] text-[var(--primary)] shadow-sm ring-1 ring-[color-mix(in_srgb,var(--primary)_22%,transparent)]",
-            compact ? "h-7 w-7 md:h-8 md:w-8" : "h-8 w-8 md:h-11 md:w-11",
+            compact ? "h-7 w-7 sm:h-8 sm:w-8" : "h-8 w-8 sm:h-11 sm:w-11",
           )}
           aria-hidden
         >
           <Icon
             className={cn(
-              compact ? "h-3.5 w-3.5 md:h-4 md:w-4" : "h-4 w-4 md:h-6 md:w-6",
+              compact ? "h-3.5 w-3.5 sm:h-4 sm:w-4" : "h-4 w-4 sm:h-6 sm:w-6",
             )}
           />
         </span>
@@ -64,7 +68,7 @@ export function PlayPhaseHeader({
           <p
             className={cn(
               "font-semibold uppercase tracking-wider text-[var(--accent)]",
-              compact ? "text-[10px] md:text-[11px]" : "text-[11px] md:text-xs",
+              compact ? "text-[10px] sm:text-[11px]" : "text-[11px] sm:text-xs",
             )}
           >
             {phase}단계
@@ -72,7 +76,7 @@ export function PlayPhaseHeader({
           <h1
             className={cn(
               "font-bold leading-tight text-[var(--foreground)]",
-              compact ? "text-sm md:text-base md:leading-snug" : "text-base md:text-xl md:leading-snug",
+              compact ? "text-sm sm:text-base sm:leading-snug" : "text-base sm:text-xl sm:leading-snug",
             )}
           >
             {title}
@@ -81,8 +85,8 @@ export function PlayPhaseHeader({
             className={cn(
               "max-w-2xl leading-relaxed text-[var(--muted-foreground)]",
               compact
-                ? "mt-0 max-w-xl text-[11px] md:mt-1 md:text-xs"
-                : "mt-0.5 text-[13px] md:mt-1.5 md:text-[0.95rem] md:leading-relaxed",
+                ? "mt-0 max-w-xl text-[11px] sm:mt-1 sm:text-xs"
+                : "mt-0.5 text-[13px] sm:mt-1.5 sm:text-[0.95rem] sm:leading-relaxed",
             )}
           >
             {description}
@@ -92,8 +96,8 @@ export function PlayPhaseHeader({
       {rightSlot ? (
         <div
           className={cn(
-            "flex w-full min-w-0 justify-end self-start md:w-auto md:shrink-0 md:self-center md:pt-0",
-            compact ? "pt-0 md:pl-2" : "pt-0.5 md:pl-4",
+            "flex w-full min-w-0 justify-end self-start sm:ml-auto sm:w-auto sm:shrink-0 sm:self-center sm:pt-0",
+            compact ? "pt-0 sm:pl-2" : "pt-0.5 sm:pl-4",
           )}
         >
           <div className="w-fit max-w-full">{rightSlot}</div>

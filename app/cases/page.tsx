@@ -151,15 +151,17 @@ export default function CasesPage() {
                       key={row.id}
                       className="relative space-y-3 rounded-md border border-[var(--border)] bg-[var(--surface)] p-3 text-left transition hover:border-[var(--mystery)]/50"
                     >
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="font-semibold text-[var(--foreground)]">
+                      <div className="flex items-start gap-2">
+                        <p className="min-w-0 flex-1 font-semibold text-[var(--foreground)]">
                           {row.title ?? "제목 없는 사건"}
                         </p>
-                        <KebabMenu
-                          disabled={isDeleting}
-                          onEdit={() => handleEdit(row)}
-                          onDelete={() => handleDelete(row)}
-                        />
+                        <div className="ml-auto shrink-0">
+                          <KebabMenu
+                            disabled={isDeleting}
+                            onEdit={() => handleEdit(row)}
+                            onDelete={() => handleDelete(row)}
+                          />
+                        </div>
                       </div>
                       <p className="text-xs text-[var(--muted-foreground)] pb-2">
                         난이도 {formatDifficultyForUi(row.difficulty)} · 팀당 인원{" "}

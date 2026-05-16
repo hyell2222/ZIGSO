@@ -81,7 +81,7 @@ export function TopNav() {
                 href={ROUTES.login}
                 variant="transparent"
                 size="sm"
-                className="max-[560px]:hidden"
+                className="max-sm:hidden"
               >
                 지금 시작하기
               </ButtonLink>

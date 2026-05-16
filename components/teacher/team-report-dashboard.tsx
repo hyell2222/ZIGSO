@@ -42,11 +42,11 @@ export function TeamReportDashboard({
 
   return (
     <section className="space-y-3 rounded-lg border border-[var(--border)] bg-[var(--card-bg)] p-4 shadow-[var(--elevation-sm)]">
-      <header className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-sm font-semibold text-[var(--foreground)]">
+      <header className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+        <h2 className="text-sm font-semibold text-[var(--foreground)] sm:min-w-0 sm:flex-1">
           범인 지목
         </h2>
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-[var(--muted-foreground)]">
+        <div className="flex w-full flex-wrap items-center justify-end gap-x-2 gap-y-0.5 text-xs text-[var(--muted-foreground)] sm:ml-auto sm:w-auto">
           <span className="font-medium text-[var(--foreground)]">
             제출 {submittedCount}/{totalPlayers}
           </span>

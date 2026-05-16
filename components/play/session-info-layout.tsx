@@ -74,7 +74,7 @@ export function SessionInfoLayout({
   return (
     <div
       className={cn(
-        "grid md:grid-cols-2",
+        "grid sm:grid-cols-2",
         compact ? "gap-3 sm:gap-3 md:gap-4" : "gap-4 sm:gap-5 md:gap-6",
       )}
     >

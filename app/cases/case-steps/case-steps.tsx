@@ -356,8 +356,8 @@ export function CaseSteps(props: Props) {
     <div className="app-page flex min-h-dvh flex-col">
       <TopNav />
       <main className="mx-auto w-full max-w-7xl flex-1 space-y-5 px-4 py-8">
-        <header className="flex flex-wrap items-end justify-between gap-3">
-          <div className="space-y-1">
+        <header className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+          <div className="min-w-0 space-y-1 sm:min-w-0 sm:flex-1">
             <h1 className="text-2xl font-bold">{pageTitle}</h1>
             <Stepper
               current={step}
@@ -369,10 +369,12 @@ export function CaseSteps(props: Props) {
               }}
             />
           </div>
-          <Button type="button" variant="default" onClick={openAiAssist} disabled={saveMutation.isPending} className="gap-2">
-            <Sparkles className="mr-1 h-4 w-4" />
-            AI로 생성하기
-          </Button>
+          <div className="flex w-full shrink-0 justify-end sm:ml-auto sm:w-auto">
+            <Button type="button" variant="default" onClick={openAiAssist} disabled={saveMutation.isPending} className="gap-2">
+              <Sparkles className="mr-1 h-4 w-4" />
+              AI로 생성하기
+            </Button>
+          </div>
         </header>
 
         {step === 0 ? (

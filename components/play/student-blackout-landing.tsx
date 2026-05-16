@@ -15,13 +15,11 @@ import { Input } from "@/components/ui/input";
 const MYSTERY_CLUB_TAG = "MYSTERY CLUB";
 const LINE_CONNECTING_REST = "서버에 접속 중입니다…";
 const LINE_AUTH_REQUIRED = "[WARNING] 접근 권한이 필요합니다.";
-const ACCESS_PROMPT_AUTO = "잠시 후 입장 인증 창이 열립니다…";
-/** 프리루드·경고 문구 표시 후 입장 모달까지 대기 (PC·모바일 동일) */
-const AUTO_MODAL_DELAY_MS = 3000;
+const ACCESS_PROMPT_AUTO = "점시만 기다려주세요…";
 
+const AUTO_MODAL_DELAY_MS = 3000;
 const LOAD_BAR_DURATION_MS = 2200;
 const LOAD_BAR_STEPS = 28;
-
 const PRELUDE_DWELL_MS = 420;
 const PRELUDE_FADE_MS = 380;
 const POST_BEAT_MS = 140;

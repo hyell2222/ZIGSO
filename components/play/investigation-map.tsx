@@ -803,7 +803,7 @@ export function InvestigationMap({
       <div
         className={cn(
           "flex min-h-0 w-full flex-1",
-          isFull ? "flex-row" : "flex-col-reverse gap-2 md:flex-row",
+          isFull ? "flex-row" : "flex-col-reverse gap-2 sm:flex-row",
         )}
       >
         {/* Phaser 캔버스 + 근접 시 F 안내 */}
@@ -858,7 +858,7 @@ export function InvestigationMap({
             "flex min-h-0 shrink-0 flex-col",
             isFull
               ? "w-52 border-l border-[color-mix(in_srgb,var(--primary)_55%,var(--border))] bg-[var(--background)] shadow-[inset_10px_0_32px_-12px_color-mix(in_srgb,var(--primary)_10%,transparent)] sm:w-56 md:w-60 md:min-w-[13.5rem]"
-              : "max-h-[200px] w-full border-t border-[var(--border)] bg-[color-mix(in_srgb,var(--background)_55%,var(--card-bg))] md:max-h-none md:w-[200px] md:border-l md:border-t-0 md:border-l-[color-mix(in_srgb,var(--primary)_35%,var(--border))]",
+              : "max-h-[200px] w-full border-t border-[var(--border)] bg-[color-mix(in_srgb,var(--background)_55%,var(--card-bg))] sm:max-h-none sm:w-[200px] sm:border-l sm:border-t-0 sm:border-l-[color-mix(in_srgb,var(--primary)_35%,var(--border))]",
           )}
         >
           <div
