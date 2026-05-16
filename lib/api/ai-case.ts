@@ -32,7 +32,12 @@ export type AICaseRequest = {
   teamSize?: number;
   /** 학습 목표 — 사건·단서에 반영 */
   learningObjective?: string;
-  /** true면 clues[].name·content만 영어, 나머지 필드는 한국어 유지 */
+  /**
+   * true 이면 AI가 사건 전체를 영어로 생성한다.
+   * (제목·개요·조사 장소명·용의자 이름·프로필·모든 단서 제목·본문)
+   * @deprecated 하위 호환용 — cluesInEnglish 를 대신 보내도 동일 처리
+   */
+  caseInEnglish?: boolean;
   cluesInEnglish?: boolean;
 };
 

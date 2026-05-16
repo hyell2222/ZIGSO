@@ -71,10 +71,14 @@ export function InvestigationZonesStep({ zones, onAdd, onUpdate, onRemove }: Pro
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-[var(--accent)]">
+                  <label
+                    className="text-xs font-medium text-[var(--accent)]"
+                    htmlFor={`inv-zone-name-${z.tempId}`}
+                  >
                     장소명<span className="ml-0.5 text-[var(--danger)]">*</span>
                   </label>
                   <Input
+                    id={`inv-zone-name-${z.tempId}`}
                     value={z.zoneName}
                     onChange={(event) => onUpdate(z.tempId, { zoneName: event.target.value })}
                     onKeyDown={(event) => {

@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 
 import { Textarea } from "@/components/ui/textarea";
+import { FINAL_REPORT_ENGLISH_HINT } from "@/lib/report-english";
 import type { SuspectEntry } from "@/lib/suspects";
 import { cn } from "@/lib/utils";
 
@@ -122,28 +123,38 @@ export function FinalReportFields({
         </div>
       )}
 
+      {!readOnly ? (
+        <p className="text-xs leading-relaxed text-[var(--muted-foreground)]">{FINAL_REPORT_ENGLISH_HINT}</p>
+      ) : null}
+
       <FinalReportTextField
-        label={<span>범행 도구 · 수법 <span className="text-[var(--danger)]">*</span></span>}
+        fieldId={`${idPrefix}-method`}
+        label={<span>Means / method <span className="text-[var(--danger)]">*</span></span>}
         value={values.method}
         readOnly={readOnly}
         labelClass={labelClass}
         textareaClass={styles.textarea}
+        placeholder="Write in English only (e.g. how the suspect carried out the act)."
         onChange={(next) => update({ method: next })}
       />
       <FinalReportTextField
-        label={<span>범행 동기 <span className="text-[var(--danger)]">*</span></span>}
+        fieldId={`${idPrefix}-motive`}
+        label={<span>Motive <span className="text-[var(--danger)]">*</span></span>}
         value={values.motive}
         readOnly={readOnly}
         labelClass={labelClass}
         textareaClass={styles.textarea}
+        placeholder="Write in English only (e.g. why the suspect did it)."
         onChange={(next) => update({ motive: next })}
       />
       <FinalReportTextField
-        label={<span>결정적 단서 <span className="text-[var(--danger)]">*</span></span>}
+        fieldId={`${idPrefix}-decisive-clue`}
+        label={<span>Decisive clue <span className="text-[var(--danger)]">*</span></span>}
         value={values.decisiveClue}
         readOnly={readOnly}
         labelClass={labelClass}
         textareaClass={styles.textarea}
+        placeholder="Write in English only (e.g. the evidence that points to this suspect)."
         onChange={(next) => update({ decisiveClue: next })}
       />
     </>
@@ -151,28 +162,38 @@ export function FinalReportFields({
 }
 
 function FinalReportTextField({
+  fieldId,
   label,
   value,
   readOnly,
   labelClass,
   textareaClass,
+  placeholder,
   onChange,
 }: {
+  fieldId: string;
   label: ReactNode;
   value: string;
   readOnly: boolean;
   labelClass: string;
   textareaClass: string;
+  placeholder?: string;
   onChange: (next: string) => void;
 }) {
   return (
     <div className="space-y-2">
-      <label className={labelClass}>{label}</label>
+      <label className={labelClass} htmlFor={fieldId}>
+        {label}
+      </label>
       <Textarea
+        id={fieldId}
         rows={3}
         value={value}
         readOnly={readOnly}
         required={!readOnly}
+        lang={readOnly ? undefined : "en"}
+        spellCheck={readOnly ? false : true}
+        placeholder={readOnly ? undefined : placeholder}
         className={cn(textareaClass, readOnly && "cursor-default")}
         onChange={readOnly ? undefined : (ev) => onChange(ev.target.value)}
       />

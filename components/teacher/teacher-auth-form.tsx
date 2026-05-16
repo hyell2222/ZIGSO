@@ -46,20 +46,34 @@ export function TeacherAuthForm({
       </CardHeader>
       <CardContent>
         <form className="space-y-2" onSubmit={(event) => void handleSubmit(event)}>
-          <Input
-            type="email"
-            placeholder="이메일"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            required
-          />
-          <Input
-            type="password"
-            placeholder="비밀번호"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            required
-          />
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-[var(--foreground)]" htmlFor="teacher-auth-email">
+              이메일
+            </label>
+            <Input
+              id="teacher-auth-email"
+              type="email"
+              placeholder="이메일"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              required
+              autoComplete="email"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-[var(--foreground)]" htmlFor="teacher-auth-password">
+              비밀번호
+            </label>
+            <Input
+              id="teacher-auth-password"
+              type="password"
+              placeholder="비밀번호"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              required
+              autoComplete={mode === "sign-in" ? "current-password" : "new-password"}
+            />
+          </div>
           <div className="flex justify-center pt-4">
             <Button type="submit" disabled={isLoading} className="w-full">
               {mode === "sign-in" ? "로그인" : "회원가입"}

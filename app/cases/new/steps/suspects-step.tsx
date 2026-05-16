@@ -70,18 +70,23 @@ export function SuspectsStep({
                 />
               </div>
               <div className="mt-3 space-y-1.5">
-                <label className="text-xs font-medium text-[var(--accent)]">
+                <label className="text-xs font-medium text-[var(--accent)]" htmlFor={`suspect-name-${s.id}`}>
                   이름<span className="ml-0.5 text-[var(--danger)]">*</span>
                 </label>
                 <Input
+                  id={`suspect-name-${s.id}`}
                   value={s.name}
                   onChange={(e) => onChangeSuspects(updateSuspectAt(suspects, s.id, { name: e.target.value }))}
                   placeholder="이름 (예: 김OO)"
                 />
-                <label className="text-xs font-medium text-[var(--accent)]">
+                <label
+                  className="text-xs font-medium text-[var(--accent)]"
+                  htmlFor={`suspect-detail-${s.id}`}
+                >
                   프로필<span className="ml-0.5 text-[var(--danger)]">*</span>
                 </label>
                 <Textarea
+                  id={`suspect-detail-${s.id}`}
                   value={s.detail}
                   onChange={(e) =>
                     onChangeSuspects(updateSuspectAt(suspects, s.id, { detail: e.target.value }))
@@ -90,18 +95,19 @@ export function SuspectsStep({
                   rows={2}
                 />
               </div>
-              <label className="mt-2 flex cursor-pointer items-center gap-2 text-xs text-[var(--foreground)]">
+              <div className="mt-2 flex items-center gap-2 text-xs text-[var(--foreground)]">
                 <input
+                  id={`answer-suspect-${s.id}`}
                   type="radio"
                   name="answer-suspect"
                   checked={answerSuspectId === s.id}
                   onChange={() => onChangeAnswerSuspectId(s.id)}
                   className="accent-[var(--accent)]"
                 />
-                <span>
+                <label htmlFor={`answer-suspect-${s.id}`} className="cursor-pointer leading-snug">
                   이 인물이 사건의 <strong>범인(정답)</strong>이다
-                </span>
-              </label>
+                </label>
+              </div>
             </StepListItemCard>
           ))}
         </ul>

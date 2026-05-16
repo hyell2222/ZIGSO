@@ -105,6 +105,31 @@ export function normalizeDifficultyValue(value: unknown): DbDifficulty {
   return coerceDifficultyForDb(value) ?? "Normal";
 }
 
+/** DB enum 과 동일 — 폼 value·저장 값 */
+export type DifficultyLevel = DbDifficulty;
+
+const DIFFICULTY_LABEL_KO: Record<DbDifficulty, string> = {
+  Easy: "쉬움",
+  Normal: "보통",
+  Hard: "어려움",
+};
+
+/** 사건 목록·메타 등 UI 표시용 (DB는 영어 enum 유지) */
+export function formatDifficultyForUi(value: string | null | undefined): string {
+  const t = normalizeText(value);
+  if (!t) return "—";
+  const level = coerceDifficultyForDb(value);
+  return level ? DIFFICULTY_LABEL_KO[level] : t;
+}
+
+export const DIFFICULTY_UI_OPTIONS: ReadonlyArray<{
+  value: DbDifficulty;
+  label: string;
+}> = DB_DIFFICULTIES.map((value) => ({
+  value,
+  label: DIFFICULTY_LABEL_KO[value],
+}));
+
 function buildIdMap(rows: Array<{ id: string; name: string | null }>) {
   return new Map(
     rows

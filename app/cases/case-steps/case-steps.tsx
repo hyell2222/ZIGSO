@@ -210,7 +210,7 @@ export function CaseSteps(props: Props) {
   const saveMutation = useMutation({
     mutationFn: async () => {
       if (!title.trim()) throw new Error("제목을 입력해주세요.");
-      if (!description.trim()) throw new Error("사건 개요(설명)를 입력해주세요.");
+      if (!description.trim()) throw new Error("사건 개요를 입력해주세요.");
       if (investigationZones.length === 0) throw new Error("조사 장소을 한 곳 이상 추가해주세요.");
       if (investigationZones.some((c) => !c.zoneName.trim())) {
         throw new Error("모든 장소에 장소명을 입력해주세요.");
@@ -282,7 +282,7 @@ export function CaseSteps(props: Props) {
   const saveBlockers = useMemo(() => {
     const lines: string[] = [];
     if (!title.trim()) lines.push("제목을 입력하세요. (1단계: 기본 정보)");
-    if (!description.trim()) lines.push("사건 개요(설명)을 입력하세요. (1단계: 기본 정보)");
+    if (!description.trim()) lines.push("사건 개요를 입력하세요. (1단계: 기본 정보)");
     if (investigationZones.length === 0) {
       lines.push("조사 장소을 한 곳 이상 추가하세요. (3단계: 조사 장소)");
     } else {

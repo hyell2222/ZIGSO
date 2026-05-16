@@ -1,13 +1,13 @@
 "use client";
 
+import { DIFFICULTY_UI_OPTIONS, type DifficultyLevel } from "@/lib/api/cases";
 import { StepHeading } from "./step-blocks";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
-const DIFFICULTIES = ["Easy", "Normal", "Hard"] as const;
-export type Difficulty = (typeof DIFFICULTIES)[number];
+export type Difficulty = DifficultyLevel;
 
 type Props = {
   title: string;
@@ -37,20 +37,22 @@ export function BasicInfoStep({
       </CardHeader>
       <CardContent className="space-y-5">
         <div className="space-y-2">
-          <label className="text-xs font-medium text-[var(--accent)]">
+          <label className="text-xs font-medium text-[var(--accent)]" htmlFor="case-basic-title">
             제목<span className="ml-0.5 text-[var(--danger)]">*</span>
           </label>
           <Input
+            id="case-basic-title"
             value={title}
             onChange={(event) => onChangeTitle(event.target.value)}
             placeholder="예) 음악준비실에서 사라진 소품"
           />
         </div>
         <div className="space-y-2">
-          <label className="text-xs font-medium text-[var(--accent)]">
-            사건 개요 (사건 파악 단계에 공개)<span className="ml-0.5 text-[var(--danger)]">*</span>
+          <label className="text-xs font-medium text-[var(--accent)]" htmlFor="case-basic-description">
+            사건 개요<span className="ml-0.5 text-[var(--danger)]">*</span>
           </label>
           <Textarea
+            id="case-basic-description"
             value={description}
             onChange={(event) => onChangeDescription(event.target.value)}
             placeholder="의뢰 내용, 알려진 사실, 학생들이 알아야 할 배경"
@@ -58,10 +60,10 @@ export function BasicInfoStep({
           />
         </div>
 
-        <div className="space-y-2">
-          <label className="text-xs font-medium text-[var(--accent)]">난이도</label>
+        <fieldset className="min-w-0 border-0 p-0">
+          <legend className="w-full pb-2 text-left text-xs font-medium text-[var(--accent)]">난이도</legend>
           <div className="flex flex-wrap gap-2">
-            {DIFFICULTIES.map((d) => {
+            {DIFFICULTY_UI_OPTIONS.map(({ value: d, label }) => {
               const active = difficulty === d;
               return (
                 <Button
@@ -76,12 +78,12 @@ export function BasicInfoStep({
                       : "border-[var(--border)] text-[var(--foreground)] hover:bg-[var(--tint-mystery)]")
                   }
                 >
-                  {d}
+                  {label}
                 </Button>
               );
             })}
           </div>
-        </div>
+        </fieldset>
       </CardContent>
     </Card>
   );

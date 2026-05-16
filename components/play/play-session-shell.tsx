@@ -45,6 +45,7 @@ import {
   setPlayerOnline,
   submitPlayerReport,
 } from "@/lib/api/play";
+import { validateFinalReportEnglishNarratives } from "@/lib/report-english";
 import {
   clearResumeRecord,
   getResumeRecord,
@@ -415,6 +416,15 @@ export function PlaySessionShell({
       setMessage("용의자 선택과 나머지 항목을 모두 입력해 주세요.");
       return;
     }
+    const englishErr = validateFinalReportEnglishNarratives({
+      method,
+      motive,
+      decisiveClue,
+    });
+    if (englishErr) {
+      setMessage(englishErr);
+      return;
+    }
     reportMutation.mutate();
   };
 
@@ -521,8 +531,9 @@ export function PlaySessionShell({
               ) : (
                 <form className="space-y-5" onSubmit={handleReportSubmit}>
                   <p className="rounded-md border border-[var(--border)] bg-[var(--tint-accent-weak)] px-3 py-2 text-sm text-[var(--foreground)] shadow-[inset_var(--input-inset)]">
-                    팀원과 논의한 뒤 <strong className="text-[var(--primary)]">한 번만</strong>{" "}
-                    제출할 수 있습니다.
+                    팀원과 논의한 뒤 <strong className="text-[var(--primary)]">한 번만</strong> 제출할
+                    수 있습니다. 아래 서술 칸은{" "}
+                    <strong className="text-[var(--primary)]">영어로만</strong> 작성합니다.
                   </p>
                   <FinalReportFields
                     idPrefix="report"
@@ -662,12 +673,18 @@ export function PlaySessionShell({
                   joinAndRegisterMutation.mutate({ nickname: nickname.trim() });
                 }}
               >
-                <Input
-                  placeholder="닉네임"
-                  value={nickname}
-                  onChange={(event) => setNickname(event.target.value)}
-                  required
-                />
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-[var(--accent)]" htmlFor="play-session-nickname">
+                    닉네임
+                  </label>
+                  <Input
+                    id="play-session-nickname"
+                    placeholder="닉네임"
+                    value={nickname}
+                    onChange={(event) => setNickname(event.target.value)}
+                    required
+                  />
+                </div>
                 <Button type="submit" className="w-full" disabled={joinAndRegisterMutation.isPending}>
                   입장
                 </Button>

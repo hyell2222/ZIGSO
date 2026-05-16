@@ -1,6 +1,7 @@
 "use client";
 
 import type { SuspectEntry } from "@/lib/suspects";
+import { validateFinalReportEnglishNarratives } from "@/lib/report-english";
 import { supabase } from "@/lib/supabase";
 
 // =====================================================================
@@ -436,6 +437,13 @@ export async function submitPlayerReport(
   if (existing?.id) {
     throw new Error("이미 제출한 보고서가 있습니다.");
   }
+
+  const englishErr = validateFinalReportEnglishNarratives({
+    method: report.method,
+    motive: report.motive,
+    decisiveClue: report.decisiveClue,
+  });
+  if (englishErr) throw new Error(englishErr);
 
   const { error } = await supabase.from("player_reports").insert({
     player_id: args.playerId,

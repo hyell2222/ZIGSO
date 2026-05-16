@@ -7,6 +7,7 @@ import { useState } from "react";
 
 import {
   deleteCase,
+  formatDifficultyForUi,
   listCases,
   startGameSession,
   type CaseListRow,
@@ -161,7 +162,7 @@ export default function CasesPage() {
                         />
                       </div>
                       <p className="text-xs text-[var(--muted-foreground)] pb-2">
-                        난이도 {row.difficulty ?? "—"} · 팀당 인원{" "}
+                        난이도 {formatDifficultyForUi(row.difficulty)} · 팀당 인원{" "}
                         {typeof row.locations?.[0]?.count === "number"
                           ? row.locations[0].count
                           : "—"}명

@@ -115,7 +115,7 @@ function formatPropSizeLines(sizeByAsset: Map<string, { w: number; h: number }>)
 function buildSystemPrompt(
   propAssets: string[],
   sizeByAsset: Map<string, { w: number; h: number }>,
-  cluesInEnglish: boolean,
+  caseInEnglish: boolean,
 ): string {
   const hasCatalog = sizeByAsset.size > 0;
   const sizeHint = hasCatalog
@@ -127,9 +127,39 @@ function buildSystemPrompt(
         `  - w, h: 격자 ${MAP_GRID_STEP_PX}px 배수 권장. 같은 장소 안에서는 서로 겹치지 않게 최소 ${MAP_GRID_STEP_PX * 3}px 이상 간격.`,
       ];
 
-  const localeRule = cluesInEnglish
-    ? "사건 제목(title)·사건 파악(description)·조사 장소명·용의자(name·detail)는 한국어. clues 배열의 각 name·content 만 영어로 작성한다."
+  const localeRule = caseInEnglish
+    ? "모든 플레이어에게 보이는 서술은 반드시 영어로 작성한다: title, description(사건 브리핑), investigation_zones의 zone_name, suspect_roster의 name·detail, clues의 name·content. 학교·동아리 미스터리 톤의 자연스러운 영어. suspect 의 id 만 짧은 URL-safe ASCII(예: su_min)로 유지하고 한글 id 는 금지."
     : "제목·설명·장소·용의자·단서 본문까지 모두 한국어로 통일한다.";
+
+  const titleRule = caseInEnglish
+    ? "· title: English. About 6–18 words. School / club mystery tone, no spoilers in the title."
+    : "· title: 한국어 8~28자. 학교·동아리 미스터리 톤, 스포일러 없음.";
+
+  const descRule = caseInEnglish
+    ? "· description: English. Roughly 900–1800 characters (or ~140–260 words). Case briefing shown verbatim to players: no naming the culprit or stating the crime as solved. Only context, known facts, and tension."
+    : "· description: 한국어 180~320자. 사건 파악에 그대로 보이므로 범인 실명·범행 확정 서술은 금지. 의뢰 맥락·알려진 사실·긴장감만.";
+
+  const suspectRule = caseInEnglish
+    ? "· suspect_roster: 2~4 entries. id: short URL-safe ASCII only (e.g. su_min, su_jae). name and detail: natural English (role, alibi, traits in one or two short sentences)."
+    : "· suspect_roster: 2~4명. 각 항목에 id(영문·숫자·하이픈 등 URL-safe한 짧은 식별자, 사건 내 고유), name(이름), detail(역할·알리바이·특징 한두 문장).";
+
+  const suspectIdNote = caseInEnglish
+    ? "  id examples: su_min, su_jae (no non-ASCII in id). Only suspects listed; do not reveal the culprit in description."
+    : "  id 예: su_min, su_jae (한글 금지). 용의자들만 넣고, description 에서 범인이 누구인지 드러내지 말 것.";
+
+  const zonesRule = caseInEnglish
+    ? "· investigation_zones: 2~5 places. zone_name only, in English. Names must be unique, not duplicates, avoid near-duplicates."
+    : "· investigation_zones: 2~5개. zone_name만. 학교 안 장소 한국어, 서로 절대 중복 금지, 비슷한 이름도 피할 것.";
+
+  const clueNameContent = caseInEnglish
+    ? [
+        "  - name: Short English title for the map list (about 2–12 words or a concise phrase), unique per clue.",
+        "  - content: Body text players read. 1–3 sentences in English. Atmosphere + deductive hint. Must not contradict description.",
+      ]
+    : [
+        "  - name: 맵 목록에 보이는 짧은 단서 제목(한국어 2~12자), 고유하게.",
+        "  - content: 플레이어가 읽는 본문. 1~3문장. 분위기+추리 단서. description 과 모순 없게.",
+      ];
 
   return [
     "너는 '미스터리 클럽(MYSTERY CLUB)' 협동 추리 사건을 설계하는 작가다.",
@@ -146,26 +176,18 @@ function buildSystemPrompt(
     "- Easy: 단서가 직관적이고 연결이 적다. Normal: 균형. Hard: 여러 단서를 조합해야 하고 허위·우연을 구분해야 한다.",
     "",
     "[필드별 규칙]",
-    `· title: 한국어 8~28자. 학교·동아리 미스터리 톤, 스포일러 없음.`,
-    "· description: 한국어 180~320자. 사건 파악에 그대로 보이므로 범인 실명·범행 확정 서술은 금지. 의뢰 맥락·알려진 사실·긴장감만.",
-    "· suspect_roster: 2~4명. 각 항목에 id(영문·숫자·하이픈 등 URL-safe한 짧은 식별자, 사건 내 고유), name(이름), detail(역할·알리바이·특징 한두 문장).",
-    "  id 예: su_min, su_jae (한글 금지). 용의자들만 넣고, description 에서 범인이 누구인지 드러내지 말 것.",
+    titleRule,
+    descRule,
+    suspectRule,
+    suspectIdNote,
     "· difficulty: 정확히 \"Easy\" | \"Normal\" | \"Hard\".",
-    "· investigation_zones: 2~5개. zone_name만. 학교 안 장소 한국어, 서로 절대 중복 금지, 비슷한 이름도 피할 것.",
+    zonesRule,
     "· clues:",
     "  - assignment_index: investigation_zones 배열의 0부터 시작하는 인덱스. 장소마다 단서 개수를 가능한 한 균등하게 맞출 것. 사용자가 [장소별 단서 개수]를 요청하면 각 장소의 clues 개수가 그 값에 가깝도록(장소별 ±1). 요청이 없으면 장소당 대략 3~6개 수준으로 균등 배분.",
     "  - asset: 반드시 아래 [사용 가능한 소품asset 목록]에 있는 문자열만. 없는 이름·변형 금지.",
     `  - x, y: 소품 중심 좌표. ${WORLD_W}×${WORLD_H} 안에 완전히 들어오게. 권장: x는 ${MAP_GRID_STEP_PX}~${WORLD_W - MAP_GRID_STEP_PX}, y는 ${MAP_GRID_STEP_PX}~${WORLD_H - MAP_GRID_STEP_PX}.`,
     ...sizeHint,
-    ...(cluesInEnglish
-      ? [
-          "  - name: Short clue title for the map list (English, about 2~12 words or concise phrase), unique per clue.",
-          "  - content: Body text players read. 1~3 sentences in English. Atmosphere + deductive hint. Must not contradict description.",
-        ]
-      : [
-          "  - name: 맵 목록에 보이는 짧은 단서 제목(한국어 2~12자), 고유하게.",
-          "  - content: 플레이어가 읽는 본문. 1~3문장. 분위기+추리 단서. description 과 모순 없게.",
-        ]),
+    ...clueNameContent,
     "",
     "[일관성]",
     "- 제목·개요·장소명·단서·용의자가 하나의 사건으로 맞물릴 것.",
@@ -184,12 +206,19 @@ function buildUserPrompt(
   options: {
     teamSize: number | undefined;
     learningObjective: string;
+    caseInEnglish: boolean;
   },
 ): string {
   const lines: string[] = [];
   lines.push(
     "위 시스템 규칙을 모두 지켜, 스키마에 맞는 JSON 객체 하나만 생성해줘. 마크다운·코드 펜스·주석 없이 순수 JSON만.",
   );
+  if (options.caseInEnglish) {
+    lines.push("");
+    lines.push(
+      "[언어] 이번 사건의 제목·사건 개요·조사 장소 이름·용의자 이름·프로필·모든 단서 제목·본문은 영어로만 작성한다( suspect id 는 짧은 ASCII 만 ).",
+    );
+  }
   if (theme.trim()) {
     lines.push("");
     lines.push("[사용자 주제·키워드 — 이 방향으로 사건을 짜되 세부는 채워도 됨]");
@@ -247,6 +276,9 @@ export async function POST(req: NextRequest) {
     cluesPerZone?: unknown;
     teamSize?: unknown;
     learningObjective?: unknown;
+    /** true 이면 사건 전체(제목·개요·장소·용의자·단서)를 영어로 생성 */
+    caseInEnglish?: unknown;
+    /** @deprecated caseInEnglish 와 동일 (하위 호환) */
     cluesInEnglish?: unknown;
   };
 
@@ -301,7 +333,8 @@ export async function POST(req: NextRequest) {
   const learningObjective =
     typeof input.learningObjective === "string" ? input.learningObjective.trim() : "";
 
-  const cluesInEnglish = input.cluesInEnglish === true;
+  const caseInEnglish =
+    input.caseInEnglish === true || input.cluesInEnglish === true;
 
   const openaiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
@@ -313,12 +346,13 @@ export async function POST(req: NextRequest) {
       model: OPENAI_MODEL,
       temperature: 0.9,
       messages: [
-        { role: "system", content: buildSystemPrompt(propAssets, sizeByAsset, cluesInEnglish) },
+        { role: "system", content: buildSystemPrompt(propAssets, sizeByAsset, caseInEnglish) },
         {
           role: "user",
           content: buildUserPrompt(theme, difficulty, cluesPerZone, {
             teamSize,
             learningObjective,
+            caseInEnglish,
           }),
         },
       ],
@@ -367,12 +401,19 @@ export async function POST(req: NextRequest) {
   const assetSet = new Set(propAssets);
   const slotCount = parsed.investigation_zones.length;
 
-  const defaultRoster: AICaseResponse["suspect_roster"] = [
+  const defaultRosterKo: AICaseResponse["suspect_roster"] = [
     { id: "s1", name: "용의자 A", detail: "학생" },
     { id: "s2", name: "용의자 B", detail: "학생" },
   ];
+  const defaultRosterEn: AICaseResponse["suspect_roster"] = [
+    { id: "s1", name: "Suspect A", detail: "Student." },
+    { id: "s2", name: "Suspect B", detail: "Student." },
+  ];
 
-  const suspectRoster = normalizeAiSuspectRoster(parsed.suspect_roster, defaultRoster);
+  const suspectRoster = normalizeAiSuspectRoster(
+    parsed.suspect_roster,
+    caseInEnglish ? defaultRosterEn : defaultRosterKo,
+  );
 
   const sanitized: AICaseResponse = {
     ...parsed,

@@ -25,6 +25,7 @@ import { WaitingLobbyBlock } from "@/components/play/waiting-lobby-block";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { isCulpritCorrect } from "@/lib/report-compare";
+import { validateFinalReportEnglishNarratives } from "@/lib/report-english";
 import {
   findSuspectName,
   parseSuspectRosterFromCase,
@@ -526,7 +527,7 @@ function SandboxStudentBody({
             <PlayPhaseHeader
               phase={3}
               title="범인 지목"
-              description="각자 한 번씩 제출합니다. 범인은 등록된 용의자 중에서만 선택할 수 있습니다."
+              description="각자 한 번씩 제출합니다. 범인은 등록된 용의자 중에서만 선택할 수 있으며, 수법·동기·결정적 단서는 영어로만 작성합니다."
               compact
               rightSlot={
                 <PlayHeaderTeamPlace
@@ -706,6 +707,11 @@ function SandboxFinalReportContent({
       setMessage("용의자 선택과 나머지 항목을 모두 입력해 주세요.");
       return;
     }
+    const englishErr = validateFinalReportEnglishNarratives(values);
+    if (englishErr) {
+      setMessage(englishErr);
+      return;
+    }
     onSubmit(values);
   };
 
@@ -714,7 +720,8 @@ function SandboxFinalReportContent({
       <p className="rounded-md border border-[var(--border)] bg-[var(--tint-accent-weak)] px-3 py-2 text-sm text-[var(--foreground)] shadow-[inset_var(--input-inset)]">
         팀원과 논의한 뒤{" "}
         <strong className="text-[var(--primary)]">한 번만</strong> 제출할 수
-        있습니다.
+        있습니다. 아래 서술 칸은 <strong className="text-[var(--primary)]">영어로만</strong>{" "}
+        작성합니다.
       </p>
       <FinalReportFields
         idPrefix={`sandbox-${player.id}`}
