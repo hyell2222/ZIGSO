@@ -119,7 +119,7 @@ export default function CasesPage() {
           <div className="space-y-6">
             <PageHeader
               title="내 사건"
-              description="사건을 만든 뒤 수사 세션을 열면 학생이 참가 코드로 입장합니다."
+              description="사건을 만든 뒤 플레이 세션을 시작하면 학생이 참가 코드로 입장합니다."
               actions={
                 (casesQuery.data?.length ?? 0) > 0 ? (
                   <Button
@@ -134,7 +134,7 @@ export default function CasesPage() {
               }
             />
             {casesQuery.isLoading ? (
-              <LoadingState variant="section" label="사건 목록을 불러오는 중…" />
+              <LoadingState variant="section" label="불러오는 중…" />
             ) : (casesQuery.data?.length ?? 0) === 0 ? (
               <div className="flex justify-center py-10">
                 <Button type="button" onClick={() => router.push(ROUTES.casesNew)} className="flex items-center gap-2">
@@ -191,7 +191,6 @@ export default function CasesPage() {
                           onClick={() => handleSandbox(row)}
                           disabled={isDeleting}
                           className="gap-2"
-                          title="DB에 데이터를 남기지 않고 사건 흐름을 혼자 시연·검수합니다."
                         >
                           <FlaskConical className="h-4 w-4 shrink-0 text-[var(--accent)]" aria-hidden />
                           시뮬레이션 모드

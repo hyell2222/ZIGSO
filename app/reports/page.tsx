@@ -98,7 +98,7 @@ function ReportsSessionsListPanel({ teacherUserId }: { teacherUserId: string }) 
             description="진행한 세션별로 참가자 현황과 부원별 범인 지목을 확인하고, 파일로 내려받을 수 있습니다."
           />
           {listQuery.isLoading ? (
-            <LoadingState variant="section" label="목록을 불러오는 중…" />
+            <LoadingState variant="section" label="불러오는 중…" />
           ) : listQuery.isError ? (
             <p className="text-sm text-[var(--danger)]">목록을 불러오지 못했습니다.</p>
           ) : (listQuery.data?.length ?? 0) === 0 ? (
@@ -489,7 +489,7 @@ function SessionReportContent() {
       <div className="min-h-screen">
         <TopNav />
         <main className="mx-auto flex w-full max-w-7xl flex-col px-4 py-8">
-          <LoadingState variant="page" label="수사 정보를 불러오는 중…" />
+          <LoadingState variant="page" label="불러오는 중…" />
         </main>
       </div>
     );
@@ -500,7 +500,7 @@ function SessionReportContent() {
       <div className="min-h-screen">
         <TopNav />
         <main className="mx-auto w-full max-w-7xl px-4 py-8">
-          <p className="text-sm text-[var(--danger)]">수사 정보를 불러오지 못했습니다.</p>
+          <p className="text-sm text-[var(--danger)]">불러오지 못했습니다.</p>
         </main>
       </div>
     );
@@ -511,7 +511,7 @@ function SessionReportContent() {
       <div className="min-h-screen">
         <TopNav />
         <main className="mx-auto w-full max-w-7xl px-4 py-8">
-          <p className="text-sm text-[var(--accent)]">이 수사를 볼 권한이 있는 계정이 아닙니다.</p>
+          <p className="text-sm text-[var(--accent)]">권한이 없습니다.</p>
         </main>
       </div>
     );
@@ -533,7 +533,7 @@ function SessionReportContent() {
     const a = document.createElement("a");
     a.href = url;
     const safe = (row.join_code ?? "session").replace(/[^\w.-]+/g, "_").slice(0, 64);
-    a.download = `수사기록_${safe}_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `플레이 세션 기록_${safe}_${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -558,9 +558,9 @@ function SessionReportContent() {
         </div>
 
         {loading ? (
-          <LoadingState variant="section" label="참가자와 팀 정보를 불러오는 중…" />
+          <LoadingState variant="section" label="불러오는 중…" />
         ) : lines.length === 0 ? (
-          <p className="text-sm text-[var(--muted-foreground)]">이 수사에 참가한 학생이 없습니다.</p>
+          <p className="text-sm text-[var(--muted-foreground)]">참가자가 없습니다.</p>
         ) : (
           <div className="space-y-2">
             <div className="overflow-x-auto rounded-lg border border-[var(--border)] shadow-[var(--elevation-sm)]">

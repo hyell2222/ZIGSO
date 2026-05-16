@@ -209,7 +209,7 @@ export async function joinPlayerSession(input: {
 }
 
 /**
- * 수사가 이미 시작된 뒤(`phase` ≠ waiting) 입장한 플레이어에게만 팀·조사 장소를 붙입니다.
+ * 플레이 세션이 이미 시작된 뒤(`phase` ≠ waiting) 입장한 플레이어에게만 팀·조사 장소를 붙입니다.
  * 기존 플레이어의 배정은 변경하지 않습니다.
  */
 export async function assignOrphanPlayersForOngoingSession(sessionId: string) {
@@ -384,7 +384,7 @@ export async function addFoundClueToTeam(teamId: string, clueId: string) {
 }
 
 // =====================================================================
-// 범인 지목서(부원별 1회)
+// 보고서(부원별 1회)
 // =====================================================================
 
 /** 본인 보고서 1건. 미제출이면 null. */
@@ -480,7 +480,7 @@ export async function assignTeamsAndInvestigation(sessionId: string) {
     .single();
   if (sessionError) throw sessionError;
   if (!session?.case_id) {
-    throw new Error("이 수사 세션이 사건 원본과 연결되어 있지 않습니다.");
+    throw new Error("이 플레이 세션이 사건 원본과 연결되어 있지 않습니다.");
   }
   const caseId = session.case_id;
 

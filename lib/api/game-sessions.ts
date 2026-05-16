@@ -53,7 +53,7 @@ export async function listHostSessions(hostId: string) {
 
 export async function startGameSession(caseRecord: CaseRecord, hostId?: string | null) {
   if (!hostId) {
-    throw new Error("수사 세션을 시작하려면 로그인해 주세요.");
+    throw new Error("플레이 세션을 시작하려면 로그인해 주세요.");
   }
 
   const { data: locRows, error: locError } = await supabase

@@ -177,7 +177,6 @@ export function AIGenerateModal({
                 className="h-9 w-9 shrink-0"
                 disabled={isLoading || teamSize <= TEAM_SIZE_MIN}
                 onClick={() => setTeamSize((n) => Math.max(TEAM_SIZE_MIN, n - 1))}
-                aria-label="인원 한 명 줄이기"
               >
                 <Minus className="h-4 w-4" aria-hidden />
               </Button>
@@ -191,7 +190,6 @@ export function AIGenerateModal({
                 className="h-9 w-9 shrink-0"
                 disabled={isLoading || teamSize >= TEAM_SIZE_MAX}
                 onClick={() => setTeamSize((n) => Math.min(TEAM_SIZE_MAX, n + 1))}
-                aria-label="인원 한 명 늘리기"
               >
                 <Plus className="h-4 w-4" aria-hidden />
               </Button>

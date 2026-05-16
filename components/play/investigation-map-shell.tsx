@@ -22,7 +22,7 @@ const InvestigationMap = dynamic(
     ssr: false,
     loading: () => (
       <div className={`${playLoaderRegion} min-h-[12rem] shrink-0`}>
-        <LoadingState variant="section" tone="play" label="맵 데이터를 불러오는 중…" />
+        <LoadingState variant="section" tone="play" label="불러오는 중…" />
       </div>
     ),
   },
@@ -87,7 +87,7 @@ export function InvestigationMapShell({
         </div>
         {mapLoading ? (
           <div className={playLoaderRegion}>
-            <LoadingState variant="section" tone="play" label="장소·단서 정보를 불러오는 중…" />
+            <LoadingState variant="section" tone="play" label="불러오는 중…" />
           </div>
         ) : mapError ? (
           <div className={playLoaderRegion}>

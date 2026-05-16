@@ -71,7 +71,7 @@ type SandboxStudentPanelProps = {
 };
 
 /**
- * 시뮬레이션 학생 화면 — `app/play/page.tsx` 외관과 맞춥니다.
+ * 시뮬레이션 학생 화면 — `app/play/session/page.tsx` 외관과 맞춥니다.
  * 단서 수집 단계에만 장소별 탭을 두어 장소 지도를 전환해서 볼 수 있습니다.
  *
  * 실제 플레이와 동일하게, 첫 진입 시에는 참가 코드(`SANDBOX` 고정·읽기 전용) +
@@ -304,7 +304,6 @@ function TabRow({
       </span>
       <div
         role="tablist"
-        aria-label={label}
         className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto pb-0.5"
       >
         {items.map((item) => {
@@ -424,7 +423,7 @@ function SandboxStudentBody({
         style={PLAY_PAGE_BLACK_BG}
       >
         <p className="text-base font-semibold text-[var(--entry-parchment)]">
-          수사 종료
+          종료
         </p>
         <p className="max-w-md text-xs text-[color-mix(in_srgb,var(--entry-parchment)_72%,var(--entry-parchment-muted))]">
           시뮬레이션이 끝났습니다. 실제 학생 화면에서는 이 시점에 자동으로 메인

@@ -498,7 +498,7 @@ function PropSidebar({
         </p>
       </div>
       {isLoading ? (
-        <LoadingState variant="compact" label="소품을 불러오는 중…" className="min-h-[6rem]" />
+        <LoadingState variant="compact" label="불러오는 중…" className="min-h-[6rem]" />
       ) : assets.length === 0 ? (
         <p className="text-xs text-[var(--muted-foreground,#94a3b8)]">
           사용 가능한 소품이 없어요. Supabase Storage 의 소품bucket 을 확인해주세요.
@@ -1038,7 +1038,6 @@ function MapCanvas({
               key={clue.tempId}
               role="group"
               tabIndex={0}
-              aria-label={`맵 소품: ${clue.asset}`}
               onPointerDown={(event) => {
                 if (event.button !== 0) return;
                 event.stopPropagation();
@@ -1120,7 +1119,6 @@ function MapCanvas({
                       key={hid}
                       type="button"
                       tabIndex={-1}
-                      aria-label={`크기 조절 (${hid})`}
                       className={cn(
                         "pointer-events-auto absolute z-30 flex h-5 w-5 touch-none items-center justify-center rounded-full border-0 bg-transparent p-0 shadow-none",
                         hClass,

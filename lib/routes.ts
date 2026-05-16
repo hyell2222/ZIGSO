@@ -4,12 +4,18 @@
  */
 export const ROUTES = {
   home: "/",
-  /** 학생 플레이 (`?code=` · `nickname=` 쿼리) */
+  /** 학생 입장 화면(블랙아웃 랜딩). `?code=` 로 참가 코드만 미리 채울 수 있습니다. */
   play: "/play/",
+  /** 랜딩에서 인증 후 실제 멀티플레이 세션 UI (`?code=` · `nickname=`) */
+  playSession: "/play/session/",
+  /**
+   * 참가 URL. 닉네임이 없으면 `/play/` 랜딩으로만 이동(QR·공유 링크).
+   * 닉네임이 있으면 `/play/session/` 으로 이동(랜딩에서 제출 직후).
+   */
   playJoin: (joinCode: string, nickname?: string) => {
     const code = encodeURIComponent(joinCode.trim().toUpperCase());
     if (nickname?.trim()) {
-      return `/play/?code=${code}&nickname=${encodeURIComponent(nickname.trim())}`;
+      return `/play/session/?code=${code}&nickname=${encodeURIComponent(nickname.trim())}`;
     }
     return `/play/?code=${code}`;
   },
@@ -28,7 +34,7 @@ export const ROUTES = {
    */
   casesSandbox: (caseId: string) => `/cases/sandbox/?case=${encodeURIComponent(caseId)}`,
 
-  /** 수사 진행 화면 — static export: `session` 쿼리 */
+  /** 플레이 세션 진행 화면 — static export: `session` 쿼리 */
   sessionHost: (sessionId: string) =>
     `/sessions/?session=${encodeURIComponent(sessionId)}`,
 

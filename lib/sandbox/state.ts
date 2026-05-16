@@ -198,13 +198,13 @@ export function nextSandboxPhase(current: CasePhase): CasePhase | null {
 export function getSandboxNextPhaseLabel(current: CasePhase): string {
   switch (current) {
     case "waiting":
-      return "수사 시작";
+      return "시작";
     case "briefing":
       return "다음 단계 (단서 수집)";
     case "investigation":
       return "다음 단계 (범인 지목)";
     case "final_report":
-      return "수사 종료";
+      return "종료";
     default:
       return "—";
   }
@@ -215,5 +215,5 @@ export const SANDBOX_PHASE_LABEL: Record<CasePhase, string> = {
   briefing: "사건 파악",
   investigation: "단서 수집",
   final_report: "범인 지목",
-  session_end: "수사 종료",
+  session_end: "종료",
 };

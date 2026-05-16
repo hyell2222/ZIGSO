@@ -232,7 +232,6 @@ function BrowserWindow({
 }) {
   return (
     <section
-      aria-label={title}
       className={cn(
         "relative flex min-h-0 flex-col overflow-hidden rounded-xl border bg-[var(--card-bg)] shadow-[0_24px_60px_-18px_rgba(0,0,0,0.45),0_8px_24px_-8px_rgba(0,0,0,0.25)]",
         tone === "primary"

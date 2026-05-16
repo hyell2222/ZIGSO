@@ -61,7 +61,7 @@ export function SessionInfoLayout({
         <LoadingState
           variant="section"
           tone="play"
-          label="사건 정보를 불러오는 중…"
+          label="불러오는 중…"
           className="min-h-0 py-4"
         />
       </div>

@@ -55,7 +55,7 @@ export function TeamReportDashboard({
       {loading ? (
         <LoadingState
           variant="section"
-          label="참가자·보고서를 불러오는 중…"
+          label="불러오는 중…"
         />
       ) : groups.length === 0 ? (
         <p className="text-sm text-[var(--muted-foreground)]">

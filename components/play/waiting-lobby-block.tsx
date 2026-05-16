@@ -9,7 +9,7 @@ const WAITING_LOBBY: Record<
   { title: string; body1: string; body2: string | null }
 > = {
   session_loading: {
-    title: "사건 정보를 불러오는 중",
+    title: "불러오는 중",
     body1: "잠시만 기다려 주세요.",
     body2: null,
   },

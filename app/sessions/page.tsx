@@ -354,7 +354,7 @@ function SessionHostContent() {
 
   const phase = (sessionQuery.data?.phase as CasePhase) ?? "waiting";
   const nextPhase = getNextPhase(phase);
-  const nextPhaseLabel = nextPhase === "session_end" ? "수사 종료" : "다음 단계";
+  const nextPhaseLabel = nextPhase === "session_end" ? "종료" : "다음 단계";
   const sessionStarted = phase !== "waiting";
   const sessionEnded = phase === "session_end";
   const shouldShowTimer = isTimedPhase(phase);
@@ -376,9 +376,9 @@ function SessionHostContent() {
     return (
       <div className="min-h-screen">
         <main className="mx-auto w-full max-w-7xl px-4 py-8">
-          <p className="text-sm text-[var(--muted-foreground)]">수사 세션을 찾을 수 없습니다.</p>
+          <p className="text-sm text-[var(--muted-foreground)]">플레이 세션을 찾을 수 없습니다.</p>
           <Button type="button" className="mt-4" variant="secondary" onClick={() => router.push(ROUTES.reports)}>
-            수사 기록
+            플레이 세션 기록
           </Button>
         </main>
       </div>
@@ -409,9 +409,9 @@ function SessionHostContent() {
     return (
       <div className="min-h-screen">
         <main className="mx-auto w-full max-w-7xl px-4 py-8">
-          <p className="text-sm text-[var(--danger)]">수사 세션을 불러오지 못했습니다.</p>
+          <p className="text-sm text-[var(--danger)]">플레이 세션을 불러오지 못했습니다.</p>
           <Button type="button" className="mt-4" variant="secondary" onClick={() => router.push(ROUTES.reports)}>
-            수사 기록
+            플레이 세션 기록
           </Button>
         </main>
       </div>
@@ -423,7 +423,7 @@ function SessionHostContent() {
     return (
       <div className="min-h-screen">
         <main className="mx-auto w-full max-w-7xl px-4 py-8">
-          <p className="text-sm text-[var(--accent)]">이 수사를 진행할 권한이 없습니다.</p>
+          <p className="text-sm text-[var(--accent)]">이 플레이 세션을 진행할 권한이 없습니다.</p>
         </main>
       </div>
     );
@@ -455,7 +455,7 @@ function SessionHostContent() {
           <Loader2 className="h-4 w-4 shrink-0 animate-spin text-[var(--primary)]" aria-hidden />
         </>
       ) : (
-        <>수사 시작</>
+        <>플레이 세션 시작</>
       )}
     </Button>
   ) : null;

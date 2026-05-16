@@ -164,18 +164,15 @@ export function SandboxTeacherPanel({
       onClick={onBegin}
       disabled={noLocations}
       className="gap-2"
-      title={
-        noLocations ? "이 사건에는 조사 장소가 없습니다." : undefined
-      }
     >
-      수사 시작
+      시작
     </Button>
   ) : null;
 
   const nextButton =
     sessionStarted && !sessionEnded ? (
       <Button type="button" onClick={onAdvance} className="gap-2">
-        {phase === "final_report" ? "수사 종료" : "다음 단계"}
+        {phase === "final_report" ? "종료" : "다음 단계"}
       </Button>
     ) : null;
 

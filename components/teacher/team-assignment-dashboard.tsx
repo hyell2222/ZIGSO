@@ -35,7 +35,7 @@ export function TeamAssignmentDashboard({
         </div>
       </header>
       {loading ? (
-        <LoadingState variant="section" label="참가자·팀 정보를 불러오는 중…" />
+        <LoadingState variant="section" label="불러오는 중…" />
       ) : groups.length === 0 ? (
         <p className="text-sm text-[var(--muted-foreground)]">
           배정된 팀이 없습니다.

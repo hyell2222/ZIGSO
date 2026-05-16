@@ -15,9 +15,9 @@ import { Input } from "@/components/ui/input";
 const MYSTERY_CLUB_TAG = "MYSTERY CLUB";
 const LINE_CONNECTING_REST = "서버에 접속 중입니다…";
 const LINE_AUTH_REQUIRED = "[WARNING] 접근 권한이 필요합니다.";
-const ACCESS_PROMPT_DESKTOP = "인증을 시작하려면 Y 키를 누르세요.";
-const ACCESS_PROMPT_MOBILE = "인증을 시작하려면 화면을 두 번 탭하세요.";
-const DOUBLE_TAP_WINDOW_MS = 420;
+const ACCESS_PROMPT_AUTO = "잠시 후 입장 인증 창이 열립니다…";
+/** 프리루드·경고 문구 표시 후 입장 모달까지 대기 (PC·모바일 동일) */
+const AUTO_MODAL_DELAY_MS = 3000;
 
 const LOAD_BAR_DURATION_MS = 2200;
 const LOAD_BAR_STEPS = 28;
@@ -58,16 +58,17 @@ function EntryLedRow({ className }: { className?: string }) {
   );
 }
 
-export function StudentBlackoutLanding() {
+type StudentBlackoutLandingProps = {
+  /** QR·공유 링크 등으로 전달된 참가 코드(랜딩 폼에 미리 채움) */
+  prefillJoinCode?: string;
+  prefillNickname?: string;
+};
+
+export function StudentBlackoutLanding({
+  prefillJoinCode,
+  prefillNickname,
+}: StudentBlackoutLandingProps = {}) {
   const router = useRouter();
-  const [isMobileInput] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return (
-      window.matchMedia("(pointer: coarse)").matches ||
-      "ontouchstart" in window ||
-      navigator.maxTouchPoints > 0
-    );
-  });
   const [clubTitle, setClubTitle] = useState("");
   const [connectLine, setConnectLine] = useState("");
   const [authLine, setAuthLine] = useState("");
@@ -78,19 +79,25 @@ export function StudentBlackoutLanding() {
   const [awaitingAccessKey, setAwaitingAccessKey] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [hardboiled, setHardboiled] = useState("");
-  const [caseCode, setCaseCode] = useState("");
-  const [nickname, setNickname] = useState("");
+  const [caseCode, setCaseCode] = useState(() => prefillJoinCode ?? "");
+  const [nickname, setNickname] = useState(() => prefillNickname ?? "");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [tapHint, setTapHint] = useState("");
+
+  useEffect(() => {
+    if (prefillJoinCode) setCaseCode(prefillJoinCode);
+  }, [prefillJoinCode]);
+
+  useEffect(() => {
+    if (prefillNickname) setNickname(prefillNickname);
+  }, [prefillNickname]);
 
   const preludeRunRef = useRef(0);
-  const accessTapRef = useRef(0);
-  const accessPrompt = isMobileInput ? ACCESS_PROMPT_MOBILE : ACCESS_PROMPT_DESKTOP;
 
   useEffect(() => {
     const run = ++preludeRunRef.current;
     let cancelled = false;
+    let modalDelayTimer: ReturnType<typeof globalThis.setTimeout> | undefined;
     const shouldAbort = () => cancelled || preludeRunRef.current !== run;
 
     const reduce =
@@ -149,15 +156,25 @@ export function StudentBlackoutLanding() {
       await new Promise((r) => setTimeout(r, afterAuthMs));
       if (shouldAbort()) return;
 
-      await typeChars(accessPrompt, (chunk) => setAccessPromptText(chunk), accessMs, shouldAbort);
+      await typeChars(ACCESS_PROMPT_AUTO, (chunk) => setAccessPromptText(chunk), accessMs, shouldAbort);
       if (shouldAbort()) return;
       setAwaitingAccessKey(true);
+      await new Promise<void>((resolve) => {
+        modalDelayTimer = globalThis.setTimeout(() => {
+          modalDelayTimer = undefined;
+          resolve();
+        }, AUTO_MODAL_DELAY_MS);
+      });
+      if (shouldAbort()) return;
+      setAwaitingAccessKey(false);
+      setModalOpen(true);
     })();
 
     return () => {
       cancelled = true;
+      if (modalDelayTimer !== undefined) globalThis.clearTimeout(modalDelayTimer);
     };
-  }, [accessPrompt]);
+  }, []);
 
   useEffect(() => {
     if (!modalOpen) return;
@@ -184,59 +201,6 @@ export function StudentBlackoutLanding() {
     }, 120);
     return () => window.clearTimeout(id);
   }, [modalOpen]);
-
-  useEffect(() => {
-    if (!awaitingAccessKey || modalOpen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") e.preventDefault();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [awaitingAccessKey, modalOpen]);
-
-  useEffect(() => {
-    if (!awaitingAccessKey) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== "y" && e.key !== "Y") return;
-      e.preventDefault();
-      setAwaitingAccessKey(false);
-      setModalOpen(true);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [awaitingAccessKey]);
-
-  useEffect(() => {
-    if (!awaitingAccessKey || modalOpen) return;
-
-    const onPointerDown = (event: PointerEvent) => {
-      // 데스크톱 마우스 단일 클릭으로는 기존 키보드 UX를 유지.
-      if (event.pointerType === "mouse") return;
-      const now = Date.now();
-      const last = accessTapRef.current;
-      accessTapRef.current = now;
-      if (now - last <= DOUBLE_TAP_WINDOW_MS) {
-        event.preventDefault();
-        setTapHint("");
-        setAwaitingAccessKey(false);
-        setModalOpen(true);
-        return;
-      }
-      setTapHint("한 번 더 탭하면 인증이 시작됩니다.");
-    };
-
-    window.addEventListener("pointerdown", onPointerDown, { passive: false });
-    return () => window.removeEventListener("pointerdown", onPointerDown);
-  }, [awaitingAccessKey, modalOpen]);
-
-  useEffect(() => {
-    if (!awaitingAccessKey) {
-      setTapHint("");
-      return;
-    }
-    const id = window.setTimeout(() => setTapHint(""), 1600);
-    return () => window.clearTimeout(id);
-  }, [awaitingAccessKey, tapHint]);
 
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -358,18 +322,10 @@ export function StudentBlackoutLanding() {
                 awaitingAccessKey ? (
                   <p className="text-balance text-[color:var(--entry-parchment-muted)]">
                     {accessPromptText}
-                    {!awaitingAccessKey && accessPromptText.length < accessPrompt.length ? (
+                    {!awaitingAccessKey && accessPromptText.length < ACCESS_PROMPT_AUTO.length ? (
                       <span className="ml-px inline-block h-3 w-0.5 translate-y-px animate-pulse bg-[var(--entry-accent)] align-middle md:h-3.5" />
                     ) : null}
-                    {awaitingAccessKey ? (
-                      <span className="ml-2 inline font-medium text-[color:var(--entry-accent-soft)] motion-safe:animate-pulse">
-                        {isMobileInput ? "[ 더블탭 ]" : "[ Y ]"}
-                      </span>
-                    ) : null}
                   </p>
-                ) : null}
-                {awaitingAccessKey && tapHint ? (
-                  <p className="text-xs text-[color:var(--entry-accent-soft)]">{tapHint}</p>
                 ) : null}
               </div>
             )}
@@ -444,7 +400,7 @@ export function StudentBlackoutLanding() {
             className="h-11 w-full text-sm"
             size="lg"
           >
-            {busy ? "참가 정보 확인 중…" : "참가하기"}
+            {busy ? "확인 중…" : "참가하기"}
           </Button>
         </form>
         {error ? <p className="text-center text-sm font-medium text-[var(--danger)]">{error}</p> : null}
