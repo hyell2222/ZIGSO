@@ -1,4 +1,4 @@
-# CODEZERO Submission Guide
+# LUNCHRUSH Submission Guide
 
 The competition requires this structure:
 

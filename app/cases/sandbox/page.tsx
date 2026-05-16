@@ -7,47 +7,41 @@ import { Suspense, useCallback, useState, type ReactNode } from "react";
 import { SandboxStudentPanel } from "@/components/sandbox/sandbox-student-panel";
 import { SandboxTeacherPanel } from "@/components/sandbox/sandbox-teacher-panel";
 import { LoadingState } from "@/components/ui/loading-state";
-import { getCaseFull } from "@/lib/api/cases";
-import type { CasePhase } from "@/lib/api/cases";
+import { getLesson, parseScenarioPack } from "@/lib/api/lessons";
+import type { SessionPhase } from "@/lib/api/lessons";
 import { useRequireTeacherSession } from "@/lib/auth/use-require-teacher-session";
+import { tryAcquireIngredient, tryCompleteMenu } from "@/lib/lunch/engine";
+import type { AcquiredIngredient, CompletedMenu } from "@/lib/lunch/types";
 import {
   buildSandboxAssignments,
   createInitialSandboxState,
   nextSandboxPhase,
-  type SandboxPlayerReport,
   type SandboxState,
 } from "@/lib/sandbox/state";
 import { cn } from "@/lib/utils";
 
 function SandboxPageContent() {
   const searchParams = useSearchParams();
-  const caseId = searchParams.get("case")?.trim() ?? "";
+  const lessonId = searchParams.get("case")?.trim() ?? searchParams.get("lesson")?.trim() ?? "";
   const teacherSession = useRequireTeacherSession();
 
-  const caseQuery = useQuery({
-    queryKey: ["sandbox-case", caseId],
-    queryFn: () => getCaseFull(caseId),
-    enabled: Boolean(caseId && teacherSession.data),
+  const lessonQuery = useQuery({
+    queryKey: ["sandbox-lesson", lessonId],
+    queryFn: () => getLesson(lessonId),
+    enabled: Boolean(lessonId && teacherSession.data),
   });
 
-  const [state, setState] = useState<SandboxState>(() =>
-    createInitialSandboxState(),
-  );
+  const pack = parseScenarioPack(lessonQuery.data?.scenario_pack);
+
+  const [state, setState] = useState<SandboxState>(() => createInitialSandboxState());
 
   const beginSandbox = useCallback(() => {
-    if (!caseQuery.data) return;
-    if (caseQuery.data.locations.length === 0) return;
-    const cid = caseId.trim();
-    if (!cid) return;
+    if (!pack || !lessonId) return;
     setState((prev) => {
-      const { teams, players } = buildSandboxAssignments(
-        cid,
-        caseQuery.data!.locations,
-        prev.realStudentNickname,
-      );
+      const { teams, players } = buildSandboxAssignments(lessonId, pack, prev.realStudentNickname);
       return { ...prev, phase: "briefing", teams, players };
     });
-  }, [caseId, caseQuery.data]);
+  }, [lessonId, pack]);
 
   const advancePhase = useCallback(() => {
     setState((prev) => {
@@ -74,76 +68,80 @@ function SandboxPageContent() {
     setState((prev) => ({ ...prev, realStudentNickname: null }));
   }, []);
 
-  const handleTeamCluesFound = useCallback(
-    (teamId: string, clueIds: string[]) => {
+  const handleAcquire = useCallback(
+    (teamId: string, ingredientId: string, answer: string, hintStageUsed: 1 | 2 | 3 | 4 | 5) => {
+      if (!pack) return;
+      const result = tryAcquireIngredient(pack, ingredientId, answer, hintStageUsed);
+      if (!result.ok) throw new Error(result.reason);
+      setState((prev) => ({
+        ...prev,
+        teams: prev.teams.map((t) => {
+          if (t.id !== teamId) return t;
+          if (t.acquired_ingredients.some((a) => a.ingredientId === ingredientId)) return t;
+          return {
+            ...t,
+            acquired_ingredients: [...t.acquired_ingredients, result.record],
+          };
+        }),
+      }));
+    },
+    [pack],
+  );
+
+  const handleCompleteMenu = useCallback(
+    (teamId: string, menuId: string, submittedSteps: string[]) => {
+      if (!pack) return;
       setState((prev) => {
         const team = prev.teams.find((t) => t.id === teamId);
         if (!team) return prev;
-        const set = new Set(team.foundClueIds);
-        let changed = false;
-        for (const id of clueIds) {
-          if (!set.has(id)) {
-            set.add(id);
-            changed = true;
-          }
-        }
-        if (!changed) return prev;
+        const result = tryCompleteMenu(pack, menuId, team.acquired_ingredients, submittedSteps);
+        if (!result.ok) throw new Error(result.reason);
         return {
           ...prev,
           teams: prev.teams.map((t) =>
-            t.id === teamId ? { ...t, foundClueIds: Array.from(set) } : t,
+            t.id === teamId
+              ? { ...t, completed_menus: [...t.completed_menus, result.record] }
+              : t,
           ),
         };
       });
     },
-    [],
+    [pack],
   );
 
-  const handleSubmitReport = useCallback(
-    (
-      playerId: string,
-      report: {
-        suspectId: string;
-        method: string;
-        motive: string;
-        decisiveClue: string;
-      },
-    ) => {
+  const handleSubmitTray = useCallback(
+    (teamId: string) => {
+      if (!pack) return;
       setState((prev) => {
-        const idx = prev.players.findIndex((p) => p.id === playerId);
-        if (idx < 0) return prev;
-        if (prev.players[idx]!.report) return prev;
-        const submission: SandboxPlayerReport = {
-          suspectId: report.suspectId.trim(),
-          method: report.method.trim(),
-          motive: report.motive.trim(),
-          decisiveClue: report.decisiveClue.trim(),
-          submittedAt: new Date().toISOString(),
+        const team = prev.teams.find((t) => t.id === teamId);
+        if (!team || team.tray_submitted_at) return prev;
+        const required = pack.menus.map((m) => m.id);
+        const done = new Set(team.completed_menus.map((m) => m.menuId));
+        if (required.some((id) => !done.has(id))) {
+          throw new Error("아직 완성하지 않은 메뉴가 있습니다.");
+        }
+        return {
+          ...prev,
+          teams: prev.teams.map((t) =>
+            t.id === teamId ? { ...t, tray_submitted_at: new Date().toISOString() } : t,
+          ),
         };
-        const nextPlayers = prev.players.slice();
-        nextPlayers[idx] = { ...prev.players[idx]!, report: submission };
-        return { ...prev, players: nextPlayers };
       });
     },
-    [],
+    [pack],
   );
 
-  const phase: CasePhase = state.phase;
+  const phase: SessionPhase = state.phase;
 
-  if (!caseId) {
+  if (!lessonId) {
     return (
       <SandboxFullPageMessage>
-        <p className="text-sm text-[var(--muted-foreground)]">
-          사건 정보를 찾을 수 없습니다.
-        </p>
+        <p className="text-sm text-[var(--muted-foreground)]">수업 정보를 찾을 수 없습니다.</p>
       </SandboxFullPageMessage>
     );
   }
 
-  if (
-    teacherSession.isLoading ||
-    (teacherSession.isFetching && !teacherSession.data)
-  ) {
+  if (teacherSession.isLoading || (teacherSession.isFetching && !teacherSession.data)) {
     return (
       <SandboxFullPageMessage>
         <LoadingState variant="page" />
@@ -151,7 +149,7 @@ function SandboxPageContent() {
     );
   }
 
-  if (caseQuery.isLoading) {
+  if (lessonQuery.isLoading) {
     return (
       <SandboxFullPageMessage>
         <LoadingState variant="page" />
@@ -159,34 +157,33 @@ function SandboxPageContent() {
     );
   }
 
-  if (caseQuery.isError || !caseQuery.data) {
+  if (lessonQuery.isError || !lessonQuery.data || !pack) {
     return (
       <SandboxFullPageMessage>
         <p className="text-sm text-[var(--danger)]">
-          사건 데이터를 불러오지 못했습니다.
-          {caseQuery.error instanceof Error
-            ? ` ${caseQuery.error.message}`
-            : null}
+          수업 데이터를 불러오지 못했습니다.
+          {lessonQuery.error instanceof Error ? ` ${lessonQuery.error.message}` : null}
         </p>
       </SandboxFullPageMessage>
     );
   }
 
-  const { caseRecord, locations, clues } = caseQuery.data;
+  const lesson = lessonQuery.data;
 
   return (
     <main
-      className="grid h-dvh min-h-0 w-full grid-cols-1 gap-3 p-3 sm:p-4 lg:grid-cols-2 lg:gap-4 lg:p-5"
+      className="grid h-dvh min-h-0 w-full grid-cols-2 grid-rows-1 gap-3 p-3 sm:gap-4 sm:p-4"
       style={{
         backgroundColor: "color-mix(in srgb, var(--ink) 8%, var(--surface))",
         backgroundImage:
           "radial-gradient(circle at 12% -10%, color-mix(in srgb, var(--primary) 8%, transparent), transparent 50%), radial-gradient(circle at 90% 110%, color-mix(in srgb, var(--accent) 6%, transparent), transparent 55%)",
       }}
     >
-      <BrowserWindow title="교사 화면" tone="primary">
+      <BrowserWindow title="교사 화면" tone="primary" className="min-w-0">
         <SandboxTeacherPanel
-          caseRecord={caseRecord}
-          locations={locations}
+          lessonTitle={lesson.title}
+          pack={pack}
+          lessonId={lessonId}
           phase={phase}
           teams={state.teams}
           players={state.players}
@@ -197,46 +194,45 @@ function SandboxPageContent() {
         />
       </BrowserWindow>
 
-      <BrowserWindow title="학생 화면" tone="accent">
+      <BrowserWindow title="학생 화면" tone="accent" className="min-w-0">
         <SandboxStudentPanel
-          caseRecord={caseRecord}
-          locations={locations}
-          clues={clues}
+          lessonTitle={lesson.title}
+          description={lesson.description}
+          pack={pack}
           phase={phase}
           teams={state.teams}
           players={state.players}
           realStudentNickname={state.realStudentNickname}
           onJoinAsStudent={joinAsStudent}
           onLeaveAsStudent={leaveAsStudent}
-          onTeamCluesFound={handleTeamCluesFound}
-          onSubmitReport={handleSubmitReport}
+          onAcquire={handleAcquire}
+          onCompleteMenu={handleCompleteMenu}
+          onSubmitTray={handleSubmitTray}
         />
       </BrowserWindow>
     </main>
   );
 }
 
-/**
- * "브라우저 창" 외관 — 트래픽 라이트 + 화면 라벨 + 컨텐츠 영역.
- * 컨텐츠 자체가 내부 높이를 관리하도록 `min-h-0 flex-1 overflow-hidden` 컨테이너를
- * 그대로 자식에게 넘기며, 자식 패널이 `h-full` 로 채워 자체 스크롤을 가집니다.
- */
 function BrowserWindow({
   title,
   tone,
   children,
+  className,
 }: {
   title: string;
   tone: "primary" | "accent";
   children: ReactNode;
+  className?: string;
 }) {
   return (
     <section
       className={cn(
-        "relative flex min-h-0 flex-col overflow-hidden rounded-xl border bg-[var(--card-bg)] shadow-[0_24px_60px_-18px_rgba(0,0,0,0.45),0_8px_24px_-8px_rgba(0,0,0,0.25)]",
+        "relative flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-xl border bg-[var(--card-bg)] shadow-[0_24px_60px_-18px_rgba(0,0,0,0.45),0_8px_24px_-8px_rgba(0,0,0,0.25)]",
         tone === "primary"
           ? "border-[color-mix(in_srgb,var(--primary)_45%,var(--border))]"
           : "border-[color-mix(in_srgb,var(--accent)_45%,var(--border))]",
+        className,
       )}
     >
       <header

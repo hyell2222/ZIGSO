@@ -1,0 +1,134 @@
+.card {
+  gap: 0.85rem;
+  padding: 1.35rem 1.5rem;
+  border-radius: 1.25rem;
+  border: 2px solid color-mix(in srgb, var(--primary) 20%, white);
+  background: color-mix(in srgb, white 92%, var(--entry-shell));
+  box-shadow:
+    var(--play-shadow-soft),
+    0 5px 0 color-mix(in srgb, var(--primary) 10%, transparent);
+}
+
+.cardCompact {
+  gap: 0.65rem;
+  padding: 1rem 1.1rem;
+  border-radius: 1rem;
+}
+
+.trayIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: 9999px;
+  border: 2px solid color-mix(in srgb, var(--highlight) 40%, white);
+  background: color-mix(in srgb, var(--highlight) 12%, white);
+  font-size: 1.65rem;
+  line-height: 1;
+  animation: playTrayBounce 2.4s ease-in-out infinite;
+}
+
+.trayIconCompact {
+  width: 2.5rem;
+  height: 2.5rem;
+  font-size: 1.25rem;
+}
+
+.title {
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--entry-parchment);
+}
+
+.titleCompact {
+  font-size: 0.9rem;
+}
+
+.sessionTitle {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: color-mix(in srgb, var(--primary) 88%, var(--ink));
+}
+
+.sessionTitleCompact {
+  font-size: 0.8rem;
+}
+
+.meta {
+  font-size: 0.78rem;
+  color: var(--entry-parchment-muted);
+}
+
+.metaCompact {
+  font-size: 0.7rem;
+}
+
+.code {
+  font-family: var(--font-dunggeunmo), monospace;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--primary);
+}
+
+.dot {
+  margin-inline: 0.35rem;
+  opacity: 0.5;
+}
+
+.body {
+  font-size: 0.8rem;
+  line-height: 1.55;
+  color: var(--entry-parchment-muted);
+}
+
+.bodyCompact {
+  font-size: 0.72rem;
+}
+
+.dots {
+  display: flex;
+  justify-content: center;
+  gap: 0.35rem;
+  padding-top: 0.25rem;
+}
+
+.dots span {
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--highlight) 75%, var(--primary));
+  animation: waitLobbyDot 0.85s ease-in-out infinite;
+}
+
+.dots span:nth-child(2) {
+  animation-delay: 0.12s;
+}
+
+.dots span:nth-child(3) {
+  animation-delay: 0.24s;
+}
+
+@keyframes waitLobbyDot {
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trayIcon {
+    animation: none;
+  }
+
+  .dots span {
+    animation: none;
+    opacity: 0.7;
+  }
+}

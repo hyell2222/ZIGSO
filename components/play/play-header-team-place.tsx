@@ -12,12 +12,14 @@ import { cn } from "@/lib/utils";
 export function PlayHeaderTeamPlace({
   teamName,
   placeName,
+  placeLabel = "담당 장소",
   pending,
   className,
   compact = false,
 }: {
   teamName: string | null;
   placeName: string | null;
+  placeLabel?: string;
   pending?: boolean;
   className?: string;
   /** 샌드박스 패널 등에서 패딩·본문 글자 크기 축소 */
@@ -96,7 +98,7 @@ export function PlayHeaderTeamPlace({
                 compact ? "text-[9px]" : "text-[10px]",
               )}
             >
-              담당 장소
+              {placeLabel}
             </p>
             <p
               className={cn(

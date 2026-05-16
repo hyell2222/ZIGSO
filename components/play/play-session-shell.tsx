@@ -1,28 +1,23 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2 } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import {
-  FinalReportFields,
-  FinalReportSubmittedBanner,
-  type FinalReportFieldValues,
-} from "@/components/play/final-report-fields";
-import { InvestigationMapShell } from "@/components/play/investigation-map-shell";
+import { IngredientExpertPanel } from "@/components/play/ingredient-expert-panel";
+import { ScenarioBriefingLayout } from "@/components/play/scenario-briefing-layout";
+import { TeamKitchenPanel } from "@/components/play/team-kitchen-panel";
 import { PlayPhaseHeader } from "@/components/play/play-phase-header";
 import {
   PLAY_PAGE_BLACK_BG,
   PlayAtmosphere,
+  playLoaderRegion,
   playPhaseHeaderChromeInner,
   playPhaseHeaderChromeShell,
-  playLoaderRegion,
   playSurfaceCool,
   playSurfacePanel,
 } from "@/components/play/play-atmosphere";
 import { PlayHeaderTeamPlace } from "@/components/play/play-header-team-place";
-import { SessionInfoLayout } from "@/components/play/session-info-layout";
 import { WaitingLobbyBlock } from "@/components/play/waiting-lobby-block";
 import { Button } from "@/components/ui/button";
 import { LoadingState } from "@/components/ui/loading-state";
@@ -30,32 +25,24 @@ import { Modal } from "@/components/ui/modal";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
+import { parseScenarioPack } from "@/lib/api/lessons";
+import type { SessionPhase } from "@/lib/api/lessons";
 import {
-  addFoundClueToTeam,
   assignOrphanPlayersForOngoingSession,
   getPlayerById,
-  getPlayerReport,
-  getPlayerWithInvestigationZone,
   getPlaySessionDetails,
-  getCaseMapEntities,
   getSessionByJoinCode,
   getTeamById,
   joinPlayerSession,
-  listTeamReports,
   setPlayerOnline,
-  submitPlayerReport,
 } from "@/lib/api/play";
-import { validateFinalReportEnglishNarratives } from "@/lib/report-english";
 import {
   clearResumeRecord,
   getResumeRecord,
   saveResumeRecord,
   type ResumeRecord,
 } from "@/lib/play-resume";
-import type { CasePhase } from "@/lib/api/cases";
 import { getSessionRoomChannelName } from "@/lib/realtime/session-presence";
-import { isCulpritCorrect } from "@/lib/report-compare";
-import { findSuspectName, parseSuspectRosterFromCase } from "@/lib/suspects";
 import { ROUTES } from "@/lib/routes";
 import { hasSupabaseEnv, supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
@@ -73,27 +60,19 @@ export function PlaySessionShell({
   const autoJoinAttempted = useRef(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [playerId, setPlayerId] = useState<string | null>(null);
-  const [discoveredClueIds, setDiscoveredClueIds] = useState<string[]>([]);
   const [message, setMessage] = useState<string | null>(null);
   const [resumeDecided, setResumeDecided] = useState(false);
-  const [reportValues, setReportValues] = useState<FinalReportFieldValues>({
-    suspectId: "",
-    method: "",
-    motive: "",
-    decisiveClue: "",
-  });
 
   const playerQuery = useQuery({
     queryKey: ["play-player", playerId],
-    queryFn: async () => getPlayerWithInvestigationZone(playerId as string),
+    queryFn: async () => getPlayerById(playerId as string),
     enabled: Boolean(playerId),
     refetchInterval: playerId ? 3_000 : false,
     refetchIntervalInBackground: true,
   });
 
-  const investigationLocationId = playerQuery.data?.investigation_location_id ?? null;
+  const assignedIngredientId = playerQuery.data?.assigned_ingredient_id ?? null;
   const teamId = playerQuery.data?.team_id ?? null;
-  const zoneName = playerQuery.data?.investigation_zone?.name ?? null;
 
   const teamQuery = useQuery({
     queryKey: ["play-team", teamId],
@@ -104,24 +83,6 @@ export function PlaySessionShell({
   });
 
   const teamName = teamQuery.data?.name ?? null;
-
-  const playerReportQuery = useQuery({
-    queryKey: ["play-player-report", playerId],
-    queryFn: async () => getPlayerReport(playerId as string),
-    enabled: Boolean(playerId),
-    refetchInterval: playerId ? 5_000 : false,
-    refetchIntervalInBackground: true,
-  });
-  const playerReport = playerReportQuery.data ?? null;
-  const reportSubmitted = Boolean(playerReport);
-
-  const teamReportsQuery = useQuery({
-    queryKey: ["play-team-reports", teamId],
-    queryFn: async () => listTeamReports(teamId as string),
-    enabled: Boolean(teamId && reportSubmitted),
-    refetchInterval: teamId && reportSubmitted ? 5_000 : false,
-    refetchIntervalInBackground: true,
-  });
 
   const sessionQuery = useQuery({
     queryKey: ["play-session", sessionId],
@@ -135,19 +96,10 @@ export function PlaySessionShell({
     refetchIntervalInBackground: true,
   });
 
-  const caseRoster = useMemo(
-    () => parseSuspectRosterFromCase(sessionQuery.data?.cases?.suspect_roster),
-    [sessionQuery.data?.cases?.suspect_roster],
+  const scenarioPack = useMemo(
+    () => parseScenarioPack(sessionQuery.data?.lessons?.scenario_pack),
+    [sessionQuery.data?.lessons?.scenario_pack],
   );
-  const answerSuspectId = sessionQuery.data?.cases?.answer_suspect_id ?? null;
-  const teamMajority = useMemo(
-    () => computeTeamMajority(teamReportsQuery.data ?? []),
-    [teamReportsQuery.data],
-  );
-  const culpritCorrect = isCulpritCorrect(answerSuspectId, teamMajority.suspectId);
-  const trueCulpritName = findSuspectName(caseRoster, answerSuspectId);
-  const majoritySuspectName = findSuspectName(caseRoster, teamMajority.suspectId);
-  const ownSuspectName = findSuspectName(caseRoster, playerReport?.suspect_id ?? null);
 
   const resumeQuery = useQuery({
     queryKey: ["play-resume", joinCode],
@@ -187,7 +139,7 @@ export function PlaySessionShell({
       })
       .on(
         "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "game_sessions", filter: `id=eq.${sessionId}` },
+        { event: "UPDATE", schema: "public", table: "sessions", filter: `id=eq.${sessionId}` },
         () => {
           void queryClient.invalidateQueries({ queryKey: ["play-session", sessionId] });
         },
@@ -206,24 +158,12 @@ export function PlaySessionShell({
           if (teamId) void queryClient.invalidateQueries({ queryKey: ["play-team", teamId] });
         },
       )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "player_reports", filter: `session_id=eq.${sessionId}` },
-        () => {
-          if (playerId)
-            void queryClient.invalidateQueries({ queryKey: ["play-player-report", playerId] });
-          if (teamId)
-            void queryClient.invalidateQueries({ queryKey: ["play-team-reports", teamId] });
-        },
-      )
       .subscribe((status) => {
         if (status === "SUBSCRIBED") {
           void channel.track({
             role: "player",
             player_id: playerId,
             nickname: nickname.trim() || "참가자",
-            investigation_location_id: investigationLocationId ?? undefined,
-            zone_name: zoneName ?? undefined,
           });
           return;
         }
@@ -236,9 +176,9 @@ export function PlaySessionShell({
       void channel.untrack().catch(() => {});
       void supabase.removeChannel(channel);
     };
-  }, [sessionId, playerId, teamId, investigationLocationId, zoneName, nickname, queryClient]);
+  }, [sessionId, playerId, teamId, nickname, queryClient]);
 
-  const sessionPhase = sessionQuery.data?.phase as CasePhase | null | undefined;
+  const sessionPhase = sessionQuery.data?.phase as SessionPhase | null | undefined;
 
   useEffect(() => {
     if (sessionPhase !== "session_end") return;
@@ -271,7 +211,7 @@ export function PlaySessionShell({
         nickname: nick,
       });
       setPlayerId(result.player.id);
-      const phase = session.phase as CasePhase | null | undefined;
+      const phase = session.phase as SessionPhase | null | undefined;
       if (phase && phase !== "waiting" && phase !== "session_end") {
         await assignOrphanPlayersForOngoingSession(session.id);
       }
@@ -304,12 +244,12 @@ export function PlaySessionShell({
     });
     try {
       const d = await getPlaySessionDetails(rec.sessionId);
-      const ph = d.phase as CasePhase | null | undefined;
+      const ph = d.phase as SessionPhase | null | undefined;
       if (ph && ph !== "waiting" && ph !== "session_end") {
         await assignOrphanPlayersForOngoingSession(rec.sessionId);
       }
     } catch {
-      /* 배정 실패 시에도 입장은 유지; 플레이어 쿼리로 재시도 */
+      /* 배정 실패 시에도 입장 유지 */
     }
     void queryClient.invalidateQueries({ queryKey: ["play-player", rec.playerId] });
     void queryClient.invalidateQueries({ queryKey: ["play-session", rec.sessionId] });
@@ -332,12 +272,16 @@ export function PlaySessionShell({
     autoJoinAttempted.current = true;
     setNickname(initialNickname.trim());
     joinAndRegisterMutation.mutate({ nickname: initialNickname.trim() });
-    // mutate is stable; omit mutation object from deps to avoid redundant runs
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialNickname, playerId, sessionId, resumeQuery.isLoading, resumeQuery.data, resumeDecided]);
 
   const hasJoinedSession = Boolean(playerId && sessionId);
-  const hasAssignment = Boolean(investigationLocationId && teamId);
+  const hasAssignment = Boolean(assignedIngredientId && teamId);
+
+  const teamAcquiredIds = useMemo(
+    () => new Set((teamQuery.data?.acquired_ingredients ?? []).map((a) => a.ingredientId)),
+    [teamQuery.data?.acquired_ingredients],
+  );
 
   const isWaitingLobby =
     hasJoinedSession &&
@@ -359,218 +303,49 @@ export function PlaySessionShell({
   const isInvestigation = hasJoinedSession && hasAssignment && sessionPhase === "investigation";
   const isFinalReport = hasJoinedSession && sessionPhase === "final_report";
 
-  const mapQuery = useQuery({
-    queryKey: ["play-case-map", sessionQuery.data?.case_id, investigationLocationId, sessionPhase],
-    queryFn: async () =>
-      getCaseMapEntities(sessionQuery.data!.case_id!, {
-        restrictToInvestigationLocationId: investigationLocationId,
-      }),
-    enabled: Boolean(isInvestigation && sessionQuery.data?.case_id),
-  });
-
-  const syncedClueIdsRef = useRef<Set<string>>(new Set());
-  useEffect(() => {
-    if (!teamId) return;
-    const newlyFound = discoveredClueIds.filter((id) => !syncedClueIdsRef.current.has(id));
-    if (newlyFound.length === 0) return;
-    newlyFound.forEach((id) => syncedClueIdsRef.current.add(id));
-    void Promise.all(newlyFound.map((id) => addFoundClueToTeam(teamId, id))).catch(() => {});
-  }, [discoveredClueIds, teamId]);
-
-  useEffect(() => {
-    if (!sessionId) return;
-    const t = window.setTimeout(() => {
-      setDiscoveredClueIds([]);
-      syncedClueIdsRef.current = new Set();
-    }, 0);
-    return () => window.clearTimeout(t);
-  }, [sessionId]);
-
-  const reportMutation = useMutation({
-    mutationFn: async () => {
-      if (!playerId) throw new Error("부원 정보가 없습니다.");
-      if (!sessionId) throw new Error("세션 정보가 없습니다.");
-      await submitPlayerReport(
-        { playerId, sessionId, teamId },
-        {
-          suspectId: reportValues.suspectId,
-          method: reportValues.method,
-          motive: reportValues.motive,
-          decisiveClue: reportValues.decisiveClue,
-        },
-      );
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["play-player-report", playerId] });
-      if (teamId)
-        void queryClient.invalidateQueries({ queryKey: ["play-team-reports", teamId] });
-    },
-    onError: (e: Error) => setMessage(e.message),
-  });
-
-  const handleReportSubmit = (e: FormEvent) => {
-    e.preventDefault();
-    setMessage(null);
-    const { suspectId, method, motive, decisiveClue } = reportValues;
-    if (!suspectId.trim() || !method.trim() || !motive.trim() || !decisiveClue.trim()) {
-      setMessage("용의자 선택과 나머지 항목을 모두 입력해 주세요.");
-      return;
-    }
-    const englishErr = validateFinalReportEnglishNarratives({
-      method,
-      motive,
-      decisiveClue,
-    });
-    if (englishErr) {
-      setMessage(englishErr);
-      return;
-    }
-    reportMutation.mutate();
-  };
-
-  if (hasSupabaseEnv && isInvestigation && sessionPhase) {
+  if (
+    hasSupabaseEnv &&
+    isInvestigation &&
+    scenarioPack &&
+    playerId &&
+    teamId &&
+    assignedIngredientId
+  ) {
     return (
-      <InvestigationMapShell
-        mapLoading={mapQuery.isLoading}
-        mapError={mapQuery.error as Error | null}
-        locations={mapQuery.data?.locations ?? []}
-        clues={mapQuery.data?.clues ?? []}
-        discoveredClueIds={discoveredClueIds}
-        onDiscoveredClueIdsChange={setDiscoveredClueIds}
-        headerRightSlot={
-          <PlayHeaderTeamPlace
-            teamName={teamName}
-            placeName={zoneName}
-            pending={playerQuery.isLoading}
-          />
-        }
+      <IngredientExpertPanel
+        pack={scenarioPack}
+        playerId={playerId}
+        teamId={teamId}
+        teamName={teamName}
+        ingredientId={assignedIngredientId}
+        acquiredIngredientIds={teamAcquiredIds}
+        onAcquired={() => {
+          void queryClient.invalidateQueries({ queryKey: ["play-team", teamId] });
+        }}
+        pending={playerQuery.isLoading}
       />
     );
   }
 
-  if (hasSupabaseEnv && isFinalReport) {
+  if (hasSupabaseEnv && isFinalReport && scenarioPack && teamQuery.data) {
     return (
-      <PlayAtmosphere>
-        <div className="flex min-h-dvh flex-col">
-          <header className={playPhaseHeaderChromeShell}>
-            <div className={playPhaseHeaderChromeInner}>
-              <PlayPhaseHeader
-                phase={3}
-                title="범인 지목"
-                description="각자 한 번씩 제출합니다. 범인은 등록된 용의자 중에서만 선택할 수 있습니다."
-                rightSlot={
-                  <PlayHeaderTeamPlace
-                    teamName={teamName}
-                    placeName={zoneName}
-                    pending={playerQuery.isLoading || !hasAssignment}
-                  />
-                }
-              />
-            </div>
-          </header>
-          <main className="mx-auto w-full max-w-2xl flex-1 space-y-5 px-4 py-6 pb-[max(3rem,env(safe-area-inset-bottom,0px))] sm:space-y-6 sm:px-6 sm:py-8 md:max-w-3xl md:px-8">
-          <div
-            className={cn(
-              "overflow-hidden px-5 pb-6 pt-6 motion-safe:animate-[playRevealUp_0.6s_cubic-bezier(0.22,1,0.36,1)_both] motion-safe:[animation-delay:60ms]",
-              playSurfaceCool,
-            )}
-          >
-              {!teamId ? (
-                <LoadingState
-                  variant="section"
-                  tone="default"
-                  label="불러오는 중…"
-                  className="min-h-[12rem] py-10"
-                />
-              ) : reportSubmitted ? (
-                <div className="space-y-5 text-sm text-[var(--foreground)]">
-                  <FinalReportSubmittedBanner
-                    submittedAt={playerReport?.submitted_at ?? null}
-                    description={`지목한 범인: ${ownSuspectName ?? "—"}`}
-                  />
-                  {answerSuspectId ? (
-                    <div
-                      className={
-                        "rounded-lg border-2 p-4 " +
-                        (culpritCorrect
-                          ? "border-[color-mix(in_srgb,var(--primary)_35%,var(--border))] bg-[var(--tint-accent-weak)]"
-                          : "border-[var(--panel-warn-border)] bg-[var(--panel-warn-bg)]")
-                      }
-                    >
-                      <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--accent)]">
-                        범인 검거 결과 (팀 다수결)
-                      </p>
-                      <p className="mt-2 text-xl font-bold text-[var(--foreground)]">
-                        {teamMajority.tied
-                          ? "검거 실패 (의견 불일치)"
-                          : culpritCorrect
-                            ? "검거 성공"
-                            : "검거 실패"}
-                      </p>
-                      <dl className="mt-3 grid gap-2 text-sm">
-                        <div className="flex flex-wrap justify-between gap-2 border-t border-[var(--border)] pt-2">
-                          <dt className="text-[var(--muted-foreground)]">팀 다수가 지목한 사람</dt>
-                          <dd className="font-semibold text-[var(--foreground)]">
-                            {teamMajority.tied
-                              ? "의견 불일치"
-                              : (majoritySuspectName ?? teamMajority.suspectId ?? "—")}
-                          </dd>
-                        </div>
-                        <div className="flex flex-wrap justify-between gap-2">
-                          <dt className="text-[var(--muted-foreground)]">사건 정답(범인)</dt>
-                          <dd className="font-semibold text-[var(--foreground)]">{trueCulpritName ?? "—"}</dd>
-                        </div>
-                      </dl>
-                    </div>
-                  ) : (
-                    <p className="text-xs text-[var(--muted-foreground)]">
-                      이 사건에는 정답 범인이 등록되지 않아 검거 여부를 표시하지 않습니다.
-                    </p>
-                  )}
-                </div>
-              ) : (
-                <form className="space-y-5" onSubmit={handleReportSubmit}>
-                  <p className="rounded-md border border-[var(--border)] bg-[var(--tint-accent-weak)] px-3 py-2 text-sm text-[var(--foreground)] shadow-[inset_var(--input-inset)]">
-                    팀원과 논의한 뒤 <strong className="text-[var(--primary)]">한 번만</strong> 제출할
-                    수 있습니다. 아래 서술 칸은{" "}
-                    <strong className="text-[var(--primary)]">영어로만</strong> 작성합니다.
-                  </p>
-                  <FinalReportFields
-                    idPrefix="report"
-                    values={reportValues}
-                    suspectRoster={caseRoster}
-                    onChange={setReportValues}
-                    emptyRosterEditFallback={
-                      <p className="rounded-md border border-[var(--panel-warn-border)] bg-[var(--panel-warn-bg)] px-3 py-2 text-sm text-[var(--foreground)]">
-                        이 사건에 용의자 목록이 없습니다. 담당 선생님께 문의하세요.
-                      </p>
-                    }
-                  />
-                  {message ? <p className="text-sm text-[var(--danger)]">{message}</p> : null}
-                  <Button
-                    type="submit"
-                    className="w-full"
-                    disabled={reportMutation.isPending || caseRoster.length === 0 || !teamId}
-                  >
-                    {reportMutation.isPending ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 shrink-0 animate-spin text-[var(--primary)]" aria-hidden />
-                        제출 중…
-                      </>
-                    ) : (
-                      "범인 지목 제출"
-                    )}
-                  </Button>
-                </form>
-              )}
-          </div>
-          </main>
-        </div>
-      </PlayAtmosphere>
+      <TeamKitchenPanel
+        pack={scenarioPack}
+        team={teamQuery.data}
+        teamName={teamName}
+        onUpdate={() => {
+          void queryClient.invalidateQueries({ queryKey: ["play-team", teamId] });
+        }}
+        pending={teamQuery.isLoading}
+      />
     );
   }
 
   if (hasSupabaseEnv && isBriefing) {
+    const ingredientLabel =
+      scenarioPack?.ingredients.find((i) => i.id === assignedIngredientId)?.name ??
+      assignedIngredientId ??
+      null;
     return (
       <PlayAtmosphere>
         <div className="flex min-h-dvh flex-col">
@@ -578,12 +353,13 @@ export function PlaySessionShell({
             <div className={playPhaseHeaderChromeInner}>
               <PlayPhaseHeader
                 phase={1}
-                title="사건 파악"
-                description="우측에서 팀과 담당 조사 장소를 확인한 뒤, 같은 팀끼리 모여 앉아 사건 파일을 확인하세요."
+                title="오늘의 급식 브리핑"
+                description="팀과 전문 재료를 확인한 뒤, 오늘 완성할 급식 메뉴를 살펴보세요."
                 rightSlot={
                   <PlayHeaderTeamPlace
                     teamName={teamName}
-                    placeName={zoneName}
+                    placeName={ingredientLabel}
+                    placeLabel="전문 재료"
                     pending={playerQuery.isLoading || !hasAssignment}
                   />
                 }
@@ -594,15 +370,13 @@ export function PlaySessionShell({
           <main className="mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col space-y-5 px-4 py-6 pb-[max(3rem,env(safe-area-inset-bottom,0px))] sm:space-y-6 sm:px-6 sm:py-8 md:px-8">
             <section className="flex min-h-[min(20rem,52dvh)] flex-1 flex-col motion-safe:animate-[playRevealUp_0.6s_cubic-bezier(0.22,1,0.36,1)_both] motion-safe:[animation-delay:80ms] md:min-h-[min(22rem,56dvh)]">
               {playerQuery.isLoading && !hasAssignment ? (
-                <LoadingState
-                  variant="section"
-                  tone="play"
-                  className="min-h-0 flex-1 py-8"
-                />
+                <LoadingState variant="section" tone="play" className="min-h-0 flex-1 py-8" />
               ) : (
-                <SessionInfoLayout
+                <ScenarioBriefingLayout
                   loading={sessionQuery.isLoading}
-                  caseData={sessionQuery.data?.cases ?? null}
+                  title={sessionQuery.data?.lessons?.title ?? null}
+                  description={sessionQuery.data?.lessons?.description ?? null}
+                  scenarioPack={scenarioPack}
                 />
               )}
             </section>
@@ -635,115 +409,87 @@ export function PlaySessionShell({
     <PlayAtmosphere>
       <div className="flex min-h-dvh flex-col">
         <main className="mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col px-4 py-6 pb-[max(3rem,env(safe-area-inset-bottom,0px))] sm:px-6 sm:py-8 md:px-8">
-        {showResumeModal && resumeQuery.data ? (
-          <ResumeModal
-            record={resumeQuery.data}
-            onContinue={() => handleContinueAsPlayer(resumeQuery.data!)}
-            onNew={handleJoinAsNewPlayer}
-          />
-        ) : null}
+          {showResumeModal && resumeQuery.data ? (
+            <ResumeModal
+              record={resumeQuery.data}
+              onContinue={() => handleContinueAsPlayer(resumeQuery.data!)}
+              onNew={handleJoinAsNewPlayer}
+            />
+          ) : null}
 
-        {!hasJoinedSession && !showResumeModal && initialNickname.trim() && joinAndRegisterMutation.isPending ? (
-          <section
-            className={cn(
-              playLoaderRegion,
-              "motion-safe:animate-[playRevealUp_0.5s_ease-out_both]",
-            )}
-          >
-            <LoadingState variant="page" tone="play" label="확인 중…" className="min-h-0 py-0" />
-          </section>
-        ) : null}
-
-        {!hasJoinedSession &&
-        !showResumeModal &&
-        !(initialNickname.trim() && joinAndRegisterMutation.isPending) &&
-        (!initialNickname.trim() || joinAndRegisterMutation.isError) ? (
-          <section className="flex flex-1 flex-col items-center justify-center p-1">
-            <div
+          {!hasJoinedSession && !showResumeModal && initialNickname.trim() && joinAndRegisterMutation.isPending ? (
+            <section
               className={cn(
-                "w-full max-w-md p-6 motion-safe:animate-[playModalRise_0.55s_cubic-bezier(0.22,1,0.36,1)_both]",
-                playSurfacePanel,
+                playLoaderRegion,
+                "motion-safe:animate-[playRevealUp_0.5s_ease-out_both]",
               )}
             >
-              <h3 className="text-lg font-semibold text-[var(--foreground)]">닉네임 설정</h3>
-              <form
-                className="mt-4 space-y-3"
-                onSubmit={(event: FormEvent<HTMLFormElement>) => {
-                  event.preventDefault();
-                  joinAndRegisterMutation.mutate({ nickname: nickname.trim() });
-                }}
-              >
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-[var(--accent)]" htmlFor="play-session-nickname">
-                    닉네임
-                  </label>
-                  <Input
-                    id="play-session-nickname"
-                    placeholder="닉네임"
-                    value={nickname}
-                    onChange={(event) => setNickname(event.target.value)}
-                    required
-                  />
-                </div>
-                <Button type="submit" className="w-full" disabled={joinAndRegisterMutation.isPending}>
-                  입장
-                </Button>
-              </form>
-              {!joinCode.trim() ? (
-                <p className="mt-3 text-xs text-[var(--accent)]">
-                  <a className="underline hover:text-[var(--primary)]" href={ROUTES.play}>
-                    입장 화면
-                  </a>
-                  에서 참가 코드를 입력해 주세요.
-                </p>
-              ) : null}
-              {message ? <p className="mt-3 text-xs text-[var(--muted-foreground)]">{message}</p> : null}
-            </div>
-          </section>
-        ) : null}
+              <LoadingState variant="page" tone="play" label="확인 중…" className="min-h-0 py-0" />
+            </section>
+          ) : null}
 
-        {hasJoinedSession && isWaitingLobby ? (
-          <section className={playLoaderRegion}>
-            <WaitingLobbyBlock
-              joinCode={joinCode}
-              nickname={nickname}
-              caseTitle={sessionQuery.data?.cases?.title ?? null}
-              state={waitingLobbyState}
-            />
-          </section>
-        ) : null}
+          {!hasJoinedSession &&
+          !showResumeModal &&
+          !(initialNickname.trim() && joinAndRegisterMutation.isPending) &&
+          (!initialNickname.trim() || joinAndRegisterMutation.isError) ? (
+            <section className="flex flex-1 flex-col items-center justify-center p-1">
+              <div
+                className={cn(
+                  "w-full max-w-md p-6 motion-safe:animate-[playModalRise_0.55s_cubic-bezier(0.22,1,0.36,1)_both]",
+                  playSurfacePanel,
+                )}
+              >
+                <h3 className="text-lg font-semibold text-[var(--foreground)]">닉네임 설정</h3>
+                <form
+                  className="mt-4 space-y-3"
+                  onSubmit={(event: FormEvent<HTMLFormElement>) => {
+                    event.preventDefault();
+                    joinAndRegisterMutation.mutate({ nickname: nickname.trim() });
+                  }}
+                >
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-[var(--accent)]" htmlFor="play-session-nickname">
+                      닉네임
+                    </label>
+                    <Input
+                      id="play-session-nickname"
+                      placeholder="닉네임"
+                      value={nickname}
+                      onChange={(event) => setNickname(event.target.value)}
+                      required
+                    />
+                  </div>
+                  <Button type="submit" className="w-full" disabled={joinAndRegisterMutation.isPending}>
+                    입장
+                  </Button>
+                </form>
+                {!joinCode.trim() ? (
+                  <p className="mt-3 text-xs text-[var(--accent)]">
+                    <a className="underline hover:text-[var(--primary)]" href={ROUTES.play}>
+                      입장 화면
+                    </a>
+                    에서 참가 코드를 입력해 주세요.
+                  </p>
+                ) : null}
+                {message ? <p className="mt-3 text-xs text-[var(--muted-foreground)]">{message}</p> : null}
+              </div>
+            </section>
+          ) : null}
+
+          {hasJoinedSession && isWaitingLobby ? (
+            <section className={playLoaderRegion}>
+              <WaitingLobbyBlock
+                joinCode={joinCode}
+                nickname={nickname}
+                sessionTitle={sessionQuery.data?.lessons?.title ?? null}
+                state={waitingLobbyState}
+              />
+            </section>
+          ) : null}
         </main>
       </div>
     </PlayAtmosphere>
   );
-}
-
-/**
- * 팀 다수결: 가장 많이 지목된 용의자. 동률(의견 불일치)이면 tied=true.
- */
-function computeTeamMajority(reports: ReadonlyArray<{ suspect_id: string }>) {
-  if (reports.length === 0) {
-    return { suspectId: null as string | null, tied: false, count: 0 };
-  }
-  const counts = new Map<string, number>();
-  for (const r of reports) {
-    const id = r.suspect_id?.trim();
-    if (!id) continue;
-    counts.set(id, (counts.get(id) ?? 0) + 1);
-  }
-  let bestId: string | null = null;
-  let bestCount = 0;
-  let tied = false;
-  for (const [id, count] of counts) {
-    if (count > bestCount) {
-      bestId = id;
-      bestCount = count;
-      tied = false;
-    } else if (count === bestCount) {
-      tied = true;
-    }
-  }
-  return { suspectId: bestId, tied, count: bestCount };
 }
 
 function ResumeModal({

@@ -51,23 +51,32 @@
 }
 
 /**
- * 학생 play 화면 (.play-shell): 패널·테두리·칩 색은 교사/라이트 UI와 동일한 :root 토큰만 사용.
- * 상위 컨테이너의 배경·그라데이션만 play 전용(짙은 멜딩)으로 둔다.
+ * 학생 play 화면 (.play-shell): 밝은 급식실·타이쿤 톤.
  */
 .play-shell {
-  --play-paper: var(--card-bg);
-  --play-panel: var(--card-bg);
-  --play-panel-warm: var(--surface);
-  --play-panel-cool: var(--card-bg);
-  --play-inset: var(--background);
-  --play-veil: var(--tint-accent-weak);
-  --play-chip-warm: var(--tint-accent);
-  --play-chip-cool: var(--tint-accent-weak);
-  --play-border-warm: var(--border);
-  --play-border-cool: var(--border);
-  --play-border-paper: var(--border);
-  --play-shadow-soft: var(--elevation-sm);
-  --play-shadow-lift: var(--elevation-sm);
+  --entry-shell: #f4faf7;
+  --entry-shell-deep: #e8f3ef;
+  --entry-parchment: #1f3d32;
+  --entry-parchment-muted: #5a7268;
+  --entry-accent: var(--primary);
+  --entry-accent-soft: color-mix(in srgb, var(--primary) 88%, #2d5c4a);
+  --entry-accent-glow: color-mix(in srgb, var(--highlight) 55%, var(--primary));
+  --entry-grid: color-mix(in srgb, var(--primary) 7%, transparent);
+  --entry-bar-track: color-mix(in srgb, var(--primary) 12%, white);
+
+  --play-paper: #fffdf8;
+  --play-panel: #fffdf8;
+  --play-panel-warm: color-mix(in srgb, var(--highlight) 8%, #fffdf8);
+  --play-panel-cool: color-mix(in srgb, var(--primary) 6%, #fffdf8);
+  --play-inset: var(--entry-shell);
+  --play-veil: color-mix(in srgb, var(--primary) 8%, transparent);
+  --play-chip-warm: color-mix(in srgb, var(--highlight) 14%, transparent);
+  --play-chip-cool: color-mix(in srgb, var(--primary) 10%, transparent);
+  --play-border-warm: color-mix(in srgb, var(--highlight) 35%, var(--border));
+  --play-border-cool: color-mix(in srgb, var(--primary) 22%, var(--border));
+  --play-border-paper: color-mix(in srgb, var(--primary) 18%, var(--border));
+  --play-shadow-soft: 0 8px 28px color-mix(in srgb, var(--primary) 10%, transparent);
+  --play-shadow-lift: 0 14px 40px color-mix(in srgb, var(--highlight) 12%, transparent);
 }
 
 html {
@@ -148,6 +157,26 @@ body {
   }
   50% {
     background-position: 100% 50%;
+  }
+}
+
+@keyframes playFloat {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes playTrayBounce {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-2deg);
+  }
+  50% {
+    transform: translateY(-4px) rotate(2deg);
   }
 }
 

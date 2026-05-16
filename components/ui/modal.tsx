@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const panel =
-  "border-[var(--border)] bg-[var(--card-bg)] text-[var(--foreground)] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.35)]";
+  "border-[var(--border)] bg-[var(--card-bg)] text-[var(--foreground)] shadow-[0_20px_50px_-12px_color-mix(in_srgb,var(--primary)_18%,transparent)]";
 const divider = "border-[var(--border)]";
 const titleHeadingClass = "text-base font-semibold text-[var(--foreground)]";
 const closeMuted =
@@ -30,6 +30,9 @@ export type ModalProps = {
   closeOnEscape?: boolean;
   hideCloseButton?: boolean;
   panelClassName?: string;
+  overlayClassName?: string;
+  headerClassName?: string;
+  titleClassName?: string;
   bodyClassName?: string;
   footerClassName?: string;
   titlePrefix?: ReactNode;
@@ -52,6 +55,9 @@ export function Modal({
   closeOnEscape = true,
   hideCloseButton = false,
   panelClassName,
+  overlayClassName,
+  headerClassName,
+  titleClassName,
   bodyClassName,
   footerClassName,
   titlePrefix,
@@ -75,7 +81,7 @@ export function Modal({
         "pb-[max(1rem,env(safe-area-inset-bottom,0px))] pt-[max(1rem,env(safe-area-inset-top,0px))]",
         "pl-[max(1.25rem,env(safe-area-inset-left,0px))] pr-[max(1.25rem,env(safe-area-inset-right,0px))] sm:pl-[max(1rem,env(safe-area-inset-left,0px))] sm:pr-[max(1rem,env(safe-area-inset-right,0px))]",
         sheetOnNarrow ? "items-end justify-center sm:items-center" : "items-center justify-center",
-        "bg-[var(--overlay-scrim)]/85",
+        overlayClassName ?? "bg-[var(--overlay-scrim)]/85",
         zIndexClassName,
       )}
       role="presentation"
@@ -94,10 +100,19 @@ export function Modal({
         aria-modal="true"
         onClick={(e) => e.stopPropagation()}
       >
-        <header className={cn("flex shrink-0 items-center justify-between gap-3 border-b px-4 py-3 pl-5", divider)}>
+        <header
+          className={cn(
+            "flex shrink-0 items-center justify-between gap-3 border-b px-4 py-3 pl-5",
+            divider,
+            headerClassName,
+          )}
+        >
           <div className="flex min-w-0 items-center gap-2">
             {titlePrefix ?? null}
-            <h2 id={titleId} className={cn("truncate tracking-tight", titleHeadingClass)}>
+            <h2
+              id={titleId}
+              className={cn("truncate tracking-tight", titleHeadingClass, titleClassName)}
+            >
               {title}
             </h2>
           </div>

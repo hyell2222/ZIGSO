@@ -59,16 +59,16 @@ export default function HomePage() {
               <div className="flex items-center gap-2.5 text-[var(--accent)] sm:gap-3.5">
                 <span className="h-px w-8 max-sm:w-5 bg-[color-mix(in_srgb,var(--accent)_45%,transparent)]" aria-hidden />
                 <p className="text-[11px] font-bold uppercase tracking-[0.26em] text-[color-mix(in_srgb,var(--accent)_92%,var(--mystery))]">
-                  우리 학교 비밀 탐정 동아리
+                  급식실 협동 영어 타이쿤
                 </p>
                 <span className="h-px w-8 max-sm:w-5 bg-[color-mix(in_srgb,var(--accent)_45%,transparent)]" aria-hidden />
               </div>
               <h1 className="bg-[linear-gradient(165deg,var(--primary)_0%,color-mix(in_srgb,var(--primary)_72%,var(--mystery))_100%)] bg-clip-text text-4xl font-bold leading-[1.08] tracking-[-0.02em] text-transparent drop-shadow-[0_1px_0_color-mix(in_srgb,var(--on-primary)_35%,transparent)] sm:text-6xl sm:tracking-[-0.03em]">
-                MYSTERY CLUB
+                School Lunch Rush
               </h1>
             </div>
             <p className="mx-auto mt-4 max-w-xl text-balance text-base leading-relaxed text-[color-mix(in_srgb,var(--muted-foreground)_94%,var(--mystery))] sm:mt-5 md:mt-6 md:text-[1.05rem] md:leading-[1.65]">
-              단서를 모아 함께 진실을 밝혀내는 실시간 협동 추리 게임
+              조별로 급식실 직원이 되어 영어로 재료를 추리하고, 오늘의 급식판을 완성하는 협동 학습 게임
             </p>
 
             <div className="mt-8 flex flex-col items-stretch justify-center gap-3 sm:mt-10 sm:flex-row sm:items-center sm:justify-center sm:gap-4">
@@ -87,10 +87,10 @@ export default function HomePage() {
                 </span>
                 <div>
                   <p className="text-sm font-semibold text-[color-mix(in_srgb,var(--mystery)_94%,var(--primary))]">
-                    AI 맞춤형 시나리오 생성
+                    AI 급식 시나리오 생성
                   </p>
                   <p className="mt-2 text-xs break-keep leading-snug text-[color-mix(in_srgb,var(--muted-foreground)_96%,var(--accent))]">
-                    교과 내용과 학습 목표를 입력하면 AI가 단서·인물·사건을 자동으로 설계해요.
+                    주제·난이도·팀 인원만 입력하면 메뉴·재료·5단계 힌트·조리 순서를 자동 생성해요.
                   </p>
                 </div>
               </li>
@@ -100,10 +100,10 @@ export default function HomePage() {
                 </span>
                 <div>
                   <p className="text-sm font-semibold text-[color-mix(in_srgb,var(--mystery)_94%,var(--primary))]">
-                    직소 모형 기반 협동 플레이
+                    직소·STAD 협동 학습
                   </p>
                   <p className="mt-2 text-xs break-keep leading-snug text-[color-mix(in_srgb,var(--muted-foreground)_96%,var(--accent))]">
-                    학생들이 서로 다른 공간에서 단서를 수집하고 공유하며 함께 사건의 진실을 추리해요.
+                    재료 전문가 집단에서 영어 힌트로 재료를 추리하고, 조로 돌아와 급식판을 완성해요.
                   </p>
                 </div>
               </li>
@@ -113,10 +113,10 @@ export default function HomePage() {
                 </span>
                 <div>
                   <p className="text-sm font-semibold text-[color-mix(in_srgb,var(--mystery)_94%,var(--primary))]">
-                    학생 활동 리포트 제공
+                    영어 명령문 조리·급식판 제출
                   </p>
                   <p className="mt-2 text-xs break-keep leading-snug text-[color-mix(in_srgb,var(--muted-foreground)_96%,var(--accent))]">
-                    참여 과정과 협업 기록을 분석해 학생별 참여도와 학습 성장을 확인할 수 있어요.
+                    획득한 재료로 실제 급식 메뉴를 만들고, 영어 명령문 카드를 조합해 제출해요.
                   </p>
                 </div>
               </li>

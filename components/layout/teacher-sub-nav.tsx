@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Briefcase, FileText, LucideIcon } from "lucide-react";
+import { FileText, LucideIcon, UtensilsCrossed } from "lucide-react";
 
 import { ROUTES } from "@/lib/routes";
 import { cn } from "@/lib/utils";
@@ -15,8 +15,8 @@ const TABS: {
 }[] = [
   {
     href: ROUTES.cases,
-    label: "내 사건",
-    icon: Briefcase,
+    label: "내 수업",
+    icon: UtensilsCrossed,
     match: (path) => path === ROUTES.cases || path.startsWith(`${ROUTES.cases}/`),
   },
   {

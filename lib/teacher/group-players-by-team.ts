@@ -18,8 +18,6 @@ export function groupPlayersByTeam(players: SessionPlayerRow[], teams: TeamRow[]
     .map((team) => ({
       team,
       members: (playersByTeamId.get(team.id) ?? []).sort((a, b) => {
-        const zcmp = (a.investigation_zone?.name ?? "").localeCompare(b.investigation_zone?.name ?? "", "ko");
-        if (zcmp !== 0) return zcmp;
         const ta = Date.parse(a.created_at);
         const tb = Date.parse(b.created_at);
         const na = Number.isNaN(ta) ? 0 : ta;

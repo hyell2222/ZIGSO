@@ -1,19 +1,19 @@
 "use client";
 
-import { ClipboardList, FileSearch, MapPinned } from "lucide-react";
+import { ChefHat, ClipboardList, UtensilsCrossed } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 
 const phaseIcon = {
-  1: FileSearch,
-  2: MapPinned,
+  1: UtensilsCrossed,
+  2: ChefHat,
   3: ClipboardList,
 } as const;
 
 export type PlayPhaseHeaderProps = {
   phase: 1 | 2 | 3;
-  /** 짧은 단계 이름 (예: 사건 파악). 단계 번호는 위 오버라인에만 표시됩니다. */
+  /** 짧은 단계 이름 (예: 오늘의 급식 브리핑). 단계 번호는 위 오버라인에만 표시됩니다. */
   title: string;
   description: string;
   /** 예: 브리핑 우측 팀 배지 */
@@ -53,7 +53,7 @@ export function PlayPhaseHeader({
       >
         <span
           className={cn(
-            "flex shrink-0 items-center justify-center rounded-lg bg-[var(--play-chip-cool)] text-[var(--primary)] shadow-sm ring-1 ring-[color-mix(in_srgb,var(--primary)_22%,transparent)]",
+            "flex shrink-0 items-center justify-center rounded-2xl border-2 border-[color-mix(in_srgb,var(--primary)_18%,white)] bg-[color-mix(in_srgb,white_75%,var(--play-chip-cool))] text-[var(--primary)] shadow-[0_3px_0_color-mix(in_srgb,var(--primary)_12%,transparent)]",
             compact ? "h-7 w-7 sm:h-8 sm:w-8" : "h-8 w-8 sm:h-11 sm:w-11",
           )}
           aria-hidden

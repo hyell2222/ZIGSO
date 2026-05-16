@@ -6,12 +6,12 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import {
-  deleteCase,
+  deleteLesson,
   formatDifficultyForUi,
-  listCases,
-  startGameSession,
-  type CaseListRow,
-} from "@/lib/api/cases";
+  listLessons,
+  startSession,
+  type LessonListRow,
+} from "@/lib/api/lessons";
 import { useRequireTeacherSession } from "@/lib/auth/use-require-teacher-session";
 import { KebabMenu } from "@/components/ui/kebab-menu";
 import { LoadingState } from "@/components/ui/loading-state";
@@ -29,18 +29,18 @@ export default function CasesPage() {
   const sessionQuery = useRequireTeacherSession();
 
   const casesQuery = useQuery({
-    queryKey: ["teacher-cases", sessionQuery.data?.user.id],
-    queryFn: () => listCases(sessionQuery.data!.user.id),
+    queryKey: ["teacher-scenarios", sessionQuery.data?.user.id],
+    queryFn: () => listLessons(sessionQuery.data!.user.id),
     enabled: Boolean(sessionQuery.data?.user.id),
   });
 
   const startGameMutation = useMutation({
     mutationFn: async ({
-      caseRow,
+      lessonRow,
     }: {
-      caseRow: CaseListRow;
+      lessonRow: LessonListRow;
       newTab: Window | null;
-    }) => startGameSession(caseRow, sessionQuery.data?.user.id),
+    }) => startSession(lessonRow, sessionQuery.data?.user.id),
     onMutate: () => setErrorMessage(null),
     onSuccess: async (data, variables) => {
       await queryClient.invalidateQueries({ queryKey: ["host-sessions"] });
@@ -60,29 +60,29 @@ export default function CasesPage() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (caseId: string) => {
-      setPendingDeleteId(caseId);
+    mutationFn: async (lessonId: string) => {
+      setPendingDeleteId(lessonId);
       try {
-        await deleteCase(caseId);
+        await deleteLesson(lessonId);
       } finally {
         setPendingDeleteId(null);
       }
     },
     onMutate: () => setErrorMessage(null),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["teacher-cases"] });
+      await queryClient.invalidateQueries({ queryKey: ["teacher-scenarios"] });
     },
     onError: (error: Error) => setErrorMessage(error.message),
   });
 
-  const handleStartGame = (caseRow: CaseListRow) => {
+  const handleStartGame = (lessonRow: LessonListRow) => {
     const newTab = typeof window !== "undefined" ? window.open("about:blank", "_blank") : null;
-    startGameMutation.mutate({ caseRow, newTab });
+    startGameMutation.mutate({ lessonRow, newTab });
   };
 
-  const handleSandbox = (caseRow: CaseListRow) => {
+  const handleSandbox = (lessonRow: LessonListRow) => {
     if (typeof window === "undefined") return;
-    const url = ROUTES.casesSandbox(caseRow.id);
+    const url = ROUTES.casesSandbox(lessonRow.id);
     /**
      * 학생/교사 화면을 함께 시연하는 시뮬레이션은 항상 새 탭에서 띄웁니다.
      * (popup window 가 차단당하면 noopener 새 탭으로 폴백)
@@ -90,21 +90,21 @@ export default function CasesPage() {
     const features =
       "noopener,noreferrer," +
       "width=1480,height=900,menubar=no,toolbar=no,location=no,status=no";
-    const popup = window.open(url, `mc-sandbox-${caseRow.id}`, features);
+    const popup = window.open(url, `mc-sandbox-${lessonRow.id}`, features);
     if (!popup) {
       window.open(url, "_blank", "noopener,noreferrer");
     }
   };
 
-  const handleEdit = (row: CaseListRow) => {
+  const handleEdit = (row: LessonListRow) => {
     router.push(ROUTES.casesEdit(row.id));
   };
 
-  const handleDelete = (row: CaseListRow) => {
-    const title = row.title?.trim() || "제목 없는 사건";
+  const handleDelete = (row: LessonListRow) => {
+    const title = row.title?.trim() || "제목 없는 수업";
     if (
       !window.confirm(
-        `"${title}" 사건을 삭제할까요?\n담당 장소·단서 등 연결된 데이터도 모두 함께 삭제됩니다.`,
+        `"${title}" 수업을 삭제할까요?\n급식 시나리오와 연결된 데이터도 모두 함께 삭제됩니다.`,
       )
     ) {
       return;
@@ -119,8 +119,8 @@ export default function CasesPage() {
         {sessionQuery.data ? (
           <div className="space-y-6">
             <PageHeader
-              title="내 사건"
-              description="사건을 만든 뒤 플레이 세션을 시작하면 학생이 참가 코드로 입장합니다."
+              title="내 수업"
+              description="급식 시나리오를 만든 뒤 플레이를 시작하면 학생이 참가 코드로 입장합니다."
               actions={
                 (casesQuery.data?.length ?? 0) > 0 ? (
                   <Button
@@ -129,7 +129,7 @@ export default function CasesPage() {
                     className="flex items-center gap-2"
                   >
                     <PlusIcon className="h-4 w-4" />
-                    새 사건 만들기
+                    새 수업 만들기
                   </Button>
                 ) : null
               }
@@ -139,7 +139,7 @@ export default function CasesPage() {
             ) : (casesQuery.data?.length ?? 0) === 0 ? (
               <div className="flex justify-center py-10">
                 <Button type="button" onClick={() => router.push(ROUTES.casesNew)} className="flex items-center gap-2">
-                  <PlusIcon className="h-4 w-4" />새 사건 만들기
+                  <PlusIcon className="h-4 w-4" />새 수업 만들기
                 </Button>
               </div>
             ) : (
@@ -153,7 +153,7 @@ export default function CasesPage() {
                     >
                       <div className="flex items-start gap-2">
                         <p className="min-w-0 flex-1 font-semibold text-[var(--foreground)]">
-                          {row.title ?? "제목 없는 사건"}
+                          {row.title ?? "제목 없는 수업"}
                         </p>
                         <div className="ml-auto shrink-0">
                           <KebabMenu
@@ -164,10 +164,8 @@ export default function CasesPage() {
                         </div>
                       </div>
                       <p className="text-xs text-[var(--muted-foreground)] pb-2">
-                        난이도 {formatDifficultyForUi(row.difficulty)} · 팀당 인원{" "}
-                        {typeof row.locations?.[0]?.count === "number"
-                          ? row.locations[0].count
-                          : "—"}명
+                        난이도 {formatDifficultyForUi(row.difficulty)} · 팀{" "}
+                        {row.team_size ?? "—"}명 · 메뉴 {row.menu_count ?? "—"}개
                       </p>
                       <div className="flex flex-col gap-2">
                         <Button

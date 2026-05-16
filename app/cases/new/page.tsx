@@ -1,7 +1,7 @@
 "use client";
 
-import { CaseSteps } from "../case-steps/case-steps";
+import { ScenarioSteps } from "../scenario-steps";
 
 export default function CaseCreatePage() {
-  return <CaseSteps mode="create" />;
+  return <ScenarioSteps mode="create" />;
 }

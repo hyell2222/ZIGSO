@@ -10,8 +10,8 @@ const dungGeunMo = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Mystery Club",
-  description: "비밀 탐정 동아리 Mystery Club — 팀 협동 추리",
+  title: "School Lunch Rush",
+  description: "급식실 협동 영어 타이쿤 — School Lunch Rush",
   icons: {
     icon: "/window.svg",
   },

@@ -7,19 +7,18 @@ import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   getHostSessionDetails,
-  listSessionPlayerReports,
   listSessionPlayers,
   listSessionTeams,
   setPlayersOnline,
 } from "@/lib/api/play";
-import { parseSuspectRosterFromCase } from "@/lib/suspects";
 import {
   advanceSessionPhase,
   beginHostingSession,
   endSession,
   getNextPhase,
-  type CasePhase,
-} from "@/lib/api/cases";
+  parseScenarioPack,
+  type SessionPhase,
+} from "@/lib/api/lessons";
 import { useRequireTeacherSession } from "@/lib/auth/use-require-teacher-session";
 import { groupPlayersByTeam } from "@/lib/teacher/group-players-by-team";
 import { PlayJoinQr } from "@/components/teacher/play-join-qr";
@@ -30,9 +29,9 @@ import {
   type TeamAssignmentGroup,
 } from "@/components/teacher/team-assignment-dashboard";
 import {
-  TeamReportDashboard,
-  type TeamReportGroup,
-} from "@/components/teacher/team-report-dashboard";
+  TeamProgressDashboard,
+  type TeamProgressGroup,
+} from "@/components/teacher/team-progress-dashboard";
 import { Button } from "@/components/ui/button";
 import { LoadingState } from "@/components/ui/loading-state";
 import { Modal } from "@/components/ui/modal";
@@ -53,7 +52,7 @@ function SessionHostContent() {
   const queryClient = useQueryClient();
   const [presenceRows, setPresenceRows] = useState<SessionPresenceRow[]>([]);
   /** 단계가 바뀌면 열었던 단계와 달라져 모달이 닫히도록 phaseAtOpen 을 둠 (effect 내 setState 회피) */
-  const [timerModal, setTimerModal] = useState<{ open: boolean; phaseAtOpen: CasePhase | null }>({
+  const [timerModal, setTimerModal] = useState<{ open: boolean; phaseAtOpen: SessionPhase | null }>({
     open: false,
     phaseAtOpen: null,
   });
@@ -82,14 +81,6 @@ function SessionHostContent() {
     refetchIntervalInBackground: true,
   });
 
-  const reportsQuery = useQuery({
-    queryKey: ["host-session-player-reports", sessionId],
-    queryFn: () => listSessionPlayerReports(sessionId),
-    enabled: Boolean(sessionId && teacherSession.data),
-    refetchInterval: sessionId ? 3_000 : false,
-    refetchIntervalInBackground: true,
-  });
-
   const hostUserId = teacherSession.data?.user?.id;
   const isVerifiedHost = Boolean(
     sessionId &&
@@ -111,7 +102,7 @@ function SessionHostContent() {
       })
       .on(
         "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "game_sessions", filter: `id=eq.${sessionId}` },
+        { event: "UPDATE", schema: "public", table: "sessions", filter: `id=eq.${sessionId}` },
         () => {
           void queryClient.invalidateQueries({ queryKey: ["host-session", sessionId] });
         },
@@ -128,13 +119,6 @@ function SessionHostContent() {
         { event: "*", schema: "public", table: "teams", filter: `session_id=eq.${sessionId}` },
         () => {
           void queryClient.invalidateQueries({ queryKey: ["host-session-teams", sessionId] });
-        },
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "player_reports", filter: `session_id=eq.${sessionId}` },
-        () => {
-          void queryClient.invalidateQueries({ queryKey: ["host-session-player-reports", sessionId] });
         },
       )
       .on("presence", { event: "sync" }, () => {
@@ -312,10 +296,19 @@ function SessionHostContent() {
   const playercount = onlinePlayers.length;
 
   const teamRows = useMemo(() => teamsQuery.data ?? [], [teamsQuery.data]);
-  const reportRows = useMemo(
-    () => reportsQuery.data ?? [],
-    [reportsQuery.data],
+
+  const scenarioPack = useMemo(
+    () => parseScenarioPack(sessionQuery.data?.lessons?.scenario_pack),
+    [sessionQuery.data?.lessons?.scenario_pack],
   );
+
+  const ingredientNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const ing of scenarioPack?.ingredients ?? []) {
+      map.set(ing.id, ing.name);
+    }
+    return map;
+  }, [scenarioPack]);
 
   const assignmentGroups = useMemo<TeamAssignmentGroup[]>(() => {
     return groupPlayersByTeam(onlinePlayers, teamRows).map((g) => ({
@@ -323,36 +316,22 @@ function SessionHostContent() {
       members: g.members.map((m) => ({
         id: m.id,
         nickname: m.nickname,
-        zoneName: m.investigation_zone?.name ?? null,
+        zoneName: m.assigned_ingredient_id
+          ? (ingredientNameById.get(m.assigned_ingredient_id) ?? m.assigned_ingredient_id)
+          : null,
       })),
+    }));
+  }, [onlinePlayers, teamRows, ingredientNameById]);
+
+  const progressGroups = useMemo<TeamProgressGroup[]>(() => {
+    const grouped = groupPlayersByTeam(onlinePlayers, teamRows);
+    return grouped.map((g) => ({
+      team: g.team,
+      memberCount: g.members.length,
     }));
   }, [onlinePlayers, teamRows]);
 
-  const reportByPlayerId = useMemo(
-    () => new Map(reportRows.map((r) => [r.player_id, r])),
-    [reportRows],
-  );
-
-  const reportGroups = useMemo<TeamReportGroup[]>(() => {
-    return groupPlayersByTeam(onlinePlayers, teamRows).map((g) => ({
-      team: { id: g.team.id, name: g.team.name },
-      members: g.members.map((m) => {
-        const r = reportByPlayerId.get(m.id);
-        return {
-          id: m.id,
-          nickname: m.nickname,
-          report: r ? { suspectId: r.suspect_id } : null,
-        };
-      }),
-    }));
-  }, [onlinePlayers, teamRows, reportByPlayerId]);
-
-  const reportRoster = useMemo(
-    () => parseSuspectRosterFromCase(sessionQuery.data?.cases?.suspect_roster),
-    [sessionQuery.data?.cases?.suspect_roster],
-  );
-
-  const phase = (sessionQuery.data?.phase as CasePhase) ?? "waiting";
+  const phase = (sessionQuery.data?.phase as SessionPhase) ?? "waiting";
   const nextPhase = getNextPhase(phase);
   const nextPhaseLabel = nextPhase === "session_end" ? "종료" : "다음 단계";
   const sessionStarted = phase !== "waiting";
@@ -487,7 +466,7 @@ function SessionHostContent() {
         <header className="flex flex-col gap-4 border-b border-[var(--border)] pb-4 md:flex-row md:flex-wrap md:items-start md:gap-5">
           <div className="min-w-0 flex-1 space-y-1 md:min-w-[12rem]">
             <p className="break-words font-mono text-2xl font-semibold leading-tight tracking-wide text-[var(--accent)] sm:text-3xl md:text-4xl lg:text-[2.5rem] lg:leading-none">
-              {row.cases?.title}
+              {row.lessons?.title}
             </p>
             <p className="px-0.5 text-xs text-[var(--muted-foreground)] md:text-sm">
               접속 <span className="font-semibold text-[var(--foreground)]">{playercount}</span>명
@@ -569,13 +548,10 @@ function SessionHostContent() {
         ) : null}
 
         {phase === "final_report" || phase === "session_end" ? (
-          <TeamReportDashboard
-            groups={reportGroups}
-            loading={playersQuery.isLoading || teamsQuery.isLoading || reportsQuery.isLoading}
-            roster={reportRoster}
-            answerSuspectId={row.cases?.answer_suspect_id ?? null}
-            totalPlayers={onlinePlayers.length}
-            submittedCount={reportRows.length}
+          <TeamProgressDashboard
+            groups={progressGroups}
+            loading={playersQuery.isLoading || teamsQuery.isLoading}
+            pack={scenarioPack}
           />
         ) : null}
       </main>

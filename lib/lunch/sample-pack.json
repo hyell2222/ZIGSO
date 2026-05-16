@@ -1,0 +1,153 @@
+{
+  "version": 1,
+  "title": "Today's School Lunch",
+  "description": "Work together as cafeteria staff. Each student becomes an ingredient expert, returns to the team, and completes today's lunch tray before time runs out.",
+  "difficulty": "Normal",
+  "englishLevel": "A2",
+  "teamSize": 4,
+  "ingredients": [
+    {
+      "id": "rice",
+      "name": "rice",
+      "category": "staple",
+      "hints": {
+        "stage1": "It is a grain eaten every day in Korea and many Asian countries.",
+        "stage2": "It is white or brown and often served in a bowl.",
+        "stage3": "People steam it and eat it with side dishes.",
+        "stage4": "Fried rice is made from it.",
+        "stage5": "It starts with the letter R."
+      },
+      "cookingHint": "Use steamed rice for fried rice.",
+      "aliases": ["steamed rice"]
+    },
+    {
+      "id": "kimchi",
+      "name": "kimchi",
+      "category": "side",
+      "hints": {
+        "stage1": "It is a fermented Korean side dish with a strong smell.",
+        "stage2": "It is often red and spicy.",
+        "stage3": "It is made from cabbage or radish.",
+        "stage4": "Many Koreans eat it at every meal.",
+        "stage5": "It starts with the letter K."
+      },
+      "cookingHint": "Chop kimchi before frying."
+    },
+    {
+      "id": "egg",
+      "name": "egg",
+      "category": "side",
+      "hints": {
+        "stage1": "It comes from a chicken and is used in many dishes.",
+        "stage2": "It has a yellow yolk inside a white part.",
+        "stage3": "You can fry, boil, or scramble it.",
+        "stage4": "An omelet is made from it.",
+        "stage5": "It starts with the letter E."
+      },
+      "cookingHint": "Beat the egg before cooking."
+    },
+    {
+      "id": "green_onion",
+      "name": "green onion",
+      "category": "side",
+      "hints": {
+        "stage1": "It is a long green vegetable used for flavor.",
+        "stage2": "It is also called scallion.",
+        "stage3": "People chop it and put it on soup or fried rice.",
+        "stage4": "It smells fresh and a little sharp.",
+        "stage5": "It has two words and starts with G."
+      },
+      "cookingHint": "Slice it thinly for garnish.",
+      "aliases": ["scallion"]
+    },
+    {
+      "id": "miso",
+      "name": "miso",
+      "category": "soup",
+      "hints": {
+        "stage1": "It is a Japanese paste made from fermented soybeans.",
+        "stage2": "It is brown and salty.",
+        "stage3": "It is used to make a famous Japanese soup.",
+        "stage4": "The soup is often served with tofu.",
+        "stage5": "It starts with the letter M."
+      },
+      "cookingHint": "Dissolve it in hot water, do not boil too hard."
+    },
+    {
+      "id": "tofu",
+      "name": "tofu",
+      "category": "side",
+      "hints": {
+        "stage1": "It is a soft white food made from soybeans.",
+        "stage2": "It has almost no taste alone.",
+        "stage3": "It is popular in Korean and Japanese cooking.",
+        "stage4": "It is often cut into cubes for soup.",
+        "stage5": "It starts with the letter T."
+      },
+      "cookingHint": "Cut into small cubes for soup."
+    },
+    {
+      "id": "yogurt",
+      "name": "yogurt",
+      "category": "dessert",
+      "hints": {
+        "stage1": "It is a dairy product made by fermenting milk.",
+        "stage2": "It is creamy and often slightly sour.",
+        "stage3": "People eat it with fruit or as a dessert.",
+        "stage4": "It is sold in small cups at school lunch.",
+        "stage5": "It starts with the letter Y."
+      },
+      "cookingHint": "Serve cold as dessert."
+    }
+  ],
+  "menus": [
+    {
+      "id": "kimchi_fried_rice",
+      "name": "kimchi fried rice",
+      "slot": "rice",
+      "ingredientIds": ["rice", "kimchi", "egg", "green_onion"],
+      "cookingSteps": [
+        { "order": 1, "sentence": "Heat the pan." },
+        { "order": 2, "sentence": "Put the rice in the pan." },
+        { "order": 3, "sentence": "Add the kimchi." },
+        { "order": 4, "sentence": "Cook the rice and kimchi." },
+        { "order": 5, "sentence": "Put the egg on top." }
+      ]
+    },
+    {
+      "id": "miso_soup",
+      "name": "miso soup",
+      "slot": "soup",
+      "ingredientIds": ["miso", "tofu"],
+      "cookingSteps": [
+        { "order": 1, "sentence": "Boil water in a pot." },
+        { "order": 2, "sentence": "Add the miso." },
+        { "order": 3, "sentence": "Add the tofu." },
+        { "order": 4, "sentence": "Stir gently." }
+      ]
+    },
+    {
+      "id": "yogurt_dessert",
+      "name": "yogurt",
+      "slot": "dessert",
+      "ingredientIds": ["yogurt"],
+      "cookingSteps": [
+        { "order": 1, "sentence": "Take the yogurt from the fridge." },
+        { "order": 2, "sentence": "Put it on the tray." }
+      ]
+    }
+  ],
+  "commandCards": [
+    { "id": "heat_pan", "text": "Heat the pan." },
+    { "id": "put_rice", "text": "Put the rice in the pan." },
+    { "id": "add_kimchi", "text": "Add the kimchi." },
+    { "id": "cook_rice_kimchi", "text": "Cook the rice and kimchi." },
+    { "id": "egg_on_top", "text": "Put the egg on top." },
+    { "id": "boil_water", "text": "Boil water in a pot." },
+    { "id": "add_miso", "text": "Add the miso." },
+    { "id": "add_tofu", "text": "Add the tofu." },
+    { "id": "stir_gently", "text": "Stir gently." },
+    { "id": "take_yogurt", "text": "Take the yogurt from the fridge." },
+    { "id": "put_tray", "text": "Put it on the tray." }
+  ]
+}

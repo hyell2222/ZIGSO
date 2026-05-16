@@ -5,7 +5,7 @@ import { LoadingState } from "@/components/ui/loading-state";
 export type TeamAssignmentMember = {
   id: string;
   nickname: string | null;
-  /** 부원에게 배정된 조사 장소 이름 */
+  /** 부원에게 배정된 전문 재료 이름 */
   zoneName: string | null;
 };
 

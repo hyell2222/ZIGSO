@@ -1,16 +1,16 @@
 "use client";
 
+import { parseScenarioPack, type LessonRecord } from "@/lib/api/lessons";
+import { assignTeamsAndIngredients } from "@/lib/api/play";
 import { supabase } from "@/lib/supabase";
-import type { CaseRecord } from "@/lib/api/cases";
-import { assignTeamsAndInvestigation } from "@/lib/api/play";
 
-export type StartedGameSession = {
+export type StartedSession = {
   sessionId: string;
   joinCode: string;
-  caseTitle: string;
+  sessionTitle: string;
 };
 
-export type CasePhase =
+export type SessionPhase =
   | "waiting"
   | "briefing"
   | "investigation"
@@ -27,50 +27,42 @@ export type HostSessionListRow = {
   phase: string | null;
   is_active: boolean | null;
   created_at: string | null;
-  case_id: string | null;
-  cases: { title: string | null } | null;
+  lesson_id: string | null;
+  lessons: { title: string | null } | null;
 };
 
-/** 로그인한 교사(`host_id`)가 연 세션 — 최신순 */
 export async function listHostSessions(hostId: string) {
   const { data, error } = await supabase
-    .from("game_sessions")
-    .select("id,join_code,phase,is_active,created_at,case_id,cases(title)")
+    .from("sessions")
+    .select("id,join_code,phase,is_active,created_at,lesson_id,lessons(title)")
     .eq("host_id", hostId)
     .order("created_at", { ascending: false });
   if (error) throw error;
   const raw = (data ?? []) as Array<
-    Omit<HostSessionListRow, "cases"> & {
-      cases: { title: string | null } | { title: string | null }[] | null;
+    Omit<HostSessionListRow, "lessons"> & {
+      lessons: { title: string | null } | { title: string | null }[] | null;
     }
   >;
   return raw.map((r) => {
-    const c = r.cases;
-    const caseRow = Array.isArray(c) ? c[0] ?? null : c;
-    return { ...r, cases: caseRow } satisfies HostSessionListRow;
+    const lesson = Array.isArray(r.lessons) ? r.lessons[0] ?? null : r.lessons;
+    return { ...r, lessons: lesson } satisfies HostSessionListRow;
   });
 }
 
-export async function startGameSession(caseRecord: CaseRecord, hostId?: string | null) {
+export async function startSession(lesson: LessonRecord, hostId?: string | null) {
   if (!hostId) {
     throw new Error("플레이 세션을 시작하려면 로그인해 주세요.");
   }
-
-  const { data: locRows, error: locError } = await supabase
-    .from("locations")
-    .select("id")
-    .eq("case_id", caseRecord.id);
-
-  if (locError) throw locError;
-  if (!locRows?.length) {
-    throw new Error("이 사건에 조사 장소이 없습니다. 맵 에디터에서 장소을 추가하세요.");
+  const pack = parseScenarioPack(lesson.scenario_pack);
+  if (!pack) {
+    throw new Error("이 수업에 급식 시나리오가 없습니다. 수업 편집에서 메뉴·재료를 설정해 주세요.");
   }
 
   const joinCode = generateJoinCode(6);
   const { data: session, error: sessionError } = await supabase
-    .from("game_sessions")
+    .from("sessions")
     .insert({
-      case_id: caseRecord.id,
+      lesson_id: lesson.id,
       host_id: hostId,
       join_code: joinCode,
       phase: "waiting",
@@ -84,19 +76,18 @@ export async function startGameSession(caseRecord: CaseRecord, hostId?: string |
   return {
     sessionId: session.id,
     joinCode: session.join_code,
-    caseTitle: caseRecord.title ?? "Untitled case",
-  } satisfies StartedGameSession;
+    sessionTitle: lesson.title ?? "Untitled session",
+  } satisfies StartedSession;
 }
 
-/** 호스트가 `advanceSessionPhase`로 넘길 수 있는 진행 단계 (waiting 은 begin, session_end 는 종료) */
 const HOST_PHASE_PROGRESSION: Array<"briefing" | "investigation" | "final_report"> = [
   "briefing",
   "investigation",
   "final_report",
 ];
 
-export function getNextPhase(current: string | null): CasePhase | null {
-  const c = (current as CasePhase) ?? "waiting";
+export function getNextPhase(current: string | null): SessionPhase | null {
+  const c = (current as SessionPhase) ?? "waiting";
   if (c === "waiting" || c === "session_end") return null;
   const idx = HOST_PHASE_PROGRESSION.indexOf(c);
   if (idx < 0) return null;
@@ -105,9 +96,26 @@ export function getNextPhase(current: string | null): CasePhase | null {
 }
 
 export async function beginHostingSession(sessionId: string) {
-  await assignTeamsAndInvestigation(sessionId);
+  const { data: sess, error: se } = await supabase
+    .from("sessions")
+    .select("lesson_id")
+    .eq("id", sessionId)
+    .single();
+  if (se) throw se;
+  if (!sess?.lesson_id) throw new Error("세션에 연결된 수업이 없습니다.");
+
+  const { data: lesson, error: le } = await supabase
+    .from("lessons")
+    .select("scenario_pack")
+    .eq("id", sess.lesson_id)
+    .single();
+  if (le) throw le;
+  const pack = parseScenarioPack(lesson?.scenario_pack);
+  if (!pack) throw new Error("급식 시나리오를 불러올 수 없습니다.");
+
+  await assignTeamsAndIngredients(sessionId, pack);
   const { error } = await supabase
-    .from("game_sessions")
+    .from("sessions")
     .update({ phase: "briefing" })
     .eq("id", sessionId);
   if (error) throw error;
@@ -115,22 +123,21 @@ export async function beginHostingSession(sessionId: string) {
 
 export async function endSession(sessionId: string) {
   const { error } = await supabase
-    .from("game_sessions")
+    .from("sessions")
     .update({ phase: "session_end", is_active: false })
     .eq("id", sessionId);
   if (error) throw error;
 }
 
-export async function advanceSessionPhase(sessionId: string, nextPhase: CasePhase) {
+export async function advanceSessionPhase(sessionId: string, nextPhase: SessionPhase) {
   const { error } = await supabase
-    .from("game_sessions")
+    .from("sessions")
     .update({ phase: nextPhase })
     .eq("id", sessionId);
   if (error) throw error;
 }
 
-/** 호스트만 삭제 가능(RLS). 팀·플레이어는 FK `on delete cascade`로 함께 제거됩니다. */
-export async function deleteGameSession(sessionId: string) {
-  const { error } = await supabase.from("game_sessions").delete().eq("id", sessionId);
+export async function deleteSession(sessionId: string) {
+  const { error } = await supabase.from("sessions").delete().eq("id", sessionId);
   if (error) throw error;
 }
