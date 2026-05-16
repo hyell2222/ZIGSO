@@ -11,21 +11,25 @@ import { cn } from "@/lib/utils";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import landingStyles from "@/components/play/student-blackout-landing.module.css";
 
 const MYSTERY_CLUB_TAG = "MYSTERY CLUB";
 const LINE_CONNECTING_REST = "서버에 접속 중입니다…";
-const LINE_AUTH_REQUIRED = "[WARNING] 접근 권한이 필요합니다.";
-const ACCESS_PROMPT_AUTO = "점시만 기다려주세요…";
+const PERMISSION_REQUIRED_LINE = "접근 권한이 필요합니다.";
+const PLEASE_WAIT_LINE = "잠시만 기다려주세요…";
+/** 타이핑·길이 비교용 (권한 안내 + 대기 안내) */
+const GATE_NOTICE_TYPED = `${PERMISSION_REQUIRED_LINE}\n${PLEASE_WAIT_LINE}`;
 
-const AUTO_MODAL_DELAY_MS = 3000;
-const LOAD_BAR_DURATION_MS = 2200;
-const LOAD_BAR_STEPS = 28;
-const PRELUDE_DWELL_MS = 420;
-const PRELUDE_FADE_MS = 380;
-const POST_BEAT_MS = 140;
+const AUTO_MODAL_DELAY_MS = 4800;
+const LOAD_BAR_DURATION_MS = 11000;
+const LOAD_BAR_STEPS = 60;
+const PRELUDE_DWELL_MS = 1000;
+const POST_BEAT_MS = 450;
 
-const HARDBOILED =
-  "참가 코드와 닉네임을 입력하세요. 보안 규정에 따라 승인된 동아리원만 이 사건 자료에 접근할 수 있습니다.";
+const PAUSE_AFTER_TITLE_MS = 2600;
+const PAUSE_AFTER_CONNECT_MS = 2600;
+const PAUSE_BEFORE_GATE_NOTICE_MS = 2600;
+const PAUSE_AFTER_GATE_NOTICE_MS = 1400;
 
 async function typeChars(
   text: string,
@@ -38,22 +42,6 @@ async function typeChars(
     onUpdate(text.slice(0, i));
     if (i < text.length) await new Promise((r) => setTimeout(r, ms));
   }
-}
-
-function EntryLedRow({ className }: { className?: string }) {
-  return (
-    <div
-      className={cn(
-        "pointer-events-none flex justify-center gap-5 opacity-80",
-        className,
-      )}
-      aria-hidden
-    >
-      <span className="motion-safe:animate-[ledPulse_2.8s_ease-in-out_infinite] h-1 w-1 rounded-full bg-[var(--entry-parchment)] shadow-[0_0_10px_color-mix(in_srgb,var(--entry-accent)_65%,transparent)]" />
-      <span className="motion-safe:animate-[ledPulse_2.8s_ease-in-out_infinite_0.35s] h-1 w-1 rounded-full bg-[var(--entry-parchment)] shadow-[0_0_10px_color-mix(in_srgb,var(--entry-accent)_65%,transparent)]" />
-      <span className="motion-safe:animate-[ledPulse_2.8s_ease-in-out_infinite_0.7s] h-1 w-1 rounded-full bg-[var(--entry-parchment)] shadow-[0_0_8px_color-mix(in_srgb,var(--entry-accent)_55%,transparent)]" />
-    </div>
-  );
 }
 
 type StudentBlackoutLandingProps = {
@@ -69,12 +57,9 @@ export function StudentBlackoutLanding({
   const router = useRouter();
   const [clubTitle, setClubTitle] = useState("");
   const [connectLine, setConnectLine] = useState("");
-  const [authLine, setAuthLine] = useState("");
   const [loadPercent, setLoadPercent] = useState<number | null>(null);
-  const [showPrelude, setShowPrelude] = useState(true);
-  const [preludeFadingOut, setPreludeFadingOut] = useState(false);
-  const [accessPromptText, setAccessPromptText] = useState("");
-  const [awaitingAccessKey, setAwaitingAccessKey] = useState(false);
+  const [gateNoticeTyped, setGateNoticeTyped] = useState("");
+  const [awaitingJoinForm, setAwaitingJoinForm] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [hardboiled, setHardboiled] = useState("");
   const [caseCode, setCaseCode] = useState(() => prefillJoinCode ?? "");
@@ -101,27 +86,26 @@ export function StudentBlackoutLanding({
     const reduce =
       typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    const titleMs = reduce ? 5 : 18;
-    const afterTitleMs = reduce ? 60 : 200;
-    const connectMs = reduce ? 6 : 20;
-    const afterConnectMs = reduce ? 80 : 240;
-    const loadSteps = reduce ? 10 : LOAD_BAR_STEPS;
-    const loadTotalMs = reduce ? 480 : LOAD_BAR_DURATION_MS;
-    const dwellMs = reduce ? 100 : PRELUDE_DWELL_MS;
-    const fadeMs = reduce ? 80 : PRELUDE_FADE_MS;
-    const postBeatMs = reduce ? 40 : POST_BEAT_MS;
-    const authMs = reduce ? 5 : 16;
-    const afterAuthMs = reduce ? 120 : 380;
-    const accessMs = reduce ? 4 : 11;
+    const titleMs = reduce ? 18 : 58;
+    const pauseAfterTitle = reduce ? 280 : PAUSE_AFTER_TITLE_MS;
+    const connectMs = reduce ? 24 : 78;
+    const pauseAfterConnect = reduce ? 300 : PAUSE_AFTER_CONNECT_MS;
+    const loadSteps = reduce ? 12 : LOAD_BAR_STEPS;
+    const loadTotalMs = reduce ? 720 : LOAD_BAR_DURATION_MS;
+    const dwellMs = reduce ? 200 : PRELUDE_DWELL_MS;
+    const postBeatMs = reduce ? 100 : POST_BEAT_MS;
+    const pauseBeforeGateNotice = reduce ? 280 : PAUSE_BEFORE_GATE_NOTICE_MS;
+    const pauseAfterGateNotice = reduce ? 200 : PAUSE_AFTER_GATE_NOTICE_MS;
+    const gateNoticeTypeMs = reduce ? 16 : 42;
 
     void (async () => {
       await typeChars(MYSTERY_CLUB_TAG, setClubTitle, titleMs, shouldAbort);
       if (shouldAbort()) return;
-      await new Promise((r) => setTimeout(r, afterTitleMs));
+      await new Promise((r) => setTimeout(r, pauseAfterTitle));
       if (shouldAbort()) return;
       await typeChars(LINE_CONNECTING_REST, setConnectLine, connectMs, shouldAbort);
       if (shouldAbort()) return;
-      await new Promise((r) => setTimeout(r, afterConnectMs));
+      await new Promise((r) => setTimeout(r, pauseAfterConnect));
       if (shouldAbort()) return;
 
       setLoadPercent(0);
@@ -137,26 +121,17 @@ export function StudentBlackoutLanding({
       await new Promise((r) => setTimeout(r, dwellMs));
       if (shouldAbort()) return;
 
-      setPreludeFadingOut(true);
-      await new Promise((r) => setTimeout(r, fadeMs));
-      if (shouldAbort()) return;
-
-      setLoadPercent(null);
-      setConnectLine("");
-      setClubTitle(MYSTERY_CLUB_TAG);
-      setShowPrelude(false);
-      setPreludeFadingOut(false);
+      /* 로딩 바·접속 문구 유지: 짧은 비트 후, 한 박자 더 쉬었다가 안내 문구 타이핑 */
       await new Promise((r) => setTimeout(r, postBeatMs));
       if (shouldAbort()) return;
-
-      await typeChars(LINE_AUTH_REQUIRED, setAuthLine, authMs, shouldAbort);
-      if (shouldAbort()) return;
-      await new Promise((r) => setTimeout(r, afterAuthMs));
+      await new Promise((r) => setTimeout(r, pauseBeforeGateNotice));
       if (shouldAbort()) return;
 
-      await typeChars(ACCESS_PROMPT_AUTO, (chunk) => setAccessPromptText(chunk), accessMs, shouldAbort);
+      await typeChars(GATE_NOTICE_TYPED, (chunk) => setGateNoticeTyped(chunk), gateNoticeTypeMs, shouldAbort);
       if (shouldAbort()) return;
-      setAwaitingAccessKey(true);
+      await new Promise((r) => setTimeout(r, pauseAfterGateNotice));
+      if (shouldAbort()) return;
+      setAwaitingJoinForm(true);
       await new Promise<void>((resolve) => {
         modalDelayTimer = globalThis.setTimeout(() => {
           modalDelayTimer = undefined;
@@ -164,7 +139,7 @@ export function StudentBlackoutLanding({
         }, AUTO_MODAL_DELAY_MS);
       });
       if (shouldAbort()) return;
-      setAwaitingAccessKey(false);
+      setAwaitingJoinForm(false);
       setModalOpen(true);
     })();
 
@@ -178,14 +153,7 @@ export function StudentBlackoutLanding({
     if (!modalOpen) return;
     let cancelled = false;
     void (async () => {
-      await typeChars(
-        HARDBOILED,
-        (s) => {
-          if (!cancelled) setHardboiled(s);
-        },
-        14,
-        () => cancelled,
-      );
+      await new Promise((r) => setTimeout(r, 1000));
     })();
     return () => {
       cancelled = true;
@@ -221,139 +189,137 @@ export function StudentBlackoutLanding({
     }
   };
 
+  const showTitleCursor =
+    !modalOpen && !awaitingJoinForm && clubTitle.length < MYSTERY_CLUB_TAG.length;
+  const showConnectCursor =
+    !modalOpen &&
+    !awaitingJoinForm &&
+    loadPercent === null &&
+    clubTitle.length >= MYSTERY_CLUB_TAG.length &&
+    connectLine.length < LINE_CONNECTING_REST.length;
+  const loadRounded = loadPercent != null ? Math.min(100, Math.round(loadPercent)) : 0;
+
+  const gateNoticeNewlineIdx = gateNoticeTyped.indexOf("\n");
+  const permissionLineShown =
+    gateNoticeNewlineIdx >= 0 ? gateNoticeTyped.slice(0, gateNoticeNewlineIdx) : gateNoticeTyped;
+  const pleaseWaitLineShown =
+    gateNoticeNewlineIdx >= 0 ? gateNoticeTyped.slice(gateNoticeNewlineIdx + 1) : "";
+  const pleaseWaitLineVisible = pleaseWaitLineShown.length > 0 || awaitingJoinForm;
+  const showPermissionLineCursor =
+    !awaitingJoinForm && gateNoticeTyped.length < PERMISSION_REQUIRED_LINE.length;
+  const showPleaseWaitLineCursor =
+    !awaitingJoinForm &&
+    gateNoticeTyped.length > PERMISSION_REQUIRED_LINE.length &&
+    gateNoticeTyped.length < GATE_NOTICE_TYPED.length;
+  const pleaseWaitLineComplete =
+    awaitingJoinForm || pleaseWaitLineShown.length >= PLEASE_WAIT_LINE.length;
+  const showWaitLoader = !modalOpen && pleaseWaitLineVisible && pleaseWaitLineComplete;
+
   return (
     <div
-      className="font-sans fixed inset-0 z-0 flex min-h-dvh flex-col overflow-hidden text-[color:var(--entry-parchment)]"
+      className={cn(
+        "font-sans fixed inset-0 z-0 flex min-h-dvh flex-col overflow-hidden text-[color:var(--entry-parchment)]",
+        landingStyles.shell,
+      )}
       style={{
         backgroundColor: "var(--entry-shell-deep)",
-        backgroundImage: `
-          linear-gradient(180deg, color-mix(in srgb, var(--entry-shell) 96%, transparent) 0%, var(--entry-shell-deep) 100%),
-          repeating-linear-gradient(0deg, transparent, transparent 1px, var(--entry-grid) 1px, var(--entry-grid) 2px),
-          repeating-linear-gradient(90deg, transparent, transparent 1px, var(--entry-grid) 1px, var(--entry-grid) 2px)
-        `,
+        backgroundImage:
+          "linear-gradient(180deg, color-mix(in srgb, var(--entry-shell) 96%, transparent) 0%, var(--entry-shell-deep) 100%)",
       }}
     >
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-[color-mix(in_srgb,var(--primary)_12%,transparent)] to-transparent" />
+      <div className={landingStyles.ambient} aria-hidden />
+      <div className={landingStyles.shellGrid} aria-hidden />
+      <div className={landingStyles.scanlines} aria-hidden />
 
-      <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-6 py-10">
-        <div className="flex w-full max-w-md flex-col items-center gap-7 md:gap-8">
-          <div className="w-full text-center">
-            <p
-              className="text-2xl font-bold tracking-[0.12em] text-[color:var(--entry-accent-soft)] drop-shadow-[0_0_18px_color-mix(in_srgb,var(--entry-accent)_40%,transparent)] md:text-3xl md:tracking-[0.14em]"
-            >
-              {showPrelude ? clubTitle : MYSTERY_CLUB_TAG}
-              {showPrelude &&
-              !modalOpen &&
-              !awaitingAccessKey &&
-              clubTitle.length < MYSTERY_CLUB_TAG.length ? (
-                <span className="ml-px inline-block h-5 w-0.5 translate-y-1 animate-pulse bg-[var(--entry-accent)] align-middle md:h-6" />
-              ) : null}
-            </p>
-          </div>
+      <div
+        className={cn(
+          "flex min-h-0 flex-1 flex-col items-center justify-center overflow-visible px-6 py-10",
+          landingStyles.content,
+        )}
+      >
+        <div className={landingStyles.terminalStack}>
+          <article className={landingStyles.terminal}>
+            <header className={landingStyles.terminalChrome} aria-hidden>
+              <span className={landingStyles.windowDots}>
+                <span />
+                <span />
+                <span />
+              </span>
+              <span className={landingStyles.chromeLabel}>SECURE</span>
+            </header>
+            <div className={landingStyles.terminalBody}>
+              <p className={landingStyles.title}>
+                {clubTitle}
+                {showTitleCursor ? <span className={landingStyles.cursor} aria-hidden /> : null}
+              </p>
 
-          <div className="relative w-full min-h-[8rem] text-center text-base leading-relaxed tracking-[0.03em] motion-safe:transition-[min-height] motion-safe:duration-300 md:min-h-[9rem] md:text-lg">
-            {showPrelude ? (
-              <div
-                className={cn(
-                  "space-y-5 motion-safe:transition-[opacity,transform] motion-safe:duration-300 motion-safe:ease-out",
-                  preludeFadingOut
-                    ? "pointer-events-none opacity-0 motion-safe:-translate-y-1"
-                    : "opacity-100",
-                )}
-              >
-                <p className="text-[color:var(--entry-parchment)]">
+              {connectLine.length > 0 ? (
+                <p className={landingStyles.connectLine}>
                   {connectLine}
-                  {!modalOpen &&
-                  !awaitingAccessKey &&
-                  loadPercent === null &&
-                  clubTitle.length >= MYSTERY_CLUB_TAG.length &&
-                  connectLine.length < LINE_CONNECTING_REST.length ? (
-                    <span className="ml-px inline-block h-4 w-0.5 translate-y-0.5 animate-pulse bg-[var(--entry-accent)] align-middle md:h-5" />
-                  ) : null}
+                  {showConnectCursor ? <span className={landingStyles.cursor} aria-hidden /> : null}
                 </p>
-                {loadPercent !== null ? (
-                  <div className="mx-auto w-full max-w-[19rem] text-left text-[color:var(--entry-parchment-muted)]">
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-                      <span className="relative h-1.5 min-w-[9rem] flex-1 overflow-hidden rounded-sm bg-[var(--entry-bar-track)] ring-1 ring-[color-mix(in_srgb,var(--entry-accent)_28%,transparent)]">
-                        <span
-                          className={cn(
-                            "absolute inset-y-0 left-0 rounded-sm bg-gradient-to-r from-[var(--entry-accent)] to-[var(--entry-accent-glow)]",
-                            loadPercent != null && loadPercent >= 100 && "right-0 w-full",
-                          )}
-                          style={
-                            loadPercent != null && loadPercent >= 100
-                              ? undefined
-                              : { width: `${loadPercent ?? 0}%` }
-                          }
-                        />
-                      </span>
-                      <span className="shrink-0 tabular-nums text-[color:var(--entry-accent-soft)]">
-                        {Math.min(100, Math.round(loadPercent))}%
-                      </span>
-                    </div>
-                  </div>
-                ) : null}
-              </div>
-            ) : (
-              <div className="motion-safe:animate-[revealPost_0.48s_cubic-bezier(0.22,1,0.36,1)_both] space-y-5">
-                <p
-                  className={cn(
-                    "mx-auto w-fit max-w-full text-balance rounded-md border px-2 py-1.5 text-left text-sm font-semibold leading-snug tracking-[0.05em]",
-                    "border-[color-mix(in_srgb,var(--entry-warn-glow)_55%,transparent)]",
-                    "bg-[color-mix(in_srgb,var(--entry-warn-ink)_72%,transparent)]",
-                    "text-[color:var(--entry-auth-notice)]",
-                    "shadow-[0_0_0_1px_color-mix(in_srgb,var(--entry-warn-glow)_22%,transparent),0_0_28px_color-mix(in_srgb,var(--danger)_26%,transparent),inset_0_1px_0_color-mix(in_srgb,var(--highlight)_12%,transparent)]",
-                    "motion-safe:animate-[warnPulse_2.4s_ease-in-out_infinite]",
-                    "md:px-2.5 md:py-2 md:text-base md:tracking-[0.06em]",
-                  )}
-                >
-                  {authLine}
-                  {!modalOpen &&
-                  !awaitingAccessKey &&
-                  accessPromptText.length === 0 &&
-                  authLine.length < LINE_AUTH_REQUIRED.length ? (
-                    <span className="ml-px inline-block h-3 w-0.5 translate-y-px animate-pulse bg-[color-mix(in_srgb,var(--highlight)_55%,#f0e0d4)] align-middle shadow-[0_0_10px_color-mix(in_srgb,var(--danger)_40%,transparent)] md:h-3.5" />
-                  ) : null}
-                </p>
-                {authLine.length >= LINE_AUTH_REQUIRED.length ||
-                accessPromptText.length > 0 ||
-                awaitingAccessKey ? (
-                  <p className="text-balance text-[color:var(--entry-parchment-muted)]">
-                    {accessPromptText}
-                    {!awaitingAccessKey && accessPromptText.length < ACCESS_PROMPT_AUTO.length ? (
-                      <span className="ml-px inline-block h-3 w-0.5 translate-y-px animate-pulse bg-[var(--entry-accent)] align-middle md:h-3.5" />
+              ) : null}
+
+              {loadPercent !== null ? (
+                <div className={landingStyles.loadRow}>
+                  <span className={landingStyles.loadTrack}>
+                    <span
+                      className={cn(
+                        landingStyles.loadFill,
+                        loadPercent >= 100 && landingStyles.loadFillFull,
+                      )}
+                      style={loadPercent >= 100 ? undefined : { width: `${loadPercent}%` }}
+                    />
+                  </span>
+                  <span className={landingStyles.loadPercent}>{loadRounded}%</span>
+                </div>
+              ) : null}
+
+              {gateNoticeTyped.length > 0 || awaitingJoinForm ? (
+                <div className={landingStyles.gateNoticeBlock}>
+                  <p className={landingStyles.gateNoticeLine}>
+                    {permissionLineShown}
+                    {showPermissionLineCursor ? (
+                      <span className={landingStyles.cursor} aria-hidden />
                     ) : null}
                   </p>
-                ) : null}
-              </div>
-            )}
-          </div>
-
-          <EntryLedRow />
+                  {pleaseWaitLineVisible ? (
+                    <>
+                      <p className={landingStyles.gateNoticeLine}>
+                        {pleaseWaitLineShown || PLEASE_WAIT_LINE}
+                        {showPleaseWaitLineCursor ? (
+                          <span className={landingStyles.cursor} aria-hidden />
+                        ) : null}
+                      </p>
+                      {showWaitLoader ? (
+                        <div className={landingStyles.waitLoader} aria-hidden>
+                          <span />
+                          <span />
+                          <span />
+                        </div>
+                      ) : null}
+                    </>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+            <footer className={landingStyles.terminalChromeBottom} aria-hidden>
+              <span>MYSTERY CLUB</span>
+            </footer>
+          </article>
         </div>
       </div>
 
       <Modal
         open={modalOpen}
         onClose={() => {}}
-        title="학생 참가 인증"
+        title="참가 인증"
         titleId="landing-auth-title"
         hideCloseButton
         closeOnBackdrop={false}
         closeOnEscape={false}
         bodyClassName="space-y-4"
       >
-        <div className="relative w-full">
-          <p className="invisible text-balance text-sm leading-relaxed" aria-hidden>
-            {HARDBOILED}
-          </p>
-          <p className="absolute inset-0 text-pretty text-left text-sm leading-relaxed text-[var(--muted-foreground)]">
-            {hardboiled}
-            {hardboiled.length < HARDBOILED.length ? (
-              <span className="ml-0.5 inline-block h-[1em] w-px animate-pulse bg-[var(--primary)] align-[-0.05em]" />
-            ) : null}
-          </p>
-        </div>
         <form className="space-y-4" onSubmit={(e) => void onSubmit(e)}>
           <div>
             <label htmlFor="landing-case-code" className="mb-1.5 block text-xs font-medium text-[var(--primary)]">
@@ -389,7 +355,7 @@ export function StudentBlackoutLanding({
               onChange={(e) => setNickname(e.target.value)}
               disabled={busy}
               placeholder="닉네임을 입력하세요"
-              className="h-11 text-sm tracking-[0.06em]"
+              className="h-11 text-sm tracking-[0.08em]"
             />
           </div>
           <Button

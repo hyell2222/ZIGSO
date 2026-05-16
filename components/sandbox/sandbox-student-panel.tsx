@@ -185,12 +185,8 @@ function SandboxJoinGate({ onJoin }: { onJoin: (nickname: string) => void }) {
             )}
           >
             <h3 className="text-base font-semibold text-[var(--foreground)] sm:text-lg">
-              학생 참가 인증
+              참가 인증
             </h3>
-            <p className="mt-1 text-xs text-[var(--muted-foreground)] sm:text-sm">
-              참가 코드와 닉네임을 입력하세요. 보안 규정에 따라 승인된
-              동아리원만 이 사건 자료에 접근할 수 있습니다.
-            </p>
             <form className="mt-3 space-y-3 sm:mt-4 sm:space-y-4" onSubmit={handleSubmit}>
               <div>
                 <label
