@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { acquireIngredientForPlayer } from "@/lib/api/play";
 import { getIngredientById, hintTextForStage } from "@/lib/lunch/engine";
+import { acquireSuccessMessage, PLAYER_MESSAGES } from "@/lib/lunch/player-messages";
 import type { ScenarioPack } from "@/lib/lunch/types";
 import { scoreForHintStage } from "@/lib/lunch/scoring";
 import { cn } from "@/lib/utils";
@@ -75,11 +76,9 @@ export function IngredientExpertPanel({
         });
       }
       onAcquired();
-      setMessage(
-        `Correct! You earned ${scoreForHintStage(hintStage)} points. Share this ingredient with your team.`,
-      );
+      setMessage(acquireSuccessMessage(scoreForHintStage(hintStage)));
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : "Failed to submit.");
+      setMessage(err instanceof Error ? err.message : PLAYER_MESSAGES.submitFailed);
     } finally {
       setSubmitting(false);
     }
@@ -116,7 +115,7 @@ export function IngredientExpertPanel({
                 </p>
                 {ingredient?.cookingHint ? (
                   <p className="mt-2 text-[var(--muted-foreground)]">
-                    Cooking hint: {ingredient.cookingHint}
+                    조리 힌트: {ingredient.cookingHint}
                   </p>
                 ) : null}
               </div>
@@ -124,7 +123,7 @@ export function IngredientExpertPanel({
               <>
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wider text-[var(--accent)]">
-                    Hint {hintStage} / 5 · {scoreForHintStage(hintStage)} pts if correct
+                    힌트 {hintStage} / 5 · 정답 시 {scoreForHintStage(hintStage)}점
                   </p>
                   <p className="mt-2 text-base leading-relaxed text-[var(--foreground)]">
                     {hintTextForStage(ingredient, hintStage)}
@@ -137,13 +136,13 @@ export function IngredientExpertPanel({
                 ) : null}
                 <form className="space-y-3" onSubmit={handleSubmit}>
                   <label className="text-sm font-medium text-[var(--foreground)]" htmlFor="ingredient-answer">
-                    What ingredient is it? (English)
+                    어떤 재료일까요? (영어로 입력)
                   </label>
                   <Input
                     id="ingredient-answer"
                     value={answer}
                     onChange={(e) => setAnswer(e.target.value)}
-                    placeholder="e.g. tomato"
+                    placeholder="예: tomato"
                     autoComplete="off"
                     required
                   />
@@ -151,7 +150,7 @@ export function IngredientExpertPanel({
                     <p
                       className={cn(
                         "text-sm",
-                        message.startsWith("Correct") ? "text-[var(--primary)]" : "text-[var(--danger)]",
+                        message.startsWith("정답") ? "text-[var(--primary)]" : "text-[var(--danger)]",
                       )}
                     >
                       {message}
@@ -161,7 +160,7 @@ export function IngredientExpertPanel({
                     {submitting ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
-                        Checking…
+                        확인 중…
                       </>
                     ) : (
                       "정답 제출"

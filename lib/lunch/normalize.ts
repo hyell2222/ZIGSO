@@ -1,3 +1,4 @@
+import { PLAYER_MESSAGES } from "@/lib/lunch/player-messages";
 import type { ScenarioPack } from "@/lib/lunch/types";
 import { SCENARIO_PACK_VERSION } from "@/lib/lunch/types";
 import { validateScenarioPack } from "@/lib/lunch/validate";
@@ -60,7 +61,7 @@ export function normalizeScenarioPack(raw: unknown): ScenarioPack {
 
   const pack: ScenarioPack = {
     version: SCENARIO_PACK_VERSION,
-    title: String(p.title ?? "School Lunch Rush").trim(),
+    title: String(p.title ?? PLAYER_MESSAGES.defaultPackTitle).trim(),
     description: String(p.description ?? "").trim(),
     difficulty: coerceDifficulty(p.difficulty),
     englishLevel: coerceEnglishLevel(p.englishLevel),
@@ -73,7 +74,7 @@ export function normalizeScenarioPack(raw: unknown): ScenarioPack {
   const issues = validateScenarioPack(pack);
   if (issues.length > 0) {
     throw new Error(
-      `Invalid lunch pack after normalize: ${issues.map((i) => `${i.path}: ${i.message}`).join("; ")}`,
+      `시나리오 정규화 후 검증 실패: ${issues.map((i) => `${i.path}: ${i.message}`).join("; ")}`,
     );
   }
   return pack;

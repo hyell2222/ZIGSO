@@ -18,9 +18,8 @@ import {
   type MenuSlot,
   type ScenarioEditorDraft,
 } from "@/lib/lunch/scenario-draft";
+import { ENGLISH_LEVEL_OPTIONS } from "@/lib/lunch/english-level";
 import type { EnglishLevel } from "@/lib/lunch/types";
-
-const ENGLISH_LEVELS: EnglishLevel[] = ["A1", "A2", "B1", "B2"];
 
 type Props = {
   draft: ScenarioEditorDraft;
@@ -67,7 +66,7 @@ function IngredientEditor({
             id={`ing-name-${ingredient.localId}`}
             value={ingredient.name}
             onChange={(e) => onChange({ ...ingredient, name: e.target.value })}
-            placeholder="e.g. tomato"
+            placeholder="예: tomato"
           />
         </div>
         <div className="space-y-1.5">
@@ -98,7 +97,7 @@ function IngredientEditor({
                   hints: { ...ingredient.hints, [key]: e.target.value },
                 })
               }
-              placeholder="English hint text"
+              placeholder="영어 힌트 문장"
               className="min-h-[3.5rem]"
             />
           </div>
@@ -165,7 +164,7 @@ function MenuEditorCard({
                 id={`menu-name-${menu.localId}`}
                 value={menu.name}
                 onChange={(e) => onChange({ ...menu, name: e.target.value })}
-                placeholder="e.g. kimchi fried rice"
+                placeholder="예: kimchi fried rice"
               />
             </div>
             <div className="space-y-1.5">
@@ -253,7 +252,7 @@ function MenuEditorCard({
                       cookingSteps[idx] = e.target.value;
                       onChange({ ...menu, cookingSteps });
                     }}
-                    placeholder="e.g. Heat the pan."
+                    placeholder="예: Heat the pan."
                     className="flex-1"
                   />
                   <div className="flex shrink-0 flex-col gap-1">
@@ -335,7 +334,7 @@ export function ScenarioEditorForm({ draft, onChange }: Props) {
       <section className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4">
         <h2 className="text-sm font-semibold text-[var(--foreground)]">수업 설정</h2>
         <p className="mt-1 text-xs text-[var(--muted-foreground)]">
-          School Lunch Rush 기본 템플릿이 적용됩니다. 팀 규모와 난이도만 조정하면 됩니다.
+          스쿨 런치 러시 기본 템플릿이 적용됩니다. 팀 규모와 난이도만 조정하면 됩니다.
         </p>
         <div className="mt-4 grid gap-4 sm:grid-cols-3">
           <div className="space-y-1.5">
@@ -362,9 +361,9 @@ export function ScenarioEditorForm({ draft, onChange }: Props) {
               }
               className="h-10 w-full rounded-md border border-[var(--border)] bg-[var(--background)] px-3 text-sm"
             >
-              {ENGLISH_LEVELS.map((lv) => (
-                <option key={lv} value={lv}>
-                  {lv}
+              {ENGLISH_LEVEL_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
                 </option>
               ))}
             </select>

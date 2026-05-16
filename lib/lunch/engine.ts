@@ -5,6 +5,7 @@ import type {
   LunchMenu,
   ScenarioPack,
 } from "@/lib/lunch/types";
+import { PLAYER_MESSAGES } from "@/lib/lunch/player-messages";
 import { normalizeSentence, scoreForHintStage, scoreMenuCompletion } from "@/lib/lunch/scoring";
 import { isIngredientAnswerCorrect } from "@/lib/lunch/validate";
 
@@ -30,9 +31,9 @@ export function tryAcquireIngredient(
   hintStageUsed: 1 | 2 | 3 | 4 | 5,
 ): { ok: true; record: AcquiredIngredient } | { ok: false; reason: string } {
   const ingredient = getIngredientById(pack, ingredientId);
-  if (!ingredient) return { ok: false, reason: "Unknown ingredient." };
+  if (!ingredient) return { ok: false, reason: PLAYER_MESSAGES.unknownIngredient };
   if (!isIngredientAnswerCorrect(ingredient, answer)) {
-    return { ok: false, reason: "Incorrect answer. Try again or reveal the next hint." };
+    return { ok: false, reason: PLAYER_MESSAGES.incorrectAnswer };
   }
   return {
     ok: true,
@@ -60,9 +61,9 @@ export function tryCompleteMenu(
   submittedSteps: string[],
 ): { ok: true; record: CompletedMenu } | { ok: false; reason: string } {
   const menu = getMenuById(pack, menuId);
-  if (!menu) return { ok: false, reason: "Unknown menu." };
+  if (!menu) return { ok: false, reason: PLAYER_MESSAGES.unknownMenu };
   if (!teamHasIngredientsForMenu(acquired, menu)) {
-    return { ok: false, reason: "Your team has not acquired all ingredients for this menu." };
+    return { ok: false, reason: PLAYER_MESSAGES.missingIngredients };
   }
   const correctSteps = menu.cookingSteps.map((s) => s.sentence);
   const score = scoreMenuCompletion(correctSteps, submittedSteps);
@@ -70,7 +71,7 @@ export function tryCompleteMenu(
     correctSteps.length === submittedSteps.length &&
     correctSteps.every((s, i) => normalizeSentence(s) === normalizeSentence(submittedSteps[i] ?? ""));
   if (!allCorrect) {
-    return { ok: false, reason: "Cooking steps do not match. Check the order and sentences." };
+    return { ok: false, reason: PLAYER_MESSAGES.cookingStepsMismatch };
   }
   return {
     ok: true,

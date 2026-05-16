@@ -10,8 +10,8 @@ const dungGeunMo = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "School Lunch Rush",
-  description: "급식실 협동 영어 타이쿤 — School Lunch Rush",
+  title: "스쿨 런치 러시",
+  description: "급식실 협동 영어 타이쿤 — 스쿨 런치 러시",
   icons: {
     icon: "/window.svg",
   },

@@ -4,6 +4,8 @@
 
 import { NextRequest, NextResponse } from "next/server";
 
+import type { BriefingLanguage } from "@/lib/lunch/english-level";
+import { DEFAULT_BRIEFING_LANGUAGE } from "@/lib/lunch/english-level";
 import { normalizeScenarioPack } from "@/lib/lunch/normalize";
 import type { ScenarioPack } from "@/lib/lunch/types";
 
@@ -116,16 +118,21 @@ function clamp(n: number, min: number, max: number) {
   return Math.min(max, Math.max(min, n));
 }
 
-function buildSystemPrompt(): string {
+function buildSystemPrompt(briefingLanguage: BriefingLanguage): string {
+  const briefingRule =
+    briefingLanguage === "ko"
+      ? "- title: Korean, 4–20 characters or short phrase, school lunch theme.\n- description: Korean briefing, 2–4 sentences for teachers/students."
+      : "- title: English, 4–12 words, school lunch theme.\n- description: English briefing, 2–4 sentences for teachers/students.";
+
   return [
     "You design content for 'School Lunch Rush', a cooperative English classroom game.",
     "Students work as cafeteria teams. Each student becomes an ingredient expert (jigsaw), deduces ingredients from 5-stage English hints (hard→easy), returns to the team, and assembles real school lunch menus using English command sentences.",
     "",
-    "Output JSON only. All player-facing text must be natural English.",
+    "Output JSON only.",
     "",
     "Rules:",
-    "- title: English, 4–12 words, school lunch theme.",
-    "- description: English briefing, 2–4 sentences for teachers/students.",
+    briefingRule,
+    "- All gameplay content stays in English: ingredient names (answers), hints stage1–stage5, cookingHint, menu names, cookingSteps sentences, commandCards text.",
     "- difficulty: Easy | Normal | Hard.",
     "- englishLevel: A1 | A2 | B1 | B2 — match vocabulary and sentence length.",
     "- teamSize: integer 2–12.",
@@ -144,12 +151,14 @@ function buildUserPrompt(opts: {
   teamSize: number;
   menuCount: number;
   englishLevel: string;
+  briefingLanguage: BriefingLanguage;
 }): string {
   const lines = [
     "Generate one complete lunch scenario JSON following the schema.",
     `Target menus: about ${opts.menuCount} (use slots: rice, soup, side1, side2, side3, dessert where appropriate).`,
     `Team size: ${opts.teamSize} students per team.`,
-    `English level: ${opts.englishLevel}.`,
+    `Student English level (CEFR): ${opts.englishLevel} — match hints and commands to this level.`,
+    `Briefing language for title and description: ${opts.briefingLanguage === "ko" ? "Korean" : "English"}.`,
   ];
   if (opts.difficulty) lines.push(`Difficulty: ${opts.difficulty}.`);
   if (opts.topic.trim()) {
@@ -197,6 +206,10 @@ export async function POST(req: NextRequest) {
     ["A1", "A2", "B1", "B2"].includes(input.englishLevel)
       ? input.englishLevel
       : "A2";
+  const briefingLanguage: BriefingLanguage =
+    input.briefingLanguage === "en" || input.briefingLanguage === "ko"
+      ? input.briefingLanguage
+      : DEFAULT_BRIEFING_LANGUAGE;
 
   const openaiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
@@ -208,10 +221,17 @@ export async function POST(req: NextRequest) {
       model: OPENAI_MODEL,
       temperature: 0.85,
       messages: [
-        { role: "system", content: buildSystemPrompt() },
+        { role: "system", content: buildSystemPrompt(briefingLanguage) },
         {
           role: "user",
-          content: buildUserPrompt({ topic, difficulty, teamSize, menuCount, englishLevel }),
+          content: buildUserPrompt({
+            topic,
+            difficulty,
+            teamSize,
+            menuCount,
+            englishLevel,
+            briefingLanguage,
+          }),
         },
       ],
       response_format: {
@@ -255,7 +275,7 @@ export async function POST(req: NextRequest) {
     }) satisfies ScenarioPack;
     return NextResponse.json(pack);
   } catch (e) {
-    const msg = e instanceof Error ? e.message : "normalize failed";
+    const msg = e instanceof Error ? e.message : "정규화 실패";
     return NextResponse.json({ error: msg }, { status: 502 });
   }
 }

@@ -14,6 +14,7 @@ import { PlayPhaseHeader } from "@/components/play/play-phase-header";
 import { Button } from "@/components/ui/button";
 import { completeMenuForTeam, submitTrayForTeam } from "@/lib/api/play";
 import { teamHasIngredientsForMenu, totalTeamScore } from "@/lib/lunch/engine";
+import { menuCompleteMessage, PLAYER_MESSAGES } from "@/lib/lunch/player-messages";
 import type { LunchMenu, ScenarioPack } from "@/lib/lunch/types";
 import type { TeamRow } from "@/lib/api/play";
 import { cn } from "@/lib/utils";
@@ -77,9 +78,9 @@ export function TeamKitchenPanel({
       }
       setSelectedSteps([]);
       onUpdate();
-      setMessage(`"${menu.name}" completed!`);
+      setMessage(menuCompleteMessage(menu.name));
     } catch (e) {
-      setMessage(e instanceof Error ? e.message : "Failed.");
+      setMessage(e instanceof Error ? e.message : PLAYER_MESSAGES.operationFailed);
     } finally {
       setBusy(false);
     }
@@ -97,7 +98,7 @@ export function TeamKitchenPanel({
       onUpdate();
       setMessage("급식판 제출 완료! 잘하셨습니다.");
     } catch (e) {
-      setMessage(e instanceof Error ? e.message : "Failed.");
+      setMessage(e instanceof Error ? e.message : PLAYER_MESSAGES.operationFailed);
     } finally {
       setBusy(false);
     }
@@ -115,7 +116,7 @@ export function TeamKitchenPanel({
               rightSlot={
                 <PlayHeaderTeamPlace
                   teamName={teamName}
-                  placeName={`${teamScore} pts`}
+                  placeName={`${teamScore}점`}
                   placeLabel="팀 점수"
                   pending={pending}
                 />
@@ -187,7 +188,7 @@ export function TeamKitchenPanel({
                 <p className="text-xs text-[var(--muted-foreground)]">
                   필요 재료:{" "}
                   {menu.ingredientIds
-                    .map((id) => (acquiredIds.has(id) ? id : `${id} (missing)`))
+                    .map((id) => (acquiredIds.has(id) ? id : `${id} (미획득)`))
                     .join(", ")}
                 </p>
                 <div>

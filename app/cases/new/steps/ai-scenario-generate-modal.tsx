@@ -8,7 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { generateScenarioPackWithAI } from "@/lib/api/ai-scenario";
 import { DIFFICULTY_UI_OPTIONS, type DifficultyLevel } from "@/lib/api/lessons";
-import type { ScenarioPack } from "@/lib/lunch/types";
+import {
+  BRIEFING_LANGUAGE_OPTIONS,
+  DEFAULT_BRIEFING_LANGUAGE,
+  ENGLISH_LEVEL_OPTIONS,
+  type BriefingLanguage,
+} from "@/lib/lunch/english-level";
+import type { EnglishLevel, ScenarioPack } from "@/lib/lunch/types";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -23,14 +29,13 @@ const TEAM_SIZE_MAX = 12;
 const MENU_COUNT_MIN = 1;
 const MENU_COUNT_MAX = 6;
 
-const ENGLISH_LEVELS = ["A1", "A2", "B1", "B2"] as const;
-
 export function AIScenarioGenerateModal({ open, onClose, initialDifficulty, onApply }: Props) {
   const [topic, setTopic] = useState("");
   const [difficulty, setDifficulty] = useState<DifficultyLevel>(initialDifficulty ?? "Normal");
   const [teamSize, setTeamSize] = useState(4);
   const [menuCount, setMenuCount] = useState(6);
-  const [englishLevel, setEnglishLevel] = useState<(typeof ENGLISH_LEVELS)[number]>("A2");
+  const [englishLevel, setEnglishLevel] = useState<EnglishLevel>("A2");
+  const [briefingLanguage, setBriefingLanguage] = useState<BriefingLanguage>(DEFAULT_BRIEFING_LANGUAGE);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -44,6 +49,7 @@ export function AIScenarioGenerateModal({ open, onClose, initialDifficulty, onAp
         teamSize,
         menuCount,
         englishLevel,
+        briefingLanguage,
       });
       onApply(pack);
       onClose();
@@ -68,7 +74,7 @@ export function AIScenarioGenerateModal({ open, onClose, initialDifficulty, onAp
           <label className="text-sm font-medium">수업 주제</label>
           <Textarea
             className="mt-1"
-            placeholder="예: food vocabulary, school lunch culture"
+            placeholder="예: 음식 어휘, 학교 급식 문화"
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
             rows={3}
@@ -97,21 +103,54 @@ export function AIScenarioGenerateModal({ open, onClose, initialDifficulty, onAp
         </div>
 
         <div>
-          <p className="text-sm font-medium">영어 수준</p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {ENGLISH_LEVELS.map((lv) => (
+          <p className="text-sm font-medium">학습 영어 수준</p>
+          <p className="mt-0.5 text-xs text-[var(--muted-foreground)]">
+            힌트·조리 명령·정답 영어의 난이도를 맞춥니다.
+          </p>
+          <div className="mt-2 grid gap-2 sm:grid-cols-2">
+            {ENGLISH_LEVEL_OPTIONS.map((opt) => (
               <button
-                key={lv}
+                key={opt.value}
                 type="button"
-                onClick={() => setEnglishLevel(lv)}
+                onClick={() => setEnglishLevel(opt.value)}
                 className={cn(
-                  "rounded-md border px-3 py-1.5 text-sm",
-                  englishLevel === lv
+                  "rounded-md border px-3 py-2 text-left text-sm transition",
+                  englishLevel === opt.value
+                    ? "border-[var(--accent)] bg-[var(--tint-accent-strong)]"
+                    : "border-[var(--border)] hover:border-[var(--accent)]",
+                )}
+              >
+                <span className="font-medium">{opt.label}</span>
+                <span className="mt-0.5 block text-xs text-[var(--muted-foreground)]">
+                  {opt.description}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <p className="text-sm font-medium">안내 언어 (제목·설명)</p>
+          <p className="mt-0.5 text-xs text-[var(--muted-foreground)]">
+            재료 힌트와 조리 카드는 항상 영어로 생성됩니다.
+          </p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {BRIEFING_LANGUAGE_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setBriefingLanguage(opt.value)}
+                className={cn(
+                  "min-w-[8.5rem] flex-1 rounded-md border px-3 py-2 text-left text-sm",
+                  briefingLanguage === opt.value
                     ? "border-[var(--accent)] bg-[var(--tint-accent-strong)]"
                     : "border-[var(--border)]",
                 )}
               >
-                {lv}
+                <span className="font-medium">{opt.label}</span>
+                <span className="mt-0.5 block text-xs text-[var(--muted-foreground)]">
+                  {opt.description}
+                </span>
               </button>
             ))}
           </div>

@@ -1,3 +1,4 @@
+import type { BriefingLanguage } from "@/lib/lunch/english-level";
 import type { ScenarioPack } from "@/lib/lunch/types";
 
 /**
@@ -10,6 +11,8 @@ export type AIScenarioRequest = {
   teamSize?: number;
   menuCount?: number;
   englishLevel?: "A1" | "A2" | "B1" | "B2";
+  /** 제목·수업 안내 언어 (힌트·조리·정답은 항상 영어) */
+  briefingLanguage?: BriefingLanguage;
 };
 
 export type AIScenarioResponse = ScenarioPack;

@@ -5,6 +5,7 @@ import { UtensilsCrossed } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LoadingState } from "@/components/ui/loading-state";
 import { cn } from "@/lib/utils";
+import { PLAYER_MESSAGES } from "@/lib/lunch/player-messages";
 import type { ScenarioPack } from "@/lib/lunch/types";
 
 type Props = {
@@ -45,7 +46,7 @@ export function ScenarioBriefingLayout({
           <CardTitle className="text-base text-[var(--foreground)]">오늘의 급식</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3 pt-4 text-sm leading-relaxed text-[var(--foreground)]">
-          <p className="text-lg font-semibold">{title ?? "School Lunch Rush"}</p>
+          <p className="text-lg font-semibold">{title ?? PLAYER_MESSAGES.defaultPackTitle}</p>
           <p className="text-[var(--muted-foreground)]">{description ?? "—"}</p>
           <p className="rounded-md border border-[var(--border)] bg-[var(--tint-accent-weak)] px-3 py-2 text-xs">
             밥 · 국 · 반찬 3개 · 후식 — 제한 시간 안에 팀 급식판을 완성하세요.

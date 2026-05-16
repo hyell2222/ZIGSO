@@ -197,7 +197,9 @@ export function editorDraftToPack(draft: ScenarioEditorDraft): ScenarioPack {
 
   const menuNames = menus.map((m) => m.name).filter(Boolean);
   const title =
-    menuNames.length > 0 ? `Today's Lunch: ${menuNames.slice(0, 3).join(", ")}` : "School Lunch Rush";
+    menuNames.length > 0
+      ? `오늘의 급식: ${menuNames.slice(0, 3).join(", ")}`
+      : "스쿨 런치 러시";
 
   const commandCards = [...commandTexts].map((text, idx) => ({
     id: slugFromName(text, `step_${idx + 1}`),
@@ -208,7 +210,7 @@ export function editorDraftToPack(draft: ScenarioEditorDraft): ScenarioPack {
     version: SCENARIO_PACK_VERSION,
     title,
     description:
-      "Work together as cafeteria staff. Deduce ingredients from English hints, then complete today's lunch tray before time runs out.",
+      "급식실 직원이 되어 영어 힌트로 재료를 맞추고, 제한 시간 안에 오늘의 급식판을 완성하는 협동 수업입니다.",
     difficulty: draft.difficulty,
     englishLevel: draft.englishLevel,
     teamSize: draft.teamSize,

@@ -154,7 +154,7 @@ function SessionHostContent() {
     mutationFn: async () => {
       const current = sessionQuery.data?.phase ?? "waiting";
       const next = getNextPhase(current);
-      if (!next) throw new Error("Already at final phase.");
+      if (!next) throw new Error("이미 마지막 단계입니다.");
       await advanceSessionPhase(sessionId, next);
       return next;
     },

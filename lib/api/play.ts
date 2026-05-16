@@ -337,7 +337,7 @@ export async function completeMenuForTeam(args: {
 }) {
   const team = await getTeamById(args.teamId);
   if (team.completed_menus.some((m) => m.menuId === args.menuId)) {
-    throw new Error("This menu is already completed.");
+    throw new Error("이 메뉴는 이미 완성했습니다.");
   }
 
   const result = tryCompleteMenu(

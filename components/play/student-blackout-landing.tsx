@@ -171,7 +171,7 @@ export function StudentBlackoutLanding({
       >
         <div className={styles.stage}>
           <div className={styles.logoRow}>
-            <p className={styles.logoTitle}>SCHOOL LUNCH RUSH</p>
+            <p className={styles.logoTitle}>School Lunch Rush</p>
             <p className={styles.logoSub}>협동 영어 · 급식 타이쿤</p>
           </div>
 
@@ -179,7 +179,7 @@ export function StudentBlackoutLanding({
             <div className={styles.awning} aria-hidden />
             <p className={styles.counterTop}>
               <span aria-hidden>🏫</span>
-              TODAY&apos;S LUNCH COUNTER
+              오늘의 급식 카운터
             </p>
 
             <div className={styles.windowFrame}>
@@ -199,7 +199,7 @@ export function StudentBlackoutLanding({
                 className={cn(styles.openRibbon, showOpenRibbon && styles.openRibbonVisible)}
                 aria-hidden={!showOpenRibbon}
               >
-                <span className={styles.openRibbonInner}>OPEN!</span>
+                <span className={styles.openRibbonInner}>영업 중!</span>
               </div>
 
               <div className={styles.windowInner}>
