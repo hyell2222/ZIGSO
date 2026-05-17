@@ -58,7 +58,6 @@ export function PlayJoinQr({ joinCode, className }: PlayJoinQrProps) {
           "@md:gap-0.5 @md:p-1",
           className,
         )}
-        aria-label="참가 QR 코드 크게 보기"
       >
         <span className="block rounded-sm bg-white p-0.5 @sm:hidden">
           <QRCode value={playUrl} size={32} style={{ display: "block" }} />

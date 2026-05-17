@@ -27,6 +27,7 @@ import { parseActivityPack } from "@/lib/api/activities";
 import type { ActivityPhase } from "@/lib/api/activities";
 import {
   assignOrphanPlayersForOngoingSession,
+  parseAssignedItemIds,
   getPlayerById,
   getPlaySessionDetails,
   getSessionByJoinCode,
@@ -46,6 +47,8 @@ import {
 import { getSessionRoomChannelName } from "@/lib/realtime/session-presence";
 import { ROUTES } from "@/lib/routes";
 import { hasSupabaseEnv, supabase } from "@/lib/supabase";
+import { formatAssignedSlots } from "@/lib/play/assignment-labels";
+import { buildItemCodenameMap, formatItemCodenames } from "@/lib/play/role-codenames";
 import { PLAY_STUDENT_COPY } from "@/lib/play/student-copy";
 import { cn } from "@/lib/utils";
 
@@ -74,6 +77,10 @@ export function PlaySessionShell({
   });
 
   const assignedRoleId = playerQuery.data?.assigned_role_id ?? null;
+  const assignedItemIds = useMemo(
+    () => (playerQuery.data ? parseAssignedItemIds(playerQuery.data) : []),
+    [playerQuery.data],
+  );
   const groupId = playerQuery.data?.group_id ?? null;
 
   const groupQuery = useQuery({
@@ -102,6 +109,11 @@ export function PlaySessionShell({
     () => parseActivityPack(sessionQuery.data?.activities?.activity_pack),
     [sessionQuery.data?.activities?.activity_pack],
   );
+
+  const itemCodenameById = useMemo(() => {
+    if (!sessionId || !activityPack) return new Map<string, string>();
+    return buildItemCodenameMap(sessionId, activityPack.items.map((i) => i.id));
+  }, [sessionId, activityPack]);
 
   const resumeQuery = useQuery({
     queryKey: ["play-resume", joinCode],
@@ -272,7 +284,7 @@ export function PlaySessionShell({
   }, [initialNickname, playerId, sessionId, resumeQuery.isLoading, resumeQuery.data, resumeDecided]);
 
   const hasJoinedSession = Boolean(playerId && sessionId);
-  const hasAssignment = Boolean(assignedRoleId && groupId);
+  const hasAssignment = Boolean(assignedItemIds.length > 0 && groupId);
 
   const groupAcquiredIds = useMemo(
     () => new Set((groupQuery.data?.acquired_items ?? []).map((a) => a.itemId)),
@@ -333,12 +345,16 @@ export function PlaySessionShell({
           groupId: p.group_id as string,
           assignedRoleId: p.assigned_role_id,
         })),
+      sessionId ?? undefined,
     );
-  }, [activityPack, resultsQuery.data]);
+  }, [activityPack, resultsQuery.data, sessionId]);
 
   if (hasSupabaseEnv && isResultsPhase && activityPack) {
     const resultsRoleLabel =
-      activityPack.items.find((i) => i.id === assignedRoleId)?.name ?? assignedRoleId ?? null;
+      formatItemCodenames(assignedItemIds, itemCodenameById) ??
+      (assignedRoleId
+        ? (activityPack?.roles.find((r) => r.id === assignedRoleId)?.name ?? assignedRoleId)
+        : null);
     return (
       <ResultsPhasePanel
         loading={resultsQuery.isLoading}
@@ -358,7 +374,7 @@ export function PlaySessionShell({
     activityPack &&
     playerId &&
     groupId &&
-    assignedRoleId
+    assignedItemIds.length > 0
   ) {
     return (
       <ExpertPhasePanel
@@ -366,7 +382,8 @@ export function PlaySessionShell({
         playerId={playerId}
         groupId={groupId}
         groupName={groupName}
-        itemId={assignedRoleId}
+        roleScopeKey={sessionId ?? ""}
+        assignedItemIds={assignedItemIds}
         acquiredItemIds={groupAcquiredIds}
         onAcquired={() => {
           void queryClient.invalidateQueries({ queryKey: ["play-group", groupId] });
@@ -392,9 +409,8 @@ export function PlaySessionShell({
 
   if (hasSupabaseEnv && isActivityIntroduction) {
     const roleLabel =
-      activityPack?.items.find((i) => i.id === assignedRoleId)?.name ??
-      assignedRoleId ??
-      null;
+      formatItemCodenames(assignedItemIds, itemCodenameById) ??
+      formatAssignedSlots(assignedItemIds.length);
     return (
       <PlayPhaseShell
         header={{

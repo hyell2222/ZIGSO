@@ -3,14 +3,14 @@
 export const PLAY_STUDENT_COPY = {
   phaseOverview: {
     title: "활동 소개",
-    description: "모둠과 담당 항목을 확인한 뒤, 오늘 완성할 과제를 살펴보세요.",
-    placeLabel: "담당 항목",
+    description: "모둠 배정과 오늘 완성할 과제를 확인하세요. 정답은 힌트로만 추리합니다.",
+    placeLabel: "배정 역할",
   },
   phaseExpert: {
     title: "전문가 집단",
     description:
-      "같은 전문가끼리 모여 힌트를 읽고 맞출 항목을 추리하세요. 맞히면 모둠으로 돌아가 공유합니다.",
-    placeLabel: "담당 항목",
+      "같은 전문가끼리 모여 힌트를 공개하며 맞출 항목을 추리하세요. 맞히면 모둠으로 돌아가 공유합니다.",
+    placeLabel: "배정 역할",
     acquiredReturn: "모둠으로 돌아가 모둠원에게 알려 주세요.",
   },
   phaseHome: {

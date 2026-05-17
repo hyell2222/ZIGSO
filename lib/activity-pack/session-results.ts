@@ -1,6 +1,7 @@
 import { totalGroupScore } from "@/lib/activity-pack/engine";
 import type { ActivityPack } from "@/lib/activity-pack/types";
 import type { AcquiredItem, CompletedTask } from "@/lib/activity-pack/types";
+import { codenameForItem } from "@/lib/play/role-codenames";
 
 export const ACTIVITY_COMPLETION_BONUS = 5;
 
@@ -123,15 +124,24 @@ export function computeGroupTotalScore(group: ResultsGroupInput): number {
   return group.completed_at ? base + ACTIVITY_COMPLETION_BONUS : base;
 }
 
-function roleLabelFor(pack: ActivityPack, roleId: string | null): string {
+function roleLabelFor(
+  pack: ActivityPack,
+  roleId: string | null,
+  roleScopeKey?: string,
+): string {
   if (!roleId) return "—";
-  return pack.items.find((i) => i.id === roleId)?.name ?? roleId;
+  const roleIds = pack.roles.map((r) => r.id);
+  if (roleScopeKey && roleIds.includes(roleId)) {
+    return codenameForItem(roleScopeKey, roleId, roleIds);
+  }
+  return pack.roles.find((r) => r.id === roleId)?.name ?? roleId;
 }
 
 function computeMemberResults(
   pack: ActivityPack,
   group: ResultsGroupInput,
   members: ResultsMemberInput[],
+  roleScopeKey?: string,
 ): MemberResult[] {
   const count = Math.max(members.length, 1);
   const taskPoints = group.completed_tasks.reduce((sum, t) => sum + t.score, 0);
@@ -148,7 +158,7 @@ function computeMemberResults(
       playerId: m.id,
       nickname: m.nickname?.trim() || "참가자",
       assignedRoleId: m.assignedRoleId,
-      roleLabel: roleLabelFor(pack, m.assignedRoleId),
+      roleLabel: roleLabelFor(pack, m.assignedRoleId, roleScopeKey),
       expertScore,
       teamShareScore,
       totalScore,
@@ -202,6 +212,7 @@ export function buildSessionResults(
   pack: ActivityPack,
   groups: ResultsGroupInput[],
   members: ResultsMemberInput[],
+  roleScopeKey?: string,
 ): SessionResultsSummary {
   const byGroup = new Map<string, ResultsMemberInput[]>();
   for (const m of members) {
@@ -212,7 +223,7 @@ export function buildSessionResults(
 
   const teams = groups.map((group) => {
     const groupMembers = byGroup.get(group.id) ?? [];
-    const memberResults = computeMemberResults(pack, group, groupMembers);
+    const memberResults = computeMemberResults(pack, group, groupMembers, roleScopeKey);
     const mvp = pickMvp(memberResults);
     return {
       groupId: group.id,

@@ -5,6 +5,7 @@ import { FormEvent, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 
 type TeacherAuthFormProps = {
@@ -45,11 +46,8 @@ export function TeacherAuthForm({
         <CardTitle>{mode === "sign-in" ? "로그인" : "회원가입"}</CardTitle>
       </CardHeader>
       <CardContent>
-        <form className="space-y-2" onSubmit={(event) => void handleSubmit(event)}>
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-[var(--foreground)]" htmlFor="teacher-auth-email">
-              이메일
-            </label>
+        <form className="space-y-3" onSubmit={(event) => void handleSubmit(event)}>
+          <FormField label="이메일" htmlFor="teacher-auth-email">
             <Input
               id="teacher-auth-email"
               type="email"
@@ -59,11 +57,8 @@ export function TeacherAuthForm({
               required
               autoComplete="email"
             />
-          </div>
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-[var(--foreground)]" htmlFor="teacher-auth-password">
-              비밀번호
-            </label>
+          </FormField>
+          <FormField label="비밀번호" htmlFor="teacher-auth-password">
             <Input
               id="teacher-auth-password"
               type="password"
@@ -73,7 +68,7 @@ export function TeacherAuthForm({
               required
               autoComplete={mode === "sign-in" ? "current-password" : "new-password"}
             />
-          </div>
+          </FormField>
           <div className="flex justify-center pt-4">
             <Button type="submit" disabled={isLoading} className="w-full">
               {mode === "sign-in" ? "로그인" : "회원가입"}

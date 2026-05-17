@@ -1,7 +1,7 @@
 "use client";
 
 import type { ActivityPack } from "@/lib/activity-pack/types";
-import { isValidActivityPack } from "@/lib/activity-pack/validate";
+import { parseActivityPack as parsePack } from "@/lib/activity-pack/parse";
 import { supabase } from "@/lib/supabase";
 
 export type ActivityRecord = {
@@ -9,7 +9,6 @@ export type ActivityRecord = {
   title: string | null;
   description: string | null;
   activity_pack: ActivityPack | null;
-  difficulty: string | null;
   task_count: number | null;
   group_size: number | null;
   creator_id?: string | null;
@@ -18,46 +17,15 @@ export type ActivityRecord = {
 };
 
 const ACTIVITY_SELECT =
-  "id,title,description,activity_pack,difficulty,task_count,group_size,creator_id,created_at,updated_at";
-
-const DB_DIFFICULTIES = ["Easy", "Normal", "Hard"] as const;
-export type DifficultyLevel = (typeof DB_DIFFICULTIES)[number];
+  "id,title,description,activity_pack,task_count,group_size,creator_id,created_at,updated_at";
 
 function normalizeText(value: string | null | undefined) {
   const trimmed = value?.trim();
   return trimmed ? trimmed : null;
 }
 
-function coerceDifficulty(value: string | null | undefined): DifficultyLevel {
-  const t = normalizeText(value);
-  if (t && (DB_DIFFICULTIES as readonly string[]).includes(t)) return t as DifficultyLevel;
-  return "Normal";
-}
-
-export function normalizeDifficultyValue(value: unknown): DifficultyLevel {
-  if (typeof value !== "string") return "Normal";
-  return coerceDifficulty(value);
-}
-
-const DIFFICULTY_LABEL_KO: Record<DifficultyLevel, string> = {
-  Easy: "쉬움",
-  Normal: "보통",
-  Hard: "어려움",
-};
-
-export function formatDifficultyForUi(value: string | null | undefined): string {
-  const level = coerceDifficulty(value);
-  return DIFFICULTY_LABEL_KO[level];
-}
-
-export const DIFFICULTY_UI_OPTIONS = DB_DIFFICULTIES.map((value) => ({
-  value,
-  label: DIFFICULTY_LABEL_KO[value],
-}));
-
 export function parseActivityPack(raw: unknown): ActivityPack | null {
-  if (!raw || typeof raw !== "object") return null;
-  return isValidActivityPack(raw) ? (raw as ActivityPack) : null;
+  return parsePack(raw);
 }
 
 export type ActivityListRow = ActivityRecord;
@@ -76,7 +44,6 @@ export type CreateActivityInput = {
   title: string;
   description: string;
   activity_pack: ActivityPack;
-  difficulty: string | null;
   task_count: number;
   group_size: number;
   creator_id?: string | null;
@@ -89,7 +56,6 @@ export async function createActivity(input: CreateActivityInput) {
       title: normalizeText(input.title),
       description: normalizeText(input.description) ?? "",
       activity_pack: input.activity_pack,
-      difficulty: coerceDifficulty(input.difficulty),
       task_count: input.task_count,
       group_size: input.group_size,
       creator_id: input.creator_id ?? null,
@@ -120,7 +86,6 @@ export async function updateActivity(
       title: normalizeText(input.title),
       description: normalizeText(input.description) ?? "",
       activity_pack: input.activity_pack,
-      difficulty: coerceDifficulty(input.difficulty),
       task_count: input.task_count,
       group_size: input.group_size,
       updated_at: new Date().toISOString(),

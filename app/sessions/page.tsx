@@ -8,6 +8,7 @@ import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import {
   getHostSessionDetails,
   listSessionPlayers,
+  parseAssignedItemIds,
   listSessionGroups,
   setPlayersOnline,
 } from "@/lib/api/play";
@@ -20,6 +21,7 @@ import {
   type ActivityPhase,
 } from "@/lib/api/activities";
 import { useRequireTeacherSession } from "@/lib/auth/use-require-teacher-session";
+import { buildItemCodenameMap, formatItemCodenames } from "@/lib/play/role-codenames";
 import { groupPlayersByGroup } from "@/lib/teacher/group-players-by-group";
 import { SessionHostLayout } from "@/components/teacher/session-host-layout";
 import { SessionHostWaitingRoster } from "@/components/teacher/session-host-waiting-roster";
@@ -305,13 +307,10 @@ function SessionHostContent() {
     [sessionQuery.data?.activities?.activity_pack],
   );
 
-  const itemNameById = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const ing of activityPack?.items ?? []) {
-      map.set(ing.id, ing.name);
-    }
-    return map;
-  }, [activityPack]);
+  const itemCodenameById = useMemo(() => {
+    if (!sessionId || !activityPack) return new Map<string, string>();
+    return buildItemCodenameMap(sessionId, activityPack.items.map((i) => i.id));
+  }, [sessionId, activityPack]);
 
   const assignmentGroups = useMemo<GroupAssignmentGroup[]>(() => {
     return groupPlayersByGroup(onlinePlayers, groupRows).map((g) => ({
@@ -319,12 +318,13 @@ function SessionHostContent() {
       members: g.members.map((m) => ({
         id: m.id,
         nickname: m.nickname,
-        zoneName: m.assigned_role_id
-          ? (itemNameById.get(m.assigned_role_id) ?? m.assigned_role_id)
-          : null,
+        zoneName: (() => {
+          const ids = parseAssignedItemIds(m);
+          return ids.length ? formatItemCodenames(ids, itemCodenameById) : null;
+        })(),
       })),
     }));
-  }, [onlinePlayers, groupRows, itemNameById]);
+  }, [onlinePlayers, groupRows, itemCodenameById]);
 
   const progressGroups = useMemo<GroupProgressGroup[]>(() => {
     const grouped = groupPlayersByGroup(onlinePlayers, groupRows);
@@ -371,7 +371,7 @@ function SessionHostContent() {
   if (!sessionId) {
     return (
       <div className="@container min-h-screen">
-        <main className="mx-auto w-full max-w-7xl px-4 py-8">
+        <main className="flex flex-col items-center justify-center mx-auto w-full max-w-7xl px-4 py-8">
           <p className="text-sm text-[var(--muted-foreground)]">활동 세션을 찾을 수 없습니다.</p>
           <Button type="button" className="mt-4" variant="secondary" onClick={() => router.push(ROUTES.reports)}>
             활동 세션 기록
@@ -384,7 +384,7 @@ function SessionHostContent() {
   if (teacherSession.isLoading || (teacherSession.isFetching && !teacherSession.data)) {
     return (
       <div className="@container min-h-screen">
-        <main className="mx-auto flex w-full max-w-7xl flex-col px-4 py-8">
+        <main className="flex flex-col items-center justify-center mx-auto w-full max-w-7xl px-4 py-8">
           <LoadingState variant="page" />
         </main>
       </div>
@@ -404,7 +404,7 @@ function SessionHostContent() {
   if (sessionQuery.isError || !sessionQuery.data) {
     return (
       <div className="@container min-h-screen">
-        <main className="mx-auto w-full max-w-7xl px-4 py-8">
+        <main className="flex flex-col items-center justify-center mx-auto w-full max-w-7xl px-4 py-8">
           <p className="text-sm text-[var(--danger)]">활동 세션을 불러오지 못했습니다.</p>
           <Button type="button" className="mt-4" variant="secondary" onClick={() => router.push(ROUTES.reports)}>
             활동 세션 기록
@@ -499,7 +499,7 @@ function SessionHostContent() {
           <GroupAssignmentDashboard
             groups={assignmentGroups}
             loading={playersQuery.isLoading || groupsQuery.isLoading}
-            groupBy={phase === "expert_group" ? "role" : "group"}
+            groupBy={phase === "expert_group" ? "item" : "group"}
           />
         ) : null}
 
@@ -516,6 +516,7 @@ function SessionHostContent() {
             groups={groupRows}
             members={resultsMembers}
             pack={activityPack}
+            roleScopeKey={sessionId ?? undefined}
             loading={playersQuery.isLoading || groupsQuery.isLoading}
           />
         ) : null}

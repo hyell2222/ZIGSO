@@ -7,11 +7,11 @@ import { PlayPhaseShell } from "@/components/play/play-phase-shell";
 import { PlayHeaderGroupPlace } from "@/components/play/play-header-group-place";
 import { playSurfaceCool } from "@/components/play/play-atmosphere";
 import { Button } from "@/components/ui/button";
-import { completeTaskForGroup, completeActivityForGroup } from "@/lib/api/play";
+import { completeActivityForGroup, completeTaskForGroup } from "@/lib/api/play";
 import { groupHasItemsForTask, totalGroupScore } from "@/lib/activity-pack/engine";
 import { taskCompleteMessage, PLAYER_MESSAGES } from "@/lib/activity-pack/player-messages";
 import { PLAY_STUDENT_COPY } from "@/lib/play/student-copy";
-import type { Task, ActivityPack } from "@/lib/activity-pack/types";
+import type { ActivityPack } from "@/lib/activity-pack/types";
 import type { GroupRow } from "@/lib/api/play";
 import { cn } from "@/lib/utils";
 
@@ -21,7 +21,7 @@ type Props = {
   groupName: string | null;
   onUpdate: () => void;
   pending?: boolean;
-  sandboxCompleteTask?: (taskId: string, steps: string[]) => void;
+  sandboxCompleteTask?: (taskId: string, itemIds: string[]) => void;
   sandboxCompleteActivity?: () => void;
   contained?: boolean;
 };
@@ -36,27 +36,34 @@ export function GroupPhasePanel({
   sandboxCompleteActivity,
   contained = false,
 }: Props) {
-  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(pack.tasks[0]?.id ?? null);
-  const [selectedSteps, setSelectedSteps] = useState<string[]>([]);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(
+    pack.tasks[0]?.id ?? null,
+  );
+  const [selectedItemIds, setSelectedItemIds] = useState<string[]>([]);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const task = pack.tasks.find((t) => t.id === selectedTaskId) ?? null;
+  const task = pack.tasks.find((c) => c.id === selectedTaskId) ?? null;
   const completedIds = new Set(group.completed_tasks.map((m) => m.taskId));
   const acquiredIds = new Set(group.acquired_items.map((a) => a.itemId));
   const activityCompleted = Boolean(group.completed_at);
   const groupScore = totalGroupScore(group.acquired_items, group.completed_tasks);
 
-  const availableCards = useMemo(() => {
-    const pool = [...pack.actionCards];
-    return pool.sort((a, b) => a.text.localeCompare(b.text));
-  }, [pack.actionCards]);
+  const itemNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const item of pack.items) map.set(item.id, item.name);
+    return map;
+  }, [pack.items]);
 
-  const toggleCard = (text: string) => {
-    setSelectedSteps((prev) => {
-      if (prev.includes(text)) return prev.filter((t) => t !== text);
-      return [...prev, text];
-    });
+  const selectableItems = useMemo(() => {
+    if (!task) return [];
+    return task.acceptedItemIds.filter((id) => acquiredIds.has(id));
+  }, [task, acquiredIds]);
+
+  const toggleItem = (itemId: string) => {
+    setSelectedItemIds((prev) =>
+      prev.includes(itemId) ? prev.filter((id) => id !== itemId) : [...prev, itemId],
+    );
   };
 
   const handleCompleteTask = async () => {
@@ -65,18 +72,18 @@ export function GroupPhasePanel({
     setBusy(true);
     try {
       if (sandboxCompleteTask) {
-        sandboxCompleteTask(selectedTaskId, selectedSteps);
+        sandboxCompleteTask(selectedTaskId, selectedItemIds);
       } else {
         await completeTaskForGroup({
           groupId: group.id,
           pack,
           taskId: selectedTaskId,
-          submittedSteps: selectedSteps,
+          submittedItemIds: selectedItemIds,
         });
       }
-      setSelectedSteps([]);
+      setSelectedItemIds([]);
       onUpdate();
-      setMessage(taskCompleteMessage(task.name));
+      setMessage(taskCompleteMessage(task.title));
     } catch (e) {
       setMessage(e instanceof Error ? e.message : PLAYER_MESSAGES.operationFailed);
     } finally {
@@ -102,8 +109,15 @@ export function GroupPhasePanel({
     }
   };
 
-  const canSubmitTask = Boolean(task && !completedIds.has(task.id));
-  const canSubmitActivity = !activityCompleted && completedIds.size >= pack.tasks.length;
+  const minItems = task?.minimumItems ?? 1;
+  const canSubmitTask = Boolean(
+    task &&
+      !completedIds.has(task.id) &&
+      selectedItemIds.length >= minItems &&
+      groupHasItemsForTask(group.acquired_items, task),
+  );
+  const canSubmitActivity =
+    !activityCompleted && completedIds.size >= pack.tasks.length;
 
   return (
     <PlayPhaseShell
@@ -139,7 +153,7 @@ export function GroupPhasePanel({
                   key={a.itemId}
                   className="rounded-full border border-[var(--border)] bg-[var(--tint-accent-weak)] px-3 py-1 text-xs @md:text-base"
                 >
-                  {a.itemId.replace(/_/g, " ")} (+{a.score})
+                  {itemNameById.get(a.itemId) ?? a.itemId} (+{a.score})
                 </li>
               ))
             )}
@@ -148,31 +162,31 @@ export function GroupPhasePanel({
 
         <section>
           <h3 className="text-sm font-semibold uppercase tracking-wider text-[var(--accent)] @sm:normal-case @sm:tracking-normal">
-            모둠 과제
+            해결할 과제
           </h3>
           <ul className="mt-2 space-y-2">
-            {pack.tasks.map((m: Task) => {
-              const done = completedIds.has(m.id);
-              const canComplete = groupHasItemsForTask(group.acquired_items, m);
+            {pack.tasks.map((ch) => {
+              const done = completedIds.has(ch.id);
+              const canComplete = groupHasItemsForTask(group.acquired_items, ch);
               return (
-                <li key={m.id}>
+                <li key={ch.id}>
                   <button
                     type="button"
                     onClick={() => {
-                      setSelectedTaskId(m.id);
-                      setSelectedSteps([]);
+                      setSelectedTaskId(ch.id);
+                      setSelectedItemIds([]);
                       setMessage(null);
                     }}
                     className={cn(
                       "flex w-full items-center gap-2 rounded-lg border px-3 py-2 text-left text-sm transition @md:text-base",
-                      selectedTaskId === m.id
+                      selectedTaskId === ch.id
                         ? "border-[var(--primary)] bg-[var(--tint-accent-weak)]"
                         : "border-[var(--border)] hover:bg-[var(--tint-mystery)]",
                       done && "opacity-70",
                     )}
                   >
                     <Puzzle className="h-4 w-4 shrink-0 text-[var(--accent)]" aria-hidden />
-                    <span className="flex-1 font-medium">{m.name}</span>
+                    <span className="flex-1 font-medium">{ch.title}</span>
                     <span className="text-xs text-[var(--muted-foreground)] @md:text-sm">
                       {done ? "완료" : canComplete ? "진행 가능" : "항목 부족"}
                     </span>
@@ -186,54 +200,50 @@ export function GroupPhasePanel({
         {task && !completedIds.has(task.id) ? (
           <section className="space-y-3">
             <h3 className="text-sm font-semibold uppercase tracking-wider text-[var(--accent)] @sm:normal-case @sm:tracking-normal">
-              과제: {task.name}
+              {task.title}
             </h3>
-            <p className="text-xs text-[var(--muted-foreground)] @md:text-sm">
-              필요 항목:{" "}
-              {task.itemIds
-                .map((id) => (acquiredIds.has(id) ? id : `${id} (미획득)`))
-                .join(", ")}
+            <p className="text-sm leading-relaxed text-[var(--muted-foreground)] @md:text-base">
+              {task.description}
             </p>
-            <div>
-              <p className="mb-2 text-sm font-medium text-[var(--muted-foreground)] @md:text-sm">
-                선택한 수행 순서
-              </p>
-              <ol className="list-decimal space-y-1 pl-5 text-sm @md:text-base">
-                {selectedSteps.length === 0 ? (
-                  <li className="text-[var(--muted-foreground)]">카드를 눌러 순서를 만드세요.</li>
-                ) : (
-                  selectedSteps.map((s, i) => (
-                    <li key={`${i}-${s}`}>{s}</li>
-                  ))
-                )}
-              </ol>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {availableCards.map((card) => (
-                <button
-                  key={card.id}
-                  type="button"
-                  onClick={() => toggleCard(card.text)}
-                  className={cn(
-                    "rounded-md border px-2 py-1.5 text-xs transition @md:text-sm",
-                    selectedSteps.includes(card.text)
-                      ? "border-[var(--primary)] bg-[var(--tint-accent-strong)] text-[var(--primary)]"
-                      : "border-[var(--border)] hover:border-[var(--accent)]",
-                  )}
-                >
-                  {card.text}
-                </button>
-              ))}
-            </div>
+            <p className="text-xs text-[var(--muted-foreground)] @md:text-sm">
+              최소 {minItems}개 항목을 선택하세요 (획득한 항목만 선택 가능).
+            </p>
+            <ul className="flex flex-wrap gap-2">
+              {selectableItems.length === 0 ? (
+                <li className="text-sm text-[var(--muted-foreground)]">
+                  이 과제에 쓸 수 있는 획득 항목이 없습니다.
+                </li>
+              ) : (
+                selectableItems.map((itemId) => {
+                  const selected = selectedItemIds.includes(itemId);
+                  return (
+                    <li key={itemId}>
+                      <button
+                        type="button"
+                        onClick={() => toggleItem(itemId)}
+                        className={cn(
+                          "rounded-md border px-3 py-1.5 text-xs transition @md:text-sm",
+                          selected
+                            ? "border-[var(--primary)] bg-[var(--tint-accent-strong)] text-[var(--primary)]"
+                            : "border-[var(--border)] hover:border-[var(--accent)]",
+                        )}
+                      >
+                        {itemNameById.get(itemId) ?? itemId}
+                      </button>
+                    </li>
+                  );
+                })
+              )}
+            </ul>
             <div className="flex w-full flex-row flex-wrap items-center justify-between gap-2 pt-2 [&_button]:w-auto [&_button]:shrink-0">
-              <Button type="button" variant="outline" onClick={() => setSelectedSteps([])}>
-                순서 초기화
+              <Button type="button" variant="outline" onClick={() => setSelectedItemIds([])}>
+                선택 초기화
               </Button>
               <Button
                 type="button"
                 className="@sm:min-w-[10rem]"
                 onClick={handleCompleteTask}
-                disabled={busy || selectedSteps.length === 0}
+                disabled={busy || !canSubmitTask}
               >
                 {busy ? (
                   <>
@@ -241,7 +251,7 @@ export function GroupPhasePanel({
                     처리 중…
                   </>
                 ) : (
-                  "과제 완성"
+                  "과제 해결"
                 )}
               </Button>
             </div>
@@ -251,7 +261,7 @@ export function GroupPhasePanel({
         {!activityCompleted && canSubmitActivity ? (
           <section className="space-y-3 border-t border-[var(--border)] pt-4">
             <p className="text-sm text-[var(--muted-foreground)] @md:text-base">
-              모든 과제를 완료했어요. 최종 제출을 눌러 주세요.
+              모든 과제를 해결했어요. 최종 제출을 눌러 주세요.
             </p>
             <Button type="button" className="w-full @sm:min-h-11" onClick={handleCompleteActivity} disabled={busy}>
               {busy ? (
@@ -268,9 +278,7 @@ export function GroupPhasePanel({
 
         {activityCompleted ? (
           <div className="rounded-lg border border-[color-mix(in_srgb,var(--primary)_35%,var(--border))] bg-[var(--tint-accent-weak)] p-4 text-center">
-            <p className="text-sm font-bold text-[var(--primary)] @sm:text-lg">
-              최종 제출 완료
-            </p>
+            <p className="text-sm font-bold text-[var(--primary)] @sm:text-lg">최종 제출 완료</p>
             <p className="mt-1 text-sm text-[var(--muted-foreground)] @md:text-base">
               모둠 점수: {groupScore}
             </p>
@@ -284,7 +292,9 @@ export function GroupPhasePanel({
           <p
             className={cn(
               "text-sm @md:text-base",
-              message.includes("완료") ? "text-[var(--primary)]" : "text-[var(--danger)]",
+              message.includes("해결") || message.includes("완료")
+                ? "text-[var(--primary)]"
+                : "text-[var(--danger)]",
             )}
           >
             {message}

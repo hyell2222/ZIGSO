@@ -35,7 +35,7 @@ Session `status`: `active` | `ended` (set to `ended` when the session reaches `r
 
 Gameplay content lives under [`lib/activity-pack/`](lib/activity-pack/). An `activity_pack` (`ActivityPack`) includes:
 
-- **`items`** — answers and staged hints for expert groups (`groupHint` for the home group)
+- **`items`** — answers and staged hints for expert groups
 - **`tasks`** — home-group assignments with `itemIds` and ordered **`steps`**
 - **`actionCards`** — sentence pool students combine during the group phase
 

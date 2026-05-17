@@ -35,6 +35,7 @@ import {
 import type { SessionStatus } from "@/lib/types";
 import { isSessionEnded } from "@/lib/activity-phases";
 import { isTimedPhase, type TimedPhase } from "@/lib/teacher/phase-guide";
+import { buildItemCodenameMap, formatItemCodenames } from "@/lib/play/role-codenames";
 
 type Props = {
   activityTitle: string | null;
@@ -85,11 +86,10 @@ export function SandboxTeacherPanel({
 
   const playercount = sessionStarted ? players.length : waitingOnlinePlayers.length;
 
-  const itemNameById = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const ing of pack.items) map.set(ing.id, ing.name);
-    return map;
-  }, [pack]);
+  const itemCodenameById = useMemo(
+    () => buildItemCodenameMap(`sandbox-${activityId}`, pack.items.map((i) => i.id)),
+    [activityId, pack.items],
+  );
 
   const assignmentGroups = useMemo<GroupAssignmentGroup[]>(() => {
     const byGroup = new Map<string, SandboxPlayer[]>();
@@ -103,10 +103,12 @@ export function SandboxTeacherPanel({
       members: (byGroup.get(group.id) ?? []).map((m) => ({
         id: m.id,
         nickname: m.nickname,
-        zoneName: itemNameById.get(m.itemId) ?? m.itemId,
+        zoneName:
+          formatItemCodenames(m.itemIds.length > 0 ? m.itemIds : [m.itemId], itemCodenameById) ??
+          null,
       })),
     }));
-  }, [players, groups, itemNameById]);
+  }, [players, groups, itemCodenameById]);
 
   const progressGroups = useMemo<GroupProgressGroup[]>(() => {
     const counts = new Map<string, number>();
@@ -200,7 +202,7 @@ export function SandboxTeacherPanel({
           <GroupAssignmentDashboard
             groups={assignmentGroups}
             loading={false}
-            groupBy={phase === "expert_group" ? "role" : "group"}
+            groupBy={phase === "expert_group" ? "item" : "group"}
           />
         ) : null}
 
@@ -217,6 +219,7 @@ export function SandboxTeacherPanel({
             groups={resultsGroups}
             members={resultsMembers}
             pack={pack}
+            roleScopeKey={`sandbox-${activityId}`}
             loading={false}
           />
         ) : null}

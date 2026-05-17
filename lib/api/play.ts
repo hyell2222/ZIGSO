@@ -2,6 +2,8 @@
 
 import { parseActivityPack } from "@/lib/api/activities";
 import { tryAcquireItem, tryCompleteTask } from "@/lib/activity-pack/engine";
+import { assignRolesToPlayers } from "@/lib/activity-pack/engine";
+import { PLAYER_MESSAGES } from "@/lib/activity-pack/player-messages";
 import type { AcquiredItem, CompletedTask, ActivityPack } from "@/lib/activity-pack/types";
 import { supabase } from "@/lib/supabase";
 
@@ -30,7 +32,6 @@ export type SessionDetailsRow = {
   activities: {
     title: string | null;
     description: string | null;
-    difficulty: string | null;
     activity_pack: ActivityPack | null;
   } | null;
 };
@@ -38,7 +39,7 @@ export type SessionDetailsRow = {
 export type HostSessionDetailsRow = SessionDetailsRow;
 
 const SESSION_SELECT =
-  "id,join_code,host_id,phase,status,created_at,activity_id,activities(title,description,difficulty,activity_pack)";
+  "id,join_code,host_id,phase,status,created_at,activity_id,activities(title,description,activity_pack)";
 
 export async function getPlaySessionDetails(sessionId: string) {
   const { data, error } = await supabase
@@ -68,12 +69,24 @@ export type PlayerSelfRow = {
   session_id: string | null;
   group_id: string | null;
   assigned_role_id: string | null;
+  assigned_item_ids: string[] | null;
   is_online: boolean | null;
   created_at: string;
 };
 
 const PLAYER_SELECT =
-  "id,nickname,session_id,group_id,assigned_role_id,is_online,created_at";
+  "id,nickname,session_id,group_id,assigned_role_id,assigned_item_ids,is_online,created_at";
+
+export function parseAssignedItemIds(player: {
+  assigned_item_ids?: unknown;
+  assigned_role_id?: string | null;
+}): string[] {
+  if (Array.isArray(player.assigned_item_ids)) {
+    return player.assigned_item_ids.filter((id): id is string => typeof id === "string" && id.length > 0);
+  }
+  if (player.assigned_role_id) return [player.assigned_role_id];
+  return [];
+}
 
 const PLAYER_SELECT_WITH_GROUP = `${PLAYER_SELECT},groups(id,name,acquired_items,completed_tasks,completed_at)`;
 
@@ -146,7 +159,9 @@ export async function assignOrphanPlayersForOngoingSession(sessionId: string) {
     .select("id,group_id,assigned_role_id")
     .eq("session_id", sessionId);
   if (pe) throw pe;
-  const orphans = (playerRows ?? []).filter((p) => !p.group_id || !p.assigned_role_id);
+  const orphans = (playerRows ?? []).filter(
+    (p) => !p.group_id || parseAssignedItemIds(p).length === 0,
+  );
   if (orphans.length === 0) return;
 
   await assignGroupsAndRoles(sessionId, pack);
@@ -184,7 +199,21 @@ function parseAcquired(raw: unknown): AcquiredItem[] {
 }
 
 function parseCompleted(raw: unknown): CompletedTask[] {
-  return Array.isArray(raw) ? (raw as CompletedTask[]) : [];
+  if (!Array.isArray(raw)) return [];
+  return raw.map((row) => {
+    const r = row as Record<string, unknown>;
+    const taskId = String(r.taskId ?? "");
+    return {
+      taskId,
+      submittedItemIds: Array.isArray(r.submittedItemIds)
+        ? (r.submittedItemIds as string[])
+        : Array.isArray(r.submittedSteps)
+          ? []
+          : [],
+      completedAt: String(r.completedAt ?? new Date().toISOString()),
+      score: typeof r.score === "number" ? r.score : 0,
+    };
+  });
 }
 
 export async function listSessionGroups(sessionId: string) {
@@ -224,9 +253,8 @@ function groupLabel(index: number) {
 }
 
 export async function assignGroupsAndRoles(sessionId: string, pack: ActivityPack) {
-  const items = pack.items;
-  if (items.length === 0) {
-    throw new Error("활동 팩에 항목이 없습니다.");
+  if (pack.roles.length === 0) {
+    throw new Error("활동 팩에 역할이 없습니다.");
   }
 
   const { data: allPlayers, error: pErr } = await supabase
@@ -237,7 +265,9 @@ export async function assignGroupsAndRoles(sessionId: string, pack: ActivityPack
   const players = allPlayers ?? [];
   if (players.length === 0) return;
 
-  const needsAssign = players.filter((p) => !p.group_id || !p.assigned_role_id);
+  const needsAssign = players.filter(
+    (p) => !p.group_id || parseAssignedItemIds(p).length === 0,
+  );
   if (needsAssign.length === 0) return;
 
   const { data: existingGroups, error: tErr } = await supabase
@@ -277,18 +307,20 @@ export async function assignGroupsAndRoles(sessionId: string, pack: ActivityPack
     byGroup[i % groupIds.length]!.push(p.id);
   });
 
-  const itemIds = items.map((i) => i.id);
-  let roleIndex = 0;
-
   for (let ti = 0; ti < byGroup.length; ti++) {
     const memberIds = byGroup[ti]!;
     const groupId = groupIds[ti]!;
+    const roleAssignment = assignRolesToPlayers(pack, memberIds);
     for (const playerId of memberIds) {
-      const itemId = itemIds[roleIndex % itemIds.length]!;
-      roleIndex++;
+      const assigned = roleAssignment.get(playerId);
+      const assignedIds = assigned?.itemIds ?? [];
       const { error: upErr } = await supabase
         .from("players")
-        .update({ group_id: groupId, assigned_role_id: itemId })
+        .update({
+          group_id: groupId,
+          assigned_item_ids: assignedIds,
+          assigned_role_id: assigned?.roleId ?? null,
+        })
         .eq("id", playerId);
       if (upErr) throw upErr;
     }
@@ -333,18 +365,18 @@ export async function completeTaskForGroup(args: {
   groupId: string;
   pack: ActivityPack;
   taskId: string;
-  submittedSteps: string[];
+  submittedItemIds: string[];
 }) {
   const group = await getGroupById(args.groupId);
   if (group.completed_tasks.some((m) => m.taskId === args.taskId)) {
-    throw new Error("이 과제는 이미 완성했습니다.");
+    throw new Error(PLAYER_MESSAGES.taskAlreadyCompleted);
   }
 
   const result = tryCompleteTask(
     args.pack,
     args.taskId,
     group.acquired_items,
-    args.submittedSteps,
+    args.submittedItemIds,
   );
   if (!result.ok) throw new Error(result.reason);
 
@@ -361,11 +393,11 @@ export async function completeActivityForGroup(groupId: string, pack: ActivityPa
   if (group.completed_at) {
     throw new Error("이미 활동을 완료했습니다.");
   }
-  const requiredTaskIds = pack.tasks.map((t) => t.id);
+  const requiredIds = pack.tasks.map((t) => t.id);
   const completedIds = new Set(group.completed_tasks.map((t) => t.taskId));
-  const missing = requiredTaskIds.filter((id) => !completedIds.has(id));
+  const missing = requiredIds.filter((id) => !completedIds.has(id));
   if (missing.length > 0) {
-    throw new Error(`아직 완성하지 않은 과제가 있습니다: ${missing.join(", ")}`);
+    throw new Error(`아직 해결하지 않은 과제가 있습니다: ${missing.join(", ")}`);
   }
 
   const { error } = await supabase

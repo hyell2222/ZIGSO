@@ -19,6 +19,7 @@ type Props = {
   groups: GroupRow[];
   members: SessionResultsMember[];
   pack: ActivityPack | null;
+  roleScopeKey?: string;
   loading?: boolean;
 };
 
@@ -26,6 +27,7 @@ export function SessionResultsDashboard({
   groups,
   members,
   pack,
+  roleScopeKey,
   loading,
 }: Props) {
   const results = useMemo(() => {
@@ -45,8 +47,9 @@ export function SessionResultsDashboard({
         groupId: m.groupId,
         assignedRoleId: m.assignedRoleId,
       })),
+      roleScopeKey,
     );
-  }, [pack, groups, members]);
+  }, [pack, groups, members, roleScopeKey]);
 
   if (loading) {
     return <LoadingState variant="section" label="결과 집계 중…" />;

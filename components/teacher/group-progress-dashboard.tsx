@@ -36,7 +36,7 @@ export function GroupProgressDashboard({
           모둠 과제 진행
         </h2>
         <p className="mt-0.5 text-sm leading-snug text-[var(--muted-foreground)] @md:mt-1">
-          항목 획득·과제 완성·최종 제출 현황입니다.
+          항목 획득·과제 해결·최종 제출 현황입니다.
         </p>
       </header>
       {loading ? (

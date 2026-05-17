@@ -90,12 +90,17 @@ function SandboxPageContent() {
   );
 
   const handleCompleteTask = useCallback(
-    (groupId: string, taskId: string, submittedSteps: string[]) => {
+    (groupId: string, taskId: string, submittedItemIds: string[]) => {
       if (!pack) return;
       setState((prev) => {
         const group = prev.groups.find((t) => t.id === groupId);
         if (!group) return prev;
-        const result = tryCompleteTask(pack, taskId, group.acquired_items, submittedSteps);
+        const result = tryCompleteTask(
+          pack,
+          taskId,
+          group.acquired_items,
+          submittedItemIds,
+        );
         if (!result.ok) throw new Error(result.reason);
         return {
           ...prev,
@@ -119,7 +124,7 @@ function SandboxPageContent() {
         const required = pack.tasks.map((m) => m.id);
         const done = new Set(group.completed_tasks.map((m) => m.taskId));
         if (required.some((id) => !done.has(id))) {
-          throw new Error("아직 완성하지 않은 과제가 있습니다.");
+          throw new Error("아직 해결하지 않은 과제가 있습니다.");
         }
         return {
           ...prev,
@@ -226,6 +231,7 @@ function SandboxPageContent() {
 
       <BrowserWindow title="학생 화면" tone="accent" className="min-w-0">
         <SandboxStudentPanel
+          activityId={activityId}
           activityTitle={activity.title}
           description={activity.description}
           pack={pack}

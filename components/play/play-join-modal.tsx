@@ -3,6 +3,7 @@
 import { FormEvent, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
+import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { ROUTES } from "@/lib/routes";
@@ -71,10 +72,7 @@ export function PlayJoinModal({
           onSubmit();
         }}
       >
-        <div className="space-y-1.5">
-          <label className="text-xs font-medium text-[var(--foreground)]" htmlFor={`${titleId}-code`}>
-            참가 코드
-          </label>
+        <FormField label="참가 코드" htmlFor={`${titleId}-code`}>
           <Input
             id={`${titleId}-code`}
             value={joinCodeEditable ? joinCode : code}
@@ -92,11 +90,8 @@ export function PlayJoinModal({
             placeholder={joinCodeEditable ? "예: ABC123" : undefined}
             disabled={pending}
           />
-        </div>
-        <div className="space-y-1.5">
-          <label className="text-xs font-medium text-[var(--foreground)]" htmlFor={`${titleId}-nickname`}>
-            닉네임
-          </label>
+        </FormField>
+        <FormField label="닉네임" htmlFor={`${titleId}-nickname`}>
           <Input
             id={`${titleId}-nickname`}
             placeholder="닉네임"
@@ -106,7 +101,7 @@ export function PlayJoinModal({
             disabled={pending}
             autoFocus
           />
-        </div>
+        </FormField>
         <Button
           type="submit"
           className="w-full @md:w-auto @md:min-w-[8rem]"

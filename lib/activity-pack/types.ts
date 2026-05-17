@@ -3,7 +3,7 @@
  * 게임 엔진은 이 JSON 구조만으로 동작하며, AI는 초안 생성기 역할만 한다.
  */
 
-export const ACTIVITY_PACK_VERSION = 1 as const;
+export const ACTIVITY_PACK_VERSION = 2 as const;
 
 /** 항목 5단계 힌트 (1=가장 어려움, 5=가장 쉬움) */
 export type ItemHints = {
@@ -14,54 +14,42 @@ export type ItemHints = {
   stage5: string;
 };
 
-export type ItemCategory =
-  | "primary"
-  | "secondary"
-  | "tertiary"
-  | "quaternary"
-  | "bonus"
-  | "other";
-
-export type TaskSlot = "slot1" | "slot2" | "slot3" | "slot4" | "slot5" | "slot6";
-
 export type Item = {
   id: string;
   name: string;
-  category: ItemCategory;
   hints: ItemHints;
-  /** 모둠 단계에서 보여줄 짧은 안내 */
-  groupHint: string;
   aliases?: string[];
 };
 
-export type TaskStep = {
-  order: number;
-  sentence: string;
-};
-
-export type Task = {
+/** 홈 모둠 역할 — 역할별로 맞출 아이템(정답)이 여러 개일 수 있음 */
+export type Role = {
   id: string;
   name: string;
-  slot: TaskSlot;
-  itemIds: string[];
-  steps: TaskStep[];
+  items: Item[];
 };
 
-/** 학생이 조합 UI에서 쓸 수 있는 수행 문장 카드 */
-export type ActionCard = {
+/** 모둠이 해결할 과제 — 획득한 항목 중 acceptedItemIds 로 선택 제출 */
+export type Task = {
   id: string;
-  text: string;
+  title: string;
+  description: string;
+  acceptedItemIds: string[];
+  /** 제출에 필요한 최소 항목 수 (기본 1) */
+  minimumItems?: number;
 };
 
 export type ActivityPack = {
   version: typeof ACTIVITY_PACK_VERSION;
   title: string;
   description: string;
-  difficulty: "Easy" | "Normal" | "Hard";
+  /** 모둠 인원 — 역할 수와 동일 (저장 시 자동 정규화) */
   groupSize: number;
-  tasks: Task[];
+  /** 역할당 최대 아이템 수 (저장 시 자동 정규화) */
+  itemsPerPlayer: number;
+  roles: Role[];
+  /** roles를 펼친 아이템 목록 — 엔진·과제 참조용 */
   items: Item[];
-  actionCards: ActionCard[];
+  tasks: Task[];
 };
 
 /** 전문가 단계에서 획득한 항목 */
@@ -72,10 +60,10 @@ export type AcquiredItem = {
   acquiredAt: string;
 };
 
-/** 모둠이 완성한 과제 */
+/** 모둠이 완성한 과제 (DB 컬럼명 completed_tasks) */
 export type CompletedTask = {
   taskId: string;
-  submittedSteps: string[];
+  submittedItemIds: string[];
   completedAt: string;
   score: number;
 };

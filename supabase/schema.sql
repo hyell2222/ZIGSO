@@ -26,8 +26,6 @@ create table public.activities (
   title text not null,
   description text not null default '',
   activity_pack jsonb not null,
-  difficulty text not null default 'Normal'
-    check (difficulty in ('Easy', 'Normal', 'Hard')),
   group_size int not null default 4 check (group_size >= 2 and group_size <= 12),
   task_count int not null default 0 check (task_count >= 0),
   creator_id uuid references auth.users(id) on delete set null,
@@ -71,6 +69,7 @@ create table public.players (
   group_id uuid references public.groups(id) on delete set null,
   nickname text not null,
   assigned_role_id text,
+  assigned_item_ids jsonb not null default '[]'::jsonb,
   is_online boolean not null default true,
   created_at timestamptz not null default timezone('utc', now())
 );

@@ -3,6 +3,7 @@
  */
 
 import type { ActivityPhase, SessionStatus } from "@/lib/types";
+import { assignRolesToPlayers } from "@/lib/activity-pack/engine";
 import type { AcquiredItem, CompletedTask, ActivityPack } from "@/lib/activity-pack/types";
 import { pickSandboxLobbyBotNicknames } from "@/lib/sandbox/waiting-nicknames";
 import {
@@ -22,7 +23,9 @@ export type SandboxPlayer = {
   id: string;
   nickname: string;
   groupId: string;
+  /** @deprecated — itemIds 사용 */
   itemId: string;
+  itemIds: string[];
   isReal?: boolean;
 };
 
@@ -48,7 +51,7 @@ export function buildSandboxWaitingRoster(
   pack: ActivityPack,
   realStudentNickname: string | null,
 ): SandboxWaitingChip[] {
-  const slotCount = Math.max(pack.items.length, pack.groupSize, 4);
+  const slotCount = Math.max(pack.roles.length, pack.groupSize, 4);
   const bots = pickSandboxLobbyBotNicknames(activityId.trim() || "_").slice(0, slotCount);
   const out: SandboxWaitingChip[] = bots.map((nickname, i) => ({
     id: `sandbox-lobby-bot-${i}`,
@@ -98,10 +101,10 @@ export function buildSandboxAssignments(
   pack: ActivityPack,
   realStudentNickname: string | null,
 ): { groups: SandboxGroup[]; players: SandboxPlayer[] } {
-  const items = pack.items;
-  if (items.length === 0) {
+  if (pack.roles.length === 0) {
     return { groups: [], players: [] };
   }
+  const fallbackItemId = pack.items[0]?.id ?? "";
 
   const chips = buildSandboxWaitingRoster(activityId, pack, realStudentNickname);
   shuffleArrayInPlace(chips);
@@ -122,20 +125,25 @@ export function buildSandboxAssignments(
     byGroup[idx % numGroups]!.push(chip);
   });
 
-  const itemIds = items.map((i) => i.id);
-  let roleIndex = 0;
   const players: SandboxPlayer[] = [];
 
   for (let ti = 0; ti < groups.length; ti++) {
     const group = groups[ti]!;
-    for (const chip of byGroup[ti]!) {
-      const itemId = itemIds[roleIndex % itemIds.length]!;
-      roleIndex++;
+    const groupChips = byGroup[ti]!;
+    const groupPlayerIds = groupChips.map((chip) =>
+      chip.isReal ? SANDBOX_REAL_STUDENT_PLAYER_ID : `sandbox-player-${chip.id}`,
+    );
+    const roleAssignment = assignRolesToPlayers(pack, groupPlayerIds);
+    for (const chip of groupChips) {
+      const playerId = chip.isReal ? SANDBOX_REAL_STUDENT_PLAYER_ID : `sandbox-player-${chip.id}`;
+      const assigned = roleAssignment.get(playerId);
+      const itemIds = assigned?.itemIds ?? [];
       players.push({
-        id: chip.isReal ? SANDBOX_REAL_STUDENT_PLAYER_ID : `sandbox-player-${chip.id}`,
+        id: playerId,
         nickname: chip.nickname.trim() || "참가자",
         groupId: group.id,
-        itemId,
+        itemId: itemIds[0] ?? fallbackItemId,
+        itemIds,
         isReal: chip.isReal ? true : undefined,
       });
     }

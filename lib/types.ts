@@ -24,6 +24,7 @@ export type PlayerRecord = {
   session_id: string | null;
   group_id: string | null;
   assigned_role_id: string | null;
+  assigned_item_ids?: string[] | null;
 };
 
 export type GameSession = {

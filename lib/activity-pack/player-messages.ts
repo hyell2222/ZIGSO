@@ -3,8 +3,9 @@ export const PLAYER_MESSAGES = {
   unknownItem: "항목을 찾을 수 없습니다.",
   unknownTask: "과제를 찾을 수 없습니다.",
   incorrectAnswer: "정답이 아닙니다. 힌트를 다시 확인해 보세요.",
-  missingItems: "이 과제에 필요한 항목을 아직 모두 맞추지 않았습니다.",
-  taskStepsMismatch: "수행 순서가 맞지 않습니다.",
+  missingItems: "아직 모둠이 획득하지 않은 항목이 포함되어 있습니다.",
+  taskTooFewItems: "선택한 항목 수가 부족합니다.",
+  taskInvalidItem: "이 과제에 사용할 수 없는 항목입니다.",
   taskAlreadyCompleted: "이미 완료한 과제입니다.",
   submissionAlreadySent: "이미 최종 제출했습니다.",
   operationFailed: "요청을 처리하지 못했습니다.",
@@ -14,9 +15,9 @@ export function acquireSuccessMessage(score: number) {
   return `정답! +${score}점`;
 }
 
-export function taskCompleteMessage(taskName: string, score?: number) {
+export function taskCompleteMessage(title: string, score?: number) {
   if (typeof score === "number") {
-    return `「${taskName}」과제 완료! +${score}점`;
+    return `「${title}」과제 완료! +${score}점`;
   }
-  return `「${taskName}」과제 완료!`;
+  return `「${title}」과제 완료!`;
 }

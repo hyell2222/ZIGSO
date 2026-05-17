@@ -92,7 +92,7 @@ export default function HomePage() {
                     AI 활동 팩 생성
                   </p>
                   <p className="mt-2 text-xs break-keep leading-snug text-[color-mix(in_srgb,var(--muted-foreground)_96%,var(--accent))]">
-                    주제·난이도·모둠 인원을 입력하면 과제·맞출 항목·힌트·수행 순서를 자동 생성해요.
+                    주제·난이도·모둠 인원을 입력하면 과제·맞출 항목·힌트를 자동 생성해요.
                   </p>
                 </div>
               </li>

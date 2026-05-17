@@ -5,10 +5,12 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { EXAMPLE_GAME_NAME } from "@/lib/brand";
+import { normalizeAiDifficulty } from "@/lib/activity-pack/ai-difficulty";
 import type { ContentLanguage } from "@/lib/activity-pack/content-language";
 import { DEFAULT_CONTENT_LANGUAGE } from "@/lib/activity-pack/content-language";
-import { normalizeActivityPack } from "@/lib/activity-pack/normalize";
+import { loadActivityPack } from "@/lib/activity-pack/parse";
 import type { ActivityPack } from "@/lib/activity-pack/types";
+import { ACTIVITY_PACK_VERSION } from "@/lib/activity-pack/types";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -16,49 +18,50 @@ export const maxDuration = 60;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const OPENAI_MODEL = process.env.OPENAI_MODEL ?? "gpt-4o-mini";
 
+const PACK_ITEM_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  required: ["id", "name", "hints"],
+  properties: {
+    id: { type: "string" },
+    name: { type: "string" },
+    hints: {
+      type: "object",
+      additionalProperties: false,
+      required: ["stage1", "stage2", "stage3", "stage4", "stage5"],
+      properties: {
+        stage1: { type: "string" },
+        stage2: { type: "string" },
+        stage3: { type: "string" },
+        stage4: { type: "string" },
+        stage5: { type: "string" },
+      },
+    },
+  },
+} as const;
+
 const ACTIVITY_PACK_SCHEMA = {
   type: "object",
   additionalProperties: false,
-  required: [
-    "title",
-    "description",
-    "difficulty",
-    "groupSize",
-    "items",
-    "tasks",
-    "actionCards",
-  ],
+  required: ["title", "description", "groupSize", "itemsPerPlayer", "roles", "tasks"],
   properties: {
     title: { type: "string" },
     description: { type: "string" },
-    difficulty: { type: "string", enum: ["Easy", "Normal", "Hard"] },
     groupSize: { type: "integer" },
-    items: {
+    itemsPerPlayer: { type: "integer" },
+    roles: {
       type: "array",
       items: {
         type: "object",
         additionalProperties: false,
-        required: ["id", "name", "category", "hints", "groupHint"],
+        required: ["id", "items"],
         properties: {
           id: { type: "string" },
           name: { type: "string" },
-          category: {
-            type: "string",
-            enum: ["primary", "secondary", "tertiary", "quaternary", "bonus", "other"],
+          items: {
+            type: "array",
+            items: PACK_ITEM_SCHEMA,
           },
-          hints: {
-            type: "object",
-            additionalProperties: false,
-            required: ["stage1", "stage2", "stage3", "stage4", "stage5"],
-            properties: {
-              stage1: { type: "string" },
-              stage2: { type: "string" },
-              stage3: { type: "string" },
-              stage4: { type: "string" },
-              stage5: { type: "string" },
-            },
-          },
-          groupHint: { type: "string" },
         },
       },
     },
@@ -67,42 +70,16 @@ const ACTIVITY_PACK_SCHEMA = {
       items: {
         type: "object",
         additionalProperties: false,
-        required: ["id", "name", "slot", "itemIds", "steps"],
+        required: ["id", "title", "description", "acceptedItemIds"],
         properties: {
           id: { type: "string" },
-          name: { type: "string" },
-          slot: {
-            type: "string",
-            enum: ["slot1", "slot2", "slot3", "slot4", "slot5", "slot6"],
-          },
-          itemIds: {
+          title: { type: "string" },
+          description: { type: "string" },
+          acceptedItemIds: {
             type: "array",
             items: { type: "string" },
           },
-          steps: {
-            type: "array",
-            items: {
-              type: "object",
-              additionalProperties: false,
-              required: ["order", "sentence"],
-              properties: {
-                order: { type: "integer" },
-                sentence: { type: "string" },
-              },
-            },
-          },
-        },
-      },
-    },
-    actionCards: {
-      type: "array",
-      items: {
-        type: "object",
-        additionalProperties: false,
-        required: ["id", "text"],
-        properties: {
-          id: { type: "string" },
-          text: { type: "string" },
+          minimumItems: { type: "integer" },
         },
       },
     },
@@ -121,24 +98,25 @@ function buildSystemPrompt(contentLanguage: ContentLanguage): string {
 
   const contentLanguageRule =
     contentLanguage === "ko"
-      ? "- All gameplay content in Korean: item names (answers), hints stage1–stage5, groupHint, task names, steps sentences, actionCards text."
-      : "- All gameplay content in English: item names (answers), hints stage1–stage5, groupHint, task names, steps sentences, actionCards text.";
+      ? "- All gameplay content in Korean: item names (answers), hints stage1–stage5, task titles and descriptions."
+      : "- All gameplay content in English: item names (answers), hints stage1–stage5, task titles and descriptions.";
 
   return [
     `You design jigsaw cooperative classroom activities for the 'Jigsaw' teacher platform.`,
-    `Default template style: '${EXAMPLE_GAME_NAME}' (expert groups deduce items from staged hints, home groups complete tasks). Adapt theme to the teacher's topic.`,
+    `Default template style: '${EXAMPLE_GAME_NAME}' — expert groups deduce items from staged hints; home groups complete cooperative tasks by submitting acquired items.`,
     "",
     "Output JSON only.",
     "",
     "Rules:",
     introRule,
     contentLanguageRule,
-    "- difficulty: Easy | Normal | Hard.",
-    "- groupSize: integer 2–12.",
-    "- items: each needs id (snake_case ASCII), name (answer), category (primary|secondary|tertiary|quaternary|bonus|other), hints stage1–stage5 (stage1 hardest, stage5 easiest), groupHint (short tip for the home group).",
-    "- tasks: each has unique slot among slot1–slot6. itemIds must reference item ids. steps: ordered imperative sentences students combine.",
-    "- actionCards: pool of sentences students can combine; include all task step sentences plus a few distractors.",
-    "- Use up to six task slots when the theme allows.",
+    "- groupSize: must equal roles.length (2–12).",
+    "- itemsPerPlayer: max items in any single role (usually 1–2).",
+    "- roles: each has id (snake_case ASCII) and items[] (deduction targets). Role display names are auto-assigned codenames at play time — do not rely on role name.",
+    "- role items: id, name (correct answer), hints stage1–stage5 (stage1 hardest, stage5 easiest).",
+    "- tasks: cooperative home-group assignments. Each has id, title, description, acceptedItemIds (item ids from roles), optional minimumItems.",
+    "- Every acceptedItemId must reference an item id inside roles.",
+    "- Create 2–6 roles with 1–2 items each and 2–6 tasks when the theme allows.",
     "- No violence, culturally appropriate for Korean middle/high school.",
     "- Hint scoring: stage1=5pts … stage5=1pt — write hints accordingly.",
   ].join("\n");
@@ -147,21 +125,25 @@ function buildSystemPrompt(contentLanguage: ContentLanguage): string {
 function buildUserPrompt(opts: {
   topic: string;
   difficulty?: string;
-  groupSize: number;
+  roleCount: number;
   taskCount: number;
   contentLanguage: ContentLanguage;
 }): string {
   const lines = [
     `Generate one complete '${EXAMPLE_GAME_NAME}'-style activity pack JSON following the schema.`,
-    `Target tasks: about ${opts.taskCount} (use slots slot1–slot6 where appropriate).`,
-    `Group size: ${opts.groupSize} students per group.`,
+    `Target tasks: about ${opts.taskCount}.`,
+    `Create exactly ${opts.roleCount} roles (group size equals role count). Each role should have 1–2 items with full 5-stage hints.`,
     `Content language for title and description: ${opts.contentLanguage === "ko" ? "Korean" : "English"}.`,
   ];
-  if (opts.difficulty) lines.push(`Difficulty: ${opts.difficulty}.`);
+  if (opts.difficulty) {
+    lines.push(
+      `Calibrate hint difficulty and task complexity for ${opts.difficulty} level (do not output a difficulty field).`,
+    );
+  }
   if (opts.topic.trim()) {
     lines.push("", "Activity topic:", opts.topic.trim());
   } else {
-    lines.push("", "Activity topic: open cooperative learning theme.");
+    lines.push("", "Activity topic: open cooperative learning theme (e.g. school festival booth).");
   }
   return lines.join("\n");
 }
@@ -183,20 +165,20 @@ export async function POST(req: NextRequest) {
 
   const input = body as Record<string, unknown>;
   const topic = typeof input.topic === "string" ? input.topic : "";
-  const difficulty =
-    typeof input.difficulty === "string" &&
-    ["Easy", "Normal", "Hard"].includes(input.difficulty)
-      ? input.difficulty
-      : "Normal";
-  const groupSize = clamp(
-    typeof input.groupSize === "number" ? Math.floor(input.groupSize) : 4,
+  const difficulty = normalizeAiDifficulty(input.difficulty);
+  const roleCount = clamp(
+    typeof input.roleCount === "number"
+      ? Math.floor(input.roleCount)
+      : typeof input.groupSize === "number"
+        ? Math.floor(input.groupSize)
+        : 4,
     2,
     12,
   );
   const taskCount = clamp(
-    typeof input.taskCount === "number" ? Math.floor(input.taskCount) : 6,
+    typeof input.taskCount === "number" ? Math.floor(input.taskCount) : 4,
     1,
-    6,
+    8,
   );
   const contentLanguage: ContentLanguage =
     input.contentLanguage === "en" || input.contentLanguage === "ko"
@@ -219,7 +201,7 @@ export async function POST(req: NextRequest) {
           content: buildUserPrompt({
             topic,
             difficulty,
-            groupSize,
+            roleCount,
             taskCount,
             contentLanguage,
           }),
@@ -260,9 +242,9 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const pack = normalizeActivityPack({
+    const pack = loadActivityPack({
       ...(parsed as Record<string, unknown>),
-      version: 1,
+      version: ACTIVITY_PACK_VERSION,
     }) satisfies ActivityPack;
     return NextResponse.json(pack);
   } catch (e) {

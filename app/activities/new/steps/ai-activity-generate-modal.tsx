@@ -5,9 +5,13 @@ import { useState } from "react";
 
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
+import { FormField } from "@/components/ui/form-field";
 import { Textarea } from "@/components/ui/textarea";
 import { generateActivityPackWithAI } from "@/lib/api/ai-activity";
-import { DIFFICULTY_UI_OPTIONS, type DifficultyLevel } from "@/lib/api/activities";
+import {
+  AI_DIFFICULTY_UI_OPTIONS,
+  type AiDifficultyLevel,
+} from "@/lib/activity-pack/ai-difficulty";
 import {
   CONTENT_LANGUAGE_OPTIONS,
   DEFAULT_CONTENT_LANGUAGE,
@@ -19,7 +23,6 @@ import { cn } from "@/lib/utils";
 type Props = {
   open: boolean;
   onClose: () => void;
-  initialDifficulty?: DifficultyLevel;
   onApply: (pack: ActivityPack) => void;
 };
 
@@ -28,10 +31,10 @@ const GROUP_SIZE_MAX = 12;
 const TASK_COUNT_MIN = 1;
 const TASK_COUNT_MAX = 6;
 
-export function AIActivityGenerateModal({ open, onClose, initialDifficulty, onApply }: Props) {
+export function AIActivityGenerateModal({ open, onClose, onApply }: Props) {
   const [topic, setTopic] = useState("");
-  const [difficulty, setDifficulty] = useState<DifficultyLevel>(initialDifficulty ?? "Normal");
-  const [groupSize, setGroupSize] = useState(4);
+  const [difficulty, setDifficulty] = useState<AiDifficultyLevel>("Normal");
+  const [roleCount, setRoleCount] = useState(4);
   const [taskCount, setTaskCount] = useState(6);
   const [contentLanguage, setContentLanguage] = useState<ContentLanguage>(DEFAULT_CONTENT_LANGUAGE);
   const [loading, setLoading] = useState(false);
@@ -44,7 +47,7 @@ export function AIActivityGenerateModal({ open, onClose, initialDifficulty, onAp
       const pack = await generateActivityPackWithAI({
         topic: topic.trim() || undefined,
         difficulty,
-        groupSize,
+        roleCount,
         taskCount,
         contentLanguage,
       });
@@ -67,27 +70,28 @@ export function AIActivityGenerateModal({ open, onClose, initialDifficulty, onAp
       closeOnBackdrop={!loading}
     >
       <div className="space-y-4">
-        <div>
-          <label className="text-sm font-medium">활동 주제</label>
+        <FormField label="활동 주제" htmlFor="ai-activity-topic">
           <Textarea
-            className="mt-1"
+            id="ai-activity-topic"
             placeholder="예: 환경 보호, 협동 독서, 음식 문화"
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
             rows={3}
           />
-        </div>
+        </FormField>
 
-        <div>
-          <p className="text-sm font-medium">난이도</p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {DIFFICULTY_UI_OPTIONS.map((opt) => (
+        <FormField
+          label="난이도 (생성 참고)"
+          help="활동에 저장되지 않습니다. AI가 힌트·과제 난이도를 맞출 때만 사용합니다."
+        >
+          <div className="flex flex-wrap gap-2">
+            {AI_DIFFICULTY_UI_OPTIONS.map((opt) => (
               <button
                 key={opt.value}
                 type="button"
                 onClick={() => setDifficulty(opt.value)}
                 className={cn(
-                  "rounded-md border px-3 py-1.5 text-sm",
+                  "rounded-md border px-3 py-2 text-sm font-medium",
                   difficulty === opt.value
                     ? "border-[var(--accent)] bg-[var(--tint-accent-strong)]"
                     : "border-[var(--border)]",
@@ -97,11 +101,10 @@ export function AIActivityGenerateModal({ open, onClose, initialDifficulty, onAp
               </button>
             ))}
           </div>
-        </div>
+        </FormField>
 
-        <div>
-          <p className="text-sm font-medium">안내 언어 (제목·설명·힌트·수행 문장)</p>
-          <div className="mt-2 flex flex-wrap gap-2">
+        <FormField label="안내 언어 (제목·설명·힌트·수행 문장)">
+          <div className="flex flex-wrap gap-2">
             {CONTENT_LANGUAGE_OPTIONS.map((opt) => (
               <button
                 key={opt.value}
@@ -121,36 +124,34 @@ export function AIActivityGenerateModal({ open, onClose, initialDifficulty, onAp
               </button>
             ))}
           </div>
-        </div>
+        </FormField>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <p className="text-sm font-medium">모둠 인원</p>
-            <div className="mt-2 flex items-center gap-2">
+          <FormField label="맞출 항목(역할) 수" help="모둠 인원과 동일합니다">
+            <div className="flex items-center gap-2">
               <Button
                 type="button"
                 variant="outline"
                 size="icon"
-                disabled={groupSize <= GROUP_SIZE_MIN}
-                onClick={() => setGroupSize((n) => Math.max(GROUP_SIZE_MIN, n - 1))}
+                disabled={roleCount <= GROUP_SIZE_MIN}
+                onClick={() => setRoleCount((n) => Math.max(GROUP_SIZE_MIN, n - 1))}
               >
                 <Minus className="h-4 w-4" />
               </Button>
-              <span className="w-8 text-center font-mono">{groupSize}</span>
+              <span className="w-8 text-center font-mono">{roleCount}</span>
               <Button
                 type="button"
                 variant="outline"
                 size="icon"
-                disabled={groupSize >= GROUP_SIZE_MAX}
-                onClick={() => setGroupSize((n) => Math.min(GROUP_SIZE_MAX, n + 1))}
+                disabled={roleCount >= GROUP_SIZE_MAX}
+                onClick={() => setRoleCount((n) => Math.min(GROUP_SIZE_MAX, n + 1))}
               >
                 <Plus className="h-4 w-4" />
               </Button>
             </div>
-          </div>
-          <div>
-            <p className="text-sm font-medium">과제 수</p>
-            <div className="mt-2 flex items-center gap-2">
+          </FormField>
+          <FormField label="과제 수">
+            <div className="flex items-center gap-2">
               <Button
                 type="button"
                 variant="outline"
@@ -171,7 +172,7 @@ export function AIActivityGenerateModal({ open, onClose, initialDifficulty, onAp
                 <Plus className="h-4 w-4" />
               </Button>
             </div>
-          </div>
+          </FormField>
         </div>
 
         {error ? <p className="text-sm text-[var(--danger)]">{error}</p> : null}

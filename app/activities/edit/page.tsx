@@ -60,7 +60,7 @@ function ActivityEditContent() {
     return (
       <div className="app-page flex min-h-dvh flex-col">
         <TopNav />
-        <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8">
+        <main className="flex flex-col items-center justify-center mx-auto w-full max-w-7xl flex-1 px-4 py-8">
           <p className="rounded-md border border-[var(--danger)]/40 bg-[var(--danger)]/10 px-3 py-2 text-sm text-[var(--danger)]">
             활동을 불러오지 못했습니다: {(dataQuery.error as Error).message}
           </p>
@@ -74,7 +74,7 @@ function ActivityEditContent() {
     return (
       <div className="app-page flex min-h-dvh flex-col">
         <TopNav />
-        <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8">
+        <main className="flex flex-col items-center justify-center mx-auto w-full max-w-7xl flex-1 px-4 py-8">
           <p className="rounded-md border border-[var(--panel-warn-border)] bg-[var(--panel-warn-bg)] px-3 py-2 text-sm text-[var(--foreground)]">
             이 활동에는 활동 팩이 없습니다. 새 활동으로 다시 만들어 주세요.
           </p>

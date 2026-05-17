@@ -62,7 +62,7 @@ export function ActivityIntroductionLayout({
         <CardHeader className="rounded-t-xl border-b border-[var(--border)] bg-[var(--panel-warn-bg)] px-3 py-2.5 @sm:px-6 @sm:py-4">
           <CardTitle className="flex items-center gap-2 text-sm font-semibold text-[var(--foreground)] @md:text-base">
             <ListChecks className="h-4 w-4 shrink-0 text-[var(--accent)]" aria-hidden />
-            과제 목록
+            해결할 과제
           </CardTitle>
         </CardHeader>
         <CardContent className="px-3 pb-3 pt-2.5 @sm:px-6 @sm:pb-6 @sm:pt-4">
@@ -72,15 +72,15 @@ export function ActivityIntroductionLayout({
             </p>
           ) : (
             <ul className="space-y-2 text-sm leading-relaxed @sm:text-sm">
-              {activityPack.tasks.map((task) => (
+              {activityPack.tasks.map((ch) => (
                 <li
-                  key={task.id}
-                  className="flex items-center justify-between gap-2 rounded-md border border-[var(--border)] px-3 py-2"
+                  key={ch.id}
+                  className="rounded-md border border-[var(--border)] px-3 py-2"
                 >
-                  <span className="font-medium">{task.name}</span>
-                  <span className="text-xs uppercase text-[var(--muted-foreground)] @sm:text-xs">
-                    {task.slot}
-                  </span>
+                  <span className="font-medium">{ch.title}</span>
+                  {ch.description ? (
+                    <p className="mt-1 text-xs text-[var(--muted-foreground)]">{ch.description}</p>
+                  ) : null}
                 </li>
               ))}
             </ul>

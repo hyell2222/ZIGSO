@@ -7,7 +7,6 @@ import { useState } from "react";
 
 import {
   deleteActivity,
-  formatDifficultyForUi,
   listActivities,
   startSession,
   type ActivityListRow,
@@ -164,8 +163,7 @@ export default function ActivitiesPage() {
                         </div>
                       </div>
                       <p className="text-xs text-[var(--muted-foreground)] pb-2">
-                        난이도 {formatDifficultyForUi(row.difficulty)} · 모둠{" "}
-                        {row.group_size ?? "—"}명 · 과제 {row.task_count ?? "—"}개
+                        모둠 당 {row.group_size ?? "—"}명 · 과제 {row.task_count ?? "—"}개
                       </p>
                       <div className="flex flex-col gap-2">
                         <Button
