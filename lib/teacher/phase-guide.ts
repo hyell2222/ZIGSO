@@ -12,8 +12,13 @@ export type StepDef = {
 export const PHASES: StepDef[] = [
   { key: "overview", number: 1, label: "활동 소개" },
   { key: "expert_group", number: 2, label: "전문가 집단" },
-  { key: "home_group", number: 3, label: "팀 협업" },
+  { key: "home_group", number: 3, label: "홈 집단" },
 ];
+
+export const RESULTS_PHASE_STEP = {
+  number: 4,
+  label: "활동 결과",
+} as const;
 
 export type PhaseGuide = {
   title: string;
@@ -23,17 +28,22 @@ export type PhaseGuide = {
 export const PHASE_GUIDES: Record<TimedPhase, PhaseGuide> = {
   overview: {
     title: "활동 소개",
-    summary: "팀별로 모여 오늘의 과제와 역할을 확인합니다.",
+    summary: "모둠별로 모여 오늘의 과제와 역할을 확인합니다.",
   },
   expert_group: {
     title: "전문가 집단",
     summary:
-      "같은 전문가끼리 모여 힌트로 정보를 추리하고, 조로 돌아와 팀과 공유합니다.",
+      "같은 전문가끼리 모여 힌트로 정보를 추리하고, 모둠으로 돌아와 공유합니다.",
   },
   home_group: {
-    title: "팀 협업",
-    summary: "획득한 정보로 팀 과제를 완성하고 최종 결과를 제출합니다.",
+    title: "홈 집단",
+    summary: "획득한 정보로 모둠 과제를 완성하고 최종 결과를 제출합니다.",
   },
+};
+
+export const RESULTS_PHASE_GUIDE = {
+  title: RESULTS_PHASE_STEP.label,
+  summary: "모둠 순위와 MVP를 확인합니다. 탭을 닫으면 세션이 자동으로 종료됩니다.",
 };
 
 export const PHASE_MINUTES: Record<TimedPhase, number> = {

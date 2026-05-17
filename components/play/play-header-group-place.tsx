@@ -6,7 +6,7 @@ import { playSurfaceCool } from "@/components/play/play-atmosphere";
 import { cn } from "@/lib/utils";
 
 /**
- * 학생 단계 헤더 우측에 표시되는 팀·담당 장소 칩.
+ * 학생 단계 헤더 우측에 표시되는 모둠·담당 장소 칩.
  * (실 play 페이지·샌드박스 양쪽에서 동일 외관으로 사용합니다.)
  */
 export function PlayHeaderGroupPlace({
@@ -68,7 +68,7 @@ export function PlayHeaderGroupPlace({
                 compact ? "text-[9px]" : "text-[10px]",
               )}
             >
-              팀
+              모둠
             </p>
             <p
               className={cn(

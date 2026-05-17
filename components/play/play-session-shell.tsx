@@ -7,20 +7,18 @@ import { useRouter } from "next/navigation";
 import { ExpertPhasePanel } from "@/components/play/expert-group-panel";
 import { ActivityIntroductionLayout } from "@/components/play/overview-layout";
 import { GroupPhasePanel } from "@/components/play/home-group-panel";
-import { PlayPhaseHeader } from "@/components/play/play-phase-header";
+import { ResultsPhasePanel } from "@/components/play/results-phase-panel";
+import { PlayPhaseShell } from "@/components/play/play-phase-shell";
 import {
-  PLAY_PAGE_BLACK_BG,
   PlayAtmosphere,
   playLoaderRegion,
-  playPhaseHeaderChromeInner,
-  playPhaseHeaderChromeShell,
   playSurfaceCool,
-  playSurfacePanel,
 } from "@/components/play/play-atmosphere";
 import { PlayHeaderGroupPlace } from "@/components/play/play-header-group-place";
 import { WaitingLobbyBlock } from "@/components/play/waiting-lobby-block";
 import { Button } from "@/components/ui/button";
 import { LoadingState } from "@/components/ui/loading-state";
+import { PlayJoinModal } from "@/components/play/play-join-modal";
 import { Modal } from "@/components/ui/modal";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -34,8 +32,11 @@ import {
   getSessionByJoinCode,
   getGroupById,
   joinPlayerSession,
+  listSessionGroups,
+  listSessionPlayers,
   setPlayerOnline,
 } from "@/lib/api/play";
+import { buildSessionResults } from "@/lib/activity-pack/session-results";
 import {
   clearResumeRecord,
   getResumeRecord,
@@ -45,6 +46,7 @@ import {
 import { getSessionRoomChannelName } from "@/lib/realtime/session-presence";
 import { ROUTES } from "@/lib/routes";
 import { hasSupabaseEnv, supabase } from "@/lib/supabase";
+import { PLAY_STUDENT_COPY } from "@/lib/play/student-copy";
 import { cn } from "@/lib/utils";
 
 export function PlaySessionShell({
@@ -181,12 +183,6 @@ export function PlaySessionShell({
   const sessionPhase = sessionQuery.data?.phase as ActivityPhase | null | undefined;
 
   useEffect(() => {
-    if (sessionPhase !== "results") return;
-    if (joinCode) clearResumeRecord(joinCode);
-    router.replace(ROUTES.home);
-  }, [sessionPhase, router, joinCode]);
-
-  useEffect(() => {
     if (!playerId) return;
     void setPlayerOnline(playerId, true).catch(() => {});
     const onVisibility = () => {
@@ -302,6 +298,63 @@ export function PlaySessionShell({
   const isActivityIntroduction = hasJoinedSession && sessionPhase === "overview";
   const isExpertPhase = hasJoinedSession && hasAssignment && sessionPhase === "expert_group";
   const isGroupPhase = hasJoinedSession && sessionPhase === "home_group";
+  const isResultsPhase = hasJoinedSession && sessionPhase === "results";
+
+  const resultsQuery = useQuery({
+    queryKey: ["play-results", sessionId],
+    queryFn: async () => {
+      const [groups, players] = await Promise.all([
+        listSessionGroups(sessionId as string),
+        listSessionPlayers(sessionId as string),
+      ]);
+      return { groups, players };
+    },
+    enabled: Boolean(sessionId && isResultsPhase && activityPack),
+    refetchInterval: isResultsPhase ? 5_000 : false,
+    refetchIntervalInBackground: true,
+  });
+
+  const sessionResults = useMemo(() => {
+    if (!activityPack || !resultsQuery.data) return null;
+    return buildSessionResults(
+      activityPack,
+      resultsQuery.data.groups.map((g) => ({
+        id: g.id,
+        name: g.name,
+        acquired_items: g.acquired_items,
+        completed_tasks: g.completed_tasks,
+        completed_at: g.completed_at,
+      })),
+      resultsQuery.data.players
+        .filter((p) => p.group_id)
+        .map((p) => ({
+          id: p.id,
+          nickname: p.nickname,
+          groupId: p.group_id as string,
+          assignedRoleId: p.assigned_role_id,
+        })),
+    );
+  }, [activityPack, resultsQuery.data]);
+
+  if (hasSupabaseEnv && isResultsPhase && activityPack) {
+    const resultsRoleLabel =
+      activityPack.items.find((i) => i.id === assignedRoleId)?.name ?? assignedRoleId ?? null;
+    return (
+      <ResultsPhasePanel
+        loading={resultsQuery.isLoading}
+        title={sessionQuery.data?.activities?.title ?? null}
+        results={sessionResults}
+        highlightGroupId={groupId}
+        groupName={groupName}
+        roleLabel={resultsRoleLabel}
+        currentPlayerId={playerId}
+        onLeave={() => {
+          if (joinCode) clearResumeRecord(joinCode);
+          router.replace(ROUTES.home);
+        }}
+      />
+    );
+  }
 
   if (
     hasSupabaseEnv &&
@@ -347,48 +400,60 @@ export function PlaySessionShell({
       assignedRoleId ??
       null;
     return (
-      <PlayAtmosphere>
-        <div className="flex min-h-dvh flex-col">
-          <header className={playPhaseHeaderChromeShell}>
-            <div className={playPhaseHeaderChromeInner}>
-              <PlayPhaseHeader
-                phase={1}
-                title="활동 브리핑"
-                description="팀과 전문 역할을 확인한 뒤, 오늘 완성할 과제를 살펴보세요."
-                rightSlot={
-                  <PlayHeaderGroupPlace
-                    groupName={groupName}
-                    placeName={roleLabel}
-                    placeLabel="전문 재료"
-                    pending={playerQuery.isLoading || !hasAssignment}
-                  />
-                }
-              />
-            </div>
-          </header>
+      <PlayPhaseShell
+        header={{
+          phase: 1,
+          title: PLAY_STUDENT_COPY.phaseOverview.title,
+          description: PLAY_STUDENT_COPY.phaseOverview.description,
+          rightSlot: (
+            <PlayHeaderGroupPlace
+              groupName={groupName}
+              placeName={roleLabel}
+              placeLabel={PLAY_STUDENT_COPY.phaseOverview.placeLabel}
+              pending={playerQuery.isLoading || !hasAssignment}
+            />
+          ),
+        }}
+        mainClassName="max-w-6xl"
+      >
+        {playerQuery.isLoading && !hasAssignment ? (
+          <LoadingState variant="section" tone="play" className="min-h-[min(16rem,40dvh)] py-8" />
+        ) : (
+          <ActivityIntroductionLayout
+            loading={sessionQuery.isLoading}
+            title={sessionQuery.data?.activities?.title ?? null}
+            description={sessionQuery.data?.activities?.description ?? null}
+            activityPack={activityPack}
+          />
+        )}
+        <p className="mt-6 text-center text-xs text-[var(--muted-foreground)]">
+          {PLAY_STUDENT_COPY.waiting.waitForTeacher}
+        </p>
+      </PlayPhaseShell>
+    );
+  }
 
-          <main className="mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col space-y-5 px-4 py-6 pb-[max(3rem,env(safe-area-inset-bottom,0px))] sm:space-y-6 sm:px-6 sm:py-8 md:px-8">
-            <section className="flex min-h-[min(20rem,52dvh)] flex-1 flex-col motion-safe:animate-[playRevealUp_0.6s_cubic-bezier(0.22,1,0.36,1)_both] motion-safe:[animation-delay:80ms] md:min-h-[min(22rem,56dvh)]">
-              {playerQuery.isLoading && !hasAssignment ? (
-                <LoadingState variant="section" tone="play" className="min-h-0 flex-1 py-8" />
-              ) : (
-                <ActivityIntroductionLayout
-                  loading={sessionQuery.isLoading}
-                  title={sessionQuery.data?.activities?.title ?? null}
-                  description={sessionQuery.data?.activities?.description ?? null}
-                  activityPack={activityPack}
-                />
-              )}
-            </section>
-          </main>
+  if (hasSupabaseEnv && hasJoinedSession && isWaitingLobby) {
+    return (
+      <PlayPhaseShell>
+        <div className={playLoaderRegion}>
+          <WaitingLobbyBlock
+            joinCode={joinCode}
+            nickname={nickname}
+            sessionTitle={sessionQuery.data?.activities?.title ?? null}
+            state={waitingLobbyState}
+          />
+          <p className="mt-6 text-center text-xs text-[var(--muted-foreground)]">
+            {PLAY_STUDENT_COPY.waiting.waitForTeacher}
+          </p>
         </div>
-      </PlayAtmosphere>
+      </PlayPhaseShell>
     );
   }
 
   if (!hasSupabaseEnv) {
     return (
-      <div className="min-h-screen text-[var(--foreground)] play-shell" style={PLAY_PAGE_BLACK_BG}>
+      <PlayAtmosphere>
         <main className="mx-auto w-full max-w-7xl px-4 py-8">
           <Card className={cn("max-w-3xl", playSurfaceCool)}>
             <CardHeader>
@@ -399,11 +464,16 @@ export function PlaySessionShell({
             </CardContent>
           </Card>
         </main>
-      </div>
+      </PlayAtmosphere>
     );
   }
 
   const showResumeModal = Boolean(!hasJoinedSession && !resumeDecided && resumeQuery.data);
+  const showNicknameModal =
+    !hasJoinedSession &&
+    !showResumeModal &&
+    !(initialNickname.trim() && joinAndRegisterMutation.isPending) &&
+    (!initialNickname.trim() || joinAndRegisterMutation.isError);
 
   return (
     <PlayAtmosphere>
@@ -428,64 +498,16 @@ export function PlaySessionShell({
             </section>
           ) : null}
 
-          {!hasJoinedSession &&
-          !showResumeModal &&
-          !(initialNickname.trim() && joinAndRegisterMutation.isPending) &&
-          (!initialNickname.trim() || joinAndRegisterMutation.isError) ? (
-            <section className="flex flex-1 flex-col items-center justify-center p-1">
-              <div
-                className={cn(
-                  "w-full max-w-md p-6 motion-safe:animate-[playModalRise_0.55s_cubic-bezier(0.22,1,0.36,1)_both]",
-                  playSurfacePanel,
-                )}
-              >
-                <h3 className="text-lg font-semibold text-[var(--foreground)]">닉네임 설정</h3>
-                <form
-                  className="mt-4 space-y-3"
-                  onSubmit={(event: FormEvent<HTMLFormElement>) => {
-                    event.preventDefault();
-                    joinAndRegisterMutation.mutate({ nickname: nickname.trim() });
-                  }}
-                >
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-[var(--accent)]" htmlFor="play-session-nickname">
-                      닉네임
-                    </label>
-                    <Input
-                      id="play-session-nickname"
-                      placeholder="닉네임"
-                      value={nickname}
-                      onChange={(event) => setNickname(event.target.value)}
-                      required
-                    />
-                  </div>
-                  <Button type="submit" className="w-full" disabled={joinAndRegisterMutation.isPending}>
-                    입장
-                  </Button>
-                </form>
-                {!joinCode.trim() ? (
-                  <p className="mt-3 text-xs text-[var(--accent)]">
-                    <a className="underline hover:text-[var(--primary)]" href={ROUTES.play}>
-                      입장 화면
-                    </a>
-                    에서 참가 코드를 입력해 주세요.
-                  </p>
-                ) : null}
-                {message ? <p className="mt-3 text-xs text-[var(--muted-foreground)]">{message}</p> : null}
-              </div>
-            </section>
-          ) : null}
+          <PlayJoinModal
+            open={showNicknameModal}
+            joinCode={joinCode}
+            nickname={nickname}
+            message={message}
+            pending={joinAndRegisterMutation.isPending}
+            onNicknameChange={setNickname}
+            onSubmit={() => joinAndRegisterMutation.mutate({ nickname: nickname.trim() })}
+          />
 
-          {hasJoinedSession && isWaitingLobby ? (
-            <section className={playLoaderRegion}>
-              <WaitingLobbyBlock
-                joinCode={joinCode}
-                nickname={nickname}
-                sessionTitle={sessionQuery.data?.activities?.title ?? null}
-                state={waitingLobbyState}
-              />
-            </section>
-          ) : null}
         </main>
       </div>
     </PlayAtmosphere>

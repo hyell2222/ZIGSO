@@ -2,7 +2,7 @@
  * 시뮬레이션 모드 — 교사 혼자서 활동 흐름을 시연·검수하기 위한 in-memory 모델.
  */
 
-import type { ActivityPhase } from "@/lib/types";
+import type { ActivityPhase, SessionStatus } from "@/lib/types";
 import type { AcquiredItem, CompletedTask, ActivityPack } from "@/lib/activity-pack/types";
 import { pickSandboxLobbyBotNicknames } from "@/lib/sandbox/waiting-nicknames";
 
@@ -24,6 +24,7 @@ export type SandboxPlayer = {
 
 export type SandboxState = {
   phase: ActivityPhase;
+  status: SessionStatus;
   groups: SandboxGroup[];
   players: SandboxPlayer[];
   realStudentNickname: string | null;
@@ -81,6 +82,7 @@ function shuffleArrayInPlace<T>(arr: T[]) {
 export function createInitialSandboxState(): SandboxState {
   return {
     phase: "waiting",
+    status: "active",
     groups: [],
     players: [],
     realStudentNickname: null,
@@ -162,7 +164,7 @@ export function getSandboxNextPhaseLabel(current: ActivityPhase): string {
     case "expert_group":
       return "다음 단계";
     case "home_group":
-      return "종료";
+      return "활동 결과";
     default:
       return "—";
   }
@@ -172,6 +174,6 @@ export const SANDBOX_PHASE_LABEL: Record<ActivityPhase, string> = {
   waiting: "대기",
   overview: "활동 소개",
   expert_group: "전문가 집단",
-  home_group: "팀 협업",
+  home_group: "홈 집단",
   results: "결과",
 };

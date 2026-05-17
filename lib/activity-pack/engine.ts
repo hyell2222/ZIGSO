@@ -78,7 +78,7 @@ export function tryCompleteTask(
   };
 }
 
-/** 직소: 팀 인원에 맞게 전문가 역할(항목)을 순환 배정 */
+/** 직소: 모둠 인원에 맞게 전문가 역할(항목)을 순환 배정 */
 export function assignRolesToPlayers(
   pack: ActivityPack,
   playerIds: string[],

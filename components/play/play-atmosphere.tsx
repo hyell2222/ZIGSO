@@ -51,6 +51,15 @@ export const playPhaseHeaderChromeInner =
 export const playLoaderRegion =
   "flex w-full min-h-0 flex-1 flex-col items-center justify-center px-4 py-10";
 
+export const playPhaseMainInner =
+  "mx-auto w-full min-h-0 flex-1 overflow-y-auto px-4 py-5 pb-4 sm:px-6 sm:py-6 md:px-8";
+
+export const playPhaseFooterChrome = cn(
+  "sticky bottom-0 z-20 shrink-0 border-t-2 border-[color-mix(in_srgb,var(--primary)_14%,var(--border))]",
+  "bg-[color-mix(in_srgb,white_88%,var(--entry-shell))] px-4 py-3 shadow-[0_-4px_0_color-mix(in_srgb,var(--primary)_6%,transparent)]",
+  "pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] sm:px-6 md:px-8",
+);
+
 export function PlayAtmosphere({
   children,
   className,
@@ -90,8 +99,8 @@ export function PlayAtmosphere({
         className={cn(
           "relative z-10",
           isContained
-            ? "flex h-full min-h-0 flex-col overflow-y-auto"
-            : "min-h-dvh pb-[env(safe-area-inset-bottom,0px)]",
+            ? "flex h-full min-h-0 flex-col overflow-hidden"
+            : "min-h-dvh",
         )}
       >
         {children}

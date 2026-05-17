@@ -13,6 +13,10 @@ import {
   GroupProgressDashboard,
   type GroupProgressGroup,
 } from "@/components/teacher/group-progress-dashboard";
+import {
+  SessionResultsDashboard,
+  type SessionResultsMember,
+} from "@/components/teacher/session-results-dashboard";
 import { PlayJoinQr } from "@/components/teacher/play-join-qr";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
@@ -25,6 +29,8 @@ import {
   type SandboxPlayer,
   type SandboxGroup,
 } from "@/lib/sandbox/state";
+import type { SessionStatus } from "@/lib/types";
+import { isSessionEnded } from "@/lib/activity-phases";
 import { isTimedPhase, type TimedPhase } from "@/lib/teacher/phase-guide";
 import { cn } from "@/lib/utils";
 
@@ -33,6 +39,7 @@ type Props = {
   pack: ActivityPack;
   activityId: string;
   phase: ActivityPhase;
+  sessionStatus: SessionStatus;
   groups: SandboxGroup[];
   players: SandboxPlayer[];
   realStudentNickname: string | null;
@@ -46,6 +53,7 @@ export function SandboxTeacherPanel({
   pack,
   activityId,
   phase,
+  sessionStatus,
   groups,
   players,
   realStudentNickname,
@@ -59,7 +67,13 @@ export function SandboxTeacherPanel({
   }>({ open: false, phaseAtOpen: null });
 
   const sessionStarted = phase !== "waiting";
-  const sessionEnded = phase === "results";
+  const sessionEnded = isSessionEnded(sessionStatus);
+  const hasNextPhase = Boolean(
+    phase === "waiting" ||
+      phase === "overview" ||
+      phase === "expert_group" ||
+      phase === "home_group",
+  );
 
   const waitingOnlinePlayers = useMemo(
     () => buildSandboxWaitingRoster(activityId, pack, realStudentNickname),
@@ -107,6 +121,30 @@ export function SandboxTeacherPanel({
     }));
   }, [groups, players]);
 
+  const resultsMembers = useMemo<SessionResultsMember[]>(
+    () =>
+      players.map((p) => ({
+        id: p.id,
+        nickname: p.nickname,
+        groupId: p.groupId,
+        assignedRoleId: p.itemId,
+      })),
+    [players],
+  );
+
+  const resultsGroups = useMemo(
+    () =>
+      groups.map((group) => ({
+        id: group.id,
+        session_id: null as string | null,
+        name: group.name,
+        acquired_items: group.acquired_items,
+        completed_tasks: group.completed_tasks,
+        completed_at: group.completed_at,
+      })),
+    [groups],
+  );
+
   const shouldShowTimer = isTimedPhase(phase);
   const timerToolOpen =
     timerModalOpen.open &&
@@ -120,7 +158,7 @@ export function SandboxTeacherPanel({
   ) : null;
 
   const nextButton =
-    sessionStarted && !sessionEnded ? (
+    sessionStarted && !sessionEnded && hasNextPhase ? (
       <Button type="button" onClick={onAdvance}>
         {getSandboxNextPhaseLabel(phase)}
       </Button>
@@ -161,10 +199,11 @@ export function SandboxTeacherPanel({
               타이머
             </Button>
           ) : null}
-          {startButton ?? nextButton}
+          {startButton}
+          {nextButton}
         </div>
 
-        {phase !== "waiting" && phase !== "results" ? <PhaseGuideCard phase={phase} /> : null}
+        {isTimedPhase(phase) ? <PhaseGuideCard phase={phase} /> : null}
 
         {phase === "waiting" ? (
           <section className="rounded-lg border border-[var(--border)] bg-[var(--card-bg)] p-3">
@@ -186,8 +225,17 @@ export function SandboxTeacherPanel({
           <GroupAssignmentDashboard groups={assignmentGroups} loading={false} />
         ) : null}
 
-        {phase === "home_group" || phase === "results" ? (
+        {phase === "home_group" ? (
           <GroupProgressDashboard groups={progressGroups} loading={false} pack={pack} />
+        ) : null}
+
+        {phase === "results" ? (
+          <SessionResultsDashboard
+            groups={resultsGroups}
+            members={resultsMembers}
+            pack={pack}
+            loading={false}
+          />
         ) : null}
       </main>
 

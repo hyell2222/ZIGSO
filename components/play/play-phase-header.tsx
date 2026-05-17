@@ -1,22 +1,26 @@
 "use client";
 
-import { ChefHat, ClipboardList, UtensilsCrossed } from "lucide-react";
+import { ClipboardList, Hourglass, Lightbulb, Puzzle, Trophy, type LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 
 const phaseIcon = {
-  1: UtensilsCrossed,
-  2: ChefHat,
-  3: ClipboardList,
+  1: ClipboardList,
+  2: Lightbulb,
+  3: Puzzle,
+  4: Trophy,
 } as const;
 
 export type PlayPhaseHeaderProps = {
-  phase: 1 | 2 | 3;
-  /** 짧은 단계 이름 (예: 활동 브리핑). 단계 번호는 위 오버라인에만 표시됩니다. */
+  phase?: 1 | 2 | 3 | 4;
+  /** `phase` 없을 때 표시 (예: 대기). 기본값은 `{phase}단계` */
+  stepLabel?: string;
+  icon?: LucideIcon;
+  /** 짧은 단계 이름 (예: 활동 소개). 단계 번호는 위 오버라인에만 표시됩니다. */
   title: string;
   description: string;
-  /** 예: 브리핑 우측 팀 배지 */
+  /** 예: 브리핑 우측 모둠 배지 */
   rightSlot?: ReactNode;
   className?: string;
   /** 샌드박스 패널 등 좁은 뷰에서 타이포·아이콘을 줄입니다 */
@@ -29,13 +33,16 @@ export type PlayPhaseHeaderProps = {
  */
 export function PlayPhaseHeader({
   phase,
+  stepLabel,
+  icon: IconOverride,
   title,
   description,
   rightSlot,
   className,
   compact = false,
 }: PlayPhaseHeaderProps) {
-  const Icon = phaseIcon[phase];
+  const Icon = IconOverride ?? (phase ? phaseIcon[phase] : Hourglass);
+  const overline = stepLabel ?? (phase != null ? `${phase}단계` : "대기");
 
   return (
     <div
@@ -71,7 +78,7 @@ export function PlayPhaseHeader({
               compact ? "text-[10px] sm:text-[11px]" : "text-[11px] sm:text-xs",
             )}
           >
-            {phase}단계
+            {overline}
           </p>
           <h1
             className={cn(

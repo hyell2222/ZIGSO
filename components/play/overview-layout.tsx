@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LoadingState } from "@/components/ui/loading-state";
 import { cn } from "@/lib/utils";
 import { PLAYER_MESSAGES } from "@/lib/activity-pack/player-messages";
+import { PLAY_STUDENT_COPY } from "@/lib/play/student-copy";
 import type { ActivityPack } from "@/lib/activity-pack/types";
 
 type Props = {
@@ -49,7 +50,7 @@ export function ActivityIntroductionLayout({
           <p className="text-lg font-semibold">{title ?? PLAYER_MESSAGES.defaultPackTitle}</p>
           <p className="text-[var(--muted-foreground)]">{description ?? "—"}</p>
           <p className="rounded-md border border-[var(--border)] bg-[var(--tint-accent-weak)] px-3 py-2 text-xs">
-            제한 시간 안에 팀 과제를 모두 완성하고 최종 제출하세요.
+            {PLAY_STUDENT_COPY.intro.timeHint}
           </p>
         </CardContent>
       </Card>

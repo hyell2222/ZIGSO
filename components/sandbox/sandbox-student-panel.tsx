@@ -1,30 +1,26 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import { ExpertPhasePanel } from "@/components/play/expert-group-panel";
 import { ActivityIntroductionLayout } from "@/components/play/overview-layout";
 import { GroupPhasePanel } from "@/components/play/home-group-panel";
-import {
-  PlayAtmosphere,
-  playLoaderRegion,
-  playSurfacePanel,
-} from "@/components/play/play-atmosphere";
-import { PlayPhaseHeader } from "@/components/play/play-phase-header";
+import { PlayJoinModal } from "@/components/play/play-join-modal";
+import { ResultsPhasePanel } from "@/components/play/results-phase-panel";
+import { buildSessionResults } from "@/lib/activity-pack/session-results";
+import { PlayAtmosphere, playLoaderRegion } from "@/components/play/play-atmosphere";
+import { PlayPhaseShell } from "@/components/play/play-phase-shell";
 import { PlayHeaderGroupPlace } from "@/components/play/play-header-group-place";
 import { WaitingLobbyBlock } from "@/components/play/waiting-lobby-block";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import type { ActivityPhase } from "@/lib/api/activities";
 import type { ActivityPack } from "@/lib/activity-pack/types";
 import type { GroupRow } from "@/lib/api/play";
 import {
   SANDBOX_JOIN_CODE,
-  SANDBOX_REAL_STUDENT_PLAYER_ID,
   type SandboxPlayer,
   type SandboxGroup,
 } from "@/lib/sandbox/state";
-import { cn } from "@/lib/utils";
+import { PLAY_STUDENT_COPY } from "@/lib/play/student-copy";
 
 type Props = {
   activityTitle: string | null;
@@ -64,10 +60,13 @@ export function SandboxStudentPanel({
   const [nickname, setNickname] = useState("");
   const [joined, setJoined] = useState(Boolean(realStudentNickname?.trim()));
 
+  const showJoinModal = !joined && !realStudentNickname;
+  const activeNickname = realStudentNickname?.trim() || nickname.trim();
+
   const primaryPlayer = useMemo(() => {
-    if (!players.length) return null;
+    if (!players.length || showJoinModal) return null;
     return players.find((p) => p.isReal) ?? players[0]!;
-  }, [players]);
+  }, [players, showJoinModal]);
 
   const group = useMemo(
     () => (primaryPlayer ? groups.find((t) => t.id === primaryPlayer.groupId) ?? null : null),
@@ -96,125 +95,155 @@ export function SandboxStudentPanel({
     primaryPlayer?.itemId ??
     null;
 
-  if (!joined && !realStudentNickname) {
+  const sessionResults = useMemo(() => {
+    if (phase !== "results" || showJoinModal) return null;
+    return buildSessionResults(
+      pack,
+      groups.map((g) => ({
+        id: g.id,
+        name: g.name,
+        acquired_items: g.acquired_items,
+        completed_tasks: g.completed_tasks,
+        completed_at: g.completed_at,
+      })),
+      players
+        .filter((p) => p.groupId)
+        .map((p) => ({
+          id: p.id,
+          nickname: p.nickname,
+          groupId: p.groupId,
+          assignedRoleId: p.itemId,
+        })),
+    );
+  }, [phase, pack, groups, players, showJoinModal]);
+
+  if (showJoinModal) {
     return (
-      <PlayAtmosphere>
-        <main className="flex min-h-0 flex-1 flex-col items-center justify-center p-4">
-          <div className={cn("w-full max-w-md p-6", playSurfacePanel)}>
-            <h3 className="text-lg font-semibold text-[var(--foreground)]">닉네임 설정</h3>
-            <p className="mt-1 text-xs text-[var(--muted-foreground)]">
-              참가 코드: <span className="font-mono text-[var(--primary)]">{SANDBOX_JOIN_CODE}</span>
-            </p>
-            <form
-              className="mt-4 space-y-3"
-              onSubmit={(e: FormEvent) => {
-                e.preventDefault();
-                const nick = nickname.trim();
-                if (!nick) return;
-                onJoinAsStudent(nick);
-                setJoined(true);
-              }}
-            >
-              <Input
-                placeholder="닉네임"
-                value={nickname}
-                onChange={(e) => setNickname(e.target.value)}
-                required
-              />
-              <Button type="submit" className="w-full">
-                입장
-              </Button>
-            </form>
-          </div>
-        </main>
+      <PlayAtmosphere variant="contained">
+        <PlayJoinModal
+          open
+          joinCode={SANDBOX_JOIN_CODE}
+          nickname={nickname}
+          modalVariant="contained"
+          showMissingCodeHint={false}
+          description="시뮬레이션 참가 코드가 적용되어 있어요. 닉네임만 입력하면 됩니다."
+          onNicknameChange={setNickname}
+          onSubmit={() => {
+            const nick = nickname.trim();
+            if (!nick) return;
+            onJoinAsStudent(nick);
+            setJoined(true);
+          }}
+        />
       </PlayAtmosphere>
     );
   }
 
   if (phase === "waiting") {
     return (
-      <PlayAtmosphere>
-        <section className={playLoaderRegion}>
+      <PlayPhaseShell embedded>
+        <div className={playLoaderRegion}>
           <WaitingLobbyBlock
             joinCode={SANDBOX_JOIN_CODE}
-            nickname={realStudentNickname ?? nickname}
+            nickname={activeNickname}
             sessionTitle={activityTitle}
             state="waiting"
+            compact
           />
-        </section>
-      </PlayAtmosphere>
+          <p className="mt-4 text-center text-xs text-[var(--muted-foreground)]">
+            {PLAY_STUDENT_COPY.waiting.waitForTeacher}
+          </p>
+        </div>
+      </PlayPhaseShell>
     );
   }
 
   if (phase === "expert_group" && primaryPlayer && group) {
     return (
-      <SandboxExpertBridge
-        pack={pack}
-        playerId={primaryPlayer.id}
-        groupId={group.id}
-        groupName={group.name}
-        itemId={primaryPlayer.itemId}
-        acquiredIds={acquiredIds}
-        onAcquire={(answer, hintStage) =>
-          onAcquire(group.id, primaryPlayer.itemId, answer, hintStage)
-        }
-      />
+        <SandboxExpertBridge
+          pack={pack}
+          playerId={primaryPlayer.id}
+          groupId={group.id}
+          groupName={group.name}
+          itemId={primaryPlayer.itemId}
+          acquiredIds={acquiredIds}
+          onAcquire={(answer, hintStage) =>
+            onAcquire(group.id, primaryPlayer.itemId, answer, hintStage)
+          }
+        />
     );
   }
 
   if (phase === "home_group" && group && groupRow) {
     return (
-      <SandboxGroupBridge
-        pack={pack}
-        group={groupRow}
-        groupName={group.name}
-        onCompleteTask={(taskId, steps) => onCompleteTask(group.id, taskId, steps)}
-        onCompleteActivity={() => onCompleteActivity(group.id)}
-      />
+        <SandboxGroupBridge
+          pack={pack}
+          group={groupRow}
+          groupName={group.name}
+          onCompleteTask={(taskId, steps) => onCompleteTask(group.id, taskId, steps)}
+          onCompleteActivity={() => onCompleteActivity(group.id)}
+        />
     );
   }
 
   if (phase === "overview") {
     return (
-      <PlayAtmosphere>
-        <div className="flex min-h-0 flex-1 flex-col">
-          <header className="border-b border-[var(--border)] px-4 py-3">
-            <PlayPhaseHeader
-              phase={1}
-              title="활동 브리핑"
-              description="팀과 전문 재료를 확인하세요."
-              rightSlot={
-                <PlayHeaderGroupPlace
-                  groupName={group?.name ?? null}
-                  placeName={roleLabel}
-                  placeLabel="전문 재료"
-                />
-              }
+      <PlayPhaseShell
+        embedded
+        header={{
+          phase: 1,
+          title: PLAY_STUDENT_COPY.phaseOverview.title,
+          description: PLAY_STUDENT_COPY.phaseOverview.description,
+          rightSlot: (
+            <PlayHeaderGroupPlace
+              groupName={group?.name ?? null}
+              placeName={roleLabel}
+              placeLabel={PLAY_STUDENT_COPY.phaseOverview.placeLabel}
+              compact
             />
-          </header>
-          <main className="flex-1 overflow-y-auto px-4 py-6">
-            <ActivityIntroductionLayout
-              loading={false}
-              title={activityTitle}
-              description={description}
-              activityPack={pack}
-            />
-          </main>
-        </div>
-      </PlayAtmosphere>
+          ),
+        }}
+        mainClassName="max-w-6xl"
+      >
+        <ActivityIntroductionLayout
+          loading={false}
+          title={activityTitle}
+          description={description}
+          activityPack={pack}
+          compact
+        />
+        <p className="mt-4 text-center text-xs text-[var(--muted-foreground)]">
+          {PLAY_STUDENT_COPY.waiting.waitForTeacher}
+        </p>
+      </PlayPhaseShell>
+    );
+  }
+
+  if (phase === "results" && primaryPlayer) {
+    return (
+      <ResultsPhasePanel
+        embedded
+        loading={false}
+        title={activityTitle}
+        results={sessionResults}
+        highlightGroupId={primaryPlayer.groupId}
+        groupName={group?.name ?? null}
+        roleLabel={roleLabel}
+        currentPlayerId={primaryPlayer.id}
+      />
     );
   }
 
   return (
-    <PlayAtmosphere>
-      <main className="flex flex-1 items-center justify-center p-8 text-sm text-[var(--muted-foreground)]">
-        {phase === "results" ? "시뮬레이션이 종료되었습니다." : "교사가 다음 단계로 진행할 때까지 기다려 주세요."}
+    <PlayPhaseShell embedded>
+      <main className="flex min-h-[12rem] flex-1 items-center justify-center text-center text-sm text-[var(--muted-foreground)]">
+        {PLAY_STUDENT_COPY.waiting.waitForTeacher}
       </main>
-    </PlayAtmosphere>
+    </PlayPhaseShell>
   );
 }
 
-/** API 대신 샌드박스 콜백으로 재료 획득 */
+/** API 대신 샌드박스 콜백으로 항목 획득 */
 function SandboxExpertBridge({
   pack,
   playerId,
@@ -243,6 +272,7 @@ function SandboxExpertBridge({
       acquiredItemIds={acquiredIds}
       onAcquired={() => bump((n) => n + 1)}
       sandboxAcquire={onAcquire}
+      embedded
     />
   );
 }
@@ -269,6 +299,7 @@ function SandboxGroupBridge({
       onUpdate={() => bump((n) => n + 1)}
       sandboxCompleteTask={onCompleteTask}
       sandboxCompleteActivity={onCompleteActivity}
+      embedded
     />
   );
 }

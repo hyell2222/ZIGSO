@@ -29,7 +29,7 @@ export type Item = {
   name: string;
   category: ItemCategory;
   hints: ItemHints;
-  /** 팀 단계에서 보여줄 짧은 안내 */
+  /** 모둠 단계에서 보여줄 짧은 안내 */
   groupHint: string;
   aliases?: string[];
 };
@@ -72,7 +72,7 @@ export type AcquiredItem = {
   acquiredAt: string;
 };
 
-/** 팀이 완성한 과제 */
+/** 모둠이 완성한 과제 */
 export type CompletedTask = {
   taskId: string;
   submittedSteps: string[];
@@ -80,7 +80,7 @@ export type CompletedTask = {
   score: number;
 };
 
-/** 팀 최종 제출 */
+/** 모둠 최종 제출 */
 export type CompletedActivity = {
   taskIds: string[];
   submittedAt: string;

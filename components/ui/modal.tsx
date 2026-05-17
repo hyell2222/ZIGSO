@@ -36,6 +36,8 @@ export type ModalProps = {
   bodyClassName?: string;
   footerClassName?: string;
   titlePrefix?: ReactNode;
+  /** `contained`: 가장 가까운 `relative` 조상 안에서만 오버레이 (샌드박스 학생 패널 등) */
+  variant?: "viewport" | "contained";
 };
 
 /**
@@ -61,6 +63,7 @@ export function Modal({
   bodyClassName,
   footerClassName,
   titlePrefix,
+  variant = "viewport",
 }: ModalProps) {
   useEffect(() => {
     if (!open || !closeOnEscape) return;
@@ -77,7 +80,8 @@ export function Modal({
   return (
     <div
       className={cn(
-        "fixed inset-0 flex backdrop-blur-[2px] transition-colors",
+        variant === "contained" ? "absolute inset-0" : "fixed inset-0",
+        "flex backdrop-blur-[2px] transition-colors",
         "pb-[max(1rem,env(safe-area-inset-bottom,0px))] pt-[max(1rem,env(safe-area-inset-top,0px))]",
         "pl-[max(1.25rem,env(safe-area-inset-left,0px))] pr-[max(1.25rem,env(safe-area-inset-right,0px))] sm:pl-[max(1rem,env(safe-area-inset-left,0px))] sm:pr-[max(1rem,env(safe-area-inset-right,0px))]",
         sheetOnNarrow ? "items-end justify-center sm:items-center" : "items-center justify-center",

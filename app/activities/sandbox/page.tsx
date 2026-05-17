@@ -2,7 +2,8 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
-import { Suspense, useCallback, useState, type ReactNode } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { isSessionEnded } from "@/lib/activity-phases";
 
 import { SandboxStudentPanel } from "@/components/sandbox/sandbox-student-panel";
 import { SandboxTeacherPanel } from "@/components/sandbox/sandbox-teacher-panel";
@@ -132,6 +133,34 @@ function SandboxPageContent() {
   );
 
   const phase: ActivityPhase = state.phase;
+  const sessionStatus = state.status;
+
+  const sandboxLeaveRef = useRef({ shouldEnd: false });
+
+  useEffect(() => {
+    sandboxLeaveRef.current.shouldEnd =
+      phase !== "waiting" && !isSessionEnded(sessionStatus);
+  }, [phase, sessionStatus]);
+
+  useEffect(() => {
+    const endSandboxOnLeave = () => {
+      if (!sandboxLeaveRef.current.shouldEnd) return;
+      setState((prev) =>
+        isSessionEnded(prev.status) ? prev : { ...prev, status: "ended" },
+      );
+    };
+
+    const onPageHide = (e: PageTransitionEvent) => {
+      if (e.persisted) return;
+      endSandboxOnLeave();
+    };
+
+    window.addEventListener("pagehide", onPageHide);
+    return () => {
+      window.removeEventListener("pagehide", onPageHide);
+      endSandboxOnLeave();
+    };
+  }, []);
 
   if (!activityId) {
     return (
@@ -185,6 +214,7 @@ function SandboxPageContent() {
           pack={pack}
           activityId={activityId}
           phase={phase}
+          sessionStatus={sessionStatus}
           groups={state.groups}
           players={state.players}
           realStudentNickname={state.realStudentNickname}

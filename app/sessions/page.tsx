@@ -32,6 +32,10 @@ import {
   GroupProgressDashboard,
   type GroupProgressGroup,
 } from "@/components/teacher/group-progress-dashboard";
+import {
+  SessionResultsDashboard,
+  type SessionResultsMember,
+} from "@/components/teacher/session-results-dashboard";
 import { Button } from "@/components/ui/button";
 import { LoadingState } from "@/components/ui/loading-state";
 import { Modal } from "@/components/ui/modal";
@@ -42,6 +46,7 @@ import {
   type SessionPresenceRow,
 } from "@/lib/realtime/session-presence";
 import { hasSupabaseEnv, supabase } from "@/lib/supabase";
+import { isSessionEnded } from "@/lib/activity-phases";
 import { isTimedPhase, type TimedPhase } from "@/lib/teacher/phase-guide";
 import { cn } from "@/lib/utils";
 
@@ -158,11 +163,8 @@ function SessionHostContent() {
       await advanceSessionPhase(sessionId, next);
       return next;
     },
-    onSuccess: async (endedPhase) => {
+    onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["host-session", sessionId] });
-      if (endedPhase === "results") {
-        router.push(ROUTES.activities);
-      }
     },
   });
 
@@ -203,9 +205,9 @@ function SessionHostContent() {
   const isHostOfLoadedSession = Boolean(
     sessionId && sessionRowForLeave && hostUserId && sessionRowForLeave.host_id === hostUserId,
   );
-  const phaseForLeave = sessionRowForLeave?.phase ?? null;
+  const sessionStatusForLeave = sessionRowForLeave?.status ?? null;
   const shouldEndOnHostLeave =
-    isHostOfLoadedSession && phaseForLeave !== "results";
+    isHostOfLoadedSession && !isSessionEnded(sessionStatusForLeave);
 
   useEffect(() => {
     hostLeaveRef.current = {
@@ -331,11 +333,25 @@ function SessionHostContent() {
     }));
   }, [onlinePlayers, groupRows]);
 
+  const resultsMembers = useMemo<SessionResultsMember[]>(
+    () =>
+      (playersQuery.data ?? [])
+        .filter((p) => p.group_id)
+        .map((p) => ({
+          id: p.id,
+          nickname: p.nickname,
+          groupId: p.group_id as string,
+          assignedRoleId: p.assigned_role_id,
+        })),
+    [playersQuery.data],
+  );
+
   const phase = (sessionQuery.data?.phase as ActivityPhase) ?? "waiting";
+  const sessionStatus = sessionQuery.data?.status ?? "active";
   const nextPhase = getNextPhase(phase);
-  const nextPhaseLabel = nextPhase === "results" ? "종료" : "다음 단계";
+  const nextPhaseLabel = nextPhase === "results" ? "활동 결과" : "다음 단계";
   const sessionStarted = phase !== "waiting";
-  const sessionEnded = phase === "results";
+  const sessionEnded = isSessionEnded(sessionStatus);
   const shouldShowTimer = isTimedPhase(phase);
 
   const timerToolOpen =
@@ -457,7 +473,7 @@ function SessionHostContent() {
       </Button>
     ) : null;
 
-  const showPhaseGuide = phase !== "waiting" && phase !== "results";
+  const showPhaseGuide = isTimedPhase(phase);
   const showPhaseActions = Boolean(timerButton || startButton || nextButton);
 
   return (
@@ -511,7 +527,8 @@ function SessionHostContent() {
             {showPhaseActions ? (
               <div className="flex w-full shrink-0 flex-wrap items-stretch justify-end gap-2 sm:ml-auto sm:w-auto md:gap-3 [&_button]:min-h-11 [&_button]:touch-manipulation">
                 {timerButton}
-                {startButton ?? nextButton}
+                {startButton}
+                {nextButton}
               </div>
             ) : null}
           </div>
@@ -547,11 +564,20 @@ function SessionHostContent() {
           />
         ) : null}
 
-        {phase === "home_group" || phase === "results" ? (
+        {phase === "home_group" ? (
           <GroupProgressDashboard
             groups={progressGroups}
             loading={playersQuery.isLoading || groupsQuery.isLoading}
             pack={activityPack}
+          />
+        ) : null}
+
+        {phase === "results" ? (
+          <SessionResultsDashboard
+            groups={groupRows}
+            members={resultsMembers}
+            pack={activityPack}
+            loading={playersQuery.isLoading || groupsQuery.isLoading}
           />
         ) : null}
       </main>

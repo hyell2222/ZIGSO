@@ -115,20 +115,20 @@ export async function beginHostingSession(sessionId: string) {
   if (error) throw error;
 }
 
+/** 세션 종료 — `status`만 `ended`로 바꿉니다. 활동 4단계(`results`)와는 별개입니다. */
 export async function endSession(sessionId: string) {
   const { error } = await supabase
     .from("sessions")
-    .update({ phase: "results", status: "ended" })
+    .update({ status: "ended" })
     .eq("id", sessionId);
   if (error) throw error;
 }
 
 export async function advanceSessionPhase(sessionId: string, nextPhase: ActivityPhase) {
-  const patch: { phase: ActivityPhase; status?: SessionStatus } = { phase: nextPhase };
-  if (nextPhase === "results") {
-    patch.status = "ended";
-  }
-  const { error } = await supabase.from("sessions").update(patch).eq("id", sessionId);
+  const { error } = await supabase
+    .from("sessions")
+    .update({ phase: nextPhase })
+    .eq("id", sessionId);
   if (error) throw error;
 }
 

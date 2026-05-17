@@ -125,7 +125,7 @@ export function AIActivityGenerateModal({ open, onClose, initialDifficulty, onAp
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <p className="text-sm font-medium">팀 인원</p>
+            <p className="text-sm font-medium">모둠 인원</p>
             <div className="mt-2 flex items-center gap-2">
               <Button
                 type="button"

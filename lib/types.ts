@@ -36,11 +36,6 @@ export type GameSession = {
   created_at: string | null;
 };
 
-export function isSessionEnded(session: {
-  phase?: string | null;
-  status?: string | null;
-}): boolean {
-  return session.status === "ended" || session.phase === "results";
-}
+export { isResultsPhase, isSessionEnded } from "@/lib/activity-phases";
 
 export type { ActivityPack, AcquiredItem, CompletedTask };

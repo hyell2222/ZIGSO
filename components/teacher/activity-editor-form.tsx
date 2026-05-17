@@ -68,12 +68,12 @@ function ItemEditor({
           />
         </div>
         <div className="space-y-1.5">
-          <FieldLabel htmlFor={`item-group-hint-${item.localId}`}>팀 공유 메모</FieldLabel>
+          <FieldLabel htmlFor={`item-group-hint-${item.localId}`}>모둠 공유 메모</FieldLabel>
           <Input
             id={`item-group-hint-${item.localId}`}
             value={item.groupHint}
             onChange={(e) => onChange({ ...item, groupHint: e.target.value })}
-            placeholder="예: 팀에 전달할 짧은 안내"
+            placeholder="예: 모둠에 전달할 짧은 안내"
           />
         </div>
       </div>
@@ -250,7 +250,7 @@ function TaskEditorCard({
                       steps[idx] = e.target.value;
                       onChange({ ...task, steps });
                     }}
-                    placeholder="예: 단서를 팀에 공유한다"
+                    placeholder="예: 단서를 모둠에 공유한다"
                     className="flex-1"
                   />
                   <div className="flex shrink-0 flex-col gap-1">
@@ -326,11 +326,11 @@ export function ActivityEditorForm({ draft, onChange }: Props) {
       <section className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4">
         <h2 className="text-sm font-semibold text-[var(--foreground)]">활동 설정</h2>
         <p className="mt-1 text-xs text-[var(--muted-foreground)]">
-          팀 규모와 난이도를 조정하세요.
+          모둠 규모와 난이도를 조정하세요.
         </p>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
-            <FieldLabel>팀 인원</FieldLabel>
+            <FieldLabel>모둠 인원</FieldLabel>
             <Input
               type="number"
               min={2}

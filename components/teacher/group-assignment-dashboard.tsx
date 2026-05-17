@@ -5,7 +5,7 @@ import { LoadingState } from "@/components/ui/loading-state";
 export type GroupAssignmentMember = {
   id: string;
   nickname: string | null;
-  /** 부원에게 배정된 전문 재료 이름 */
+  /** 부원에게 배정된 담당 항목 이름 */
   zoneName: string | null;
 };
 
@@ -15,7 +15,7 @@ export type GroupAssignmentGroup = {
 };
 
 /**
- * 호스트 화면 — 팀·장소 배정 결과 카드 묶음.
+ * 호스트 화면 — 모둠·장소 배정 결과 카드 묶음.
  * (실 세션·샌드박스 양쪽에서 동일 외관으로 사용합니다.)
  */
 export function GroupAssignmentDashboard({
@@ -38,7 +38,7 @@ export function GroupAssignmentDashboard({
         <LoadingState variant="section" label="불러오는 중…" />
       ) : groups.length === 0 ? (
         <p className="text-sm text-[var(--muted-foreground)]">
-          배정된 팀이 없습니다.
+          배정된 모둠이 없습니다.
         </p>
       ) : (
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:gap-3 lg:grid-cols-3">

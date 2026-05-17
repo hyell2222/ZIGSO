@@ -198,7 +198,7 @@ export function editorDraftToPack(draft: ActivityEditorDraft): ActivityPack {
     version: ACTIVITY_PACK_VERSION,
     title,
     description:
-      "전문가 집단에서 정보를 맞추고, 조로 돌아와 팀 과제를 완성하는 직소 협동 활동입니다.",
+      "전문가 집단에서 정보를 맞추고, 모둠으로 돌아와 모둠 과제를 완성하는 직소 협동 활동입니다.",
     difficulty: draft.difficulty,
     groupSize: draft.groupSize,
     tasks,

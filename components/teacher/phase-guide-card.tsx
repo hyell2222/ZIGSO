@@ -4,6 +4,8 @@ import type { ReactNode } from "react";
 
 import type { ActivityPhase } from "@/lib/api/activities";
 import { PHASE_GUIDES, PHASES } from "@/lib/teacher/phase-guide";
+import { isResultsPhase } from "@/lib/activity-phases";
+import { isTimedPhase } from "@/lib/teacher/phase-guide";
 import { cn } from "@/lib/utils";
 
 /**
@@ -20,9 +22,11 @@ export function PhaseGuideCard({
   /** 좁은 임베드(샌드박스 패널 등)에서 제목·여백을 줄입니다 */
   compact?: boolean;
 }) {
-  if (phase === "waiting" || phase === "results") {
+  if (phase === "waiting" || isResultsPhase(phase)) {
     return null;
   }
+
+  if (!isTimedPhase(phase)) return null;
 
   const guide = PHASE_GUIDES[phase];
   const stepNumber = PHASES.find((s) => s.key === phase)?.number ?? 1;
