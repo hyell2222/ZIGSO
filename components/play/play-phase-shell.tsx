@@ -14,8 +14,8 @@ import { PlayPhaseHeader, type PlayPhaseHeaderProps } from "@/components/play/pl
 import { cn } from "@/lib/utils";
 
 export type PlayPhaseShellProps = {
-  embedded?: boolean;
-  /** 대기·결과 등 전용 화면에서는 생략 */
+  /** 샌드박스 분할 패널 등 — 뷰포트 대신 부모 높이에 맞춤 (타이포는 @container 반응형) */
+  contained?: boolean;
   header?: PlayPhaseHeaderProps;
   footer?: ReactNode;
   footerHint?: ReactNode;
@@ -24,7 +24,7 @@ export type PlayPhaseShellProps = {
 };
 
 export function PlayPhaseShell({
-  embedded = false,
+  contained = false,
   header,
   footer,
   footerHint,
@@ -32,12 +32,12 @@ export function PlayPhaseShell({
   children,
 }: PlayPhaseShellProps) {
   return (
-    <PlayAtmosphere variant={embedded ? "contained" : "viewport"}>
+    <PlayAtmosphere variant={contained ? "contained" : "viewport"}>
       <div className="flex h-full min-h-0 w-full flex-1 flex-col">
         {header ? (
           <header className={cn(playPhaseHeaderChromeShell, "z-20 shrink-0")}>
             <div className={playPhaseHeaderChromeInner}>
-              <PlayPhaseHeader {...header} compact={header.compact ?? embedded} />
+              <PlayPhaseHeader {...header} />
             </div>
           </header>
         ) : null}

@@ -1,5 +1,17 @@
 @import "tailwindcss";
 
+/**
+ * @container 기본값(24–32rem)은 분할 패널·태블릿에서 너무 이르게 데스크톱 스타일이 켜짐.
+ * 뷰포트 sm/md/lg와 비슷한 단계로 맞춤.
+ */
+@theme {
+  --container-sm: 36rem; /* 576px */
+  --container-md: 48rem; /* 768px */
+  --container-lg: 64rem; /* 1024px */
+  --container-xl: 80rem; /* 1280px */
+  --container-2xl: 96rem; /* 1536px */
+}
+
 /** 애니메이션은 동작 감소 설정이 꺼져 있을 때만 적용 (motion-safe: 접두사) */
 @custom-variant motion-safe (@media (prefers-reduced-motion: no-preference));
 

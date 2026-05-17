@@ -21,8 +21,8 @@ import {
 } from "@/lib/api/activities";
 import { useRequireTeacherSession } from "@/lib/auth/use-require-teacher-session";
 import { groupPlayersByGroup } from "@/lib/teacher/group-players-by-group";
-import { PlayJoinQr } from "@/components/teacher/play-join-qr";
-import { PhaseGuideCard } from "@/components/teacher/phase-guide-card";
+import { SessionHostLayout } from "@/components/teacher/session-host-layout";
+import { SessionHostWaitingRoster } from "@/components/teacher/session-host-waiting-roster";
 import { PhaseTimerContent } from "@/components/teacher/phase-timer-content";
 import {
   GroupAssignmentDashboard,
@@ -48,6 +48,7 @@ import {
 import { hasSupabaseEnv, supabase } from "@/lib/supabase";
 import { isSessionEnded } from "@/lib/activity-phases";
 import { isTimedPhase, type TimedPhase } from "@/lib/teacher/phase-guide";
+import { HOST_SESSION_START_LABEL, hostSessionNextPhaseLabel } from "@/lib/teacher/host-session-labels";
 import { cn } from "@/lib/utils";
 
 function SessionHostContent() {
@@ -349,7 +350,7 @@ function SessionHostContent() {
   const phase = (sessionQuery.data?.phase as ActivityPhase) ?? "waiting";
   const sessionStatus = sessionQuery.data?.status ?? "active";
   const nextPhase = getNextPhase(phase);
-  const nextPhaseLabel = nextPhase === "results" ? "활동 결과" : "다음 단계";
+  const nextPhaseLabel = hostSessionNextPhaseLabel(phase);
   const sessionStarted = phase !== "waiting";
   const sessionEnded = isSessionEnded(sessionStatus);
   const shouldShowTimer = isTimedPhase(phase);
@@ -369,11 +370,11 @@ function SessionHostContent() {
 
   if (!sessionId) {
     return (
-      <div className="min-h-screen">
+      <div className="@container min-h-screen">
         <main className="mx-auto w-full max-w-7xl px-4 py-8">
-          <p className="text-sm text-[var(--muted-foreground)]">플레이 세션을 찾을 수 없습니다.</p>
+          <p className="text-sm text-[var(--muted-foreground)]">활동 세션을 찾을 수 없습니다.</p>
           <Button type="button" className="mt-4" variant="secondary" onClick={() => router.push(ROUTES.reports)}>
-            플레이 세션 기록
+            활동 세션 기록
           </Button>
         </main>
       </div>
@@ -382,7 +383,7 @@ function SessionHostContent() {
 
   if (teacherSession.isLoading || (teacherSession.isFetching && !teacherSession.data)) {
     return (
-      <div className="min-h-screen">
+      <div className="@container min-h-screen">
         <main className="mx-auto flex w-full max-w-7xl flex-col px-4 py-8">
           <LoadingState variant="page" />
         </main>
@@ -392,7 +393,7 @@ function SessionHostContent() {
 
   if (sessionQuery.isLoading) {
     return (
-      <div className="min-h-screen">
+      <div className="@container min-h-screen">
         <main className="mx-auto flex w-full max-w-7xl flex-col px-4 py-8">
           <LoadingState variant="page" />
         </main>
@@ -402,11 +403,11 @@ function SessionHostContent() {
 
   if (sessionQuery.isError || !sessionQuery.data) {
     return (
-      <div className="min-h-screen">
+      <div className="@container min-h-screen">
         <main className="mx-auto w-full max-w-7xl px-4 py-8">
-          <p className="text-sm text-[var(--danger)]">플레이 세션을 불러오지 못했습니다.</p>
+          <p className="text-sm text-[var(--danger)]">활동 세션을 불러오지 못했습니다.</p>
           <Button type="button" className="mt-4" variant="secondary" onClick={() => router.push(ROUTES.reports)}>
-            플레이 세션 기록
+            활동 세션 기록
           </Button>
         </main>
       </div>
@@ -416,9 +417,9 @@ function SessionHostContent() {
   const row = sessionQuery.data;
   if (row.host_id !== teacherSession.data?.user.id) {
     return (
-      <div className="min-h-screen">
+      <div className="@container min-h-screen">
         <main className="mx-auto w-full max-w-7xl px-4 py-8">
-          <p className="text-sm text-[var(--accent)]">이 플레이 세션을 진행할 권한이 없습니다.</p>
+          <p className="text-sm text-[var(--accent)]">이 활동 세션을 진행할 권한이 없습니다.</p>
         </main>
       </div>
     );
@@ -450,7 +451,7 @@ function SessionHostContent() {
           <Loader2 className="h-4 w-4 shrink-0 animate-spin text-[var(--primary)]" aria-hidden />
         </>
       ) : (
-        <>플레이 세션 시작</>
+        <>{HOST_SESSION_START_LABEL}</>
       )}
     </Button>
   ) : null;
@@ -473,94 +474,32 @@ function SessionHostContent() {
       </Button>
     ) : null;
 
-  const showPhaseGuide = isTimedPhase(phase);
-  const showPhaseActions = Boolean(timerButton || startButton || nextButton);
-
   return (
-    <div className="min-h-screen">
-      <main className="mx-auto w-full max-w-7xl space-y-4 px-4 pb-[max(2.5rem,env(safe-area-inset-bottom,0px))] pt-5 sm:space-y-5 sm:px-6 sm:pt-6 md:space-y-6 md:px-8 md:pb-12 md:pt-8">
-        <header className="flex flex-col gap-4 border-b border-[var(--border)] pb-4 md:flex-row md:flex-wrap md:items-start md:gap-5">
-          <div className="min-w-0 flex-1 space-y-1 md:min-w-[12rem]">
-            <p className="break-words font-mono text-2xl font-semibold leading-tight tracking-wide text-[var(--accent)] sm:text-3xl md:text-4xl lg:text-[2.5rem] lg:leading-none">
-              {row.activities?.title}
-            </p>
-            <p className="px-0.5 text-xs text-[var(--muted-foreground)] md:text-sm">
-              접속 <span className="font-semibold text-[var(--foreground)]">{playercount}</span>명
-            </p>
-          </div>
-          <div className="w-full shrink-0 md:ml-auto md:w-auto md:max-w-[min(100%,26rem)]">
-            <div
-              className={cn(
-                "flex w-full min-w-0 items-center justify-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--card-bg)] px-2.5 py-2 shadow-[var(--elevation-sm)] sm:w-auto sm:justify-start sm:py-1.5 md:px-3 md:py-2.5",
-                sessionEnded && "justify-center",
-              )}
-            >
-              {sessionEnded ? (
-                <div className="py-0.5 text-center sm:text-left">
-                  <p className="mt-0.5 font-mono text-sm font-semibold tracking-wide text-[var(--muted-foreground)] sm:text-base">
-                    종료된 세션
-                  </p>
-                </div>
-              ) : (
-                <>
-                  <div className="leading-tight">
-                    <p className="text-[9px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)]">
-                      참가 코드
-                    </p>
-                    <p className="font-mono text-xl font-semibold tracking-[0.15em] text-[var(--accent)] sm:text-2xl md:text-3xl">
-                      {row.join_code}
-                    </p>
-                  </div>
-                  <span className="h-9 w-px bg-[var(--border)]" aria-hidden />
-                  <PlayJoinQr joinCode={row.join_code} />
-                </>
-              )}
-            </div>
-          </div>
-        </header>
-
-        {showPhaseGuide || showPhaseActions ? (
-          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center md:gap-4 lg:flex-nowrap">
-            <div className="min-w-0 flex-1 md:max-w-[min(100%,42rem)]">
-              {showPhaseGuide ? <PhaseGuideCard phase={phase} /> : null}
-            </div>
-            {showPhaseActions ? (
-              <div className="flex w-full shrink-0 flex-wrap items-stretch justify-end gap-2 sm:ml-auto sm:w-auto md:gap-3 [&_button]:min-h-11 [&_button]:touch-manipulation">
-                {timerButton}
-                {startButton}
-                {nextButton}
-              </div>
-            ) : null}
-          </div>
-        ) : null}
-
+    <div className="@container min-h-screen">
+      <SessionHostLayout
+        activityTitle={row.activities?.title ?? null}
+        playerCount={playercount}
+        joinCode={row.join_code}
+        sessionEnded={sessionEnded}
+        phase={phase}
+        timerButton={timerButton}
+        startButton={startButton}
+        nextButton={nextButton}
+      >
         {phase === "waiting" ? (
-          <section className="rounded-lg border border-[var(--border)] bg-[var(--card-bg)] p-3 shadow-[var(--elevation-sm)] md:p-4">
-            <p className="mb-2 text-[11px] font-medium text-[var(--muted-foreground)] md:mb-2.5 md:text-xs">
-              대기 학생
-            </p>
-            {waitingLobbyPlayers.length === 0 ? (
-              <p className="py-2 text-center text-xs text-[var(--muted-foreground)]">아직 없음</p>
-            ) : (
-              <ul className="flex flex-wrap gap-1.5">
-                {waitingLobbyPlayers.map((p) => (
-                  <li
-                    key={p.id}
-                    className="inline-flex min-h-9 touch-manipulation items-center gap-1.5 rounded-md border border-[var(--border)] bg-[var(--tint-accent-weak)] px-2 py-1 text-xs md:px-2.5 md:text-sm"
-                  >
-                    <span className="h-1 w-1 rounded-full bg-[var(--primary)]" aria-hidden />
-                    <span className="font-medium text-[var(--foreground)]">{p.nickname ?? "참가자"}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
+          <SessionHostWaitingRoster
+            players={waitingLobbyPlayers.map((p) => ({
+              id: p.id,
+              nickname: p.nickname,
+            }))}
+          />
         ) : null}
 
         {phase === "overview" || phase === "expert_group" ? (
           <GroupAssignmentDashboard
             groups={assignmentGroups}
             loading={playersQuery.isLoading || groupsQuery.isLoading}
+            groupBy={phase === "expert_group" ? "role" : "group"}
           />
         ) : null}
 
@@ -580,7 +519,7 @@ function SessionHostContent() {
             loading={playersQuery.isLoading || groupsQuery.isLoading}
           />
         ) : null}
-      </main>
+      </SessionHostLayout>
 
       <Modal
         open={timerToolOpen}
@@ -601,7 +540,7 @@ export default function SessionHostPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen">
+        <div className="@container min-h-screen">
           <main className="mx-auto flex w-full max-w-7xl flex-col px-4 py-8">
             <LoadingState variant="page" />
           </main>

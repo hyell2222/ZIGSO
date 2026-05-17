@@ -9,8 +9,6 @@ import { cn } from "@/lib/utils";
 
 type PlayJoinQrProps = {
   joinCode: string;
-  /** 썸네일 QR 한 변 길이(px) */
-  size?: number;
   className?: string;
 };
 
@@ -35,7 +33,7 @@ function getPlayJoinOriginServerSnapshot() {
 }
 
 /** 학생 입장 URL QR — 썸네일 탭 시 모달로 확대 */
-export function PlayJoinQr({ joinCode, size = 52, className }: PlayJoinQrProps) {
+export function PlayJoinQr({ joinCode, className }: PlayJoinQrProps) {
   const [modalOpen, setModalOpen] = useState(false);
   const origin = useSyncExternalStore(
     subscribePlayJoinOrigin,
@@ -56,16 +54,17 @@ export function PlayJoinQr({ joinCode, size = 52, className }: PlayJoinQrProps) 
         type="button"
         onClick={() => setModalOpen(true)}
         className={cn(
-          "cursor-pointer group flex shrink-0 flex-col items-center justify-center gap-0.5 rounded-lg border border-[var(--border)] bg-[var(--card-bg)] p-1 shadow-sm transition hover:border-[var(--accent)] hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]",
+          "group flex shrink-0 cursor-pointer flex-col items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--card-bg)] p-0.5 shadow-sm transition hover:border-[var(--accent)] hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]",
+          "@md:gap-0.5 @md:p-1",
           className,
         )}
+        aria-label="참가 QR 코드 크게 보기"
       >
-        <span className="block h-[52px] w-[52px] rounded-sm bg-white p-0.5 md:h-[4.5rem] md:w-[4.5rem]">
-          <QRCode
-            value={playUrl}
-            size={Math.max(size, 180)}
-            style={{ width: "100%", height: "100%", display: "block" }}
-          />
+        <span className="block rounded-sm bg-white p-0.5 @sm:hidden">
+          <QRCode value={playUrl} size={32} style={{ display: "block" }} />
+        </span>
+        <span className="hidden rounded-sm bg-white p-0.5 @sm:block @sm:h-9 @sm:w-9 @md:h-11 @md:w-11 @lg:h-[52px] @lg:w-[52px]">
+          <QRCode value={playUrl} size={44} style={{ width: "100%", height: "100%", display: "block" }} />
         </span>
       </button>
 

@@ -5,6 +5,10 @@
 import type { ActivityPhase, SessionStatus } from "@/lib/types";
 import type { AcquiredItem, CompletedTask, ActivityPack } from "@/lib/activity-pack/types";
 import { pickSandboxLobbyBotNicknames } from "@/lib/sandbox/waiting-nicknames";
+import {
+  HOST_SESSION_START_LABEL,
+  hostSessionNextPhaseLabel,
+} from "@/lib/teacher/host-session-labels";
 
 export type SandboxGroup = {
   id: string;
@@ -31,7 +35,7 @@ export type SandboxState = {
 };
 
 export const SANDBOX_REAL_STUDENT_PLAYER_ID = "sandbox-real-student";
-export const SANDBOX_JOIN_CODE = "SANDBOX";
+export const SANDBOX_JOIN_CODE = "JIGSAW";
 
 export type SandboxWaitingChip = {
   id: string;
@@ -156,18 +160,8 @@ export function nextSandboxPhase(current: ActivityPhase): ActivityPhase | null {
 }
 
 export function getSandboxNextPhaseLabel(current: ActivityPhase): string {
-  switch (current) {
-    case "waiting":
-      return "시작";
-    case "overview":
-      return "다음 단계";
-    case "expert_group":
-      return "다음 단계";
-    case "home_group":
-      return "활동 결과";
-    default:
-      return "—";
-  }
+  if (current === "waiting") return HOST_SESSION_START_LABEL;
+  return hostSessionNextPhaseLabel(current);
 }
 
 export const SANDBOX_PHASE_LABEL: Record<ActivityPhase, string> = {

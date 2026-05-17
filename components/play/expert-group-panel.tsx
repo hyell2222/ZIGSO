@@ -26,7 +26,7 @@ type Props = {
   onAcquired: () => void;
   pending?: boolean;
   sandboxAcquire?: (answer: string, hintStage: 1 | 2 | 3 | 4 | 5) => void;
-  embedded?: boolean;
+  contained?: boolean;
 };
 
 export function ExpertPhasePanel({
@@ -39,7 +39,7 @@ export function ExpertPhasePanel({
   onAcquired,
   pending,
   sandboxAcquire,
-  embedded = false,
+  contained = false,
 }: Props) {
   const item = getItemById(pack, itemId);
   const alreadyAcquired = acquiredItemIds.has(itemId);
@@ -83,7 +83,7 @@ export function ExpertPhasePanel({
 
   return (
     <PlayPhaseShell
-      embedded={embedded}
+      contained={contained}
       header={{
         phase: 2,
         title: PLAY_STUDENT_COPY.phaseExpert.title,
@@ -94,38 +94,44 @@ export function ExpertPhasePanel({
             placeName={roleLabel}
             placeLabel={PLAY_STUDENT_COPY.phaseExpert.placeLabel}
             pending={pending}
-            compact={embedded}
           />
         ),
       }}
       mainClassName="max-w-2xl"
     >
-      <div className={cn("space-y-5 px-5 py-6", playSurfaceCool)}>
+      <div className={cn("space-y-4 px-4 py-4", playSurfaceCool, "@sm:space-y-5 @sm:px-5 @sm:py-6")}>
         {alreadyAcquired ? (
-          <div className="rounded-lg border border-[color-mix(in_srgb,var(--primary)_30%,var(--border))] bg-[var(--tint-accent-weak)] p-4 text-sm">
-            <p className="font-semibold text-[var(--primary)]">항목 획득 완료</p>
-            <p className="mt-2 text-[var(--foreground)]">
+          <div className="rounded-lg border border-[color-mix(in_srgb,var(--primary)_30%,var(--border))] bg-[var(--tint-accent-weak)] p-3 @sm:p-4">
+            <p className="text-sm font-semibold text-[var(--primary)] @md:text-base">
+              항목 획득 완료
+            </p>
+            <p className="mt-2 text-sm leading-relaxed text-[var(--foreground)] @md:text-base">
               <strong>{roleLabel}</strong> — {PLAY_STUDENT_COPY.phaseExpert.acquiredReturn}
             </p>
             {item?.groupHint ? (
-              <p className="mt-2 text-[var(--muted-foreground)]">모둠 메모: {item.groupHint}</p>
+              <p className="mt-2 text-sm text-[var(--muted-foreground)] @md:text-base">
+                모둠 메모: {item.groupHint}
+              </p>
             ) : null}
-            <p className="mt-4 text-center text-xs text-[var(--muted-foreground)]">
+            <p className="mt-4 text-center text-xs text-[var(--muted-foreground)] @md:text-sm">
               {PLAY_STUDENT_COPY.waiting.waitForTeacher}
             </p>
           </div>
         ) : item ? (
           <>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-[var(--accent)]">
+              <p className="text-xs font-semibold uppercase tracking-wider text-[var(--accent)] @md:text-sm">
                 힌트 {hintStage} / 5 · 정답 시 {scoreForHintLevel(hintStage)}점
               </p>
-              <p className="mt-2 text-base leading-relaxed text-[var(--foreground)]">
+              <p className="mt-2 text-sm leading-relaxed text-[var(--foreground)] @md:text-base">
                 {hintTextForLevel(item, hintStage)}
               </p>
             </div>
             <form id="expert-answer-form" className="space-y-3" onSubmit={handleSubmit}>
-              <label className="text-sm font-medium text-[var(--foreground)]" htmlFor="item-answer">
+              <label
+                className="text-sm font-medium text-[var(--foreground)] @md:text-base"
+                htmlFor="item-answer"
+              >
                 맞출 항목은 무엇일까요?
               </label>
               <Input
@@ -139,28 +145,27 @@ export function ExpertPhasePanel({
               {message ? (
                 <p
                   className={cn(
-                    "text-sm",
+                    "text-sm @md:text-base",
                     message.startsWith("정답") ? "text-[var(--primary)]" : "text-[var(--danger)]",
                   )}
                 >
                   {message}
                 </p>
               ) : null}
-              <div className="flex flex-col gap-2 pt-1 sm:flex-row sm:justify-end">
+              <div className="flex w-full flex-row flex-wrap items-center justify-between gap-2 pt-1 [&_button]:w-auto [&_button]:shrink-0">
                 {hintStage < 5 ? (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full sm:w-auto"
-                    onClick={handleRevealNext}
-                  >
+                  <Button type="button" variant="outline" onClick={handleRevealNext}>
                     다음 힌트 보기
                   </Button>
                 ) : null}
-                <Button type="submit" className="w-full sm:min-w-[10rem] sm:w-auto" disabled={submitting}>
+                <Button
+                  type="submit"
+                  className="@sm:min-w-[10rem]"
+                  disabled={submitting}
+                >
                   {submitting ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
+                      <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin @sm:h-4 @sm:w-4" aria-hidden />
                       확인 중…
                     </>
                   ) : (
@@ -171,7 +176,7 @@ export function ExpertPhasePanel({
             </form>
           </>
         ) : (
-          <p className="text-sm text-[var(--danger)]">항목 정보를 찾을 수 없습니다.</p>
+          <p className="text-sm text-[var(--danger)] @md:text-base">항목 정보를 찾을 수 없습니다.</p>
         )}
       </div>
     </PlayPhaseShell>

@@ -26,7 +26,7 @@ type Props = {
   groupName?: string | null;
   roleLabel?: string | null;
   currentPlayerId?: string | null;
-  embedded?: boolean;
+  contained?: boolean;
 };
 
 function RankCard({
@@ -59,21 +59,32 @@ function RankCard({
           : "border-[var(--border)] bg-[var(--background)]",
       )}
     >
-      <p className="text-xs font-bold uppercase tracking-wider text-[var(--accent)]">{label}</p>
-      <p className={cn("mt-1 font-mono text-4xl font-extrabold leading-none tabular-nums", tone)}>
+      <p className="text-xs font-bold uppercase tracking-wider text-[var(--accent)] @md:text-sm">
+        {label}
+      </p>
+      <p
+        className={cn(
+          "mt-1 font-mono text-2xl font-extrabold leading-none tabular-nums @sm:text-3xl @md:text-4xl",
+          tone,
+        )}
+      >
         {rank}
         <span className="text-[0.45em] font-bold text-[var(--muted-foreground)]">위</span>
       </p>
-      <p className="mt-1 text-sm text-[var(--muted-foreground)]">
+      <p className="mt-1 text-sm text-[var(--muted-foreground)] @md:text-base">
         전체 {total}
         {totalUnit} 중
       </p>
-      <p className="mt-3 font-mono text-2xl font-bold tabular-nums text-[var(--foreground)]">
+      <p className="mt-3 font-mono text-lg font-bold tabular-nums text-[var(--foreground)] @sm:text-2xl">
         {score}
         <span className="text-[0.5em] font-semibold text-[var(--muted-foreground)]">점</span>
       </p>
-      <p className="mt-1 text-sm text-[var(--muted-foreground)]">{scoreLabel}</p>
-      {detail ? <p className="mt-2 text-xs leading-relaxed text-[var(--muted-foreground)]">{detail}</p> : null}
+      <p className="mt-1 text-sm text-[var(--muted-foreground)] @md:text-base">{scoreLabel}</p>
+      {detail ? (
+        <p className="mt-2 text-xs leading-relaxed text-[var(--muted-foreground)] @md:text-sm">
+          {detail}
+        </p>
+      ) : null}
     </article>
   );
 }
@@ -86,7 +97,7 @@ export function ResultsPhasePanel({
   groupName,
   roleLabel,
   currentPlayerId,
-  embedded = false,
+  contained = false,
 }: Props) {
   const snapshot = useMemo(
     () =>
@@ -103,24 +114,32 @@ export function ResultsPhasePanel({
   const displayRoleLabel = roleLabel ?? snapshot?.roleLabel ?? null;
 
   return (
-    <PlayPhaseShell embedded={embedded} mainClassName="max-w-2xl">
+    <PlayPhaseShell contained={contained} mainClassName="max-w-2xl">
       {loading ? (
         <LoadingState variant="section" tone="play" label="결과 집계 중…" />
       ) : !snapshot ? (
-        <p className="py-8 text-center text-sm text-[var(--muted-foreground)]">{copy.emptyMessage}</p>
+        <p className="py-8 text-center text-sm text-[var(--muted-foreground)] @md:text-base">
+          {copy.emptyMessage}
+        </p>
       ) : (
-        <div className={cn("space-y-4", playSurfaceCool, "px-4 py-5 sm:px-5 sm:py-6")}>
+        <div className={cn("space-y-4", playSurfaceCool, "px-4 py-5 @sm:px-5 @sm:py-6")}>
           <div className="text-center">
-            <p className="text-3xl" aria-hidden>
+            <p className="text-2xl @sm:text-3xl" aria-hidden>
               {copy.emoji}
             </p>
-            <h1 className="mt-2 text-xl font-bold text-[var(--foreground)] sm:text-2xl">{copy.title}</h1>
-            <p className="mt-1 text-sm text-[var(--muted-foreground)]">{copy.subtitle}</p>
+            <h1 className="mt-2 text-sm font-bold text-[var(--foreground)] @sm:text-base @md:text-xl @lg:text-2xl">
+              {copy.title}
+            </h1>
+            <p className="mt-1 text-sm leading-relaxed text-[var(--muted-foreground)] @md:text-base">
+              {copy.subtitle}
+            </p>
             {sessionTitle ? (
-              <p className="mt-2 text-sm font-medium text-[var(--muted-foreground)]">{sessionTitle}</p>
+              <p className="mt-2 text-sm font-medium text-[var(--muted-foreground)] @md:text-base">
+                {sessionTitle}
+              </p>
             ) : null}
             {displayGroupName || displayRoleLabel ? (
-              <p className="mt-1 text-xs text-[var(--muted-foreground)]">
+              <p className="mt-1 text-xs text-[var(--muted-foreground)] @md:text-sm">
                 {[displayGroupName, displayRoleLabel].filter(Boolean).join(" · ")}
               </p>
             ) : null}

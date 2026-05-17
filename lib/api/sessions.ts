@@ -47,7 +47,7 @@ export async function listHostSessions(hostId: string) {
 
 export async function startSession(activity: ActivityRecord, hostId?: string | null) {
   if (!hostId) {
-    throw new Error("플레이 세션을 시작하려면 로그인해 주세요.");
+    throw new Error("활동 세션을 시작하려면 로그인해 주세요.");
   }
   const pack = parseActivityPack(activity.activity_pack);
   if (!pack) {

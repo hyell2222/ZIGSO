@@ -289,7 +289,7 @@ function BrowserWindow({
           {title}
         </span>
       </header>
-      <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-[var(--background)]">
+      <div className="@container relative flex min-h-0 flex-1 flex-col overflow-hidden bg-[var(--background)]">
         {children}
       </div>
     </section>

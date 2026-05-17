@@ -15,12 +15,9 @@ import { cn } from "@/lib/utils";
 export function PhaseGuideCard({
   phase,
   meta,
-  compact = false,
 }: {
   phase: ActivityPhase;
   meta?: ReactNode;
-  /** 좁은 임베드(샌드박스 패널 등)에서 제목·여백을 줄입니다 */
-  compact?: boolean;
 }) {
   if (phase === "waiting" || isResultsPhase(phase)) {
     return null;
@@ -32,39 +29,20 @@ export function PhaseGuideCard({
   const stepNumber = PHASES.find((s) => s.key === phase)?.number ?? 1;
 
   return (
-    <div className={cn("px-2 py-1", compact ? "space-y-1" : "space-y-2")}>
-      {meta ? <div className={compact ? "mt-0.5" : "mt-1"}>{meta}</div> : null}
-      <div className={cn("flex items-center", compact ? "gap-2" : "gap-2.5")}>
+    <div className="space-y-1 px-2 py-1 @md:space-y-2">
+      {meta ? <div className="mt-0.5 @md:mt-1">{meta}</div> : null}
+      <div className="flex items-center gap-2 @md:gap-2.5">
         <span
-          className={cn(
-            "flex shrink-0 items-center justify-center rounded-full border border-[var(--primary)] bg-[var(--primary)] font-semibold tabular-nums text-[var(--on-primary)] shadow-sm",
-            compact
-              ? "h-6 w-6 text-[11px]"
-              : "h-7 w-7 text-[12px] sm:h-8 sm:w-8 sm:text-sm",
-          )}
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[var(--primary)] bg-[var(--primary)] text-xs font-semibold tabular-nums text-[var(--on-primary)] shadow-sm @md:h-8 @md:w-8 @md:text-sm"
           aria-hidden
         >
           {stepNumber}
         </span>
-        <h2
-          className={cn(
-            "font-bold leading-tight text-[var(--foreground)]",
-            compact
-              ? "text-sm leading-snug sm:text-base md:text-lg"
-              : "text-lg sm:text-xl md:text-2xl md:leading-snug",
-          )}
-        >
+        <h2 className="text-base font-bold leading-tight text-[var(--foreground)] @md:text-lg @md:leading-snug @lg:text-xl">
           {guide.title}
         </h2>
       </div>
-      <p
-        className={cn(
-          "leading-snug text-[var(--muted-foreground)]",
-          compact
-            ? "text-[11px] leading-snug sm:text-xs"
-            : "text-xs sm:text-sm sm:leading-relaxed",
-        )}
-      >
+      <p className="text-sm leading-snug text-[var(--muted-foreground)] @md:leading-relaxed">
         {guide.summary}
       </p>
     </div>

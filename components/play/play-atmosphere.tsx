@@ -46,7 +46,7 @@ export const playPhaseHeaderChromeShell = cn(
 );
 
 export const playPhaseHeaderChromeInner =
-  "mx-auto w-full max-w-6xl px-4 py-2.5 text-left sm:px-6 sm:py-3 md:px-8 md:py-4";
+  "mx-auto w-full max-w-6xl px-4 py-2.5 text-left @sm:px-6 @sm:py-3 @md:px-8 @md:py-4";
 
 export const playLoaderRegion =
   "flex w-full min-h-0 flex-1 flex-col items-center justify-center px-4 py-10";
@@ -56,12 +56,12 @@ export const playPhaseMainInner = "w-full min-h-0 flex-1 overflow-y-auto overscr
 
 /** 본문 최대 너비·패딩 (main 안쪽) */
 export const playPhaseMainContent =
-  "mx-auto w-full px-4 py-5 pb-4 sm:px-6 sm:py-6 md:px-8";
+  "mx-auto w-full px-4 py-5 pb-4 @sm:px-6 @sm:py-6 @md:px-8";
 
 export const playPhaseFooterChrome = cn(
   "sticky bottom-0 z-20 shrink-0 border-t-2 border-[color-mix(in_srgb,var(--primary)_14%,var(--border))]",
   "bg-[color-mix(in_srgb,white_88%,var(--entry-shell))] px-4 py-3 shadow-[0_-4px_0_color-mix(in_srgb,var(--primary)_6%,transparent)]",
-  "pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] sm:px-6 md:px-8",
+  "pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] @sm:px-6 @md:px-8",
 );
 
 export function PlayAtmosphere({
@@ -73,7 +73,7 @@ export function PlayAtmosphere({
   return (
     <div
       className={cn(
-        "play-shell relative isolate overflow-hidden font-sans",
+        "@container play-shell relative isolate overflow-hidden font-sans",
         isContained ? "h-full min-h-0 w-full" : "h-dvh min-h-0 w-full",
         className,
       )}

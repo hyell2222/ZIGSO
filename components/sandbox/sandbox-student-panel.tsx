@@ -126,7 +126,6 @@ export function SandboxStudentPanel({
           nickname={nickname}
           modalVariant="contained"
           showMissingCodeHint={false}
-          description="시뮬레이션 참가 코드가 적용되어 있어요. 닉네임만 입력하면 됩니다."
           onNicknameChange={setNickname}
           onSubmit={() => {
             const nick = nickname.trim();
@@ -141,16 +140,15 @@ export function SandboxStudentPanel({
 
   if (phase === "waiting") {
     return (
-      <PlayPhaseShell embedded>
+      <PlayPhaseShell contained>
         <div className={playLoaderRegion}>
           <WaitingLobbyBlock
             joinCode={SANDBOX_JOIN_CODE}
             nickname={activeNickname}
             sessionTitle={activityTitle}
             state="waiting"
-            compact
           />
-          <p className="mt-4 text-center text-xs text-[var(--muted-foreground)]">
+          <p className="mt-3 text-center text-[10px] text-[var(--muted-foreground)] @sm:text-xs">
             {PLAY_STUDENT_COPY.waiting.waitForTeacher}
           </p>
         </div>
@@ -160,36 +158,36 @@ export function SandboxStudentPanel({
 
   if (phase === "expert_group" && primaryPlayer && group) {
     return (
-        <SandboxExpertBridge
-          pack={pack}
-          playerId={primaryPlayer.id}
-          groupId={group.id}
-          groupName={group.name}
-          itemId={primaryPlayer.itemId}
-          acquiredIds={acquiredIds}
-          onAcquire={(answer, hintStage) =>
-            onAcquire(group.id, primaryPlayer.itemId, answer, hintStage)
-          }
-        />
+      <SandboxExpertBridge
+        pack={pack}
+        playerId={primaryPlayer.id}
+        groupId={group.id}
+        groupName={group.name}
+        itemId={primaryPlayer.itemId}
+        acquiredIds={acquiredIds}
+        onAcquire={(answer, hintStage) =>
+          onAcquire(group.id, primaryPlayer.itemId, answer, hintStage)
+        }
+      />
     );
   }
 
   if (phase === "home_group" && group && groupRow) {
     return (
-        <SandboxGroupBridge
-          pack={pack}
-          group={groupRow}
-          groupName={group.name}
-          onCompleteTask={(taskId, steps) => onCompleteTask(group.id, taskId, steps)}
-          onCompleteActivity={() => onCompleteActivity(group.id)}
-        />
+      <SandboxGroupBridge
+        pack={pack}
+        group={groupRow}
+        groupName={group.name}
+        onCompleteTask={(taskId, steps) => onCompleteTask(group.id, taskId, steps)}
+        onCompleteActivity={() => onCompleteActivity(group.id)}
+      />
     );
   }
 
   if (phase === "overview") {
     return (
       <PlayPhaseShell
-        embedded
+        contained
         header={{
           phase: 1,
           title: PLAY_STUDENT_COPY.phaseOverview.title,
@@ -199,7 +197,6 @@ export function SandboxStudentPanel({
               groupName={group?.name ?? null}
               placeName={roleLabel}
               placeLabel={PLAY_STUDENT_COPY.phaseOverview.placeLabel}
-              compact
             />
           ),
         }}
@@ -210,9 +207,8 @@ export function SandboxStudentPanel({
           title={activityTitle}
           description={description}
           activityPack={pack}
-          compact
         />
-        <p className="mt-4 text-center text-xs text-[var(--muted-foreground)]">
+        <p className="mt-3 text-center text-[10px] text-[var(--muted-foreground)] @sm:text-xs">
           {PLAY_STUDENT_COPY.waiting.waitForTeacher}
         </p>
       </PlayPhaseShell>
@@ -222,7 +218,7 @@ export function SandboxStudentPanel({
   if (phase === "results" && primaryPlayer) {
     return (
       <ResultsPhasePanel
-        embedded
+        contained
         loading={false}
         title={activityTitle}
         results={sessionResults}
@@ -235,7 +231,7 @@ export function SandboxStudentPanel({
   }
 
   return (
-    <PlayPhaseShell embedded>
+    <PlayPhaseShell contained>
       <main className="flex min-h-[12rem] flex-1 items-center justify-center text-center text-sm text-[var(--muted-foreground)]">
         {PLAY_STUDENT_COPY.waiting.waitForTeacher}
       </main>
@@ -272,7 +268,7 @@ function SandboxExpertBridge({
       acquiredItemIds={acquiredIds}
       onAcquired={() => bump((n) => n + 1)}
       sandboxAcquire={onAcquire}
-      embedded
+      contained
     />
   );
 }
@@ -299,7 +295,7 @@ function SandboxGroupBridge({
       onUpdate={() => bump((n) => n + 1)}
       sandboxCompleteTask={onCompleteTask}
       sandboxCompleteActivity={onCompleteActivity}
-      embedded
+      contained
     />
   );
 }

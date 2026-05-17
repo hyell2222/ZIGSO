@@ -107,7 +107,11 @@ export function PlayJoinModal({
             autoFocus
           />
         </div>
-        <Button type="submit" className="w-full" disabled={pending || !code}>
+        <Button
+          type="submit"
+          className="w-full @md:w-auto @md:min-w-[8rem]"
+          disabled={pending || !code}
+        >
           {pending ? pendingLabel : submitLabel}
         </Button>
       </form>

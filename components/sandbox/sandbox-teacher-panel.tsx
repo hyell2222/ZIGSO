@@ -3,8 +3,6 @@
 import { Timer } from "lucide-react";
 import { useMemo, useState } from "react";
 
-import { PhaseGuideCard } from "@/components/teacher/phase-guide-card";
-import { PhaseTimerContent } from "@/components/teacher/phase-timer-content";
 import {
   GroupAssignmentDashboard,
   type GroupAssignmentGroup,
@@ -17,7 +15,9 @@ import {
   SessionResultsDashboard,
   type SessionResultsMember,
 } from "@/components/teacher/session-results-dashboard";
-import { PlayJoinQr } from "@/components/teacher/play-join-qr";
+import { SessionHostLayout } from "@/components/teacher/session-host-layout";
+import { SessionHostWaitingRoster } from "@/components/teacher/session-host-waiting-roster";
+import { PhaseTimerContent } from "@/components/teacher/phase-timer-content";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import type { ActivityPhase } from "@/lib/api/activities";
@@ -25,14 +25,16 @@ import type { ActivityPack } from "@/lib/activity-pack/types";
 import {
   SANDBOX_JOIN_CODE,
   buildSandboxWaitingRoster,
-  getSandboxNextPhaseLabel,
   type SandboxPlayer,
   type SandboxGroup,
 } from "@/lib/sandbox/state";
+import {
+  HOST_SESSION_START_LABEL,
+  hostSessionNextPhaseLabel,
+} from "@/lib/teacher/host-session-labels";
 import type { SessionStatus } from "@/lib/types";
 import { isSessionEnded } from "@/lib/activity-phases";
 import { isTimedPhase, type TimedPhase } from "@/lib/teacher/phase-guide";
-import { cn } from "@/lib/utils";
 
 type Props = {
   activityTitle: string | null;
@@ -59,8 +61,9 @@ export function SandboxTeacherPanel({
   realStudentNickname,
   onBegin,
   onAdvance,
-  onResetPhase,
+  onResetPhase: _onResetPhase,
 }: Props) {
+  void _onResetPhase;
   const [timerModalOpen, setTimerModalOpen] = useState<{
     open: boolean;
     phaseAtOpen: ActivityPhase | null;
@@ -151,82 +154,62 @@ export function SandboxTeacherPanel({
     timerModalOpen.phaseAtOpen === phase &&
     shouldShowTimer;
 
+  const timerButton = shouldShowTimer ? (
+    <Button
+      type="button"
+      variant="secondary"
+      size="sm"
+      className="gap-1.5"
+      onClick={() => setTimerModalOpen({ open: true, phaseAtOpen: phase })}
+    >
+      <Timer className="h-3.5 w-3.5" aria-hidden />
+      타이머
+    </Button>
+  ) : null;
+
   const startButton = !sessionStarted ? (
-    <Button type="button" onClick={onBegin}>
-      {getSandboxNextPhaseLabel(phase)}
+    <Button type="button" size="sm" onClick={onBegin}>
+      {HOST_SESSION_START_LABEL}
     </Button>
   ) : null;
 
   const nextButton =
     sessionStarted && !sessionEnded && hasNextPhase ? (
-      <Button type="button" onClick={onAdvance}>
-        {getSandboxNextPhaseLabel(phase)}
+      <Button type="button" size="sm" onClick={onAdvance}>
+        {hostSessionNextPhaseLabel(phase)}
       </Button>
     ) : null;
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-y-auto">
-      <main className="mx-auto w-full max-w-7xl space-y-4 px-4 py-5 sm:px-6">
-        <header className="flex flex-col gap-4 border-b border-[var(--border)] pb-4 md:flex-row md:items-start">
-          <div className="min-w-0 flex-1 space-y-1">
-            <p className="font-mono text-2xl font-semibold text-[var(--accent)] sm:text-3xl">
-              {activityTitle ?? "시뮬레이션"}
-            </p>
-            <p className="text-xs text-[var(--muted-foreground)]">
-              접속 <span className="font-semibold text-[var(--foreground)]">{playercount}</span>명
-            </p>
-          </div>
-          <div className="rounded-lg border border-[var(--border)] bg-[var(--card-bg)] px-3 py-2">
-            <p className="text-[9px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)]">
-              참가 코드 (샌드박스)
-            </p>
-            <p className="font-mono text-xl font-semibold tracking-[0.15em] text-[var(--accent)]">
-              {SANDBOX_JOIN_CODE}
-            </p>
-            <PlayJoinQr joinCode={SANDBOX_JOIN_CODE} />
-          </div>
-        </header>
-
-        <div className="flex flex-wrap items-center justify-end gap-2">
-          {shouldShowTimer ? (
-            <Button
-              type="button"
-              variant="secondary"
-              className="gap-2"
-              onClick={() => setTimerModalOpen({ open: true, phaseAtOpen: phase })}
-            >
-              <Timer className="h-4 w-4" aria-hidden />
-              타이머
-            </Button>
-          ) : null}
-          {startButton}
-          {nextButton}
-        </div>
-
-        {isTimedPhase(phase) ? <PhaseGuideCard phase={phase} /> : null}
-
+    <div className="flex h-full min-h-0 flex-col overflow-y-auto text-sm">
+      <SessionHostLayout
+        activityTitle={activityTitle}
+        playerCount={playercount}
+        joinCode={SANDBOX_JOIN_CODE}
+        sessionEnded={sessionEnded}
+        phase={phase}
+        timerButton={timerButton}
+        startButton={startButton}
+        nextButton={nextButton}
+      >
         {phase === "waiting" ? (
-          <section className="rounded-lg border border-[var(--border)] bg-[var(--card-bg)] p-3">
-            <p className="mb-2 text-xs font-medium text-[var(--muted-foreground)]">대기 학생</p>
-            <ul className="flex flex-wrap gap-1.5">
-              {waitingOnlinePlayers.map((p) => (
-                <li
-                  key={p.id}
-                  className="rounded-md border border-[var(--border)] bg-[var(--tint-accent-weak)] px-2 py-1 text-xs"
-                >
-                  {p.nickname}
-                </li>
-              ))}
-            </ul>
-          </section>
+          <SessionHostWaitingRoster players={waitingOnlinePlayers} />
         ) : null}
 
         {phase === "overview" || phase === "expert_group" ? (
-          <GroupAssignmentDashboard groups={assignmentGroups} loading={false} />
+          <GroupAssignmentDashboard
+            groups={assignmentGroups}
+            loading={false}
+            groupBy={phase === "expert_group" ? "role" : "group"}
+          />
         ) : null}
 
         {phase === "home_group" ? (
-          <GroupProgressDashboard groups={progressGroups} loading={false} pack={pack} />
+          <GroupProgressDashboard
+            groups={progressGroups}
+            loading={false}
+            pack={pack}
+          />
         ) : null}
 
         {phase === "results" ? (
@@ -237,7 +220,7 @@ export function SandboxTeacherPanel({
             loading={false}
           />
         ) : null}
-      </main>
+      </SessionHostLayout>
 
       <Modal
         open={timerToolOpen}
