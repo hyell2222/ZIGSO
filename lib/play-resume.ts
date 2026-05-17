@@ -2,10 +2,10 @@
  * 학생이 탭을 닫았다 다시 들어왔을 때 동일 플레이어로 이어 들어갈 수 있도록
  * join_code 별로 마지막 입장 정보를 localStorage 에 보관한다.
  *
- * 저장 위치: localStorage["codezero:play-resume"] = { [joinCode]: ResumeRecord }
+ * 저장 위치: localStorage["jigsaw:play-resume"] = { [joinCode]: ResumeRecord }
  */
 
-const STORAGE_KEY = "codezero:play-resume";
+const STORAGE_KEY = "jigsaw:play-resume";
 
 export type ResumeRecord = {
   joinCode: string;

@@ -8,7 +8,7 @@ import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import {
   getHostSessionDetails,
   listSessionPlayers,
-  listSessionTeams,
+  listSessionGroups,
   setPlayersOnline,
 } from "@/lib/api/play";
 import {
@@ -16,22 +16,22 @@ import {
   beginHostingSession,
   endSession,
   getNextPhase,
-  parseScenarioPack,
-  type SessionPhase,
-} from "@/lib/api/lessons";
+  parseActivityPack,
+  type ActivityPhase,
+} from "@/lib/api/activities";
 import { useRequireTeacherSession } from "@/lib/auth/use-require-teacher-session";
-import { groupPlayersByTeam } from "@/lib/teacher/group-players-by-team";
+import { groupPlayersByGroup } from "@/lib/teacher/group-players-by-group";
 import { PlayJoinQr } from "@/components/teacher/play-join-qr";
 import { PhaseGuideCard } from "@/components/teacher/phase-guide-card";
 import { PhaseTimerContent } from "@/components/teacher/phase-timer-content";
 import {
-  TeamAssignmentDashboard,
-  type TeamAssignmentGroup,
-} from "@/components/teacher/team-assignment-dashboard";
+  GroupAssignmentDashboard,
+  type GroupAssignmentGroup,
+} from "@/components/teacher/group-assignment-dashboard";
 import {
-  TeamProgressDashboard,
-  type TeamProgressGroup,
-} from "@/components/teacher/team-progress-dashboard";
+  GroupProgressDashboard,
+  type GroupProgressGroup,
+} from "@/components/teacher/group-progress-dashboard";
 import { Button } from "@/components/ui/button";
 import { LoadingState } from "@/components/ui/loading-state";
 import { Modal } from "@/components/ui/modal";
@@ -52,7 +52,7 @@ function SessionHostContent() {
   const queryClient = useQueryClient();
   const [presenceRows, setPresenceRows] = useState<SessionPresenceRow[]>([]);
   /** 단계가 바뀌면 열었던 단계와 달라져 모달이 닫히도록 phaseAtOpen 을 둠 (effect 내 setState 회피) */
-  const [timerModal, setTimerModal] = useState<{ open: boolean; phaseAtOpen: SessionPhase | null }>({
+  const [timerModal, setTimerModal] = useState<{ open: boolean; phaseAtOpen: ActivityPhase | null }>({
     open: false,
     phaseAtOpen: null,
   });
@@ -73,9 +73,9 @@ function SessionHostContent() {
     refetchIntervalInBackground: true,
   });
 
-  const teamsQuery = useQuery({
-    queryKey: ["host-session-teams", sessionId],
-    queryFn: () => listSessionTeams(sessionId),
+  const groupsQuery = useQuery({
+    queryKey: ["host-session-groups", sessionId],
+    queryFn: () => listSessionGroups(sessionId),
     enabled: Boolean(sessionId && teacherSession.data),
     refetchInterval: sessionId ? 3_000 : false,
     refetchIntervalInBackground: true,
@@ -116,9 +116,9 @@ function SessionHostContent() {
       )
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "teams", filter: `session_id=eq.${sessionId}` },
+        { event: "*", schema: "public", table: "groups", filter: `session_id=eq.${sessionId}` },
         () => {
-          void queryClient.invalidateQueries({ queryKey: ["host-session-teams", sessionId] });
+          void queryClient.invalidateQueries({ queryKey: ["host-session-groups", sessionId] });
         },
       )
       .on("presence", { event: "sync" }, () => {
@@ -160,8 +160,8 @@ function SessionHostContent() {
     },
     onSuccess: async (endedPhase) => {
       await queryClient.invalidateQueries({ queryKey: ["host-session", sessionId] });
-      if (endedPhase === "session_end") {
-        router.push(ROUTES.cases);
+      if (endedPhase === "results") {
+        router.push(ROUTES.activities);
       }
     },
   });
@@ -205,7 +205,7 @@ function SessionHostContent() {
   );
   const phaseForLeave = sessionRowForLeave?.phase ?? null;
   const shouldEndOnHostLeave =
-    isHostOfLoadedSession && phaseForLeave !== "session_end";
+    isHostOfLoadedSession && phaseForLeave !== "results";
 
   useEffect(() => {
     hostLeaveRef.current = {
@@ -295,47 +295,47 @@ function SessionHostContent() {
 
   const playercount = onlinePlayers.length;
 
-  const teamRows = useMemo(() => teamsQuery.data ?? [], [teamsQuery.data]);
+  const groupRows = useMemo(() => groupsQuery.data ?? [], [groupsQuery.data]);
 
-  const scenarioPack = useMemo(
-    () => parseScenarioPack(sessionQuery.data?.lessons?.scenario_pack),
-    [sessionQuery.data?.lessons?.scenario_pack],
+  const activityPack = useMemo(
+    () => parseActivityPack(sessionQuery.data?.activities?.activity_pack),
+    [sessionQuery.data?.activities?.activity_pack],
   );
 
-  const ingredientNameById = useMemo(() => {
+  const itemNameById = useMemo(() => {
     const map = new Map<string, string>();
-    for (const ing of scenarioPack?.ingredients ?? []) {
+    for (const ing of activityPack?.items ?? []) {
       map.set(ing.id, ing.name);
     }
     return map;
-  }, [scenarioPack]);
+  }, [activityPack]);
 
-  const assignmentGroups = useMemo<TeamAssignmentGroup[]>(() => {
-    return groupPlayersByTeam(onlinePlayers, teamRows).map((g) => ({
-      team: { id: g.team.id, name: g.team.name },
+  const assignmentGroups = useMemo<GroupAssignmentGroup[]>(() => {
+    return groupPlayersByGroup(onlinePlayers, groupRows).map((g) => ({
+      group: { id: g.group.id, name: g.group.name },
       members: g.members.map((m) => ({
         id: m.id,
         nickname: m.nickname,
-        zoneName: m.assigned_ingredient_id
-          ? (ingredientNameById.get(m.assigned_ingredient_id) ?? m.assigned_ingredient_id)
+        zoneName: m.assigned_role_id
+          ? (itemNameById.get(m.assigned_role_id) ?? m.assigned_role_id)
           : null,
       })),
     }));
-  }, [onlinePlayers, teamRows, ingredientNameById]);
+  }, [onlinePlayers, groupRows, itemNameById]);
 
-  const progressGroups = useMemo<TeamProgressGroup[]>(() => {
-    const grouped = groupPlayersByTeam(onlinePlayers, teamRows);
+  const progressGroups = useMemo<GroupProgressGroup[]>(() => {
+    const grouped = groupPlayersByGroup(onlinePlayers, groupRows);
     return grouped.map((g) => ({
-      team: g.team,
+      group: g.group,
       memberCount: g.members.length,
     }));
-  }, [onlinePlayers, teamRows]);
+  }, [onlinePlayers, groupRows]);
 
-  const phase = (sessionQuery.data?.phase as SessionPhase) ?? "waiting";
+  const phase = (sessionQuery.data?.phase as ActivityPhase) ?? "waiting";
   const nextPhase = getNextPhase(phase);
-  const nextPhaseLabel = nextPhase === "session_end" ? "종료" : "다음 단계";
+  const nextPhaseLabel = nextPhase === "results" ? "종료" : "다음 단계";
   const sessionStarted = phase !== "waiting";
-  const sessionEnded = phase === "session_end";
+  const sessionEnded = phase === "results";
   const shouldShowTimer = isTimedPhase(phase);
 
   const timerToolOpen =
@@ -457,7 +457,7 @@ function SessionHostContent() {
       </Button>
     ) : null;
 
-  const showPhaseGuide = phase !== "waiting" && phase !== "session_end";
+  const showPhaseGuide = phase !== "waiting" && phase !== "results";
   const showPhaseActions = Boolean(timerButton || startButton || nextButton);
 
   return (
@@ -466,7 +466,7 @@ function SessionHostContent() {
         <header className="flex flex-col gap-4 border-b border-[var(--border)] pb-4 md:flex-row md:flex-wrap md:items-start md:gap-5">
           <div className="min-w-0 flex-1 space-y-1 md:min-w-[12rem]">
             <p className="break-words font-mono text-2xl font-semibold leading-tight tracking-wide text-[var(--accent)] sm:text-3xl md:text-4xl lg:text-[2.5rem] lg:leading-none">
-              {row.lessons?.title}
+              {row.activities?.title}
             </p>
             <p className="px-0.5 text-xs text-[var(--muted-foreground)] md:text-sm">
               접속 <span className="font-semibold text-[var(--foreground)]">{playercount}</span>명
@@ -540,18 +540,18 @@ function SessionHostContent() {
           </section>
         ) : null}
 
-        {phase === "briefing" || phase === "investigation" ? (
-          <TeamAssignmentDashboard
+        {phase === "overview" || phase === "expert_group" ? (
+          <GroupAssignmentDashboard
             groups={assignmentGroups}
-            loading={playersQuery.isLoading || teamsQuery.isLoading}
+            loading={playersQuery.isLoading || groupsQuery.isLoading}
           />
         ) : null}
 
-        {phase === "final_report" || phase === "session_end" ? (
-          <TeamProgressDashboard
+        {phase === "home_group" || phase === "results" ? (
+          <GroupProgressDashboard
             groups={progressGroups}
-            loading={playersQuery.isLoading || teamsQuery.isLoading}
-            pack={scenarioPack}
+            loading={playersQuery.isLoading || groupsQuery.isLoading}
+            pack={activityPack}
           />
         ) : null}
       </main>

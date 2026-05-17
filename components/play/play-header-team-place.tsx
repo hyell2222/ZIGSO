@@ -9,15 +9,15 @@ import { cn } from "@/lib/utils";
  * 학생 단계 헤더 우측에 표시되는 팀·담당 장소 칩.
  * (실 play 페이지·샌드박스 양쪽에서 동일 외관으로 사용합니다.)
  */
-export function PlayHeaderTeamPlace({
-  teamName,
+export function PlayHeaderGroupPlace({
+  groupName,
   placeName,
   placeLabel = "담당 장소",
   pending,
   className,
   compact = false,
 }: {
-  teamName: string | null;
+  groupName: string | null;
   placeName: string | null;
   placeLabel?: string;
   pending?: boolean;
@@ -25,7 +25,7 @@ export function PlayHeaderTeamPlace({
   /** 샌드박스 패널 등에서 패딩·본문 글자 크기 축소 */
   compact?: boolean;
 }) {
-  const team = teamName?.trim() || "—";
+  const group = groupName?.trim() || "—";
   const place = placeName?.trim() || "—";
 
   return (
@@ -76,7 +76,7 @@ export function PlayHeaderTeamPlace({
                 compact ? "text-sm" : "text-base",
               )}
             >
-              {team}
+              {group}
             </p>
           </div>
           <div

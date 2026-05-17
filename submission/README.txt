@@ -1,4 +1,4 @@
-CODEZERO Submission Layout
+JIGSAW Submission Layout
 
 1) Build static export: npm run export
 2) Copy build output from /out into /submission/program

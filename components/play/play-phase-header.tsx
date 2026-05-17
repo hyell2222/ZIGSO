@@ -13,7 +13,7 @@ const phaseIcon = {
 
 export type PlayPhaseHeaderProps = {
   phase: 1 | 2 | 3;
-  /** 짧은 단계 이름 (예: 오늘의 급식 브리핑). 단계 번호는 위 오버라인에만 표시됩니다. */
+  /** 짧은 단계 이름 (예: 활동 브리핑). 단계 번호는 위 오버라인에만 표시됩니다. */
   title: string;
   description: string;
   /** 예: 브리핑 우측 팀 배지 */

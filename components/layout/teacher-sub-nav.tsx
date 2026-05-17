@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FileText, LucideIcon, UtensilsCrossed } from "lucide-react";
+import { FileText, LucideIcon, Puzzle } from "lucide-react";
 
 import { ROUTES } from "@/lib/routes";
 import { cn } from "@/lib/utils";
@@ -14,10 +14,10 @@ const TABS: {
   match: (path: string) => boolean 
 }[] = [
   {
-    href: ROUTES.cases,
-    label: "내 수업",
-    icon: UtensilsCrossed,
-    match: (path) => path === ROUTES.cases || path.startsWith(`${ROUTES.cases}/`),
+    href: ROUTES.activities,
+    label: "내 활동",
+    icon: Puzzle,
+    match: (path) => path === ROUTES.activities || path.startsWith(`${ROUTES.activities}/`),
   },
   {
     href: ROUTES.reports,

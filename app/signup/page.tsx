@@ -39,7 +39,7 @@ export default function SignUpPage() {
   useEffect(() => {
     if (sessionQuery.isLoading) return;
     if (sessionQuery.isFetching && !sessionQuery.data) return;
-    if (sessionQuery.data) router.replace(ROUTES.cases);
+    if (sessionQuery.data) router.replace(ROUTES.activities);
   }, [router, sessionQuery.data, sessionQuery.isLoading, sessionQuery.isFetching]);
 
   const message =

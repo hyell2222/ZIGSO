@@ -6,34 +6,34 @@ import { useMemo, useState } from "react";
 import { PhaseGuideCard } from "@/components/teacher/phase-guide-card";
 import { PhaseTimerContent } from "@/components/teacher/phase-timer-content";
 import {
-  TeamAssignmentDashboard,
-  type TeamAssignmentGroup,
-} from "@/components/teacher/team-assignment-dashboard";
+  GroupAssignmentDashboard,
+  type GroupAssignmentGroup,
+} from "@/components/teacher/group-assignment-dashboard";
 import {
-  TeamProgressDashboard,
-  type TeamProgressGroup,
-} from "@/components/teacher/team-progress-dashboard";
+  GroupProgressDashboard,
+  type GroupProgressGroup,
+} from "@/components/teacher/group-progress-dashboard";
 import { PlayJoinQr } from "@/components/teacher/play-join-qr";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
-import type { SessionPhase } from "@/lib/api/lessons";
-import type { ScenarioPack } from "@/lib/lunch/types";
+import type { ActivityPhase } from "@/lib/api/activities";
+import type { ActivityPack } from "@/lib/activity-pack/types";
 import {
   SANDBOX_JOIN_CODE,
   buildSandboxWaitingRoster,
   getSandboxNextPhaseLabel,
   type SandboxPlayer,
-  type SandboxTeam,
+  type SandboxGroup,
 } from "@/lib/sandbox/state";
 import { isTimedPhase, type TimedPhase } from "@/lib/teacher/phase-guide";
 import { cn } from "@/lib/utils";
 
 type Props = {
-  lessonTitle: string | null;
-  pack: ScenarioPack;
-  lessonId: string;
-  phase: SessionPhase;
-  teams: SandboxTeam[];
+  activityTitle: string | null;
+  pack: ActivityPack;
+  activityId: string;
+  phase: ActivityPhase;
+  groups: SandboxGroup[];
   players: SandboxPlayer[];
   realStudentNickname: string | null;
   onBegin: () => void;
@@ -42,11 +42,11 @@ type Props = {
 };
 
 export function SandboxTeacherPanel({
-  lessonTitle,
+  activityTitle,
   pack,
-  lessonId,
+  activityId,
   phase,
-  teams,
+  groups,
   players,
   realStudentNickname,
   onBegin,
@@ -55,57 +55,57 @@ export function SandboxTeacherPanel({
 }: Props) {
   const [timerModalOpen, setTimerModalOpen] = useState<{
     open: boolean;
-    phaseAtOpen: SessionPhase | null;
+    phaseAtOpen: ActivityPhase | null;
   }>({ open: false, phaseAtOpen: null });
 
   const sessionStarted = phase !== "waiting";
-  const sessionEnded = phase === "session_end";
+  const sessionEnded = phase === "results";
 
   const waitingOnlinePlayers = useMemo(
-    () => buildSandboxWaitingRoster(lessonId, pack, realStudentNickname),
-    [lessonId, pack, realStudentNickname],
+    () => buildSandboxWaitingRoster(activityId, pack, realStudentNickname),
+    [activityId, pack, realStudentNickname],
   );
 
   const playercount = sessionStarted ? players.length : waitingOnlinePlayers.length;
 
-  const ingredientNameById = useMemo(() => {
+  const itemNameById = useMemo(() => {
     const map = new Map<string, string>();
-    for (const ing of pack.ingredients) map.set(ing.id, ing.name);
+    for (const ing of pack.items) map.set(ing.id, ing.name);
     return map;
   }, [pack]);
 
-  const assignmentGroups = useMemo<TeamAssignmentGroup[]>(() => {
-    const byTeam = new Map<string, SandboxPlayer[]>();
+  const assignmentGroups = useMemo<GroupAssignmentGroup[]>(() => {
+    const byGroup = new Map<string, SandboxPlayer[]>();
     for (const p of players) {
-      const list = byTeam.get(p.teamId) ?? [];
+      const list = byGroup.get(p.groupId) ?? [];
       list.push(p);
-      byTeam.set(p.teamId, list);
+      byGroup.set(p.groupId, list);
     }
-    return teams.map((team) => ({
-      team: { id: team.id, name: team.name },
-      members: (byTeam.get(team.id) ?? []).map((m) => ({
+    return groups.map((group) => ({
+      group: { id: group.id, name: group.name },
+      members: (byGroup.get(group.id) ?? []).map((m) => ({
         id: m.id,
         nickname: m.nickname,
-        zoneName: ingredientNameById.get(m.ingredientId) ?? m.ingredientId,
+        zoneName: itemNameById.get(m.itemId) ?? m.itemId,
       })),
     }));
-  }, [players, teams, ingredientNameById]);
+  }, [players, groups, itemNameById]);
 
-  const progressGroups = useMemo<TeamProgressGroup[]>(() => {
+  const progressGroups = useMemo<GroupProgressGroup[]>(() => {
     const counts = new Map<string, number>();
-    for (const p of players) counts.set(p.teamId, (counts.get(p.teamId) ?? 0) + 1);
-    return teams.map((team) => ({
-      team: {
-        id: team.id,
+    for (const p of players) counts.set(p.groupId, (counts.get(p.groupId) ?? 0) + 1);
+    return groups.map((group) => ({
+      group: {
+        id: group.id,
         session_id: null,
-        name: team.name,
-        acquired_ingredients: team.acquired_ingredients,
-        completed_menus: team.completed_menus,
-        tray_submitted_at: team.tray_submitted_at,
+        name: group.name,
+        acquired_items: group.acquired_items,
+        completed_tasks: group.completed_tasks,
+        completed_at: group.completed_at,
       },
-      memberCount: counts.get(team.id) ?? 0,
+      memberCount: counts.get(group.id) ?? 0,
     }));
-  }, [teams, players]);
+  }, [groups, players]);
 
   const shouldShowTimer = isTimedPhase(phase);
   const timerToolOpen =
@@ -132,7 +132,7 @@ export function SandboxTeacherPanel({
         <header className="flex flex-col gap-4 border-b border-[var(--border)] pb-4 md:flex-row md:items-start">
           <div className="min-w-0 flex-1 space-y-1">
             <p className="font-mono text-2xl font-semibold text-[var(--accent)] sm:text-3xl">
-              {lessonTitle ?? "시뮬레이션"}
+              {activityTitle ?? "시뮬레이션"}
             </p>
             <p className="text-xs text-[var(--muted-foreground)]">
               접속 <span className="font-semibold text-[var(--foreground)]">{playercount}</span>명
@@ -164,7 +164,7 @@ export function SandboxTeacherPanel({
           {startButton ?? nextButton}
         </div>
 
-        {phase !== "waiting" && phase !== "session_end" ? <PhaseGuideCard phase={phase} /> : null}
+        {phase !== "waiting" && phase !== "results" ? <PhaseGuideCard phase={phase} /> : null}
 
         {phase === "waiting" ? (
           <section className="rounded-lg border border-[var(--border)] bg-[var(--card-bg)] p-3">
@@ -182,12 +182,12 @@ export function SandboxTeacherPanel({
           </section>
         ) : null}
 
-        {phase === "briefing" || phase === "investigation" ? (
-          <TeamAssignmentDashboard groups={assignmentGroups} loading={false} />
+        {phase === "overview" || phase === "expert_group" ? (
+          <GroupAssignmentDashboard groups={assignmentGroups} loading={false} />
         ) : null}
 
-        {phase === "final_report" || phase === "session_end" ? (
-          <TeamProgressDashboard groups={progressGroups} loading={false} pack={pack} />
+        {phase === "home_group" || phase === "results" ? (
+          <GroupProgressDashboard groups={progressGroups} loading={false} pack={pack} />
         ) : null}
       </main>
 

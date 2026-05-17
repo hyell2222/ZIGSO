@@ -1,6 +1,8 @@
-# School Lunch Rush
+# Jigsaw
 
-**School Lunch Rush** (CODEZERO) is a cooperative English classroom game for high school students. Teams work as cafeteria crews: ingredient experts deduce supplies from English hints, then combine them to complete lunch menus and submit a tray.
+**Jigsaw** is a teacher tool for running jigsaw cooperative group activities in the classroom. Teachers design activities, host live sessions with join codes, and track group progress through expert-group and home-group phases.
+
+The repository ships with one built-in game template example — **School Lunch Rush** (cooperative English cafeteria activity). The data model and editor target that template; additional game types can follow the same `activity_pack` structure.
 
 ## Tech Stack
 
@@ -20,12 +22,24 @@ Core tables:
 
 | Table | Purpose |
 |-------|---------|
-| `lessons` | Teacher-authored scenario (`scenario_pack` JSON) |
-| `sessions` | Live play (`join_code`, `phase`) |
-| `teams` | Acquired ingredients, completed menus, tray submission |
-| `players` | Nickname, team, `assigned_ingredient_id` |
+| `activities` | Teacher-authored activity (`activity_pack` JSON) |
+| `sessions` | Live play (`join_code`, `phase`, `status`) |
+| `groups` | Acquired items, completed tasks, activity completion |
+| `players` | Nickname, group, `assigned_role_id` |
 
-Game phases: `waiting` → `briefing` → `investigation` → `final_report` → `session_end`.
+Session phases: `waiting` → `overview` → `expert_group` → `home_group` → `results`.
+
+Session `status`: `active` | `ended` (set to `ended` when the session reaches `results`).
+
+## Activity pack model
+
+Gameplay content lives under [`lib/activity-pack/`](lib/activity-pack/). An `activity_pack` (`ActivityPack`) includes:
+
+- **`items`** — answers and staged hints for expert groups (`groupHint` for the home group)
+- **`tasks`** — home-group assignments with `itemIds` and ordered **`steps`**
+- **`actionCards`** — sentence pool students combine during the group phase
+
+The editor and AI generator use generic names (`item`, `task`, `step`); the **School Lunch Rush** sample maps them to ingredients, menus, and cooking steps.
 
 ## Run Locally
 
@@ -35,7 +49,7 @@ Game phases: `waiting` → `briefing` → `investigation` → `final_report` →
 cp .env.example .env.local
 ```
 
-2. Fill `.env.local` with your Supabase (and optional AI) values.
+2. Fill `.env.local` with your Supabase (and optional OpenAI) values.
 3. Apply `supabase/schema.sql` if the database is new.
 4. Start the app:
 
@@ -48,7 +62,7 @@ npm run dev
 
 For **submission** (plain `out/` folder, no server), use `npm run export`. This sets `STATIC_EXPORT=1` so Next.js outputs a static site to `/out`.
 
-**Vercel / any host that should run API routes** (e.g. AI scenario generation at `/api/ai/generate-scenario-pack`): use the default `npm run build` **without** `STATIC_EXPORT`. Do not set `STATIC_EXPORT` in the hosting environment.
+**Vercel / any host that should run API routes** (e.g. AI activity pack generation at `/api/ai/generate-activity-pack`): use the default `npm run build` **without** `STATIC_EXPORT`. Do not set `STATIC_EXPORT` in the hosting environment.
 
 ```bash
 npm run export
@@ -59,10 +73,10 @@ The exported app is generated to `/out` with `out/index.html` as the entry file.
 ## Core Routes
 
 - `/login/`, `/signup/`: teacher authentication
-- `/cases/`, `/cases/new/`, `/cases/edit/`: lesson authoring (School Lunch Rush scenario)
-- `/cases/sandbox/`: teacher-only flow preview (`?case=<lesson id>`)
+- `/activities/`, `/activities/new/`, `/activities/edit/`: activity authoring
+- `/activities/sandbox/`: teacher-only flow preview (`?activity=<activity id>`)
 - `/sessions/`: live session host dashboard (`?session=<session id>`)
-- `/reports/`: session list and team progress (`?session=` for detail)
+- `/reports/`: session list and group progress (`?session=` for detail)
 - `/play/`, `/play/session/`: student join by code (no login)
 - `/`: landing
 
@@ -70,7 +84,13 @@ The exported app is generated to `/out` with `out/index.html` as the entry file.
 
 | Route | Purpose |
 |-------|---------|
-| `POST /api/ai/generate-scenario-pack` | AI draft for menus, ingredients, and cooking steps |
+| `POST /api/ai/generate-activity-pack` | AI draft for items, tasks, and step sentences (School Lunch Rush template) |
+
+Request body supports `contentLanguage` (`ko` | `en`) for title, description, hints, and steps.
+
+## Example activity pack
+
+See [`lib/activity-pack/sample-pack.json`](lib/activity-pack/sample-pack.json) for the **School Lunch Rush** sample `activity_pack`.
 
 ## Submission Folder Support
 

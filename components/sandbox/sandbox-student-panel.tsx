@@ -2,63 +2,63 @@
 
 import { FormEvent, useMemo, useState } from "react";
 
-import { IngredientExpertPanel } from "@/components/play/ingredient-expert-panel";
-import { ScenarioBriefingLayout } from "@/components/play/scenario-briefing-layout";
-import { TeamKitchenPanel } from "@/components/play/team-kitchen-panel";
+import { ExpertPhasePanel } from "@/components/play/expert-group-panel";
+import { ActivityIntroductionLayout } from "@/components/play/overview-layout";
+import { GroupPhasePanel } from "@/components/play/home-group-panel";
 import {
   PlayAtmosphere,
   playLoaderRegion,
   playSurfacePanel,
 } from "@/components/play/play-atmosphere";
 import { PlayPhaseHeader } from "@/components/play/play-phase-header";
-import { PlayHeaderTeamPlace } from "@/components/play/play-header-team-place";
+import { PlayHeaderGroupPlace } from "@/components/play/play-header-group-place";
 import { WaitingLobbyBlock } from "@/components/play/waiting-lobby-block";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import type { SessionPhase } from "@/lib/api/lessons";
-import type { ScenarioPack } from "@/lib/lunch/types";
-import type { TeamRow } from "@/lib/api/play";
+import type { ActivityPhase } from "@/lib/api/activities";
+import type { ActivityPack } from "@/lib/activity-pack/types";
+import type { GroupRow } from "@/lib/api/play";
 import {
   SANDBOX_JOIN_CODE,
   SANDBOX_REAL_STUDENT_PLAYER_ID,
   type SandboxPlayer,
-  type SandboxTeam,
+  type SandboxGroup,
 } from "@/lib/sandbox/state";
 import { cn } from "@/lib/utils";
 
 type Props = {
-  lessonTitle: string | null;
+  activityTitle: string | null;
   description: string | null;
-  pack: ScenarioPack;
-  phase: SessionPhase;
-  teams: SandboxTeam[];
+  pack: ActivityPack;
+  phase: ActivityPhase;
+  groups: SandboxGroup[];
   players: SandboxPlayer[];
   realStudentNickname: string | null;
   onJoinAsStudent: (nickname: string) => void;
   onLeaveAsStudent: () => void;
   onAcquire: (
-    teamId: string,
-    ingredientId: string,
+    groupId: string,
+    itemId: string,
     answer: string,
     hintStage: 1 | 2 | 3 | 4 | 5,
   ) => void;
-  onCompleteMenu: (teamId: string, menuId: string, steps: string[]) => void;
-  onSubmitTray: (teamId: string) => void;
+  onCompleteTask: (groupId: string, taskId: string, steps: string[]) => void;
+  onCompleteActivity: (groupId: string) => void;
 };
 
 export function SandboxStudentPanel({
-  lessonTitle,
+  activityTitle,
   description,
   pack,
   phase,
-  teams,
+  groups,
   players,
   realStudentNickname,
   onJoinAsStudent,
   onLeaveAsStudent,
   onAcquire,
-  onCompleteMenu,
-  onSubmitTray,
+  onCompleteTask,
+  onCompleteActivity,
 }: Props) {
   void onLeaveAsStudent;
   const [nickname, setNickname] = useState("");
@@ -69,31 +69,31 @@ export function SandboxStudentPanel({
     return players.find((p) => p.isReal) ?? players[0]!;
   }, [players]);
 
-  const team = useMemo(
-    () => (primaryPlayer ? teams.find((t) => t.id === primaryPlayer.teamId) ?? null : null),
-    [primaryPlayer, teams],
+  const group = useMemo(
+    () => (primaryPlayer ? groups.find((t) => t.id === primaryPlayer.groupId) ?? null : null),
+    [primaryPlayer, groups],
   );
 
-  const teamRow: TeamRow | null = useMemo(() => {
-    if (!team) return null;
+  const groupRow: GroupRow | null = useMemo(() => {
+    if (!group) return null;
     return {
-      id: team.id,
+      id: group.id,
       session_id: null,
-      name: team.name,
-      acquired_ingredients: team.acquired_ingredients,
-      completed_menus: team.completed_menus,
-      tray_submitted_at: team.tray_submitted_at,
+      name: group.name,
+      acquired_items: group.acquired_items,
+      completed_tasks: group.completed_tasks,
+      completed_at: group.completed_at,
     };
-  }, [team]);
+  }, [group]);
 
   const acquiredIds = useMemo(
-    () => new Set(team?.acquired_ingredients.map((a) => a.ingredientId) ?? []),
-    [team],
+    () => new Set(group?.acquired_items.map((a) => a.itemId) ?? []),
+    [group],
   );
 
-  const ingredientLabel =
-    pack.ingredients.find((i) => i.id === primaryPlayer?.ingredientId)?.name ??
-    primaryPlayer?.ingredientId ??
+  const roleLabel =
+    pack.items.find((i) => i.id === primaryPlayer?.itemId)?.name ??
+    primaryPlayer?.itemId ??
     null;
 
   if (!joined && !realStudentNickname) {
@@ -138,7 +138,7 @@ export function SandboxStudentPanel({
           <WaitingLobbyBlock
             joinCode={SANDBOX_JOIN_CODE}
             nickname={realStudentNickname ?? nickname}
-            sessionTitle={lessonTitle}
+            sessionTitle={activityTitle}
             state="waiting"
           />
         </section>
@@ -146,58 +146,58 @@ export function SandboxStudentPanel({
     );
   }
 
-  if (phase === "investigation" && primaryPlayer && team) {
+  if (phase === "expert_group" && primaryPlayer && group) {
     return (
-      <SandboxIngredientBridge
+      <SandboxExpertBridge
         pack={pack}
         playerId={primaryPlayer.id}
-        teamId={team.id}
-        teamName={team.name}
-        ingredientId={primaryPlayer.ingredientId}
+        groupId={group.id}
+        groupName={group.name}
+        itemId={primaryPlayer.itemId}
         acquiredIds={acquiredIds}
         onAcquire={(answer, hintStage) =>
-          onAcquire(team.id, primaryPlayer.ingredientId, answer, hintStage)
+          onAcquire(group.id, primaryPlayer.itemId, answer, hintStage)
         }
       />
     );
   }
 
-  if (phase === "final_report" && team && teamRow) {
+  if (phase === "home_group" && group && groupRow) {
     return (
-      <SandboxKitchenBridge
+      <SandboxGroupBridge
         pack={pack}
-        team={teamRow}
-        teamName={team.name}
-        onCompleteMenu={(menuId, steps) => onCompleteMenu(team.id, menuId, steps)}
-        onSubmitTray={() => onSubmitTray(team.id)}
+        group={groupRow}
+        groupName={group.name}
+        onCompleteTask={(taskId, steps) => onCompleteTask(group.id, taskId, steps)}
+        onCompleteActivity={() => onCompleteActivity(group.id)}
       />
     );
   }
 
-  if (phase === "briefing") {
+  if (phase === "overview") {
     return (
       <PlayAtmosphere>
         <div className="flex min-h-0 flex-1 flex-col">
           <header className="border-b border-[var(--border)] px-4 py-3">
             <PlayPhaseHeader
               phase={1}
-              title="오늘의 급식 브리핑"
+              title="활동 브리핑"
               description="팀과 전문 재료를 확인하세요."
               rightSlot={
-                <PlayHeaderTeamPlace
-                  teamName={team?.name ?? null}
-                  placeName={ingredientLabel}
+                <PlayHeaderGroupPlace
+                  groupName={group?.name ?? null}
+                  placeName={roleLabel}
                   placeLabel="전문 재료"
                 />
               }
             />
           </header>
           <main className="flex-1 overflow-y-auto px-4 py-6">
-            <ScenarioBriefingLayout
+            <ActivityIntroductionLayout
               loading={false}
-              title={lessonTitle}
+              title={activityTitle}
               description={description}
-              scenarioPack={pack}
+              activityPack={pack}
             />
           </main>
         </div>
@@ -208,67 +208,67 @@ export function SandboxStudentPanel({
   return (
     <PlayAtmosphere>
       <main className="flex flex-1 items-center justify-center p-8 text-sm text-[var(--muted-foreground)]">
-        {phase === "session_end" ? "시뮬레이션이 종료되었습니다." : "교사가 다음 단계로 진행할 때까지 기다려 주세요."}
+        {phase === "results" ? "시뮬레이션이 종료되었습니다." : "교사가 다음 단계로 진행할 때까지 기다려 주세요."}
       </main>
     </PlayAtmosphere>
   );
 }
 
 /** API 대신 샌드박스 콜백으로 재료 획득 */
-function SandboxIngredientBridge({
+function SandboxExpertBridge({
   pack,
   playerId,
-  teamId,
-  teamName,
-  ingredientId,
+  groupId,
+  groupName,
+  itemId,
   acquiredIds,
   onAcquire,
 }: {
-  pack: ScenarioPack;
+  pack: ActivityPack;
   playerId: string;
-  teamId: string;
-  teamName: string;
-  ingredientId: string;
+  groupId: string;
+  groupName: string;
+  itemId: string;
   acquiredIds: Set<string>;
   onAcquire: (answer: string, hintStage: 1 | 2 | 3 | 4 | 5) => void;
 }) {
   const [, bump] = useState(0);
   return (
-    <IngredientExpertPanel
+    <ExpertPhasePanel
       pack={pack}
       playerId={playerId}
-      teamId={teamId}
-      teamName={teamName}
-      ingredientId={ingredientId}
-      acquiredIngredientIds={acquiredIds}
+      groupId={groupId}
+      groupName={groupName}
+      itemId={itemId}
+      acquiredItemIds={acquiredIds}
       onAcquired={() => bump((n) => n + 1)}
       sandboxAcquire={onAcquire}
     />
   );
 }
 
-function SandboxKitchenBridge({
+function SandboxGroupBridge({
   pack,
-  team,
-  teamName,
-  onCompleteMenu,
-  onSubmitTray,
+  group,
+  groupName,
+  onCompleteTask,
+  onCompleteActivity,
 }: {
-  pack: ScenarioPack;
-  team: TeamRow;
-  teamName: string;
-  onCompleteMenu: (menuId: string, steps: string[]) => void;
-  onSubmitTray: () => void;
+  pack: ActivityPack;
+  group: GroupRow;
+  groupName: string;
+  onCompleteTask: (taskId: string, steps: string[]) => void;
+  onCompleteActivity: () => void;
 }) {
   const [, bump] = useState(0);
   return (
-    <TeamKitchenPanel
+    <GroupPhasePanel
       pack={pack}
-      team={team}
-      teamName={teamName}
+      group={group}
+      groupName={groupName}
       onUpdate={() => bump((n) => n + 1)}
-      sandboxCompleteMenu={onCompleteMenu}
-      sandboxSubmitTray={onSubmitTray}
+      sandboxCompleteTask={onCompleteTask}
+      sandboxCompleteActivity={onCompleteActivity}
     />
   );
 }

@@ -10,7 +10,7 @@ type PlayAtmosphereProps = {
   variant?: "viewport" | "contained";
 };
 
-/** 학생 play 본페이지 — 밝은 급식실 하늘 + 바닥 타일 */
+/** 학생 play 본페이지 — 밝은 활동 화면 배경 */
 export const PLAY_PAGE_BLACK_BG: CSSProperties = {
   backgroundColor: "var(--entry-shell-deep)",
   backgroundImage: `

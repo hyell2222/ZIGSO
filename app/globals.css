@@ -51,7 +51,7 @@
 }
 
 /**
- * 학생 play 화면 (.play-shell): 밝은 급식실·타이쿤 톤.
+ * 학생 play 화면 (.play-shell): 밝은 활동 화면 톤.
  */
 .play-shell {
   --entry-shell: #f4faf7;
@@ -170,7 +170,7 @@ body {
   }
 }
 
-@keyframes playTrayBounce {
+@keyframes playActivityBounce {
   0%,
   100% {
     transform: translateY(0) rotate(-2deg);
@@ -180,7 +180,7 @@ body {
   }
 }
 
-/* 학생 참가 게이트(blackout landing) — 점 애니메이션: student-blackout-entry-led.module.css */
+/* 학생 참가 (/play) */
 
 @keyframes revealPost {
   from {

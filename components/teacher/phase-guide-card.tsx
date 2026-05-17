@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 
-import type { SessionPhase } from "@/lib/api/lessons";
+import type { ActivityPhase } from "@/lib/api/activities";
 import { PHASE_GUIDES, PHASES } from "@/lib/teacher/phase-guide";
 import { cn } from "@/lib/utils";
 
@@ -15,12 +15,12 @@ export function PhaseGuideCard({
   meta,
   compact = false,
 }: {
-  phase: SessionPhase;
+  phase: ActivityPhase;
   meta?: ReactNode;
   /** 좁은 임베드(샌드박스 패널 등)에서 제목·여백을 줄입니다 */
   compact?: boolean;
 }) {
-  if (phase === "waiting" || phase === "session_end") {
+  if (phase === "waiting" || phase === "results") {
     return null;
   }
 

@@ -6,27 +6,27 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useMemo } from "react";
 
-import { deleteSession, listHostSessions, parseScenarioPack, type HostSessionListRow } from "@/lib/api/lessons";
+import { deleteSession, listHostSessions, parseActivityPack, type HostSessionListRow } from "@/lib/api/activities";
 import {
   getHostSessionDetails,
   listSessionPlayers,
-  listSessionTeams,
+  listSessionGroups,
 } from "@/lib/api/play";
 import { useRequireTeacherSession } from "@/lib/auth/use-require-teacher-session";
-import { TeamProgressDashboard, type TeamProgressGroup } from "@/components/teacher/team-progress-dashboard";
+import { GroupProgressDashboard, type GroupProgressGroup } from "@/components/teacher/group-progress-dashboard";
 import { KebabMenu } from "@/components/ui/kebab-menu";
 import { PageHeader } from "@/components/layout/page-header";
 import { TopNav } from "@/components/layout/top-nav";
 import { LoadingState } from "@/components/ui/loading-state";
-import { groupPlayersByTeam } from "@/lib/teacher/group-players-by-team";
+import { groupPlayersByGroup } from "@/lib/teacher/group-players-by-group";
 import { ROUTES } from "@/lib/routes";
 
 const PHASE_KR: Record<string, string> = {
   waiting: "대기",
-  briefing: "급식 브리핑",
-  investigation: "재료 전문가",
-  final_report: "급식판 완성",
-  session_end: "종료",
+  overview: "활동 소개",
+  expert_group: "전문가 집단",
+  home_group: "팀 과제 완성",
+  results: "종료",
 };
 
 function formatWhen(iso: string | null) {
@@ -57,10 +57,10 @@ function ReportsSessionsListPanel({ teacherUserId }: { teacherUserId: string }) 
   });
 
   const handleDelete = (row: HostSessionListRow) => {
-    const label = row.lessons?.title?.trim() || "제목 없는 수업";
+    const label = row.activities?.title?.trim() || "제목 없는 활동";
     if (
       !window.confirm(
-        `「${label}」세션을 삭제할까요?\n팀·참가 기록이 모두 삭제되며 되돌릴 수 없습니다.\n수업 원본은 그대로 남습니다.`,
+        `「${label}」세션을 삭제할까요?\n팀·참가 기록이 모두 삭제되며 되돌릴 수 없습니다.\n활동 원본은 그대로 남습니다.`,
       )
     ) {
       return;
@@ -71,7 +71,7 @@ function ReportsSessionsListPanel({ teacherUserId }: { teacherUserId: string }) 
   return (
     <ul className="space-y-3">
       {listQuery.data?.map((row) => {
-        const title = row.lessons?.title?.trim() || "제목 없는 수업";
+        const title = row.activities?.title?.trim() || "제목 없는 활동";
         const phase = row.phase ? (PHASE_KR[row.phase] ?? row.phase) : "—";
         return (
           <li
@@ -123,25 +123,25 @@ function ReportsSessionDetailPanel({ sessionId, teacherUserId }: { sessionId: st
     enabled: Boolean(sessionId),
   });
 
-  const teamsQuery = useQuery({
-    queryKey: ["host-session-teams", sessionId],
-    queryFn: () => listSessionTeams(sessionId),
+  const groupsQuery = useQuery({
+    queryKey: ["host-session-groups", sessionId],
+    queryFn: () => listSessionGroups(sessionId),
     enabled: Boolean(sessionId),
   });
 
   const pack = useMemo(
-    () => parseScenarioPack(sessionQuery.data?.lessons?.scenario_pack),
-    [sessionQuery.data?.lessons?.scenario_pack],
+    () => parseActivityPack(sessionQuery.data?.activities?.activity_pack),
+    [sessionQuery.data?.activities?.activity_pack],
   );
 
-  const progressGroups = useMemo<TeamProgressGroup[]>(() => {
-    const teams = teamsQuery.data ?? [];
-    const grouped = groupPlayersByTeam(playersQuery.data ?? [], teams);
+  const progressGroups = useMemo<GroupProgressGroup[]>(() => {
+    const groups = groupsQuery.data ?? [];
+    const grouped = groupPlayersByGroup(playersQuery.data ?? [], groups);
     return grouped.map((g) => ({
-      team: g.team,
+      group: g.group,
       memberCount: g.members.length,
     }));
-  }, [playersQuery.data, teamsQuery.data]);
+  }, [playersQuery.data, groupsQuery.data]);
 
   if (sessionQuery.isLoading) {
     return <LoadingState variant="section" label="불러오는 중…" />;
@@ -165,16 +165,16 @@ function ReportsSessionDetailPanel({ sessionId, teacherUserId }: { sessionId: st
           ← 세션 목록
         </Link>
         <h2 className="mt-2 font-mono text-2xl font-semibold text-[var(--accent)]">
-          {sessionQuery.data.lessons?.title ?? "세션"}
+          {sessionQuery.data.activities?.title ?? "세션"}
         </h2>
         <p className="text-sm text-[var(--muted-foreground)]">
           코드 {sessionQuery.data.join_code} · {formatWhen(sessionQuery.data.created_at ?? null)} ·{" "}
           {PHASE_KR[sessionQuery.data.phase ?? ""] ?? sessionQuery.data.phase}
         </p>
       </div>
-      <TeamProgressDashboard
+      <GroupProgressDashboard
         groups={progressGroups}
-        loading={playersQuery.isLoading || teamsQuery.isLoading}
+        loading={playersQuery.isLoading || groupsQuery.isLoading}
         pack={pack}
       />
     </div>
@@ -201,7 +201,7 @@ function ReportsPageInner() {
           title="활동 리포트"
           description={
             sessionId
-              ? "팀별 급식판 진행과 점수를 확인합니다."
+              ? "팀별 과제 진행과 점수를 확인합니다."
               : "진행한 세션별로 팀 성과를 확인할 수 있습니다."
           }
         />
@@ -212,8 +212,8 @@ function ReportsPageInner() {
         ) : (listQuery.data?.length ?? 0) === 0 ? (
           <p className="rounded-lg border border-dashed border-[var(--border)] px-4 py-8 text-center text-sm text-[var(--muted-foreground)]">
             아직 연 세션이 없습니다.{" "}
-            <Link className="underline text-[var(--accent)]" href={ROUTES.cases}>
-              내 수업
+            <Link className="underline text-[var(--accent)]" href={ROUTES.activities}>
+              내 활동
             </Link>
             에서 플레이를 시작해 주세요.
           </p>

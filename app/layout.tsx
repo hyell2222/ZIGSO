@@ -10,8 +10,8 @@ const dungGeunMo = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "스쿨 런치 러시",
-  description: "급식실 협동 영어 타이쿤 — 스쿨 런치 러시",
+  title: "Jigsaw",
+  description: "직소 모둠 협동 학습을 돕는 교사 도구",
   icons: {
     icon: "/window.svg",
   },

@@ -9,12 +9,12 @@ const WAITING_LOBBY: Record<
 > = {
   session_loading: {
     title: "주방 불 끄는 중",
-    body1: "오늘의 메뉴를 불러오고 있어요.",
+    body1: "활동 내용을 불러오고 있어요.",
     body2: null,
     emoji: "🍳",
   },
   waiting: {
-    title: "곧 급식 타임!",
+    title: "곧 활동이 시작돼요!",
     body1: "선생님이 시작하면 팀·전문 재료가 자동 배정돼요.",
     body2: "배정이 끝나면 같은 팀끼리 모여 주세요.",
     emoji: "🍱",
@@ -49,7 +49,7 @@ export function WaitingLobbyBlock({
       )}
     >
       <span
-        className={cn(styles.trayIcon, compact && styles.trayIconCompact)}
+        className={cn(styles.activityIcon, compact && styles.activityIconCompact)}
         aria-hidden
       >
         {copy.emoji}

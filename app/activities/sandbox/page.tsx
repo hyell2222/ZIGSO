@@ -1,0 +1,289 @@
+"use client";
+
+import { useQuery } from "@tanstack/react-query";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useCallback, useState, type ReactNode } from "react";
+
+import { SandboxStudentPanel } from "@/components/sandbox/sandbox-student-panel";
+import { SandboxTeacherPanel } from "@/components/sandbox/sandbox-teacher-panel";
+import { LoadingState } from "@/components/ui/loading-state";
+import { getActivity, parseActivityPack } from "@/lib/api/activities";
+import type { ActivityPhase } from "@/lib/api/activities";
+import { useRequireTeacherSession } from "@/lib/auth/use-require-teacher-session";
+import { tryAcquireItem, tryCompleteTask } from "@/lib/activity-pack/engine";
+import type { AcquiredItem, CompletedTask } from "@/lib/activity-pack/types";
+import {
+  buildSandboxAssignments,
+  createInitialSandboxState,
+  nextSandboxPhase,
+  type SandboxState,
+} from "@/lib/sandbox/state";
+import { cn } from "@/lib/utils";
+
+function SandboxPageContent() {
+  const searchParams = useSearchParams();
+  const activityId = searchParams.get("activity")?.trim() ?? "";
+  const teacherSession = useRequireTeacherSession();
+
+  const activityQuery = useQuery({
+    queryKey: ["sandbox-activity", activityId],
+    queryFn: () => getActivity(activityId),
+    enabled: Boolean(activityId && teacherSession.data),
+  });
+
+  const pack = parseActivityPack(activityQuery.data?.activity_pack);
+
+  const [state, setState] = useState<SandboxState>(() => createInitialSandboxState());
+
+  const beginSandbox = useCallback(() => {
+    if (!pack || !activityId) return;
+    setState((prev) => {
+      const { groups, players } = buildSandboxAssignments(activityId, pack, prev.realStudentNickname);
+      return { ...prev, phase: "overview", groups, players };
+    });
+  }, [activityId, pack]);
+
+  const advancePhase = useCallback(() => {
+    setState((prev) => {
+      const next = nextSandboxPhase(prev.phase);
+      if (!next) return prev;
+      return { ...prev, phase: next };
+    });
+  }, []);
+
+  const resetSandbox = useCallback(() => {
+    setState((prev) => ({
+      ...createInitialSandboxState(),
+      realStudentNickname: prev.realStudentNickname,
+    }));
+  }, []);
+
+  const joinAsStudent = useCallback((nickname: string) => {
+    const trimmed = nickname.trim();
+    if (!trimmed) return;
+    setState((prev) => ({ ...prev, realStudentNickname: trimmed }));
+  }, []);
+
+  const leaveAsStudent = useCallback(() => {
+    setState((prev) => ({ ...prev, realStudentNickname: null }));
+  }, []);
+
+  const handleAcquire = useCallback(
+    (groupId: string, itemId: string, answer: string, hintLevelUsed: 1 | 2 | 3 | 4 | 5) => {
+      if (!pack) return;
+      const result = tryAcquireItem(pack, itemId, answer, hintLevelUsed);
+      if (!result.ok) throw new Error(result.reason);
+      setState((prev) => ({
+        ...prev,
+        groups: prev.groups.map((t) => {
+          if (t.id !== groupId) return t;
+          if (t.acquired_items.some((a) => a.itemId === itemId)) return t;
+          return {
+            ...t,
+            acquired_items: [...t.acquired_items, result.record],
+          };
+        }),
+      }));
+    },
+    [pack],
+  );
+
+  const handleCompleteTask = useCallback(
+    (groupId: string, taskId: string, submittedSteps: string[]) => {
+      if (!pack) return;
+      setState((prev) => {
+        const group = prev.groups.find((t) => t.id === groupId);
+        if (!group) return prev;
+        const result = tryCompleteTask(pack, taskId, group.acquired_items, submittedSteps);
+        if (!result.ok) throw new Error(result.reason);
+        return {
+          ...prev,
+          groups: prev.groups.map((t) =>
+            t.id === groupId
+              ? { ...t, completed_tasks: [...t.completed_tasks, result.record] }
+              : t,
+          ),
+        };
+      });
+    },
+    [pack],
+  );
+
+  const handleCompleteActivity = useCallback(
+    (groupId: string) => {
+      if (!pack) return;
+      setState((prev) => {
+        const group = prev.groups.find((t) => t.id === groupId);
+        if (!group || group.completed_at) return prev;
+        const required = pack.tasks.map((m) => m.id);
+        const done = new Set(group.completed_tasks.map((m) => m.taskId));
+        if (required.some((id) => !done.has(id))) {
+          throw new Error("아직 완성하지 않은 과제가 있습니다.");
+        }
+        return {
+          ...prev,
+          groups: prev.groups.map((t) =>
+            t.id === groupId ? { ...t, completed_at: new Date().toISOString() } : t,
+          ),
+        };
+      });
+    },
+    [pack],
+  );
+
+  const phase: ActivityPhase = state.phase;
+
+  if (!activityId) {
+    return (
+      <SandboxFullPageMessage>
+        <p className="text-sm text-[var(--muted-foreground)]">활동 정보를 찾을 수 없습니다.</p>
+      </SandboxFullPageMessage>
+    );
+  }
+
+  if (teacherSession.isLoading || (teacherSession.isFetching && !teacherSession.data)) {
+    return (
+      <SandboxFullPageMessage>
+        <LoadingState variant="page" />
+      </SandboxFullPageMessage>
+    );
+  }
+
+  if (activityQuery.isLoading) {
+    return (
+      <SandboxFullPageMessage>
+        <LoadingState variant="page" />
+      </SandboxFullPageMessage>
+    );
+  }
+
+  if (activityQuery.isError || !activityQuery.data || !pack) {
+    return (
+      <SandboxFullPageMessage>
+        <p className="text-sm text-[var(--danger)]">
+          활동 데이터를 불러오지 못했습니다.
+          {activityQuery.error instanceof Error ? ` ${activityQuery.error.message}` : null}
+        </p>
+      </SandboxFullPageMessage>
+    );
+  }
+
+  const activity = activityQuery.data;
+
+  return (
+    <main
+      className="grid h-dvh min-h-0 w-full grid-cols-2 grid-rows-1 gap-3 p-3 sm:gap-4 sm:p-4"
+      style={{
+        backgroundColor: "color-mix(in srgb, var(--ink) 8%, var(--surface))",
+        backgroundImage:
+          "radial-gradient(circle at 12% -10%, color-mix(in srgb, var(--primary) 8%, transparent), transparent 50%), radial-gradient(circle at 90% 110%, color-mix(in srgb, var(--accent) 6%, transparent), transparent 55%)",
+      }}
+    >
+      <BrowserWindow title="교사 화면" tone="primary" className="min-w-0">
+        <SandboxTeacherPanel
+          activityTitle={activity.title}
+          pack={pack}
+          activityId={activityId}
+          phase={phase}
+          groups={state.groups}
+          players={state.players}
+          realStudentNickname={state.realStudentNickname}
+          onBegin={beginSandbox}
+          onAdvance={advancePhase}
+          onResetPhase={resetSandbox}
+        />
+      </BrowserWindow>
+
+      <BrowserWindow title="학생 화면" tone="accent" className="min-w-0">
+        <SandboxStudentPanel
+          activityTitle={activity.title}
+          description={activity.description}
+          pack={pack}
+          phase={phase}
+          groups={state.groups}
+          players={state.players}
+          realStudentNickname={state.realStudentNickname}
+          onJoinAsStudent={joinAsStudent}
+          onLeaveAsStudent={leaveAsStudent}
+          onAcquire={handleAcquire}
+          onCompleteTask={handleCompleteTask}
+          onCompleteActivity={handleCompleteActivity}
+        />
+      </BrowserWindow>
+    </main>
+  );
+}
+
+function BrowserWindow({
+  title,
+  tone,
+  children,
+  className,
+}: {
+  title: string;
+  tone: "primary" | "accent";
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <section
+      className={cn(
+        "relative flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-xl border bg-[var(--card-bg)] shadow-[0_24px_60px_-18px_rgba(0,0,0,0.45),0_8px_24px_-8px_rgba(0,0,0,0.25)]",
+        tone === "primary"
+          ? "border-[color-mix(in_srgb,var(--primary)_45%,var(--border))]"
+          : "border-[color-mix(in_srgb,var(--accent)_45%,var(--border))]",
+        className,
+      )}
+    >
+      <header
+        className={cn(
+          "flex shrink-0 items-center gap-2 border-b border-[var(--border)] px-2.5 py-1.5 sm:gap-2.5 sm:px-3 sm:py-2",
+          tone === "primary"
+            ? "bg-[color-mix(in_srgb,var(--primary)_10%,var(--surface))]"
+            : "bg-[color-mix(in_srgb,var(--accent)_8%,var(--surface))]",
+        )}
+      >
+        <div className="flex shrink-0 items-center gap-1.5" aria-hidden>
+          <span className="h-2.5 w-2.5 rounded-full bg-[#ff5f57]" />
+          <span className="h-2.5 w-2.5 rounded-full bg-[#ffbd2e]" />
+          <span className="h-2.5 w-2.5 rounded-full bg-[#28c840]" />
+        </div>
+        <span
+          className={cn(
+            "shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider sm:px-2 sm:text-[10px]",
+            tone === "primary"
+              ? "bg-[var(--primary)] text-[var(--on-primary)]"
+              : "bg-[var(--accent)] text-[var(--background)]",
+          )}
+        >
+          {title}
+        </span>
+      </header>
+      <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-[var(--background)]">
+        {children}
+      </div>
+    </section>
+  );
+}
+
+function SandboxFullPageMessage({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex h-dvh w-full items-center justify-center bg-[var(--background)] p-8">
+      {children}
+    </div>
+  );
+}
+
+export default function SandboxPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex h-dvh w-full items-center justify-center bg-[var(--background)]">
+          <LoadingState variant="page" />
+        </div>
+      }
+    >
+      <SandboxPageContent />
+    </Suspense>
+  );
+}

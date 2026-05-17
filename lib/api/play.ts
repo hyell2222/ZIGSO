@@ -1,18 +1,18 @@
 "use client";
 
-import { parseScenarioPack } from "@/lib/api/lessons";
-import { tryAcquireIngredient, tryCompleteMenu } from "@/lib/lunch/engine";
-import type { AcquiredIngredient, CompletedMenu, ScenarioPack } from "@/lib/lunch/types";
+import { parseActivityPack } from "@/lib/api/activities";
+import { tryAcquireItem, tryCompleteTask } from "@/lib/activity-pack/engine";
+import type { AcquiredItem, CompletedTask, ActivityPack } from "@/lib/activity-pack/types";
 import { supabase } from "@/lib/supabase";
 
 // =====================================================================
-// sessions / lessons
+// sessions / activities
 // =====================================================================
 
 export async function getSessionByJoinCode(joinCode: string) {
   const { data, error } = await supabase
     .from("sessions")
-    .select("id,lesson_id,is_active,phase")
+    .select("id,activity_id,status,phase")
     .eq("join_code", joinCode)
     .single();
   if (error) throw error;
@@ -24,21 +24,21 @@ export type SessionDetailsRow = {
   join_code: string;
   host_id: string | null;
   phase: string | null;
-  is_active: boolean | null;
+  status: string | null;
   created_at: string | null;
-  lesson_id: string | null;
-  lessons: {
+  activity_id: string | null;
+  activities: {
     title: string | null;
     description: string | null;
     difficulty: string | null;
-    scenario_pack: ScenarioPack | null;
+    activity_pack: ActivityPack | null;
   } | null;
 };
 
 export type HostSessionDetailsRow = SessionDetailsRow;
 
 const SESSION_SELECT =
-  "id,join_code,host_id,phase,is_active,created_at,lesson_id,lessons(title,description,difficulty,scenario_pack)";
+  "id,join_code,host_id,phase,status,created_at,activity_id,activities(title,description,difficulty,activity_pack)";
 
 export async function getPlaySessionDetails(sessionId: string) {
   const { data, error } = await supabase
@@ -48,8 +48,8 @@ export async function getPlaySessionDetails(sessionId: string) {
     .single();
   if (error) throw error;
   const row = data as unknown as SessionDetailsRow;
-  if (row.lessons?.scenario_pack) {
-    row.lessons.scenario_pack = parseScenarioPack(row.lessons.scenario_pack);
+  if (row.activities?.activity_pack) {
+    row.activities.activity_pack = parseActivityPack(row.activities.activity_pack);
   }
   return row;
 }
@@ -66,24 +66,24 @@ export type PlayerSelfRow = {
   id: string;
   nickname: string | null;
   session_id: string | null;
-  team_id: string | null;
-  assigned_ingredient_id: string | null;
+  group_id: string | null;
+  assigned_role_id: string | null;
   is_online: boolean | null;
   created_at: string;
 };
 
 const PLAYER_SELECT =
-  "id,nickname,session_id,team_id,assigned_ingredient_id,is_online,created_at";
+  "id,nickname,session_id,group_id,assigned_role_id,is_online,created_at";
 
-const PLAYER_SELECT_WITH_TEAM = `${PLAYER_SELECT},teams(id,name,acquired_ingredients,completed_menus,tray_submitted_at)`;
+const PLAYER_SELECT_WITH_GROUP = `${PLAYER_SELECT},groups(id,name,acquired_items,completed_tasks,completed_at)`;
 
 export type SessionPlayerRow = PlayerSelfRow & {
-  teams: {
+  groups: {
     id: string;
     name: string | null;
-    acquired_ingredients: AcquiredIngredient[] | null;
-    completed_menus: CompletedMenu[] | null;
-    tray_submitted_at: string | null;
+    acquired_items: AcquiredItem[] | null;
+    completed_tasks: CompletedTask[] | null;
+    completed_at: string | null;
   } | null;
 };
 
@@ -100,7 +100,7 @@ export async function getPlayerById(playerId: string) {
 export async function listSessionPlayers(sessionId: string) {
   const { data, error } = await supabase
     .from("players")
-    .select(PLAYER_SELECT_WITH_TEAM)
+    .select(PLAYER_SELECT_WITH_GROUP)
     .eq("session_id", sessionId)
     .order("created_at", { ascending: false })
     .order("nickname", { ascending: true });
@@ -125,31 +125,31 @@ export async function joinPlayerSession(input: { session_id: string; nickname: s
 export async function assignOrphanPlayersForOngoingSession(sessionId: string) {
   const { data: sess, error: se } = await supabase
     .from("sessions")
-    .select("phase,lesson_id")
+    .select("phase,activity_id")
     .eq("id", sessionId)
     .single();
   if (se) throw se;
   const phase = sess?.phase ?? "waiting";
-  if (phase === "waiting" || phase === "session_end" || !sess?.lesson_id) return;
+  if (phase === "waiting" || phase === "results" || !sess?.activity_id) return;
 
-  const { data: lesson, error: le } = await supabase
-    .from("lessons")
-    .select("scenario_pack")
-    .eq("id", sess.lesson_id)
+  const { data: activity, error: le } = await supabase
+    .from("activities")
+    .select("activity_pack")
+    .eq("id", sess.activity_id)
     .single();
   if (le) throw le;
-  const pack = parseScenarioPack(lesson?.scenario_pack);
+  const pack = parseActivityPack(activity?.activity_pack);
   if (!pack) return;
 
   const { data: playerRows, error: pe } = await supabase
     .from("players")
-    .select("id,team_id,assigned_ingredient_id")
+    .select("id,group_id,assigned_role_id")
     .eq("session_id", sessionId);
   if (pe) throw pe;
-  const orphans = (playerRows ?? []).filter((p) => !p.team_id || !p.assigned_ingredient_id);
+  const orphans = (playerRows ?? []).filter((p) => !p.group_id || !p.assigned_role_id);
   if (orphans.length === 0) return;
 
-  await assignTeamsAndIngredients(sessionId, pack);
+  await assignGroupsAndRoles(sessionId, pack);
 }
 
 export async function setPlayerOnline(playerId: string, online: boolean) {
@@ -164,58 +164,58 @@ export async function setPlayersOnline(playerIds: string[], online: boolean) {
 }
 
 // =====================================================================
-// teams
+// groups
 // =====================================================================
 
-export type TeamRow = {
+export type GroupRow = {
   id: string;
   session_id: string | null;
   name: string | null;
-  acquired_ingredients: AcquiredIngredient[];
-  completed_menus: CompletedMenu[];
-  tray_submitted_at: string | null;
+  acquired_items: AcquiredItem[];
+  completed_tasks: CompletedTask[];
+  completed_at: string | null;
 };
 
-const TEAM_SELECT =
-  "id,session_id,name,acquired_ingredients,completed_menus,tray_submitted_at";
+const GROUP_SELECT =
+  "id,session_id,name,acquired_items,completed_tasks,completed_at";
 
-function parseAcquired(raw: unknown): AcquiredIngredient[] {
-  return Array.isArray(raw) ? (raw as AcquiredIngredient[]) : [];
+function parseAcquired(raw: unknown): AcquiredItem[] {
+  return Array.isArray(raw) ? (raw as AcquiredItem[]) : [];
 }
 
-function parseCompleted(raw: unknown): CompletedMenu[] {
-  return Array.isArray(raw) ? (raw as CompletedMenu[]) : [];
+function parseCompleted(raw: unknown): CompletedTask[] {
+  return Array.isArray(raw) ? (raw as CompletedTask[]) : [];
 }
 
-export async function listSessionTeams(sessionId: string) {
+export async function listSessionGroups(sessionId: string) {
   const { data, error } = await supabase
-    .from("teams")
-    .select(TEAM_SELECT)
+    .from("groups")
+    .select(GROUP_SELECT)
     .eq("session_id", sessionId)
     .order("name", { ascending: true });
   if (error) throw error;
   return (data ?? []).map((row) => ({
     ...row,
-    acquired_ingredients: parseAcquired(row.acquired_ingredients),
-    completed_menus: parseCompleted(row.completed_menus),
-  })) as TeamRow[];
+    acquired_items: parseAcquired(row.acquired_items),
+    completed_tasks: parseCompleted(row.completed_tasks),
+  })) as GroupRow[];
 }
 
-export async function getTeamById(teamId: string) {
-  const { data, error } = await supabase.from("teams").select(TEAM_SELECT).eq("id", teamId).single();
+export async function getGroupById(groupId: string) {
+  const { data, error } = await supabase.from("groups").select(GROUP_SELECT).eq("id", groupId).single();
   if (error) throw error;
   return {
     ...data,
-    acquired_ingredients: parseAcquired(data.acquired_ingredients),
-    completed_menus: parseCompleted(data.completed_menus),
-  } as TeamRow;
+    acquired_items: parseAcquired(data.acquired_items),
+    completed_tasks: parseCompleted(data.completed_tasks),
+  } as GroupRow;
 }
 
 // =====================================================================
-// team assignment
+// group assignment
 // =====================================================================
 
-function teamLabel(index: number) {
+function groupLabel(index: number) {
   const A = "A".charCodeAt(0);
   if (index < 26) return String.fromCharCode(A + index);
   const first = Math.floor(index / 26) - 1;
@@ -223,72 +223,72 @@ function teamLabel(index: number) {
   return `${String.fromCharCode(A + first)}${String.fromCharCode(A + second)}`;
 }
 
-export async function assignTeamsAndIngredients(sessionId: string, pack: ScenarioPack) {
-  const ingredients = pack.ingredients;
-  if (ingredients.length === 0) {
-    throw new Error("급식 시나리오에 재료가 없습니다.");
+export async function assignGroupsAndRoles(sessionId: string, pack: ActivityPack) {
+  const items = pack.items;
+  if (items.length === 0) {
+    throw new Error("활동 팩에 항목이 없습니다.");
   }
 
   const { data: allPlayers, error: pErr } = await supabase
     .from("players")
-    .select("id,team_id,assigned_ingredient_id")
+    .select("id,group_id,assigned_role_id")
     .eq("session_id", sessionId);
   if (pErr) throw pErr;
   const players = allPlayers ?? [];
   if (players.length === 0) return;
 
-  const needsAssign = players.filter((p) => !p.team_id || !p.assigned_ingredient_id);
+  const needsAssign = players.filter((p) => !p.group_id || !p.assigned_role_id);
   if (needsAssign.length === 0) return;
 
-  const { data: existingTeams, error: tErr } = await supabase
-    .from("teams")
+  const { data: existingGroups, error: tErr } = await supabase
+    .from("groups")
     .select("id,name")
     .eq("session_id", sessionId);
   if (tErr) throw tErr;
 
-  const teamSize = Math.max(2, pack.teamSize);
-  const numTeams = Math.max(1, Math.ceil(players.length / teamSize));
+  const groupSize = Math.max(2, pack.groupSize);
+  const numGroups = Math.max(1, Math.ceil(players.length / groupSize));
 
-  const teamRowsByLabel = new Map<string, { id: string; name: string | null }>();
-  for (const t of existingTeams ?? []) {
-    if (t.name) teamRowsByLabel.set(t.name, t);
+  const groupRowsByLabel = new Map<string, { id: string; name: string | null }>();
+  for (const t of existingGroups ?? []) {
+    if (t.name) groupRowsByLabel.set(t.name, t);
   }
-  const desiredLabels = Array.from({ length: numTeams }, (_, i) => teamLabel(i));
-  const labelsToCreate = desiredLabels.filter((label) => !teamRowsByLabel.has(label));
+  const desiredLabels = Array.from({ length: numGroups }, (_, i) => groupLabel(i));
+  const labelsToCreate = desiredLabels.filter((label) => !groupRowsByLabel.has(label));
   if (labelsToCreate.length > 0) {
     const { data: created, error: createError } = await supabase
-      .from("teams")
+      .from("groups")
       .insert(labelsToCreate.map((name) => ({ session_id: sessionId, name })))
       .select("id,name");
     if (createError) throw createError;
     for (const t of created ?? []) {
-      if (t.name) teamRowsByLabel.set(t.name, t);
+      if (t.name) groupRowsByLabel.set(t.name, t);
     }
   }
 
-  const teamIds = desiredLabels
-    .map((label) => teamRowsByLabel.get(label)?.id)
+  const groupIds = desiredLabels
+    .map((label) => groupRowsByLabel.get(label)?.id)
     .filter((v): v is string => Boolean(v));
-  if (teamIds.length === 0) return;
+  if (groupIds.length === 0) return;
 
   const shuffled = [...players].sort(() => Math.random() - 0.5);
-  const byTeam: string[][] = teamIds.map(() => []);
+  const byGroup: string[][] = groupIds.map(() => []);
   shuffled.forEach((p, i) => {
-    byTeam[i % teamIds.length]!.push(p.id);
+    byGroup[i % groupIds.length]!.push(p.id);
   });
 
-  const ingredientIds = ingredients.map((i) => i.id);
-  let ingredientIndex = 0;
+  const itemIds = items.map((i) => i.id);
+  let roleIndex = 0;
 
-  for (let ti = 0; ti < byTeam.length; ti++) {
-    const memberIds = byTeam[ti]!;
-    const teamId = teamIds[ti]!;
+  for (let ti = 0; ti < byGroup.length; ti++) {
+    const memberIds = byGroup[ti]!;
+    const groupId = groupIds[ti]!;
     for (const playerId of memberIds) {
-      const ingredientId = ingredientIds[ingredientIndex % ingredientIds.length]!;
-      ingredientIndex++;
+      const itemId = itemIds[roleIndex % itemIds.length]!;
+      roleIndex++;
       const { error: upErr } = await supabase
         .from("players")
-        .update({ team_id: teamId, assigned_ingredient_id: ingredientId })
+        .update({ group_id: groupId, assigned_role_id: itemId })
         .eq("id", playerId);
       if (upErr) throw upErr;
     }
@@ -296,81 +296,81 @@ export async function assignTeamsAndIngredients(sessionId: string, pack: Scenari
 }
 
 // =====================================================================
-// lunch gameplay
+// gameplay
 // =====================================================================
 
-export async function acquireIngredientForPlayer(args: {
+export async function acquireItemForPlayer(args: {
   playerId: string;
-  teamId: string;
-  pack: ScenarioPack;
-  ingredientId: string;
+  groupId: string;
+  pack: ActivityPack;
+  itemId: string;
   answer: string;
-  hintStageUsed: 1 | 2 | 3 | 4 | 5;
+  hintLevelUsed: 1 | 2 | 3 | 4 | 5;
 }) {
-  const result = tryAcquireIngredient(
+  const result = tryAcquireItem(
     args.pack,
-    args.ingredientId,
+    args.itemId,
     args.answer,
-    args.hintStageUsed,
+    args.hintLevelUsed,
   );
   if (!result.ok) throw new Error(result.reason);
 
-  const team = await getTeamById(args.teamId);
-  const existing = team.acquired_ingredients;
-  if (existing.some((a) => a.ingredientId === args.ingredientId)) {
+  const group = await getGroupById(args.groupId);
+  const existing = group.acquired_items;
+  if (existing.some((a) => a.itemId === args.itemId)) {
     return result.record;
   }
 
   const { error } = await supabase
-    .from("teams")
-    .update({ acquired_ingredients: [...existing, result.record] })
-    .eq("id", args.teamId);
+    .from("groups")
+    .update({ acquired_items: [...existing, result.record] })
+    .eq("id", args.groupId);
   if (error) throw error;
   return result.record;
 }
 
-export async function completeMenuForTeam(args: {
-  teamId: string;
-  pack: ScenarioPack;
-  menuId: string;
+export async function completeTaskForGroup(args: {
+  groupId: string;
+  pack: ActivityPack;
+  taskId: string;
   submittedSteps: string[];
 }) {
-  const team = await getTeamById(args.teamId);
-  if (team.completed_menus.some((m) => m.menuId === args.menuId)) {
-    throw new Error("이 메뉴는 이미 완성했습니다.");
+  const group = await getGroupById(args.groupId);
+  if (group.completed_tasks.some((m) => m.taskId === args.taskId)) {
+    throw new Error("이 과제는 이미 완성했습니다.");
   }
 
-  const result = tryCompleteMenu(
+  const result = tryCompleteTask(
     args.pack,
-    args.menuId,
-    team.acquired_ingredients,
+    args.taskId,
+    group.acquired_items,
     args.submittedSteps,
   );
   if (!result.ok) throw new Error(result.reason);
 
   const { error } = await supabase
-    .from("teams")
-    .update({ completed_menus: [...team.completed_menus, result.record] })
-    .eq("id", args.teamId);
+    .from("groups")
+    .update({ completed_tasks: [...group.completed_tasks, result.record] })
+    .eq("id", args.groupId);
   if (error) throw error;
   return result.record;
 }
 
-export async function submitTrayForTeam(teamId: string, pack: ScenarioPack) {
-  const team = await getTeamById(teamId);
-  if (team.tray_submitted_at) {
-    throw new Error("급식판이 이미 제출되었습니다.");
+export async function completeActivityForGroup(groupId: string, pack: ActivityPack) {
+  const group = await getGroupById(groupId);
+  if (group.completed_at) {
+    throw new Error("이미 활동을 완료했습니다.");
   }
-  const requiredMenuIds = pack.menus.map((m) => m.id);
-  const completedIds = new Set(team.completed_menus.map((m) => m.menuId));
-  const missing = requiredMenuIds.filter((id) => !completedIds.has(id));
+  const requiredTaskIds = pack.tasks.map((t) => t.id);
+  const completedIds = new Set(group.completed_tasks.map((t) => t.taskId));
+  const missing = requiredTaskIds.filter((id) => !completedIds.has(id));
   if (missing.length > 0) {
-    throw new Error(`아직 완성하지 않은 메뉴가 있습니다: ${missing.join(", ")}`);
+    throw new Error(`아직 완성하지 않은 과제가 있습니다: ${missing.join(", ")}`);
   }
 
   const { error } = await supabase
-    .from("teams")
-    .update({ tray_submitted_at: new Date().toISOString() })
-    .eq("id", teamId);
+    .from("groups")
+    .update({ completed_at: new Date().toISOString() })
+    .eq("id", groupId);
   if (error) throw error;
 }

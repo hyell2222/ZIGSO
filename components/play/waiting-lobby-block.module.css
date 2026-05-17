@@ -15,7 +15,7 @@
   border-radius: 1rem;
 }
 
-.trayIcon {
+.activityIcon {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -26,10 +26,10 @@
   background: color-mix(in srgb, var(--highlight) 12%, white);
   font-size: 1.65rem;
   line-height: 1;
-  animation: playTrayBounce 2.4s ease-in-out infinite;
+  animation: playActivityBounce 2.4s ease-in-out infinite;
 }
 
-.trayIconCompact {
+.activityIconCompact {
   width: 2.5rem;
   height: 2.5rem;
   font-size: 1.25rem;
@@ -123,7 +123,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .trayIcon {
+  .activityIcon {
     animation: none;
   }
 

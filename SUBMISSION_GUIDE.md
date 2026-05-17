@@ -1,4 +1,4 @@
-# LUNCHRUSH Submission Guide
+# Jigsaw Submission Guide
 
 The competition requires this structure:
 

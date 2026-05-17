@@ -1,36 +1,36 @@
 /**
- * 시뮬레이션 모드 — 교사 혼자서 급식 게임 흐름을 시연·검수하기 위한 in-memory 모델.
+ * 시뮬레이션 모드 — 교사 혼자서 활동 흐름을 시연·검수하기 위한 in-memory 모델.
  */
 
-import type { SessionPhase } from "@/lib/api/lessons";
-import type { AcquiredIngredient, CompletedMenu, ScenarioPack } from "@/lib/lunch/types";
+import type { ActivityPhase } from "@/lib/types";
+import type { AcquiredItem, CompletedTask, ActivityPack } from "@/lib/activity-pack/types";
 import { pickSandboxLobbyBotNicknames } from "@/lib/sandbox/waiting-nicknames";
 
-export type SandboxTeam = {
+export type SandboxGroup = {
   id: string;
   name: string;
-  acquired_ingredients: AcquiredIngredient[];
-  completed_menus: CompletedMenu[];
-  tray_submitted_at: string | null;
+  acquired_items: AcquiredItem[];
+  completed_tasks: CompletedTask[];
+  completed_at: string | null;
 };
 
 export type SandboxPlayer = {
   id: string;
   nickname: string;
-  teamId: string;
-  ingredientId: string;
+  groupId: string;
+  itemId: string;
   isReal?: boolean;
 };
 
 export type SandboxState = {
-  phase: SessionPhase;
-  teams: SandboxTeam[];
+  phase: ActivityPhase;
+  groups: SandboxGroup[];
   players: SandboxPlayer[];
   realStudentNickname: string | null;
 };
 
 export const SANDBOX_REAL_STUDENT_PLAYER_ID = "sandbox-real-student";
-export const SANDBOX_JOIN_CODE = "LUNCHRUSH";
+export const SANDBOX_JOIN_CODE = "SANDBOX";
 
 export type SandboxWaitingChip = {
   id: string;
@@ -39,12 +39,12 @@ export type SandboxWaitingChip = {
 };
 
 export function buildSandboxWaitingRoster(
-  lessonId: string,
-  pack: ScenarioPack,
+  activityId: string,
+  pack: ActivityPack,
   realStudentNickname: string | null,
 ): SandboxWaitingChip[] {
-  const slotCount = Math.max(pack.ingredients.length, pack.teamSize, 4);
-  const bots = pickSandboxLobbyBotNicknames(lessonId.trim() || "_").slice(0, slotCount);
+  const slotCount = Math.max(pack.items.length, pack.groupSize, 4);
+  const bots = pickSandboxLobbyBotNicknames(activityId.trim() || "_").slice(0, slotCount);
   const out: SandboxWaitingChip[] = bots.map((nickname, i) => ({
     id: `sandbox-lobby-bot-${i}`,
     nickname,
@@ -61,7 +61,7 @@ export function buildSandboxWaitingRoster(
   return out;
 }
 
-export function teamLabel(index: number) {
+export function groupLabel(index: number) {
   const A = "A".charCodeAt(0);
   if (index < 26) return String.fromCharCode(A + index);
   const first = Math.floor(index / 26) - 1;
@@ -81,97 +81,97 @@ function shuffleArrayInPlace<T>(arr: T[]) {
 export function createInitialSandboxState(): SandboxState {
   return {
     phase: "waiting",
-    teams: [],
+    groups: [],
     players: [],
     realStudentNickname: null,
   };
 }
 
 export function buildSandboxAssignments(
-  lessonId: string,
-  pack: ScenarioPack,
+  activityId: string,
+  pack: ActivityPack,
   realStudentNickname: string | null,
-): { teams: SandboxTeam[]; players: SandboxPlayer[] } {
-  const ingredients = pack.ingredients;
-  if (ingredients.length === 0) {
-    return { teams: [], players: [] };
+): { groups: SandboxGroup[]; players: SandboxPlayer[] } {
+  const items = pack.items;
+  if (items.length === 0) {
+    return { groups: [], players: [] };
   }
 
-  const chips = buildSandboxWaitingRoster(lessonId, pack, realStudentNickname);
+  const chips = buildSandboxWaitingRoster(activityId, pack, realStudentNickname);
   shuffleArrayInPlace(chips);
 
-  const teamSize = Math.max(2, pack.teamSize);
-  const numTeams = Math.max(1, Math.ceil(chips.length / teamSize));
+  const groupSize = Math.max(2, pack.groupSize);
+  const numGroups = Math.max(1, Math.ceil(chips.length / groupSize));
 
-  const teams: SandboxTeam[] = Array.from({ length: numTeams }, (_, i) => ({
-    id: `sandbox-team-${i}`,
-    name: teamLabel(i),
-    acquired_ingredients: [],
-    completed_menus: [],
-    tray_submitted_at: null,
+  const groups: SandboxGroup[] = Array.from({ length: numGroups }, (_, i) => ({
+    id: `sandbox-group-${i}`,
+    name: groupLabel(i),
+    acquired_items: [],
+    completed_tasks: [],
+    completed_at: null,
   }));
 
-  const byTeam: SandboxWaitingChip[][] = teams.map(() => []);
+  const byGroup: SandboxWaitingChip[][] = groups.map(() => []);
   chips.forEach((chip, idx) => {
-    byTeam[idx % numTeams]!.push(chip);
+    byGroup[idx % numGroups]!.push(chip);
   });
 
-  const ingredientIds = ingredients.map((i) => i.id);
-  let ingredientIndex = 0;
+  const itemIds = items.map((i) => i.id);
+  let roleIndex = 0;
   const players: SandboxPlayer[] = [];
 
-  for (let ti = 0; ti < teams.length; ti++) {
-    const team = teams[ti]!;
-    for (const chip of byTeam[ti]!) {
-      const ingredientId = ingredientIds[ingredientIndex % ingredientIds.length]!;
-      ingredientIndex++;
+  for (let ti = 0; ti < groups.length; ti++) {
+    const group = groups[ti]!;
+    for (const chip of byGroup[ti]!) {
+      const itemId = itemIds[roleIndex % itemIds.length]!;
+      roleIndex++;
       players.push({
         id: chip.isReal ? SANDBOX_REAL_STUDENT_PLAYER_ID : `sandbox-player-${chip.id}`,
         nickname: chip.nickname.trim() || "참가자",
-        teamId: team.id,
-        ingredientId,
+        groupId: group.id,
+        itemId,
         isReal: chip.isReal ? true : undefined,
       });
     }
   }
 
-  return { teams, players };
+  return { groups, players };
 }
 
-export function nextSandboxPhase(current: SessionPhase): SessionPhase | null {
+export function nextSandboxPhase(current: ActivityPhase): ActivityPhase | null {
   switch (current) {
     case "waiting":
-      return "briefing";
-    case "briefing":
-      return "investigation";
-    case "investigation":
-      return "final_report";
-    case "final_report":
-      return "session_end";
+      return "overview";
+    case "overview":
+      return "expert_group";
+    case "expert_group":
+      return "home_group";
+    case "home_group":
+      return "results";
     default:
       return null;
   }
 }
 
-export function getSandboxNextPhaseLabel(current: SessionPhase): string {
+export function getSandboxNextPhaseLabel(current: ActivityPhase): string {
   switch (current) {
     case "waiting":
       return "시작";
-    case "briefing":
+    case "overview":
       return "다음 단계";
-    case "investigation":
+    case "expert_group":
       return "다음 단계";
-    case "final_report":
+    case "home_group":
       return "종료";
     default:
       return "—";
   }
 }
 
-export const SANDBOX_PHASE_LABEL: Record<SessionPhase, string> = {
+export const SANDBOX_PHASE_LABEL: Record<ActivityPhase, string> = {
   waiting: "대기",
-  briefing: "급식 브리핑",
-  investigation: "재료 전문가",
-  final_report: "급식판 완성",
-  session_end: "종료",
+  overview: "활동 소개",
+  expert_group: "전문가 집단",
+  home_group: "팀 협업",
+  results: "결과",
 };

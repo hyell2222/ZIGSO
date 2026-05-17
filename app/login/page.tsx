@@ -34,14 +34,14 @@ export default function LoginPage() {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: AUTH_SESSION_QUERY_KEY });
-      router.replace(ROUTES.cases);
+      router.replace(ROUTES.activities);
     },
   });
 
   useEffect(() => {
     if (sessionQuery.isLoading) return;
     if (sessionQuery.isFetching && !sessionQuery.data) return;
-    if (sessionQuery.data) router.replace(ROUTES.cases);
+    if (sessionQuery.data) router.replace(ROUTES.activities);
   }, [router, sessionQuery.data, sessionQuery.isLoading, sessionQuery.isFetching]);
 
   return (

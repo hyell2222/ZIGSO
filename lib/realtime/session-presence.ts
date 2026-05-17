@@ -10,7 +10,7 @@ export type SessionPresencePayload = {
   role: SessionPresenceRole;
   player_id?: string;
   nickname?: string;
-  investigation_location_id?: string;
+  expert_group_location_id?: string;
   zone_name?: string;
 };
 
@@ -35,8 +35,8 @@ export function flattenPresenceState(state: Record<string, unknown[]> | undefine
             role: o.role,
             player_id: typeof o.player_id === "string" ? o.player_id : undefined,
             nickname: typeof o.nickname === "string" ? o.nickname : undefined,
-            investigation_location_id:
-              typeof o.investigation_location_id === "string" ? o.investigation_location_id : undefined,
+            expert_group_location_id:
+              typeof o.expert_group_location_id === "string" ? o.expert_group_location_id : undefined,
             zone_name: typeof o.zone_name === "string" ? o.zone_name : undefined,
           },
         });

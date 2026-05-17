@@ -2,27 +2,27 @@
 
 import { LoadingState } from "@/components/ui/loading-state";
 
-export type TeamAssignmentMember = {
+export type GroupAssignmentMember = {
   id: string;
   nickname: string | null;
   /** 부원에게 배정된 전문 재료 이름 */
   zoneName: string | null;
 };
 
-export type TeamAssignmentGroup = {
-  team: { id: string; name: string | null };
-  members: TeamAssignmentMember[];
+export type GroupAssignmentGroup = {
+  group: { id: string; name: string | null };
+  members: GroupAssignmentMember[];
 };
 
 /**
  * 호스트 화면 — 팀·장소 배정 결과 카드 묶음.
  * (실 세션·샌드박스 양쪽에서 동일 외관으로 사용합니다.)
  */
-export function TeamAssignmentDashboard({
+export function GroupAssignmentDashboard({
   groups,
   loading,
 }: {
-  groups: TeamAssignmentGroup[];
+  groups: GroupAssignmentGroup[];
   loading: boolean;
 }) {
   return (
@@ -44,12 +44,12 @@ export function TeamAssignmentDashboard({
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:gap-3 lg:grid-cols-3">
           {groups.map((g) => (
             <div
-              key={g.team.id}
+              key={g.group.id}
               className="rounded-md border border-[var(--border)] bg-[var(--surface)] p-2.5 shadow-sm"
             >
               <div className="flex items-baseline justify-between gap-2">
                 <p className="font-mono text-lg font-semibold text-[var(--accent)]">
-                  {g.team.name ?? "—"}
+                  {g.group.name ?? "—"}
                 </p>
                 <span className="text-[10px] text-[var(--muted-foreground)]">
                   {g.members.length}명

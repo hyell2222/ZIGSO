@@ -1,37 +1,46 @@
-import type { AcquiredIngredient, CompletedMenu, ScenarioPack } from "@/lib/lunch/types";
+import type { AcquiredItem, CompletedTask, ActivityPack } from "@/lib/activity-pack/types";
 
-export type GamePhase =
+export type ActivityPhase =
   | "waiting"
-  | "briefing"
-  | "investigation"
-  | "final_report"
-  | "session_end";
+  | "overview"
+  | "expert_group"
+  | "home_group"
+  | "results";
 
-export type TeamRecord = {
+export type SessionStatus = "active" | "ended";
+
+export type GroupRecord = {
   id: string;
   session_id: string | null;
   name: string | null;
-  acquired_ingredients: AcquiredIngredient[];
-  completed_menus: CompletedMenu[];
-  tray_submitted_at: string | null;
+  acquired_items: AcquiredItem[];
+  completed_tasks: CompletedTask[];
+  completed_at: string | null;
 };
 
 export type PlayerRecord = {
   id: string;
   nickname: string | null;
   session_id: string | null;
-  team_id: string | null;
-  assigned_ingredient_id: string | null;
+  group_id: string | null;
+  assigned_role_id: string | null;
 };
 
 export type GameSession = {
   id: string;
-  lesson_id: string | null;
+  activity_id: string | null;
   host_id: string | null;
   join_code: string;
-  phase: GamePhase | string | null;
-  is_active: boolean | null;
+  phase: ActivityPhase | string | null;
+  status: SessionStatus | string | null;
   created_at: string | null;
 };
 
-export type { ScenarioPack, AcquiredIngredient, CompletedMenu };
+export function isSessionEnded(session: {
+  phase?: string | null;
+  status?: string | null;
+}): boolean {
+  return session.status === "ended" || session.phase === "results";
+}
+
+export type { ActivityPack, AcquiredItem, CompletedTask };

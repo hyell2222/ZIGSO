@@ -9,6 +9,7 @@ import { TopNav } from "@/components/layout/top-nav";
 import { ButtonLink } from "@/components/ui/button";
 import { getCurrentSession } from "@/lib/api/auth";
 import { AUTH_SESSION_QUERY_KEY } from "@/lib/auth-session-query";
+import { PLATFORM_NAME, PLATFORM_TAGLINE } from "@/lib/brand";
 import { ROUTES } from "@/lib/routes";
 import { hasSupabaseEnv } from "@/lib/supabase";
 
@@ -29,7 +30,7 @@ export default function HomePage() {
   useEffect(() => {
     if (sessionQuery.isLoading) return;
     if (sessionQuery.isFetching && !sessionQuery.data) return;
-    if (sessionQuery.data) router.replace(ROUTES.cases);
+    if (sessionQuery.data) router.replace(ROUTES.activities);
   }, [router, sessionQuery.data, sessionQuery.isLoading, sessionQuery.isFetching]);
 
   return (
@@ -59,16 +60,17 @@ export default function HomePage() {
               <div className="flex items-center gap-2.5 text-[var(--accent)] sm:gap-3.5">
                 <span className="h-px w-8 max-sm:w-5 bg-[color-mix(in_srgb,var(--accent)_45%,transparent)]" aria-hidden />
                 <p className="text-[11px] font-bold uppercase tracking-[0.26em] text-[color-mix(in_srgb,var(--accent)_92%,var(--mystery))]">
-                  급식실 협동 영어 타이쿤
+                  {PLATFORM_TAGLINE}
                 </p>
                 <span className="h-px w-8 max-sm:w-5 bg-[color-mix(in_srgb,var(--accent)_45%,transparent)]" aria-hidden />
               </div>
               <h1 className="bg-[linear-gradient(165deg,var(--primary)_0%,color-mix(in_srgb,var(--primary)_72%,var(--mystery))_100%)] bg-clip-text text-4xl font-bold leading-[1.08] tracking-[-0.02em] text-transparent drop-shadow-[0_1px_0_color-mix(in_srgb,var(--on-primary)_35%,transparent)] sm:text-6xl sm:tracking-[-0.03em]">
-                School Lunch Rush
+                {PLATFORM_NAME}
               </h1>
             </div>
             <p className="mx-auto mt-4 max-w-xl text-balance text-base leading-relaxed text-[color-mix(in_srgb,var(--muted-foreground)_94%,var(--mystery))] sm:mt-5 md:mt-6 md:text-[1.05rem] md:leading-[1.65]">
-              조별로 급식실 직원이 되어 영어로 재료를 추리하고, 오늘의 급식판을 완성하는 협동 학습 게임
+              교사가 직소·STAD형 협동 활동을 설계하고, 학생이 참가 코드로 입장해 전문가 집단과 팀
+              과제를 진행할 수 있게 돕습니다.
             </p>
 
             <div className="mt-8 flex flex-col items-stretch justify-center gap-3 sm:mt-10 sm:flex-row sm:items-center sm:justify-center sm:gap-4">
@@ -87,10 +89,10 @@ export default function HomePage() {
                 </span>
                 <div>
                   <p className="text-sm font-semibold text-[color-mix(in_srgb,var(--mystery)_94%,var(--primary))]">
-                    AI 급식 시나리오 생성
+                    AI 활동 팩 생성
                   </p>
                   <p className="mt-2 text-xs break-keep leading-snug text-[color-mix(in_srgb,var(--muted-foreground)_96%,var(--accent))]">
-                    주제·난이도·팀 인원만 입력하면 메뉴·재료·5단계 힌트·조리 순서를 자동 생성해요.
+                    주제·난이도·팀 인원을 입력하면 과제·맞출 항목·힌트·수행 순서를 자동 생성해요.
                   </p>
                 </div>
               </li>
@@ -100,10 +102,10 @@ export default function HomePage() {
                 </span>
                 <div>
                   <p className="text-sm font-semibold text-[color-mix(in_srgb,var(--mystery)_94%,var(--primary))]">
-                    직소·STAD 협동 학습
+                    직소·STAD 협동
                   </p>
                   <p className="mt-2 text-xs break-keep leading-snug text-[color-mix(in_srgb,var(--muted-foreground)_96%,var(--accent))]">
-                    재료 전문가 집단에서 영어 힌트로 재료를 추리하고, 조로 돌아와 급식판을 완성해요.
+                    전문가 집단에서 정보를 맞추고, 조로 돌아와 팀 과제를 함께 완성해요.
                   </p>
                 </div>
               </li>
@@ -113,10 +115,10 @@ export default function HomePage() {
                 </span>
                 <div>
                   <p className="text-sm font-semibold text-[color-mix(in_srgb,var(--mystery)_94%,var(--primary))]">
-                    영어 명령문 조리·급식판 제출
+                    실시간 진행·기록
                   </p>
                   <p className="mt-2 text-xs break-keep leading-snug text-[color-mix(in_srgb,var(--muted-foreground)_96%,var(--accent))]">
-                    획득한 재료로 실제 급식 메뉴를 만들고, 영어 명령문 카드를 조합해 제출해요.
+                    단계별 타이머와 팀 진행 현황으로 활동 흐름을 한눈에 관리해요.
                   </p>
                 </div>
               </li>

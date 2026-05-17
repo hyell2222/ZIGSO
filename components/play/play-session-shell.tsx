@@ -4,9 +4,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { IngredientExpertPanel } from "@/components/play/ingredient-expert-panel";
-import { ScenarioBriefingLayout } from "@/components/play/scenario-briefing-layout";
-import { TeamKitchenPanel } from "@/components/play/team-kitchen-panel";
+import { ExpertPhasePanel } from "@/components/play/expert-group-panel";
+import { ActivityIntroductionLayout } from "@/components/play/overview-layout";
+import { GroupPhasePanel } from "@/components/play/home-group-panel";
 import { PlayPhaseHeader } from "@/components/play/play-phase-header";
 import {
   PLAY_PAGE_BLACK_BG,
@@ -17,7 +17,7 @@ import {
   playSurfaceCool,
   playSurfacePanel,
 } from "@/components/play/play-atmosphere";
-import { PlayHeaderTeamPlace } from "@/components/play/play-header-team-place";
+import { PlayHeaderGroupPlace } from "@/components/play/play-header-group-place";
 import { WaitingLobbyBlock } from "@/components/play/waiting-lobby-block";
 import { Button } from "@/components/ui/button";
 import { LoadingState } from "@/components/ui/loading-state";
@@ -25,14 +25,14 @@ import { Modal } from "@/components/ui/modal";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
-import { parseScenarioPack } from "@/lib/api/lessons";
-import type { SessionPhase } from "@/lib/api/lessons";
+import { parseActivityPack } from "@/lib/api/activities";
+import type { ActivityPhase } from "@/lib/api/activities";
 import {
   assignOrphanPlayersForOngoingSession,
   getPlayerById,
   getPlaySessionDetails,
   getSessionByJoinCode,
-  getTeamById,
+  getGroupById,
   joinPlayerSession,
   setPlayerOnline,
 } from "@/lib/api/play";
@@ -71,18 +71,18 @@ export function PlaySessionShell({
     refetchIntervalInBackground: true,
   });
 
-  const assignedIngredientId = playerQuery.data?.assigned_ingredient_id ?? null;
-  const teamId = playerQuery.data?.team_id ?? null;
+  const assignedRoleId = playerQuery.data?.assigned_role_id ?? null;
+  const groupId = playerQuery.data?.group_id ?? null;
 
-  const teamQuery = useQuery({
-    queryKey: ["play-team", teamId],
-    queryFn: async () => getTeamById(teamId as string),
-    enabled: Boolean(teamId),
-    refetchInterval: teamId ? 3_000 : false,
+  const groupQuery = useQuery({
+    queryKey: ["play-group", groupId],
+    queryFn: async () => getGroupById(groupId as string),
+    enabled: Boolean(groupId),
+    refetchInterval: groupId ? 3_000 : false,
     refetchIntervalInBackground: true,
   });
 
-  const teamName = teamQuery.data?.name ?? null;
+  const groupName = groupQuery.data?.name ?? null;
 
   const sessionQuery = useQuery({
     queryKey: ["play-session", sessionId],
@@ -96,9 +96,9 @@ export function PlaySessionShell({
     refetchIntervalInBackground: true,
   });
 
-  const scenarioPack = useMemo(
-    () => parseScenarioPack(sessionQuery.data?.lessons?.scenario_pack),
-    [sessionQuery.data?.lessons?.scenario_pack],
+  const activityPack = useMemo(
+    () => parseActivityPack(sessionQuery.data?.activities?.activity_pack),
+    [sessionQuery.data?.activities?.activity_pack],
   );
 
   const resumeQuery = useQuery({
@@ -153,9 +153,9 @@ export function PlaySessionShell({
       )
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "teams", filter: `session_id=eq.${sessionId}` },
+        { event: "*", schema: "public", table: "groups", filter: `session_id=eq.${sessionId}` },
         () => {
-          if (teamId) void queryClient.invalidateQueries({ queryKey: ["play-team", teamId] });
+          if (groupId) void queryClient.invalidateQueries({ queryKey: ["play-group", groupId] });
         },
       )
       .subscribe((status) => {
@@ -176,12 +176,12 @@ export function PlaySessionShell({
       void channel.untrack().catch(() => {});
       void supabase.removeChannel(channel);
     };
-  }, [sessionId, playerId, teamId, nickname, queryClient]);
+  }, [sessionId, playerId, groupId, nickname, queryClient]);
 
-  const sessionPhase = sessionQuery.data?.phase as SessionPhase | null | undefined;
+  const sessionPhase = sessionQuery.data?.phase as ActivityPhase | null | undefined;
 
   useEffect(() => {
-    if (sessionPhase !== "session_end") return;
+    if (sessionPhase !== "results") return;
     if (joinCode) clearResumeRecord(joinCode);
     router.replace(ROUTES.home);
   }, [sessionPhase, router, joinCode]);
@@ -211,8 +211,8 @@ export function PlaySessionShell({
         nickname: nick,
       });
       setPlayerId(result.player.id);
-      const phase = session.phase as SessionPhase | null | undefined;
-      if (phase && phase !== "waiting" && phase !== "session_end") {
+      const phase = session.phase as ActivityPhase | null | undefined;
+      if (phase && phase !== "waiting" && phase !== "results") {
         await assignOrphanPlayersForOngoingSession(session.id);
       }
       saveResumeRecord({
@@ -244,8 +244,8 @@ export function PlaySessionShell({
     });
     try {
       const d = await getPlaySessionDetails(rec.sessionId);
-      const ph = d.phase as SessionPhase | null | undefined;
-      if (ph && ph !== "waiting" && ph !== "session_end") {
+      const ph = d.phase as ActivityPhase | null | undefined;
+      if (ph && ph !== "waiting" && ph !== "results") {
         await assignOrphanPlayersForOngoingSession(rec.sessionId);
       }
     } catch {
@@ -276,11 +276,11 @@ export function PlaySessionShell({
   }, [initialNickname, playerId, sessionId, resumeQuery.isLoading, resumeQuery.data, resumeDecided]);
 
   const hasJoinedSession = Boolean(playerId && sessionId);
-  const hasAssignment = Boolean(assignedIngredientId && teamId);
+  const hasAssignment = Boolean(assignedRoleId && groupId);
 
-  const teamAcquiredIds = useMemo(
-    () => new Set((teamQuery.data?.acquired_ingredients ?? []).map((a) => a.ingredientId)),
-    [teamQuery.data?.acquired_ingredients],
+  const groupAcquiredIds = useMemo(
+    () => new Set((groupQuery.data?.acquired_items ?? []).map((a) => a.itemId)),
+    [groupQuery.data?.acquired_items],
   );
 
   const isWaitingLobby =
@@ -288,10 +288,10 @@ export function PlaySessionShell({
     (sessionQuery.isLoading ||
       !sessionQuery.data ||
       sessionPhase === "waiting" ||
-      (sessionPhase !== "briefing" &&
-        sessionPhase !== "investigation" &&
-        sessionPhase !== "final_report" &&
-        sessionPhase !== "session_end" &&
+      (sessionPhase !== "overview" &&
+        sessionPhase !== "expert_group" &&
+        sessionPhase !== "home_group" &&
+        sessionPhase !== "results" &&
         !hasAssignment));
 
   const waitingLobbyState = useMemo(() => {
@@ -299,52 +299,52 @@ export function PlaySessionShell({
     return "waiting" as const;
   }, [sessionQuery.isLoading, sessionQuery.data]);
 
-  const isBriefing = hasJoinedSession && sessionPhase === "briefing";
-  const isInvestigation = hasJoinedSession && hasAssignment && sessionPhase === "investigation";
-  const isFinalReport = hasJoinedSession && sessionPhase === "final_report";
+  const isActivityIntroduction = hasJoinedSession && sessionPhase === "overview";
+  const isExpertPhase = hasJoinedSession && hasAssignment && sessionPhase === "expert_group";
+  const isGroupPhase = hasJoinedSession && sessionPhase === "home_group";
 
   if (
     hasSupabaseEnv &&
-    isInvestigation &&
-    scenarioPack &&
+    isExpertPhase &&
+    activityPack &&
     playerId &&
-    teamId &&
-    assignedIngredientId
+    groupId &&
+    assignedRoleId
   ) {
     return (
-      <IngredientExpertPanel
-        pack={scenarioPack}
+      <ExpertPhasePanel
+        pack={activityPack}
         playerId={playerId}
-        teamId={teamId}
-        teamName={teamName}
-        ingredientId={assignedIngredientId}
-        acquiredIngredientIds={teamAcquiredIds}
+        groupId={groupId}
+        groupName={groupName}
+        itemId={assignedRoleId}
+        acquiredItemIds={groupAcquiredIds}
         onAcquired={() => {
-          void queryClient.invalidateQueries({ queryKey: ["play-team", teamId] });
+          void queryClient.invalidateQueries({ queryKey: ["play-group", groupId] });
         }}
         pending={playerQuery.isLoading}
       />
     );
   }
 
-  if (hasSupabaseEnv && isFinalReport && scenarioPack && teamQuery.data) {
+  if (hasSupabaseEnv && isGroupPhase && activityPack && groupQuery.data) {
     return (
-      <TeamKitchenPanel
-        pack={scenarioPack}
-        team={teamQuery.data}
-        teamName={teamName}
+      <GroupPhasePanel
+        pack={activityPack}
+        group={groupQuery.data}
+        groupName={groupName}
         onUpdate={() => {
-          void queryClient.invalidateQueries({ queryKey: ["play-team", teamId] });
+          void queryClient.invalidateQueries({ queryKey: ["play-group", groupId] });
         }}
-        pending={teamQuery.isLoading}
+        pending={groupQuery.isLoading}
       />
     );
   }
 
-  if (hasSupabaseEnv && isBriefing) {
-    const ingredientLabel =
-      scenarioPack?.ingredients.find((i) => i.id === assignedIngredientId)?.name ??
-      assignedIngredientId ??
+  if (hasSupabaseEnv && isActivityIntroduction) {
+    const roleLabel =
+      activityPack?.items.find((i) => i.id === assignedRoleId)?.name ??
+      assignedRoleId ??
       null;
     return (
       <PlayAtmosphere>
@@ -353,12 +353,12 @@ export function PlaySessionShell({
             <div className={playPhaseHeaderChromeInner}>
               <PlayPhaseHeader
                 phase={1}
-                title="오늘의 급식 브리핑"
-                description="팀과 전문 재료를 확인한 뒤, 오늘 완성할 급식 메뉴를 살펴보세요."
+                title="활동 브리핑"
+                description="팀과 전문 역할을 확인한 뒤, 오늘 완성할 과제를 살펴보세요."
                 rightSlot={
-                  <PlayHeaderTeamPlace
-                    teamName={teamName}
-                    placeName={ingredientLabel}
+                  <PlayHeaderGroupPlace
+                    groupName={groupName}
+                    placeName={roleLabel}
                     placeLabel="전문 재료"
                     pending={playerQuery.isLoading || !hasAssignment}
                   />
@@ -372,11 +372,11 @@ export function PlaySessionShell({
               {playerQuery.isLoading && !hasAssignment ? (
                 <LoadingState variant="section" tone="play" className="min-h-0 flex-1 py-8" />
               ) : (
-                <ScenarioBriefingLayout
+                <ActivityIntroductionLayout
                   loading={sessionQuery.isLoading}
-                  title={sessionQuery.data?.lessons?.title ?? null}
-                  description={sessionQuery.data?.lessons?.description ?? null}
-                  scenarioPack={scenarioPack}
+                  title={sessionQuery.data?.activities?.title ?? null}
+                  description={sessionQuery.data?.activities?.description ?? null}
+                  activityPack={activityPack}
                 />
               )}
             </section>
@@ -481,7 +481,7 @@ export function PlaySessionShell({
               <WaitingLobbyBlock
                 joinCode={joinCode}
                 nickname={nickname}
-                sessionTitle={sessionQuery.data?.lessons?.title ?? null}
+                sessionTitle={sessionQuery.data?.activities?.title ?? null}
                 state={waitingLobbyState}
               />
             </section>

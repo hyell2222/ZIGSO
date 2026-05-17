@@ -3,32 +3,32 @@
 import { useMemo } from "react";
 
 import { LoadingState } from "@/components/ui/loading-state";
-import type { ScenarioPack } from "@/lib/lunch/types";
-import { scoreForHintStage } from "@/lib/lunch/scoring";
-import type { TeamRow } from "@/lib/api/play";
+import type { ActivityPack } from "@/lib/activity-pack/types";
+import { scoreForHintLevel } from "@/lib/activity-pack/scoring";
+import type { GroupRow } from "@/lib/api/play";
 
-export type TeamProgressGroup = {
-  team: TeamRow;
+export type GroupProgressGroup = {
+  group: GroupRow;
   memberCount: number;
 };
 
-export function TeamProgressDashboard({
+export function GroupProgressDashboard({
   groups,
   loading,
   pack,
 }: {
-  groups: TeamProgressGroup[];
+  groups: GroupProgressGroup[];
   loading: boolean;
-  pack: ScenarioPack | null;
+  pack: ActivityPack | null;
 }) {
-  const menuTotal = pack?.menus.length ?? 0;
+  const taskTotal = pack?.tasks.length ?? 0;
 
   return (
     <section className="space-y-3 rounded-lg border border-[var(--border)] bg-[var(--card-bg)] p-4 shadow-[var(--elevation-sm)]">
       <header>
-        <h2 className="text-sm font-semibold text-[var(--foreground)]">팀 급식판 진행</h2>
+        <h2 className="text-sm font-semibold text-[var(--foreground)]">팀 과제 진행</h2>
         <p className="mt-1 text-xs text-[var(--muted-foreground)]">
-          재료 획득·메뉴 완성·급식판 제출 현황입니다.
+          항목 획득·과제 완성·최종 제출 현황입니다.
         </p>
       </header>
       {loading ? (
@@ -38,7 +38,7 @@ export function TeamProgressDashboard({
       ) : (
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:gap-3 lg:grid-cols-3">
           {groups.map((g) => (
-            <TeamProgressCard key={g.team.id} group={g} menuTotal={menuTotal} pack={pack} />
+            <GroupProgressCard key={g.group.id} group={g} taskTotal={taskTotal} pack={pack} />
           ))}
         </div>
       )}
@@ -46,56 +46,56 @@ export function TeamProgressDashboard({
   );
 }
 
-function TeamProgressCard({
+function GroupProgressCard({
   group,
-  menuTotal,
+  taskTotal,
   pack,
 }: {
-  group: TeamProgressGroup;
-  menuTotal: number;
-  pack: ScenarioPack | null;
+  group: GroupProgressGroup;
+  taskTotal: number;
+  pack: ActivityPack | null;
 }) {
-  const { team, memberCount } = group;
-  const acquired = team.acquired_ingredients.length;
-  const ingredientTotal = pack?.ingredients.length ?? 0;
-  const menusDone = team.completed_menus.length;
-  const trayDone = Boolean(team.tray_submitted_at);
+  const { group, memberCount } = group;
+  const acquired = group.acquired_items.length;
+  const itemTotal = pack?.items.length ?? 0;
+  const tasksDone = group.completed_tasks.length;
+  const activityCompleted = Boolean(group.completed_at);
 
   const score = useMemo(() => {
     let total = 0;
-    for (const a of team.acquired_ingredients) {
-      total += scoreForHintStage(a.hintStageUsed);
+    for (const a of group.acquired_items) {
+      total += scoreForHintLevel(a.hintLevelUsed);
     }
-    for (const m of team.completed_menus) {
+    for (const m of group.completed_tasks) {
       total += m.score;
     }
-    if (trayDone) total += 5;
+    if (activityCompleted) total += 5;
     return total;
-  }, [team.acquired_ingredients, team.completed_menus, trayDone]);
+  }, [group.acquired_items, group.completed_tasks, activityCompleted]);
 
   return (
     <div className="rounded-md border border-[var(--border)] bg-[var(--surface)] p-2.5 shadow-sm">
       <div className="flex items-baseline justify-between gap-2">
-        <p className="font-mono text-lg font-semibold text-[var(--accent)]">{team.name ?? "—"}</p>
+        <p className="font-mono text-lg font-semibold text-[var(--accent)]">{group.name ?? "—"}</p>
         <span className="text-[10px] text-[var(--muted-foreground)]">{memberCount}명</span>
       </div>
       <dl className="mt-2 space-y-1 text-[11px]">
         <div className="flex justify-between gap-2">
-          <dt className="text-[var(--muted-foreground)]">재료</dt>
+          <dt className="text-[var(--muted-foreground)]">항목</dt>
           <dd className="font-medium text-[var(--foreground)]">
-            {acquired}/{ingredientTotal || "—"}
+            {acquired}/{itemTotal || "—"}
           </dd>
         </div>
         <div className="flex justify-between gap-2">
-          <dt className="text-[var(--muted-foreground)]">메뉴</dt>
+          <dt className="text-[var(--muted-foreground)]">과제</dt>
           <dd className="font-medium text-[var(--foreground)]">
-            {menusDone}/{menuTotal || "—"}
+            {tasksDone}/{taskTotal || "—"}
           </dd>
         </div>
         <div className="flex justify-between gap-2">
-          <dt className="text-[var(--muted-foreground)]">급식판</dt>
-          <dd className={trayDone ? "font-semibold text-[var(--primary)]" : "text-[var(--muted-foreground)]"}>
-            {trayDone ? "제출 완료" : "진행 중"}
+          <dt className="text-[var(--muted-foreground)]">완료</dt>
+          <dd className={activityCompleted ? "font-semibold text-[var(--primary)]" : "text-[var(--muted-foreground)]"}>
+            {activityCompleted ? "완료" : "진행 중"}
           </dd>
         </div>
         <div className="flex justify-between gap-2 border-t border-[var(--border)] pt-1">

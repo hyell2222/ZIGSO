@@ -17,9 +17,9 @@ function showTeacherSubNav(pathname: string) {
   if (p.startsWith("/signup")) return false;
   if (p.startsWith("/play")) return false;
   if (p.startsWith("/sessions")) return false;
-  if (p.startsWith("/cases/new")) return false;
-  if (p.startsWith("/cases/edit")) return false;
-  if (p.startsWith("/cases") || p.startsWith("/reports")) return true;
+  if (p.startsWith("/activities/new")) return false;
+  if (p.startsWith("/activities/edit")) return false;
+  if (p.startsWith("/activities") || p.startsWith("/reports")) return true;
   return false;
 }
 
@@ -55,7 +55,7 @@ export function TopNav() {
               href={ROUTES.home}
               className="block whitespace-nowrap text-2xl font-semibold tracking-tight text-[var(--on-primary)] transition hover:brightness-110"
             >
-              School Lunch Rush
+              Jigsaw
             </Link>
           </div>
           <nav className="flex shrink-0 items-center justify-end gap-2 text-sm">
