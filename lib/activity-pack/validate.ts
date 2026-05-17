@@ -151,13 +151,6 @@ function validateTask(
       issues.push({ path: `${path}.acceptedItemIds`, message: `unknown item: ${id}` });
     }
   }
-  const min = task.minimumItems;
-  if (min != null && (typeof min !== "number" || min < 1 || min > accepted.length)) {
-    issues.push({
-      path: `${path}.minimumItems`,
-      message: "minimumItems must be 1..acceptedItemIds.length",
-    });
-  }
   return issues;
 }
 

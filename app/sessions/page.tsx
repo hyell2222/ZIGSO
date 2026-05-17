@@ -527,7 +527,7 @@ function SessionHostContent() {
         onClose={closeTimerModal}
         title="타이머"
         titleId="host-timer-heading"
-        maxWidthClassName="max-w-md"
+        maxWidthClassName="max-w-sm"
         zIndexClassName="z-[90]"
         bodyClassName="py-5"
       >

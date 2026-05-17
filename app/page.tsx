@@ -70,7 +70,7 @@ export default function HomePage() {
             </div>
             <p className="mx-auto mt-4 max-w-xl text-balance text-base leading-relaxed text-[color-mix(in_srgb,var(--muted-foreground)_94%,var(--mystery))] sm:mt-5 md:mt-6 md:text-[1.05rem] md:leading-[1.65]">
               교사가 직소·STAD형 협동 활동을 설계하고, 학생이 참가 코드로 입장해 전문가 집단과 모둠
-              과제를 진행할 수 있게 돕습니다.
+              미션을 진행할 수 있게 돕습니다.
             </p>
 
             <div className="mt-8 flex flex-col items-stretch justify-center gap-3 sm:mt-10 sm:flex-row sm:items-center sm:justify-center sm:gap-4">
@@ -92,7 +92,7 @@ export default function HomePage() {
                     AI 활동 팩 생성
                   </p>
                   <p className="mt-2 text-xs break-keep leading-snug text-[color-mix(in_srgb,var(--muted-foreground)_96%,var(--accent))]">
-                    주제·난이도·모둠 인원을 입력하면 과제·맞출 항목·힌트를 자동 생성해요.
+                    주제·난이도·모둠 인원을 입력하면 미션·맞출 항목·힌트를 자동 생성해요.
                   </p>
                 </div>
               </li>
@@ -105,7 +105,7 @@ export default function HomePage() {
                     직소·STAD 협동
                   </p>
                   <p className="mt-2 text-xs break-keep leading-snug text-[color-mix(in_srgb,var(--muted-foreground)_96%,var(--accent))]">
-                    전문가 집단에서 정보를 맞추고, 모둠으로 돌아와 모둠 과제를 함께 완성해요.
+                    전문가 집단에서 정보를 맞추고, 모둠으로 돌아와 모둠 미션을 함께 완성해요.
                   </p>
                 </div>
               </li>

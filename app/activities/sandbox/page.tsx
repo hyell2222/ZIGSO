@@ -124,7 +124,7 @@ function SandboxPageContent() {
         const required = pack.tasks.map((m) => m.id);
         const done = new Set(group.completed_tasks.map((m) => m.taskId));
         if (required.some((id) => !done.has(id))) {
-          throw new Error("아직 해결하지 않은 과제가 있습니다.");
+          throw new Error("아직 해결하지 않은 미션이 있습니다.");
         }
         return {
           ...prev,

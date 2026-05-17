@@ -3,7 +3,7 @@
 export const PLAY_STUDENT_COPY = {
   phaseOverview: {
     title: "활동 소개",
-    description: "모둠 배정과 오늘 완성할 과제를 확인하세요. 정답은 힌트로만 추리합니다.",
+    description: "모둠 배정과 오늘 완성할 미션을 확인하세요. 정답은 힌트로만 추리합니다.",
     placeLabel: "배정 역할",
   },
   phaseExpert: {
@@ -15,7 +15,8 @@ export const PLAY_STUDENT_COPY = {
   },
   phaseHome: {
     title: "홈 집단",
-    description: "획득한 항목으로 과제를 완성하고, 행동 카드를 순서대로 골라 제출하세요.",
+    description:
+      "획득한 항목으로 미션을 완성하세요. 각 미션마다 정해진 항목을 모두 모아 한 번에 제출해야 합니다.",
     scoreLabel: "모둠 점수",
   },
   waiting: {
@@ -31,7 +32,7 @@ export const PLAY_STUDENT_COPY = {
     waitForTeacher: "선생님이 다음 단계로 진행할 때까지 기다려 주세요.",
   },
   intro: {
-    timeHint: "제한 시간 안에 모둠 과제를 모두 완성하고 최종 제출하세요.",
+    timeHint: "제한 시간 안에 모둠 미션을 모두 완성하고 최종 제출하세요.",
   },
   phaseResults: {
     title: "활동 결과",

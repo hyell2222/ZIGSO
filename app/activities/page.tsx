@@ -82,17 +82,7 @@ export default function ActivitiesPage() {
   const handleSandbox = (activityRow: ActivityListRow) => {
     if (typeof window === "undefined") return;
     const url = ROUTES.activitiesSandbox(activityRow.id);
-    /**
-     * 학생/교사 화면을 함께 시연하는 시뮬레이션은 항상 새 탭에서 띄웁니다.
-     * (popup window 가 차단당하면 noopener 새 탭으로 폴백)
-     */
-    const features =
-      "noopener,noreferrer," +
-      "width=1480,height=900,menubar=no,toolbar=no,location=no,status=no";
-    const popup = window.open(url, `mc-sandbox-${activityRow.id}`, features);
-    if (!popup) {
-      window.open(url, "_blank", "noopener,noreferrer");
-    }
+    window.open(url, "_blank", "noopener,noreferrer");
   };
 
   const handleEdit = (row: ActivityListRow) => {
@@ -163,7 +153,7 @@ export default function ActivitiesPage() {
                         </div>
                       </div>
                       <p className="text-xs text-[var(--muted-foreground)] pb-2">
-                        모둠 당 {row.group_size ?? "—"}명 · 과제 {row.task_count ?? "—"}개
+                        모둠 당 {row.group_size ?? "—"}명 · 미션 {row.task_count ?? "—"}개
                       </p>
                       <div className="flex flex-col gap-2">
                         <Button

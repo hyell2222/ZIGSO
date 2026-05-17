@@ -25,7 +25,7 @@ const PHASE_KR: Record<string, string> = {
   waiting: "대기",
   overview: "활동 소개",
   expert_group: "전문가 집단",
-  home_group: "모둠 과제 완성",
+  home_group: "모둠 미션 완성",
   results: "종료",
 };
 
@@ -201,7 +201,7 @@ function ReportsPageInner() {
           title="활동 리포트"
           description={
             sessionId
-              ? "모둠별 과제 진행과 점수를 확인합니다."
+              ? "모둠별 미션 진행과 점수를 확인합니다."
               : "진행한 세션별로 모둠 성과를 확인할 수 있습니다."
           }
         />

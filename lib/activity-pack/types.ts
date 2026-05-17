@@ -28,14 +28,13 @@ export type Role = {
   items: Item[];
 };
 
-/** 모둠이 해결할 과제 — 획득한 항목 중 acceptedItemIds 로 선택 제출 */
+/** 모둠이 해결할 미션 — acceptedItemIds 에 체크된 항목을 모두 획득·제출해야 완료 */
 export type Task = {
   id: string;
   title: string;
   description: string;
+  /** 미션 완료에 필수로 제출해야 하는 아이템 id 목록 */
   acceptedItemIds: string[];
-  /** 제출에 필요한 최소 항목 수 (기본 1) */
-  minimumItems?: number;
 };
 
 export type ActivityPack = {
@@ -47,7 +46,7 @@ export type ActivityPack = {
   /** 역할당 최대 아이템 수 (저장 시 자동 정규화) */
   itemsPerPlayer: number;
   roles: Role[];
-  /** roles를 펼친 아이템 목록 — 엔진·과제 참조용 */
+  /** roles를 펼친 아이템 목록 — 엔진·미션 참조용 */
   items: Item[];
   tasks: Task[];
 };
@@ -60,7 +59,7 @@ export type AcquiredItem = {
   acquiredAt: string;
 };
 
-/** 모둠이 완성한 과제 (DB 컬럼명 completed_tasks) */
+/** 모둠이 완성한 미션 (DB 컬럼명 completed_tasks) */
 export type CompletedTask = {
   taskId: string;
   submittedItemIds: string[];

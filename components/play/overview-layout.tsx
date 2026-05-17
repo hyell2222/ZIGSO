@@ -62,13 +62,13 @@ export function ActivityIntroductionLayout({
         <CardHeader className="rounded-t-xl border-b border-[var(--border)] bg-[var(--panel-warn-bg)] px-3 py-2.5 @sm:px-6 @sm:py-4">
           <CardTitle className="flex items-center gap-2 text-sm font-semibold text-[var(--foreground)] @md:text-base">
             <ListChecks className="h-4 w-4 shrink-0 text-[var(--accent)]" aria-hidden />
-            해결할 과제
+            해결할 미션
           </CardTitle>
         </CardHeader>
         <CardContent className="px-3 pb-3 pt-2.5 @sm:px-6 @sm:pb-6 @sm:pt-4">
           {!activityPack?.tasks?.length ? (
             <p className="text-sm text-[var(--muted-foreground)] @sm:text-sm">
-              과제 정보가 없습니다.
+              미션 정보가 없습니다.
             </p>
           ) : (
             <ul className="space-y-2 text-sm leading-relaxed @sm:text-sm">
@@ -77,7 +77,14 @@ export function ActivityIntroductionLayout({
                   key={ch.id}
                   className="rounded-md border border-[var(--border)] px-3 py-2"
                 >
-                  <span className="font-medium">{ch.title}</span>
+                  <div className="flex flex-wrap items-baseline justify-between gap-2">
+                    <span className="font-medium">{ch.title}</span>
+                    {ch.acceptedItemIds.length > 0 ? (
+                      <span className="text-xs text-[var(--muted-foreground)]">
+                        필수 제출 {ch.acceptedItemIds.length}개
+                      </span>
+                    ) : null}
+                  </div>
                   {ch.description ? (
                     <p className="mt-1 text-xs text-[var(--muted-foreground)]">{ch.description}</p>
                   ) : null}

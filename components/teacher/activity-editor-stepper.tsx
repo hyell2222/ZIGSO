@@ -23,8 +23,8 @@ export function ActivityEditorStepper({
   const activeStep = EDITOR_STEPS.find((s) => s.id === currentStep);
 
   return (
-    <nav className="w-full py-4">
-      <ol className="flex w-full min-w-0 items-center">
+    <nav className="w-full py-3.5 bg-[var(--background)]">
+      <ol className="flex w-full min-w-0 items-center justify-start overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {EDITOR_STEPS.map((step, index) => {
           const isActive = step.id === currentStep;
           const isReachable = index <= maxReachableIndex;
@@ -33,27 +33,29 @@ export function ActivityEditorStepper({
             <Fragment key={step.id}>
               {index > 0 ? (
                 <li
-                  className="mx-2 flex min-w-0 flex-[999_999_0] list-none items-center sm:mx-4"
+                  className="mx-2.5 flex h-[2px] w-6 shrink-0 rounded-full bg-[var(--border)] sm:mx-3.5 sm:w-10"
                   aria-hidden
-                >
-                  <span className="h-px w-full min-w-0 rounded-full bg-[var(--border)]" />
-                </li>
+                />
               ) : null}
 
-              <li className="flex min-w-0 flex-[0_1_auto] list-none justify-center">
+              <li className="flex shrink-0 items-center justify-center">
                 <Button
                   type="button"
                   variant="ghost"
                   disabled={!isReachable}
                   onClick={() => isReachable && onStepChange(step.id)}
-                  className="min-w-0 max-w-full gap-1.5 rounded-full bg-transparent px-0 py-1.5 shadow-none hover:bg-transparent sm:gap-2"
+                  className={cn(
+                    "min-w-0 max-w-full gap-2.5 rounded-full bg-transparent px-1.5 py-2 shadow-none transition-all",
+                    "hover:bg-[color-mix(in_srgb,var(--accent)_6%,transparent)] focus-visible:ring-2",
+                    !isReachable && "opacity-50"
+                  )}
                 >
                   <span
                     className={cn(
-                      "flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-xs font-bold transition-colors",
+                      "flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-sm font-bold transition-all",
                       isActive
-                        ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--on-primary)]"
-                        : "border-[var(--border)] text-[var(--muted-foreground)]",
+                        ? "border-[var(--primary)] bg-[var(--primary)] text-white"
+                        : "border-[var(--border)] bg-[var(--card-bg)] text-[var(--muted-foreground)]",
                     )}
                   >
                     {index + 1}
@@ -61,8 +63,10 @@ export function ActivityEditorStepper({
 
                   <span
                     className={cn(
-                      "hidden min-w-0 flex-1 truncate text-base font-semibold transition-colors sm:inline",
-                      isActive ? "text-[var(--primary)]" : "text-[var(--foreground)]",
+                      "hidden min-w-0 truncate text-base font-semibold transition-colors sm:inline",
+                      isActive 
+                        ? "text-[var(--primary)] font-bold" 
+                        : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]",
                     )}
                   >
                     {step.title}
@@ -73,15 +77,11 @@ export function ActivityEditorStepper({
           );
         })}
       </ol>
+      
       {activeStep ? (
-        <>
-          <p className="mt-3 text-center text-base font-semibold text-[var(--primary)] sm:hidden">
-            {activeStep.title}
-          </p>
-          <p className="mt-1 text-center text-xs leading-relaxed text-[var(--muted-foreground)] sm:mt-2 sm:text-left sm:text-sm">
-            {activeStep.description}
-          </p>
-        </>
+        <p className="mt-2.5 text-center text-base font-bold text-[var(--primary)] sm:hidden animate-fadeIn">
+          {activeStep.title}
+        </p>
       ) : null}
     </nav>
   );

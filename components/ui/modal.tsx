@@ -22,7 +22,7 @@ export type ModalProps = {
   footer?: ReactNode;
   /** 모바일에서는 하단 정렬 후 `sm:`에서 중앙 (예: 역할 상세 패널) */
   sheetOnNarrow?: boolean;
-  /** 기본 max-w-md */
+  /** 기본 max-w-sm */
   maxWidthClassName?: string;
   /** 패널 z-index (tailwind 클래스) */
   zIndexClassName?: string;
@@ -51,7 +51,7 @@ export function Modal({
   children,
   footer,
   sheetOnNarrow = false,
-  maxWidthClassName = "max-w-md",
+  maxWidthClassName = "max-w-sm",
   zIndexClassName = "z-50",
   closeOnBackdrop = true,
   closeOnEscape = true,
@@ -133,12 +133,12 @@ export function Modal({
           ) : null}
         </header>
 
-        <div className={cn("min-h-0 flex-1 overflow-y-auto px-5 py-4", bodyClassName)}>{children}</div>
+        <div className={cn("min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5", bodyClassName)}>{children}</div>
 
         {footer ? (
           <footer
             className={cn(
-              "flex shrink-0 flex-wrap items-center justify-end gap-2 border-t px-5 py-3",
+              "flex shrink-0 flex-wrap items-center justify-end gap-2 border-t px-4 py-3 sm:px-5",
               divider,
               footerClassName,
             )}

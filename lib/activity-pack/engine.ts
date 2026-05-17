@@ -43,14 +43,26 @@ export function tryAcquireItem(
   };
 }
 
+export function taskSubmissionProgress(
+  acquired: AcquiredItem[],
+  task: Task,
+): { required: number; acquired: number; ready: boolean } {
+  const acquiredSet = new Set(acquired.map((a) => a.itemId));
+  const required = task.acceptedItemIds.length;
+  const acquiredCount = task.acceptedItemIds.filter((id) => acquiredSet.has(id)).length;
+  return {
+    required,
+    acquired: acquiredCount,
+    ready: required > 0 && acquiredCount === required,
+  };
+}
+
+/** 필수 제출 항목을 모두 획득했는지 */
 export function groupHasItemsForTask(
   acquired: AcquiredItem[],
   task: Task,
 ): boolean {
-  const acquiredSet = new Set(acquired.map((a) => a.itemId));
-  const min = task.minimumItems ?? 1;
-  const eligible = task.acceptedItemIds.filter((id) => acquiredSet.has(id));
-  return eligible.length >= min;
+  return taskSubmissionProgress(acquired, task).ready;
 }
 
 export function tryCompleteTask(
@@ -63,16 +75,16 @@ export function tryCompleteTask(
   if (!task) return { ok: false, reason: PLAYER_MESSAGES.unknownTask };
 
   const acquiredSet = new Set(acquired.map((a) => a.itemId));
-  const accepted = new Set(task.acceptedItemIds);
+  const required = task.acceptedItemIds;
+  const requiredSet = new Set(required);
   const uniqueSubmitted = [...new Set(submittedItemIds)];
 
-  const min = task.minimumItems ?? 1;
-  if (uniqueSubmitted.length < min) {
-    return { ok: false, reason: PLAYER_MESSAGES.taskTooFewItems };
+  if (required.length === 0) {
+    return { ok: false, reason: PLAYER_MESSAGES.taskIncompleteSubmission };
   }
 
   for (const id of uniqueSubmitted) {
-    if (!accepted.has(id)) {
+    if (!requiredSet.has(id)) {
       return { ok: false, reason: PLAYER_MESSAGES.taskInvalidItem };
     }
     if (!acquiredSet.has(id)) {
@@ -80,7 +92,17 @@ export function tryCompleteTask(
     }
   }
 
-  const score = uniqueSubmitted.length * 3;
+  if (uniqueSubmitted.length !== required.length) {
+    return { ok: false, reason: PLAYER_MESSAGES.taskIncompleteSubmission };
+  }
+
+  for (const id of required) {
+    if (!uniqueSubmitted.includes(id)) {
+      return { ok: false, reason: PLAYER_MESSAGES.taskIncompleteSubmission };
+    }
+  }
+
+  const score = required.length * 3;
 
   return {
     ok: true,

@@ -28,7 +28,7 @@ export type PhaseGuide = {
 export const PHASE_GUIDES: Record<TimedPhase, PhaseGuide> = {
   overview: {
     title: "활동 소개",
-    summary: "모둠별로 모여 오늘의 과제와 역할을 확인합니다.",
+    summary: "모둠별로 모여 오늘의 미션과 역할을 확인합니다.",
   },
   expert_group: {
     title: "전문가 집단",
@@ -37,7 +37,7 @@ export const PHASE_GUIDES: Record<TimedPhase, PhaseGuide> = {
   },
   home_group: {
     title: "홈 집단",
-    summary: "획득한 정보로 모둠 과제를 완성하고 최종 결과를 제출합니다.",
+    summary: "획득한 정보로 모둠 미션을 완성하고 최종 결과를 제출합니다.",
   },
 };
 

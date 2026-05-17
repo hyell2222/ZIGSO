@@ -48,7 +48,6 @@ export type EditorTask = {
   title: string;
   description: string;
   acceptedItemIds: string[];
-  minimumItems?: number;
 };
 
 export type ActivityEditorDraft = {
@@ -107,7 +106,6 @@ export function createEmptyTask(): EditorTask {
     title: "",
     description: "",
     acceptedItemIds: [],
-    minimumItems: 1,
   };
 }
 
@@ -158,7 +156,7 @@ export function createDefaultActivityDraft(): ActivityEditorDraft {
   return {
     title: "학교 축제 부스 운영",
     description:
-      "내일은 학교 축제입니다.\n여러 과제를 해결하며 축제 부스를 성공적으로 운영하세요.",
+      "내일은 학교 축제입니다.\n여러 미션을 해결하며 축제 부스를 성공적으로 운영하세요.",
     roles,
     tasks: [
       {
@@ -167,7 +165,6 @@ export function createDefaultActivityDraft(): ActivityEditorDraft {
         title: "부스 개점 준비",
         description: "개점 전에 필요한 자료와 절차를 정리하세요.",
         acceptedItemIds: flat.map((f) => f.item.localId),
-        minimumItems: 1,
       },
     ],
   };
@@ -213,7 +210,6 @@ export function packToEditorDraft(pack: ActivityPack): ActivityEditorDraft {
     acceptedItemIds: task.acceptedItemIds
       .filter((id) => itemIds.has(id))
       .map((id) => localByItemId.get(id) ?? id),
-    minimumItems: task.minimumItems,
   }));
 
   return {
@@ -282,17 +278,12 @@ export function editorDraftToPack(draft: ActivityEditorDraft): ActivityPack {
     const acceptedItemIds = ch.acceptedItemIds
       .map((ref) => idMap.get(ref) ?? ref)
       .filter((id) => usedItemIds.has(id));
-    const min =
-      typeof ch.minimumItems === "number" && ch.minimumItems >= 1
-        ? Math.min(ch.minimumItems, acceptedItemIds.length || ch.minimumItems)
-        : undefined;
 
     return {
       id: ch.id.trim() || taskId,
       title: ch.title.trim(),
       description: ch.description.trim(),
       acceptedItemIds,
-      minimumItems: min,
     };
   });
 
@@ -327,8 +318,8 @@ export const EDITOR_STEPS = [
   },
   {
     id: "tasks",
-    title: "모둠 과제",
-    description: "홈 집단에서 해결할 과제",
+    title: "모둠 미션",
+    description: "홈 집단에서 해결할 미션",
   },
 ] as const;
 
@@ -379,18 +370,14 @@ export function validateEditorDraftStep(draft: ActivityEditorDraft, step: Editor
   }
 
   if (draft.tasks.length === 0) {
-    errors.push("모둠 과제를 한 가지 이상 추가하세요.");
+    errors.push("모둠 미션을 한 가지 이상 추가하세요.");
   }
   for (const task of draft.tasks) {
-    if (!task.title.trim()) errors.push("모둠 과제 제목을 입력하세요.");
-    if (!task.description.trim()) errors.push(`「${task.title || "과제"}」설명을 입력하세요.`);
+    if (!task.title.trim()) errors.push("모둠 미션 제목을 입력하세요.");
+    if (!task.description.trim()) errors.push(`「${task.title || "미션"}」설명을 입력하세요.`);
     const refs = task.acceptedItemIds.length;
     if (refs === 0) {
-      errors.push(`「${task.title || "과제"}」에 사용할 아이템을 한 가지 이상 선택하세요.`);
-    }
-    const min = task.minimumItems ?? 1;
-    if (min < 1 || min > refs) {
-      errors.push(`「${task.title || "과제"}」최소 아이템 수가 올바르지 않습니다.`);
+      errors.push(`「${task.title || "미션"}」에 사용할 아이템을 한 가지 이상 선택하세요.`);
     }
   }
   return errors;
@@ -408,18 +395,14 @@ export function validateEditorDraft(draft: ActivityEditorDraft): string[] {
   validateRolesAndItems(draft, errors);
 
   if (draft.tasks.length === 0) {
-    errors.push("모둠 과제를 한 가지 이상 추가하세요.");
+    errors.push("모둠 미션을 한 가지 이상 추가하세요.");
   }
   for (const task of draft.tasks) {
-    if (!task.title.trim()) errors.push("모둠 과제 제목을 입력하세요.");
-    if (!task.description.trim()) errors.push(`「${task.title || "과제"}」설명을 입력하세요.`);
+    if (!task.title.trim()) errors.push("모둠 미션 제목을 입력하세요.");
+    if (!task.description.trim()) errors.push(`「${task.title || "미션"}」설명을 입력하세요.`);
     const refs = task.acceptedItemIds.length;
     if (refs === 0) {
-      errors.push(`「${task.title || "과제"}」에 사용할 아이템을 한 가지 이상 선택하세요.`);
-    }
-    const min = task.minimumItems ?? 1;
-    if (min < 1 || min > refs) {
-      errors.push(`「${task.title || "과제"}」최소 아이템 수가 올바르지 않습니다.`);
+      errors.push(`「${task.title || "미션"}」에 사용할 아이템을 한 가지 이상 선택하세요.`);
     }
   }
 

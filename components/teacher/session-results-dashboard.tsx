@@ -97,7 +97,7 @@ export function SessionResultsDashboard({
               </p>
             </div>
             <p className="mt-0.5 text-[11px] text-[var(--muted-foreground)] @md:mt-1 @md:text-xs">
-              항목 {team.itemsAcquired} · 과제 {team.tasksCompleted}
+              항목 {team.itemsAcquired} · 미션 {team.tasksCompleted}
               {team.activityCompleted ? " · 최종 제출" : ""}
             </p>
             <div className="mt-1 rounded border border-[var(--border)] bg-[var(--tint-accent-weak)] px-1.5 py-1 @md:mt-2 @md:px-2 @md:py-1.5">

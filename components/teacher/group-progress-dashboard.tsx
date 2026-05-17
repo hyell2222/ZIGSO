@@ -33,10 +33,10 @@ export function GroupProgressDashboard({
     >
       <header>
         <h2 className="text-sm font-semibold text-[var(--foreground)] @md:text-base">
-          모둠 과제 진행
+          모둠 미션 진행
         </h2>
         <p className="mt-0.5 text-sm leading-snug text-[var(--muted-foreground)] @md:mt-1">
-          항목 획득·과제 해결·최종 제출 현황입니다.
+          항목 획득·미션 해결·최종 제출 현황입니다.
         </p>
       </header>
       {loading ? (
@@ -99,7 +99,7 @@ function GroupProgressCard({
           </dd>
         </div>
         <div className="flex justify-between gap-2">
-          <dt className="text-[var(--muted-foreground)]">과제</dt>
+          <dt className="text-[var(--muted-foreground)]">미션</dt>
           <dd className="font-medium text-[var(--foreground)]">
             {tasksDone}/{taskTotal || "—"}
           </dd>

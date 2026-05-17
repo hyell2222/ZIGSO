@@ -69,8 +69,7 @@
       "id": "booth_opening",
       "title": "Booth opening prep",
       "description": "Organize materials and steps needed before opening the booth.",
-      "acceptedItemIds": ["booth_manual", "admission_ticket"],
-      "minimumItems": 1
+      "acceptedItemIds": ["booth_manual", "admission_ticket"]
     }
   ]
 }

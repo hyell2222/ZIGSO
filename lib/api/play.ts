@@ -397,7 +397,7 @@ export async function completeActivityForGroup(groupId: string, pack: ActivityPa
   const completedIds = new Set(group.completed_tasks.map((t) => t.taskId));
   const missing = requiredIds.filter((id) => !completedIds.has(id));
   if (missing.length > 0) {
-    throw new Error(`아직 해결하지 않은 과제가 있습니다: ${missing.join(", ")}`);
+    throw new Error(`아직 해결하지 않은 미션이 있습니다: ${missing.join(", ")}`);
   }
 
   const { error } = await supabase

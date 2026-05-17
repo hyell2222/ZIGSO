@@ -79,18 +79,11 @@ function readTask(raw: unknown, idx: number, itemIds: Set<string>): Task {
     .map((id) => String(id))
     .filter((id) => itemIds.has(id));
 
-  const minRaw = t.minimumItems;
-  const minimumItems =
-    typeof minRaw === "number" && minRaw >= 1
-      ? Math.min(minRaw, acceptedItemIds.length || minRaw)
-      : undefined;
-
   return {
     id: String(t.id ?? `task_${idx + 1}`),
     title: String(t.title ?? "").trim(),
     description: String(t.description ?? "").trim(),
     acceptedItemIds,
-    minimumItems,
   };
 }
 
