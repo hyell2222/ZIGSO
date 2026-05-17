@@ -37,7 +37,7 @@ export const playSurfaceWarmHeader =
   "border-b-2 border-[color-mix(in_srgb,var(--highlight)_25%,var(--border))] bg-[color-mix(in_srgb,var(--highlight)_10%,white)]";
 
 export const playPhaseHeaderChrome =
-  "border-b-2 border-[color-mix(in_srgb,var(--primary)_16%,var(--border))] bg-[color-mix(in_srgb,white_72%,var(--entry-shell))] text-[var(--foreground)] shadow-[0_4px_0_color-mix(in_srgb,var(--primary)_8%,transparent),0_12px_28px_-8px_color-mix(in_srgb,var(--primary)_12%,transparent)]";
+  "border-b-2 border-[color-mix(in_srgb,var(--primary)_16%,var(--border))] bg-[color-mix(in_srgb,white_88%,var(--entry-shell))] text-[var(--foreground)] shadow-[0_4px_0_color-mix(in_srgb,var(--primary)_8%,transparent),0_12px_28px_-8px_color-mix(in_srgb,var(--primary)_12%,transparent)] backdrop-blur-sm";
 
 export const playPhaseHeaderChromeShell = cn(
   "shrink-0",
@@ -51,8 +51,12 @@ export const playPhaseHeaderChromeInner =
 export const playLoaderRegion =
   "flex w-full min-h-0 flex-1 flex-col items-center justify-center px-4 py-10";
 
-export const playPhaseMainInner =
-  "mx-auto w-full min-h-0 flex-1 overflow-y-auto px-4 py-5 pb-4 sm:px-6 sm:py-6 md:px-8";
+/** 스크롤·스크롤바는 뷰포트 전체 너비에 맞춤 */
+export const playPhaseMainInner = "w-full min-h-0 flex-1 overflow-y-auto overscroll-y-contain";
+
+/** 본문 최대 너비·패딩 (main 안쪽) */
+export const playPhaseMainContent =
+  "mx-auto w-full px-4 py-5 pb-4 sm:px-6 sm:py-6 md:px-8";
 
 export const playPhaseFooterChrome = cn(
   "sticky bottom-0 z-20 shrink-0 border-t-2 border-[color-mix(in_srgb,var(--primary)_14%,var(--border))]",
@@ -70,7 +74,7 @@ export function PlayAtmosphere({
     <div
       className={cn(
         "play-shell relative isolate overflow-hidden font-sans",
-        isContained ? "h-full min-h-0 w-full" : "min-h-dvh",
+        isContained ? "h-full min-h-0 w-full" : "h-dvh min-h-0 w-full",
         className,
       )}
       style={PLAY_PAGE_BLACK_BG}
@@ -96,12 +100,7 @@ export function PlayAtmosphere({
         aria-hidden
       />
       <div
-        className={cn(
-          "relative z-10",
-          isContained
-            ? "flex h-full min-h-0 flex-col overflow-hidden"
-            : "min-h-dvh",
-        )}
+        className="relative z-10 flex h-full min-h-0 flex-col overflow-hidden"
       >
         {children}
       </div>

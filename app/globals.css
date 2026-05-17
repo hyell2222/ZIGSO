@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/** 애니메이션은 동작 감소 설정이 꺼져 있을 때만 적용 (motion-safe: 접두사) */
+@custom-variant motion-safe (@media (prefers-reduced-motion: no-preference));
+
 :root {
   color-scheme: light;
 
@@ -199,6 +202,37 @@ body {
       opacity: 1;
       transform: none;
     }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes playRevealUp {
+    from,
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes playModalRise {
+    from,
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes playFloat {
+    from,
+    to {
+      transform: none;
+    }
+  }
+
+  @keyframes playActivityBounce {
+    from,
     to {
       opacity: 1;
       transform: none;

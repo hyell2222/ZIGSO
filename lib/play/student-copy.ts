@@ -42,6 +42,5 @@ export const PLAY_STUDENT_COPY = {
     personalRankLabel: "나의 순위",
     personalScoreLabel: "나의 점수",
     emptyMessage: "결과를 불러올 수 없습니다.",
-    leaveButton: "홈으로 돌아가기",
   },
 } as const;

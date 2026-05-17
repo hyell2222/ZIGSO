@@ -7,6 +7,7 @@ import {
   playPhaseFooterChrome,
   playPhaseHeaderChromeInner,
   playPhaseHeaderChromeShell,
+  playPhaseMainContent,
   playPhaseMainInner,
 } from "@/components/play/play-atmosphere";
 import { PlayPhaseHeader, type PlayPhaseHeaderProps } from "@/components/play/play-phase-header";
@@ -32,16 +33,18 @@ export function PlayPhaseShell({
 }: PlayPhaseShellProps) {
   return (
     <PlayAtmosphere variant={embedded ? "contained" : "viewport"}>
-      <div className={cn("flex flex-col", embedded ? "min-h-0 flex-1" : "min-h-dvh")}>
+      <div className="flex h-full min-h-0 w-full flex-1 flex-col">
         {header ? (
-          <header className={cn(playPhaseHeaderChromeShell, "sticky top-0 z-20")}>
+          <header className={cn(playPhaseHeaderChromeShell, "z-20 shrink-0")}>
             <div className={playPhaseHeaderChromeInner}>
               <PlayPhaseHeader {...header} compact={header.compact ?? embedded} />
             </div>
           </header>
         ) : null}
 
-        <main className={cn(playPhaseMainInner, mainClassName)}>{children}</main>
+        <main className={playPhaseMainInner}>
+          <div className={cn(playPhaseMainContent, mainClassName)}>{children}</div>
+        </main>
 
         {footer || footerHint ? (
           <footer className={playPhaseFooterChrome}>

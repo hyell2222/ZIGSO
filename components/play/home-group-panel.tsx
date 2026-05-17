@@ -122,7 +122,7 @@ export function GroupPhasePanel({
           />
         ),
       }}
-      mainClassName="max-w-3xl"
+      mainClassName="max-w-none w-full"
     >
       <div className={cn("space-y-6 px-5 py-6", playSurfaceCool)}>
         <section>

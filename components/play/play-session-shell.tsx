@@ -348,10 +348,6 @@ export function PlaySessionShell({
         groupName={groupName}
         roleLabel={resultsRoleLabel}
         currentPlayerId={playerId}
-        onLeave={() => {
-          if (joinCode) clearResumeRecord(joinCode);
-          router.replace(ROUTES.home);
-        }}
       />
     );
   }

@@ -4,7 +4,6 @@ import { useMemo } from "react";
 
 import { PlayPhaseShell } from "@/components/play/play-phase-shell";
 import { playSurfaceCool } from "@/components/play/play-atmosphere";
-import { Button } from "@/components/ui/button";
 import { LoadingState } from "@/components/ui/loading-state";
 import {
   getStudentResultsSnapshot,
@@ -28,7 +27,6 @@ type Props = {
   roleLabel?: string | null;
   currentPlayerId?: string | null;
   embedded?: boolean;
-  onLeave?: () => void;
 };
 
 function RankCard({
@@ -89,7 +87,6 @@ export function ResultsPhasePanel({
   roleLabel,
   currentPlayerId,
   embedded = false,
-  onLeave,
 }: Props) {
   const snapshot = useMemo(
     () =>
@@ -146,11 +143,6 @@ export function ResultsPhasePanel({
             scoreLabel={copy.personalScoreLabel}
             detail={`${snapshot.roleLabel} · 전문가 ${snapshot.expertScore}점 · 팀 기여 ${snapshot.teamShareScore}점`}
           />
-          {onLeave ? (
-            <Button type="button" className="w-full touch-manipulation" variant="outline" onClick={onLeave}>
-              {copy.leaveButton}
-            </Button>
-          ) : null}
         </div>
       )}
     </PlayPhaseShell>
