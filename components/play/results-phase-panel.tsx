@@ -119,7 +119,6 @@ export function ResultsPhasePanel({
   return (
     <PlayPhaseShell
       contained={contained}
-      mainClassName="max-w-2xl"
       header={{
         phase: 4,
         title: copy.title,

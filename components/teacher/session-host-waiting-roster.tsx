@@ -1,7 +1,8 @@
 "use client";
 
-import { activityListRow, activitySectionCard } from "@/components/activity/activity-layout-chrome";
+import { activityListRow } from "@/components/activity/activity-layout-chrome";
 import { activityLayoutType } from "@/components/activity/activity-layout-typography";
+import { PhaseSection, PhaseSectionBadge } from "@/components/activity/phase-section-layout";
 import { cn } from "@/lib/utils";
 
 type Player = { id: string; nickname: string | null };
@@ -10,13 +11,18 @@ type Props = {
   players: Player[];
 };
 
-/** 호스트 대기 학생 칩 — `app/sessions`·샌드박스 동일 마크업 */
+/** 호스트 대기 학생 — 섹션 카드 UI */
 export function SessionHostWaitingRoster({ players }: Props) {
   return (
-    <section className={activitySectionCard}>
-      <p className={activityLayoutType.sectionTitle}>대기 학생</p>
+    <PhaseSection
+      title="대기 학생"
+      heading="section"
+      as="h2"
+      subtitle="입장했지만 아직 활동이 시작되지 않은 학생입니다."
+      headerExtra={<PhaseSectionBadge>{players.length}명</PhaseSectionBadge>}
+    >
       {players.length === 0 ? (
-        <p className="py-2 text-center text-sm text-[var(--muted-foreground)]">아직 없음</p>
+        <p className={cn("py-2 text-center", activityLayoutType.bodyMuted)}>아직 없음</p>
       ) : (
         <ul className="flex flex-wrap gap-2">
           {players.map((p) => (
@@ -30,6 +36,6 @@ export function SessionHostWaitingRoster({ players }: Props) {
           ))}
         </ul>
       )}
-    </section>
+    </PhaseSection>
   );
 }

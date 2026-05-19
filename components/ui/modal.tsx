@@ -4,47 +4,104 @@ import { X } from "lucide-react";
 import { useEffect, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
-/** 입장·AI 생성 등 일반 다이얼로그 기본 너비 (뷰포트·contained 공통) */
-export const MODAL_DEFAULT_MAX_WIDTH = "max-w-[min(100%,28rem)]";
+/** 다이얼로그·인라인 폼 공통 최대 너비 */
+export const MODAL_DEFAULT_MAX_WIDTH = "w-full max-w-[min(100%,28rem)]";
 
-const panel =
-  "border-[var(--border)] bg-[var(--card-bg)] text-[var(--foreground)] shadow-[0_20px_50px_-12px_color-mix(in_srgb,var(--primary)_18%,transparent)]";
-const divider = "border-[var(--border)]";
-const titleHeadingClass = "text-base font-semibold text-[var(--foreground)]";
 const closeMuted =
   "text-[var(--muted-foreground)] hover:bg-[var(--tint-accent)] hover:text-[var(--foreground)]";
 
-export type ModalProps = {
-  open: boolean;
-  onClose: () => void;
+type ModalPanelProps = {
   title: string;
   titleId: string;
   children: ReactNode;
   footer?: ReactNode;
-  /** 모바일에서는 하단 정렬 후 `sm:`에서 중앙 (예: 역할 상세 패널) */
-  sheetOnNarrow?: boolean;
-  /** 기본 {@link MODAL_DEFAULT_MAX_WIDTH} */
+  className?: string;
+  contentClassName?: string;
+  footerClassName?: string;
   maxWidthClassName?: string;
-  /** 패널 z-index (tailwind 클래스) */
+  hideCloseButton?: boolean;
+  onClose?: () => void;
+};
+
+function ModalPanel({
+  title,
+  titleId,
+  children,
+  footer,
+  className,
+  contentClassName,
+  footerClassName,
+  maxWidthClassName = MODAL_DEFAULT_MAX_WIDTH,
+  hideCloseButton = false,
+  onClose,
+}: ModalPanelProps) {
+  const showClose = Boolean(onClose) && !hideCloseButton;
+
+  return (
+    <Card
+      className={cn(
+        "mx-auto flex max-h-[min(92dvh,880px)] min-w-0 flex-col",
+        maxWidthClassName,
+        className,
+      )}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={titleId}
+    >
+      <CardHeader className="flex shrink-0 flex-row items-center justify-between gap-3 py-3">
+        <CardTitle id={titleId} className="min-w-0 flex-1 truncate">
+          {title}
+        </CardTitle>
+        {showClose ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className={cn("h-9 w-9 shrink-0", closeMuted)}
+            onClick={onClose}
+            aria-label="닫기"
+          >
+            <X className="h-4 w-4" aria-hidden />
+          </Button>
+        ) : null}
+      </CardHeader>
+
+      <CardContent className={cn("min-h-0 flex-1 overflow-y-auto", contentClassName)}>
+        {children}
+      </CardContent>
+
+      {footer ? (
+        <div
+          className={cn(
+            "flex shrink-0 flex-wrap items-center justify-end gap-2 border-t border-[var(--border)] px-5 py-3",
+            footerClassName,
+          )}
+        >
+          {footer}
+        </div>
+      ) : null}
+    </Card>
+  );
+}
+
+export type ModalProps = ModalPanelProps & {
+  /** `boolean`이면 스크림 오버레이. 생략 시 페이지 중앙 인라인 카드(로그인·/play 입장) */
+  open?: boolean;
+  variant?: "viewport" | "contained";
   zIndexClassName?: string;
+  overlayClassName?: string;
   closeOnBackdrop?: boolean;
   closeOnEscape?: boolean;
-  hideCloseButton?: boolean;
-  panelClassName?: string;
-  overlayClassName?: string;
-  headerClassName?: string;
-  titleClassName?: string;
-  bodyClassName?: string;
-  footerClassName?: string;
-  titlePrefix?: ReactNode;
-  /** `contained`: 가장 가까운 `relative` 조상 안에서만 오버레이 (샌드박스 학생 패널 등) */
-  variant?: "viewport" | "contained";
+  /** 모바일 하단 시트 → `sm:`에서 중앙 */
+  sheetOnNarrow?: boolean;
 };
 
 /**
- * 공통 모달 — 스크림, 헤더(제목+닫기), 본문, 선택 푸터.
+ * 공통 모달 — Card 패널 + 선택적 스크림 오버레이.
+ * 로그인·참가·타이머·QR·AI 생성 등 모든 다이얼로그에 사용.
  */
 export function Modal({
   open,
@@ -53,30 +110,51 @@ export function Modal({
   titleId,
   children,
   footer,
-  sheetOnNarrow = false,
-  maxWidthClassName = MODAL_DEFAULT_MAX_WIDTH,
-  zIndexClassName = "z-50",
-  closeOnBackdrop = true,
-  closeOnEscape = true,
-  hideCloseButton = false,
-  panelClassName,
-  overlayClassName,
-  headerClassName,
-  titleClassName,
-  bodyClassName,
-  footerClassName,
-  titlePrefix,
   variant = "viewport",
+  zIndexClassName = "z-50",
+  overlayClassName,
+  closeOnBackdrop,
+  closeOnEscape = true,
+  sheetOnNarrow = false,
+  hideCloseButton = false,
+  className,
+  contentClassName,
+  footerClassName,
+  maxWidthClassName,
 }: ModalProps) {
+  const isOverlay = open !== undefined;
+  const canDismiss = Boolean(onClose);
+  const dismissOnBackdrop = canDismiss && (closeOnBackdrop ?? true);
+
   useEffect(() => {
-    if (!open || !closeOnEscape) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== "Escape" || e.defaultPrevented) return;
-      onClose();
+    if (!isOverlay || !open || !canDismiss || !closeOnEscape) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || event.defaultPrevented) return;
+      onClose?.();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open, closeOnEscape, onClose]);
+  }, [isOverlay, open, canDismiss, closeOnEscape, onClose]);
+
+  const panel = (
+    <ModalPanel
+      title={title}
+      titleId={titleId}
+      footer={footer}
+      className={className}
+      contentClassName={contentClassName}
+      footerClassName={footerClassName}
+      maxWidthClassName={maxWidthClassName}
+      hideCloseButton={hideCloseButton}
+      onClose={canDismiss ? onClose : undefined}
+    >
+      {children}
+    </ModalPanel>
+  );
+
+  if (!isOverlay) {
+    return panel;
+  }
 
   if (!open) return null;
 
@@ -84,71 +162,20 @@ export function Modal({
     <div
       className={cn(
         variant === "contained" ? "absolute inset-0" : "fixed inset-0",
-        "flex backdrop-blur-[2px] transition-colors",
-        "pb-[max(1rem,env(safe-area-inset-bottom,0px))] pt-[max(1rem,env(safe-area-inset-top,0px))]",
-        "pl-[max(1.25rem,env(safe-area-inset-left,0px))] pr-[max(1.25rem,env(safe-area-inset-right,0px))] sm:pl-[max(1rem,env(safe-area-inset-left,0px))] sm:pr-[max(1rem,env(safe-area-inset-right,0px))]",
+        "flex backdrop-blur-[2px]",
+        "px-4 py-6",
+        "pb-[max(1.5rem,env(safe-area-inset-bottom,0px))] pt-[max(1.5rem,env(safe-area-inset-top,0px))]",
         sheetOnNarrow ? "items-end justify-center sm:items-center" : "items-center justify-center",
         overlayClassName ?? "bg-[var(--overlay-scrim)]/85",
         zIndexClassName,
       )}
       role="presentation"
-      onClick={(e) => {
-        if (e.target === e.currentTarget && closeOnBackdrop) onClose();
+      onClick={(event) => {
+        if (event.target === event.currentTarget && dismissOnBackdrop) onClose?.();
       }}
     >
-      <div
-        className={cn(
-          "mx-auto flex min-w-0 max-h-[min(92dvh,880px)] w-full shrink-0 flex-col overflow-hidden rounded-xl border motion-safe:animate-[playModalRise_0.4s_cubic-bezier(0.22,1,0.36,1)_both]",
-          maxWidthClassName,
-          panel,
-          panelClassName,
-        )}
-        role="dialog"
-        aria-modal="true"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <header
-          className={cn(
-            "flex shrink-0 items-center justify-between gap-3 border-b px-4 py-3 pl-5",
-            divider,
-            headerClassName,
-          )}
-        >
-          <div className="flex min-w-0 items-center gap-2">
-            {titlePrefix ?? null}
-            <h2
-              id={titleId}
-              className={cn("truncate tracking-tight", titleHeadingClass, titleClassName)}
-            >
-              {title}
-            </h2>
-          </div>
-          {!hideCloseButton ? (
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className={cn("h-9 w-9 shrink-0", closeMuted)}
-              onClick={onClose}
-            >
-              <X className="h-4 w-4" aria-hidden />
-            </Button>
-          ) : null}
-        </header>
-
-        <div className={cn("min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5", bodyClassName)}>{children}</div>
-
-        {footer ? (
-          <footer
-            className={cn(
-              "flex shrink-0 flex-wrap items-center justify-end gap-2 border-t px-4 py-3 sm:px-5",
-              divider,
-              footerClassName,
-            )}
-          >
-            {footer}
-          </footer>
-        ) : null}
+      <div className="w-full motion-safe:animate-[playModalRise_0.4s_cubic-bezier(0.22,1,0.36,1)_both]">
+        {panel}
       </div>
     </div>
   );

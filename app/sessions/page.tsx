@@ -528,7 +528,7 @@ function SessionHostContent() {
         title="타이머"
         titleId="host-timer-heading"
         zIndexClassName="z-[90]"
-        bodyClassName="py-5"
+        contentClassName="py-5"
       >
         <PhaseTimerContent key={phase} phase={phase as TimedPhase} />
       </Modal>

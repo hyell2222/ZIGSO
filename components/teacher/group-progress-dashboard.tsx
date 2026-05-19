@@ -5,14 +5,13 @@ import { useMemo } from "react";
 import {
   activityCardGrid,
   activityNestedCard,
-  activitySectionCard,
 } from "@/components/activity/activity-layout-chrome";
 import { activityLayoutType } from "@/components/activity/activity-layout-typography";
+import { PhaseSection, PhaseSectionBadge } from "@/components/activity/phase-section-layout";
 import { LoadingState } from "@/components/ui/loading-state";
 import type { ActivityPack } from "@/lib/activity-pack/types";
 import { computeGroupTotalScore } from "@/lib/activity-pack/session-results";
 import type { GroupRow } from "@/lib/api/play";
-import { cn } from "@/lib/utils";
 
 export type GroupProgressGroup = {
   group: GroupRow;
@@ -33,20 +32,26 @@ export function GroupProgressDashboard({
   void contained;
   const taskTotal = pack?.tasks.length ?? 0;
 
+  const completedCount = groups.filter((g) => Boolean(g.group.completed_at)).length;
+
   return (
-    <section className={activitySectionCard}>
-      <header>
-        <h2 className={activityLayoutType.sectionTitle}>모둠 미션 진행</h2>
-        <p className={activityLayoutType.sectionSubtitle}>
-          아이템 획득·미션 해결·최종 제출 현황입니다.
-        </p>
-      </header>
+    <PhaseSection
+      title="모둠 미션 진행"
+      heading="section"
+      as="h2"
+      subtitle="아이템 획득·미션 해결·최종 제출 현황입니다."
+      headerExtra={
+        !loading && groups.length > 0 ? (
+          <PhaseSectionBadge>
+            {completedCount}/{groups.length} 모둠 완료
+          </PhaseSectionBadge>
+        ) : null
+      }
+    >
       {loading ? (
         <LoadingState variant="section" label="불러오는 중…" />
       ) : groups.length === 0 ? (
-        <p className="text-sm text-[var(--muted-foreground)] @md:text-sm">
-          배정된 모둠이 없습니다.
-        </p>
+        <p className={activityLayoutType.bodyMuted}>배정된 모둠이 없습니다.</p>
       ) : (
         <div className={activityCardGrid}>
           {groups.map((g) => (
@@ -54,7 +59,7 @@ export function GroupProgressDashboard({
           ))}
         </div>
       )}
-    </section>
+    </PhaseSection>
   );
 }
 
@@ -89,7 +94,7 @@ function GroupProgressCard({
     <div className={activityNestedCard}>
       <div className="flex items-baseline justify-between gap-2">
         <p className={activityLayoutType.nestedCardHeader}>{group.name ?? "—"}</p>
-        <span className="text-xs text-[var(--muted-foreground)]">{memberCount}명</span>
+        <span className={activityLayoutType.nestedCardBadge}>{memberCount}명</span>
       </div>
       <dl className="mt-2 space-y-1 text-xs @md:text-sm">
         <div className="flex justify-between gap-2">

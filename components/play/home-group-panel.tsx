@@ -1,23 +1,25 @@
 "use client";
 
-import { Check, Circle, Loader2, Puzzle, CheckSquare, Square } from "lucide-react";
+import { CheckSquare, Loader2, Puzzle, Square } from "lucide-react";
 import { useMemo, useState, useEffect } from "react";
 
 import { PlayPhaseShell } from "@/components/play/play-phase-shell";
 import { PlayHeaderGroupPlace } from "@/components/play/play-header-group-place";
 import {
-  activityCallout,
-  activityEmptyState,
-  activityPanelCard,
-  activityStackTight,
-} from "@/components/activity/activity-layout-chrome";
+  PlayPhaseCallout,
+  PlayPhaseEmptyState,
+  PlayPhaseMessage,
+  playPhaseListRowClass,
+  PlayPhasePanel,
+  PlayPhaseSection,
+  PlayPhaseSectionBadge,
+  PlayPhaseWaitFootnote,
+  playPhaseFormActions,
+} from "@/components/play/play-phase-layout";
 import { activityLayoutType } from "@/components/activity/activity-layout-typography";
 import { Button } from "@/components/ui/button";
 import { completeActivityForGroup, completeTaskForGroup } from "@/lib/api/play";
-import {
-  taskSubmissionProgress,
-  totalGroupScore,
-} from "@/lib/activity-pack/engine";
+import { totalGroupScore } from "@/lib/activity-pack/engine";
 import { taskCompleteMessage, PLAYER_MESSAGES } from "@/lib/activity-pack/player-messages";
 import { PLAY_STUDENT_COPY } from "@/lib/play/student-copy";
 import type { ActivityPack } from "@/lib/activity-pack/types";
@@ -34,6 +36,12 @@ type Props = {
   sandboxCompleteActivity?: () => void;
   contained?: boolean;
 };
+
+const t = activityLayoutType;
+
+function isSuccessMessage(message: string) {
+  return message.includes("해결") || message.includes("완료");
+}
 
 export function GroupPhasePanel({
   pack,
@@ -70,7 +78,7 @@ export function GroupPhasePanel({
 
   const handleToggleItem = (itemId: string) => {
     setSelectedItemIds((prev) =>
-      prev.includes(itemId) ? prev.filter((id) => id !== itemId) : [...prev, itemId]
+      prev.includes(itemId) ? prev.filter((id) => id !== itemId) : [...prev, itemId],
     );
   };
 
@@ -120,8 +128,6 @@ export function GroupPhasePanel({
   const canSubmitActivity =
     !activityCompleted && completedIds.size >= pack.tasks.length;
 
-  const sectionHeadingClass = activityLayoutType.panelSectionTitle;
-
   return (
     <PlayPhaseShell
       contained={contained}
@@ -139,56 +145,63 @@ export function GroupPhasePanel({
           />
         ),
       }}
-      mainClassName="max-w-none w-full"
     >
-      <div className={activityPanelCard}>
-        <section>
-          <h3 className={sectionHeadingClass}>모둠이 모아온 모든 단서</h3>
+      <PlayPhasePanel>
+        <PlayPhaseSection
+          title="모둠이 모아온 모든 단서"
+          headerExtra={
+            <PlayPhaseSectionBadge>{group.acquired_items.length}개</PlayPhaseSectionBadge>
+          }
+        >
           {group.acquired_items.length === 0 ? (
-            <div className={cn("mt-3", activityEmptyState)}>
-              <p className="text-sm text-[var(--muted-foreground)]">
-                아직 모둠원들이 얻은 단서가 아무것도 없습니다.
-              </p>
-              <p className="mt-1 text-xs text-[var(--muted-foreground)]/70">
-                정답을 추리하기 위해 먼저 단서를 찾아오세요!
-              </p>
-            </div>
+            <PlayPhaseEmptyState>
+              <p className={t.playPanelBody}>아직 모둠원들이 얻은 단서가 아무것도 없습니다.</p>
+              <p className={cn("mt-1", t.caption)}>정답을 추리하기 위해 먼저 단서를 찾아오세요!</p>
+            </PlayPhaseEmptyState>
           ) : (
-            <ul className="mt-2 flex flex-wrap gap-2">
+            <ul className="flex flex-wrap gap-2">
               {group.acquired_items.map((a) => (
                 <li
                   key={a.itemId}
-                  className="rounded-full border border-[var(--border)] bg-[var(--tint-accent-weak)] px-3 py-1 text-xs font-medium text-[var(--foreground)] @md:text-sm"
+                  className={cn(
+                    "rounded-full border border-[var(--border)] bg-[var(--tint-accent-weak)] px-3 py-1",
+                    t.playPanelChip,
+                  )}
                 >
                   🔍 {itemNameById.get(a.itemId) ?? a.itemId} (+{a.score}점)
                 </li>
               ))}
             </ul>
           )}
-        </section>
+        </PlayPhaseSection>
 
-        <section>
-          <h3 className={sectionHeadingClass}>해결할 미션 목록</h3>
-          <ul className="mt-2 space-y-2">
+        <PlayPhaseSection
+          title="해결할 미션 목록"
+          headerExtra={
+            <PlayPhaseSectionBadge>
+              {completedIds.size}/{pack.tasks.length} 완료
+            </PlayPhaseSectionBadge>
+          }
+        >
+          <ul className="space-y-2">
             {pack.tasks.map((ch) => {
               const done = completedIds.has(ch.id);
-              const progress = taskSubmissionProgress(group.acquired_items, ch);
               return (
                 <li key={ch.id}>
                   <button
                     type="button"
                     onClick={() => setSelectedTaskId(ch.id)}
                     className={cn(
-                      "flex w-full items-center gap-2 rounded-lg border px-3 py-2 text-left text-sm transition @md:text-base",
+                      playPhaseListRowClass,
                       selectedTaskId === ch.id
                         ? "border-[var(--primary)] bg-[var(--tint-accent-weak)]"
-                        : "border-[var(--border)] hover:bg-[var(--tint-mystery)]",
+                        : "hover:bg-[var(--tint-mystery)]",
                       done && "opacity-70",
                     )}
                   >
-                    <Puzzle className="h-4 w-4 shrink-0 text-[var(--accent)]" aria-hidden />
-                    <span className="min-w-0 flex-1 font-medium">{ch.title}</span>
-                    <span className="shrink-0 text-xs text-[var(--muted-foreground)] @md:text-sm">
+                    <Puzzle className="h-3.5 w-3.5 shrink-0 text-[var(--accent)] @md:h-4 @md:w-4" aria-hidden />
+                    <span className={cn("min-w-0 flex-1", t.playPanelRow)}>{ch.title}</span>
+                    <span className={cn("shrink-0", t.playPanelRowMeta)}>
                       {done ? "완료됨" : "도전 중"}
                     </span>
                   </button>
@@ -196,28 +209,27 @@ export function GroupPhasePanel({
               );
             })}
           </ul>
-        </section>
+        </PlayPhaseSection>
 
         {task && !completedIds.has(task.id) ? (
-          <section className={activityStackTight}>
-            <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <h3 className={sectionHeadingClass}>{task.title}</h3>
-            </div>
-            <p className="text-sm leading-relaxed text-[var(--muted-foreground)] @md:text-base">
-              {task.description}
-            </p>
-            
+          <PlayPhaseSection
+            title={task.title}
+            variant="active"
+            headerExtra={<PlayPhaseSectionBadge>진행 중</PlayPhaseSectionBadge>}
+          >
+            <p className={t.playPanelBody}>{task.description}</p>
+
             <div className="space-y-2">
-              <p className="text-xs font-semibold text-[var(--foreground)] @md:text-sm">
+              <p className={t.playPanelHint}>
                 이 미션의 정답이라고 생각하는 단서를 아래에서 선택하세요:
               </p>
-              
+
               {group.acquired_items.length === 0 ? (
-                <p className="text-xs text-[var(--danger)] italic">
+                <p className={cn(t.caption, "text-[var(--danger)] italic")}>
                   제출할 수 있는 단서가 없습니다. 먼저 단서를 모아오세요.
                 </p>
               ) : (
-                <ul className="space-y-2 rounded-xl border border-[var(--border)] bg-[var(--background)] p-2">
+                <ul className="space-y-2 rounded-lg border border-[var(--border)] bg-[var(--background)] p-2">
                   {group.acquired_items.map((a) => {
                     const isSelected = selectedItemIds.includes(a.itemId);
                     return (
@@ -226,21 +238,24 @@ export function GroupPhasePanel({
                           type="button"
                           onClick={() => handleToggleItem(a.itemId)}
                           className={cn(
-                            "flex w-full items-center gap-2.5 rounded-lg border px-3 py-2.5 text-sm text-left transition-all @md:text-base",
+                            playPhaseListRowClass,
                             isSelected
                               ? "border-[var(--primary)] bg-[color-mix(in_srgb,var(--primary)_8%,var(--card-bg))]"
-                              : "border-[var(--border)]/60 bg-[var(--card-bg)] hover:border-[var(--border)]"
+                              : "border-[var(--border)]/60 bg-[var(--card-bg)] hover:border-[var(--border)]",
                           )}
                         >
                           {isSelected ? (
-                            <CheckSquare className="h-4 w-4 shrink-0 text-[var(--primary)]" />
+                            <CheckSquare className="h-3.5 w-3.5 shrink-0 text-[var(--primary)] @md:h-4 @md:w-4" />
                           ) : (
-                            <Square className="h-4 w-4 shrink-0 text-[var(--muted-foreground)]" />
+                            <Square className="h-3.5 w-3.5 shrink-0 text-[var(--muted-foreground)] @md:h-4 @md:w-4" />
                           )}
-                          <span className={cn(
-                            "flex-1 font-medium",
-                            isSelected ? "text-[var(--foreground)]" : "text-[var(--muted-foreground)]"
-                          )}>
+                          <span
+                            className={cn(
+                              "flex-1",
+                              t.playPanelRow,
+                              !isSelected && "font-normal text-[var(--muted-foreground)]",
+                            )}
+                          >
                             {itemNameById.get(a.itemId) ?? a.itemId}
                           </span>
                         </button>
@@ -251,7 +266,7 @@ export function GroupPhasePanel({
               )}
             </div>
 
-            <div className="flex w-full justify-end pt-2">
+            <div className={playPhaseFormActions}>
               <Button
                 type="button"
                 className="@sm:min-w-[10rem]"
@@ -270,15 +285,13 @@ export function GroupPhasePanel({
                 )}
               </Button>
             </div>
-          </section>
+          </PlayPhaseSection>
         ) : null}
 
         {!activityCompleted && canSubmitActivity ? (
-          <section className="space-y-3 border-t border-[var(--border)] pt-4">
-            <p className="text-sm text-[var(--muted-foreground)] @md:text-base">
-              모든 미션을 완료했습니다! 최종 결과를 제출해 주세요.
-            </p>
-            <Button type="button" className="w-full @sm:min-h-11" onClick={handleCompleteActivity} disabled={busy}>
+          <PlayPhaseSection title="최종 제출">
+            <p className={t.playPanelBody}>모든 미션을 완료했습니다! 최종 결과를 제출해 주세요.</p>
+            <Button type="button" className="mt-3 w-full @sm:min-h-11" onClick={handleCompleteActivity} disabled={busy}>
               {busy ? (
                 <>
                   <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin @sm:h-4 @sm:w-4" aria-hidden />
@@ -288,34 +301,20 @@ export function GroupPhasePanel({
                 "최종 결과 제출"
               )}
             </Button>
-          </section>
+          </PlayPhaseSection>
         ) : null}
 
         {activityCompleted ? (
-          <div className={cn(activityCallout, "text-center")}>
-            <p className="text-sm font-bold text-[var(--primary)] @sm:text-lg">최종 제출 완료</p>
-            <p className="mt-1 text-sm text-[var(--muted-foreground)] @md:text-base">
-              모둠 최종 점수: {groupScore}점
-            </p>
-            <p className="mt-4 text-xs text-[var(--muted-foreground)] @md:text-sm">
-              {PLAY_STUDENT_COPY.waiting.waitForTeacher}
-            </p>
-          </div>
+          <PlayPhaseCallout title="최종 제출 완료" centered>
+            <p className={t.playPanelCalloutBody}>모둠 최종 점수: {groupScore}점</p>
+            <PlayPhaseWaitFootnote className="mt-4" />
+          </PlayPhaseCallout>
         ) : null}
 
         {message ? (
-          <p
-            className={cn(
-              "text-sm @md:text-base",
-              message.includes("해결") || message.includes("완료")
-                ? "text-[var(--primary)]"
-                : "text-[var(--danger)]",
-            )}
-          >
-            {message}
-          </p>
+          <PlayPhaseMessage message={message} success={isSuccessMessage(message)} />
         ) : null}
-      </div>
+      </PlayPhasePanel>
     </PlayPhaseShell>
   );
 }

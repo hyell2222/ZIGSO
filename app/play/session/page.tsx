@@ -15,12 +15,12 @@ function PlaySessionPageContent() {
   const nick = searchParams.get("nickname")?.trim() ?? "";
 
   useEffect(() => {
-    if (!code || !nick) {
-      router.replace(code ? ROUTES.playJoin(code) : ROUTES.play);
+    if (!code) {
+      router.replace(ROUTES.play);
     }
-  }, [code, nick, router]);
+  }, [code, router]);
 
-  if (!code || !nick) {
+  if (!code) {
     return (
       <div
         className="play-shell flex min-h-dvh flex-col items-center justify-center px-4"

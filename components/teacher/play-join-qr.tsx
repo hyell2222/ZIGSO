@@ -72,7 +72,7 @@ export function PlayJoinQr({ joinCode, className }: PlayJoinQrProps) {
         onClose={() => setModalOpen(false)}
         title="학생 참가 QR"
         titleId="play-join-qr-title"
-        bodyClassName="space-y-4"
+        contentClassName="space-y-4"
       >
         <p className="break-all text-center text-sm text-[var(--muted-foreground)]">{playUrl}</p>
         <div className="flex justify-center rounded-lg border border-[var(--border)] bg-white p-4">

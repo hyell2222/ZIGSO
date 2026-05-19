@@ -5,6 +5,7 @@ import { ClipboardList, Puzzle, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
+import { ACTIVITY_LAYOUT_MAX } from "@/components/activity/activity-layout-chrome";
 import { TopNav } from "@/components/layout/top-nav";
 import { ButtonLink } from "@/components/ui/button";
 import { getCurrentSession } from "@/lib/api/auth";
@@ -12,6 +13,7 @@ import { AUTH_SESSION_QUERY_KEY } from "@/lib/auth-session-query";
 import { PLATFORM_NAME, PLATFORM_TAGLINE } from "@/lib/brand";
 import { ROUTES } from "@/lib/routes";
 import { hasSupabaseEnv } from "@/lib/supabase";
+import { cn } from "@/lib/utils";
 
 const bulletClass =
   "group flex flex-col items-center gap-3.5 rounded-2xl border border-[color-mix(in_srgb,var(--border)_88%,transparent)] bg-[color-mix(in_srgb,var(--surface)_82%,var(--background))] px-5 py-6 text-center shadow-[var(--elevation-sm)] ring-1 ring-[color-mix(in_srgb,var(--on-primary)_55%,transparent)] transition duration-300 hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--primary)_22%,var(--border))] hover:shadow-[0_12px_36px_color-mix(in_srgb,var(--mystery)_9%,transparent)] sm:items-start sm:gap-4 sm:px-5 sm:py-7 sm:text-left";
@@ -34,10 +36,10 @@ export default function HomePage() {
   }, [router, sessionQuery.data, sessionQuery.isLoading, sessionQuery.isFetching]);
 
   return (
-    <>
+    <div className="flex min-h-dvh flex-col">
       <TopNav />
-      <main className="min-h-[calc(100dvh-3.75rem)]">
-        <div className="relative overflow-hidden">
+      <main className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+        <div className="relative flex min-h-full flex-1 flex-col">
           <div
             className="pointer-events-none absolute inset-0 -z-10 bg-[var(--background)]"
             style={{
@@ -55,7 +57,13 @@ export default function HomePage() {
             aria-hidden
           />
 
-          <div className="mx-auto w-full max-w-4xl px-5 py-14 text-center sm:px-6 sm:py-20 md:px-8 md:py-24">
+          <div
+            className={cn(
+              "mx-auto flex w-full flex-1 flex-col justify-center",
+              ACTIVITY_LAYOUT_MAX,
+              "px-5 py-10 pb-[max(2.5rem,env(safe-area-inset-bottom,0px))] pt-8 text-center sm:px-6 sm:py-12 md:px-8 md:py-14",
+            )}
+          >
             <div className="flex flex-col items-center justify-center gap-2.5 sm:gap-3">
               <div className="flex items-center gap-2.5 text-[var(--accent)] sm:gap-3.5">
                 <span className="h-px w-8 max-sm:w-5 bg-[color-mix(in_srgb,var(--accent)_45%,transparent)]" aria-hidden />
@@ -126,6 +134,6 @@ export default function HomePage() {
           </div>
         </div>
       </main>
-    </>
+    </div>
   );
 }

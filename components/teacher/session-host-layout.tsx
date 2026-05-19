@@ -7,6 +7,7 @@ import {
   activityPhaseHeaderShell,
   activitySessionMetaShell,
 } from "@/components/activity/activity-layout-chrome";
+import { PhaseSectionPanel } from "@/components/activity/phase-section-layout";
 import { activityLayoutType } from "@/components/activity/activity-layout-typography";
 import { PhaseGuideCard } from "@/components/teacher/phase-guide-card";
 import { SessionHostJoinCard } from "@/components/teacher/session-host-join-card";
@@ -115,7 +116,9 @@ export function SessionHostLayout({
         </section>
       ) : null}
 
-      <div className={layout.pageBody}>{children}</div>
+      <div className={layout.pageBody}>
+        <PhaseSectionPanel>{children}</PhaseSectionPanel>
+      </div>
     </main>
   );
 }

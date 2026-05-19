@@ -6,11 +6,20 @@ export const ROUTES = {
   home: "/",
   play: "/play/",
   playSession: "/play/session/",
-  playJoin: (joinCode: string, nickname?: string) => {
+  playSessionJoin: (joinCode: string, nickname?: string) => {
     const code = encodeURIComponent(joinCode.trim().toUpperCase());
+    const params = new URLSearchParams({ code });
     if (nickname?.trim()) {
-      return `/play/session/?code=${code}&nickname=${encodeURIComponent(nickname.trim())}`;
+      params.set("nickname", nickname.trim());
     }
+    return `/play/session/?${params.toString()}`;
+  },
+  /** QR·공유용 — 코드만 있으면 입장 페이지, 닉네임까지 있으면 세션으로 */
+  playJoin: (joinCode: string, nickname?: string) => {
+    if (nickname?.trim()) {
+      return ROUTES.playSessionJoin(joinCode, nickname);
+    }
+    const code = encodeURIComponent(joinCode.trim().toUpperCase());
     return `/play/?code=${code}`;
   },
 

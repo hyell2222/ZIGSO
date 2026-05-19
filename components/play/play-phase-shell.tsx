@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 
 import {
   activityFooterChrome,
+  activityFooterInner,
   activityLayoutClasses,
   activityMainInner,
   activityPhaseHeaderShell,
@@ -51,10 +52,12 @@ export function PlayPhaseShell({
 
         {footer || footerClue ? (
           <footer className={activityFooterChrome}>
-            {footerClue ? (
-              <p className="mb-2 text-center text-xs text-[var(--muted-foreground)]">{footerClue}</p>
-            ) : null}
-            {footer}
+            <div className={activityFooterInner}>
+              {footerClue ? (
+                <p className="mb-2 text-center text-xs text-[var(--muted-foreground)]">{footerClue}</p>
+              ) : null}
+              {footer}
+            </div>
           </footer>
         ) : null}
       </div>

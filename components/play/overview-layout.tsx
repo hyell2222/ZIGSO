@@ -2,12 +2,19 @@
 
 import { ListChecks } from "lucide-react";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { activityLayoutType } from "@/components/activity/activity-layout-typography";
+import {
+  PlayPhasePanel,
+  PlayPhaseSection,
+  PlayPhaseSectionCard,
+  PlayPhaseWaitFootnote,
+  playPhaseTwoColumnGrid,
+} from "@/components/play/play-phase-layout";
 import { LoadingState } from "@/components/ui/loading-state";
-import { cn } from "@/lib/utils";
 import { PLAYER_MESSAGES } from "@/lib/activity-pack/player-messages";
 import { PLAY_STUDENT_COPY } from "@/lib/play/student-copy";
 import type { ActivityPack } from "@/lib/activity-pack/types";
+import { cn } from "@/lib/utils";
 
 type Props = {
   loading: boolean;
@@ -16,8 +23,7 @@ type Props = {
   activityPack: ActivityPack | null;
 };
 
-const taskListCard =
-  "border-[var(--play-border-warm)] bg-[var(--play-panel-warm)] text-[var(--foreground)] shadow-[var(--play-shadow-lift)]";
+const t = activityLayoutType;
 
 export function ActivityIntroductionLayout({
   loading,
@@ -34,66 +40,55 @@ export function ActivityIntroductionLayout({
   }
 
   return (
-    <div className="grid grid-cols-1 gap-2.5 @sm:gap-3 @md:grid-cols-2 @md:gap-5 @lg:gap-6">
-      <Card className="border-[var(--play-border-cool)] bg-[var(--play-panel-cool)]">
-        <CardHeader className="rounded-t-xl border-b border-[var(--play-border-cool)] bg-[var(--play-veil)] px-3 py-2.5 @sm:px-6 @sm:py-4">
-          <CardTitle className="text-sm font-semibold text-[var(--foreground)] @md:text-base">
-            활동 안내
-          </CardTitle>
-        </CardHeader>
-        <CardContent
-          className={cn(
-            "space-y-2 px-3 pb-3 pt-2.5 text-sm leading-relaxed text-[var(--foreground)] @sm:space-y-3 @sm:px-6 @sm:pb-6 @sm:pt-4 @sm:text-sm",
-          )}
-        >
-          <p className="text-sm font-semibold leading-snug text-[var(--foreground)] @md:text-base @lg:text-lg @lg:font-semibold">
-            {title ?? PLAYER_MESSAGES.defaultPackTitle}
-          </p>
-          <p className="text-sm leading-relaxed text-[var(--muted-foreground)] @sm:text-sm @sm:leading-normal">
-            {description ?? "—"}
-          </p>
-          <p className="rounded-md border border-[var(--border)] bg-[var(--tint-accent-weak)] px-3 py-2 text-xs text-[var(--muted-foreground)] @sm:text-xs">
+    <PlayPhasePanel>
+      <div className={playPhaseTwoColumnGrid}>
+        <PlayPhaseSectionCard title="활동 안내">
+          <p className={t.playPanelLead}>{title ?? PLAYER_MESSAGES.defaultPackTitle}</p>
+          <p className={t.playPanelBody}>{description ?? "—"}</p>
+          <p
+            className={cn(
+              "rounded-lg border border-[var(--border)] bg-[var(--tint-accent-weak)] px-3 py-2",
+              t.caption,
+            )}
+          >
             {PLAY_STUDENT_COPY.intro.timeClue}
           </p>
-        </CardContent>
-      </Card>
+        </PlayPhaseSectionCard>
 
-      <Card className={taskListCard}>
-        <CardHeader className="rounded-t-xl border-b border-[var(--border)] bg-[var(--panel-warn-bg)] px-3 py-2.5 @sm:px-6 @sm:py-4">
-          <CardTitle className="flex items-center gap-2 text-sm font-semibold text-[var(--foreground)] @md:text-base">
-            <ListChecks className="h-4 w-4 shrink-0 text-[var(--accent)]" aria-hidden />
-            해결할 미션
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="px-3 pb-3 pt-2.5 @sm:px-6 @sm:pb-6 @sm:pt-4">
+        <PlayPhaseSectionCard
+          title="해결할 미션"
+          icon={<ListChecks className="h-4 w-4 shrink-0 text-[var(--accent)]" aria-hidden />}
+        >
           {!activityPack?.tasks?.length ? (
-            <p className="text-sm text-[var(--muted-foreground)] @sm:text-sm">
-              미션 정보가 없습니다.
-            </p>
+            <p className={t.playPanelBody}>미션 정보가 없습니다.</p>
           ) : (
-            <ul className="space-y-2 text-sm leading-relaxed @sm:text-sm">
+            <ul className="space-y-2">
               {activityPack.tasks.map((ch) => (
                 <li
                   key={ch.id}
-                  className="rounded-md border border-[var(--border)] px-3 py-2"
+                  className="rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2"
                 >
                   <div className="flex flex-wrap items-baseline justify-between gap-2">
-                    <span className="font-medium">{ch.title}</span>
+                    <span className={t.playPanelRow}>{ch.title}</span>
                     {ch.acceptedItemIds.length > 0 ? (
-                      <span className="text-xs text-[var(--muted-foreground)]">
+                      <span className={t.playPanelRowMeta}>
                         필수 제출 {ch.acceptedItemIds.length}개
                       </span>
                     ) : null}
                   </div>
                   {ch.description ? (
-                    <p className="mt-1 text-xs text-[var(--muted-foreground)]">{ch.description}</p>
+                    <p className={cn("mt-1", t.caption)}>{ch.description}</p>
                   ) : null}
                 </li>
               ))}
             </ul>
           )}
-        </CardContent>
-      </Card>
-    </div>
+        </PlayPhaseSectionCard>
+      </div>
+
+      <PlayPhaseSection title="선생님 안내">
+        <PlayPhaseWaitFootnote />
+      </PlayPhaseSection>
+    </PlayPhasePanel>
   );
 }

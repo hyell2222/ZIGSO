@@ -234,7 +234,7 @@ export function SandboxTeacherPanel({
         onClose={() => setTimerModalOpen({ open: false, phaseAtOpen: null })}
         title="타이머"
         titleId="sandbox-timer-heading"
-        bodyClassName="py-5"
+        contentClassName="py-5"
       >
         <PhaseTimerContent key={phase} phase={phase as TimedPhase} />
       </Modal>

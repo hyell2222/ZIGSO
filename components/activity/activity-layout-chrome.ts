@@ -7,6 +7,9 @@ export const activityPageGutter = "px-4 @sm:px-5 @md:px-6";
 
 export const activityPageGutterContained = "px-3 @sm:px-4";
 
+/** 페이지 본문·조인 화면 등 — 최대 너비 + 좌우 여백 */
+export const activityPageShell = cn("mx-auto w-full", ACTIVITY_LAYOUT_MAX, activityPageGutter);
+
 /** 단계 헤더 바 */
 export const activityPhaseHeaderShell = cn(
   "shrink-0 border-b border-[color-mix(in_srgb,var(--primary)_14%,var(--border))]",
@@ -70,13 +73,19 @@ export const activityMainInner = "w-full min-h-0 flex-1 overflow-y-auto overscro
 export const activityFooterChrome = cn(
   "sticky bottom-0 z-20 shrink-0 border-t border-[color-mix(in_srgb,var(--primary)_14%,var(--border))]",
   "bg-[color-mix(in_srgb,var(--background)_88%,white)]",
+  "shadow-[0_-1px_0_color-mix(in_srgb,var(--primary)_6%,transparent)]",
+);
+
+export const activityFooterInner = cn(
+  "mx-auto w-full",
+  ACTIVITY_LAYOUT_MAX,
   activityPageGutter,
-  "py-3 shadow-[0_-1px_0_color-mix(in_srgb,var(--primary)_6%,transparent)]",
-  "pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]",
+  "py-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]",
 );
 
 export const activityLoaderRegion = cn(
-  "flex w-full min-h-0 flex-1 flex-col items-center justify-center",
+  "mx-auto flex w-full min-h-0 flex-1 flex-col items-center justify-center",
+  ACTIVITY_LAYOUT_MAX,
   activityPageGutter,
   "py-10",
 );
@@ -96,6 +105,18 @@ export const activityPanelCard = cn(
   activityStack,
   "rounded-lg border border-[var(--border)] bg-[var(--card-bg)] p-4 shadow-[var(--elevation-sm)]",
 );
+
+/** 단계 본문 — 모달과 동일한 섹션 카드 껍데기 */
+export const playPhaseSectionShell =
+  "overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--card-bg)] shadow-[var(--elevation-sm)]";
+
+export const playPhaseSectionHeader =
+  "flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-[var(--border)] px-4 py-3 @md:px-5 @md:py-3.5";
+
+export const playPhaseSectionBody = "px-4 py-4 @md:px-5 @md:py-4";
+
+/** 섹션 카드 세로 스택 (3단계 등) */
+export const playPhasePanelStack = "flex flex-col gap-4";
 
 /** 그리드 안 모둠·아이템 카드 */
 export const activityNestedCard = cn(

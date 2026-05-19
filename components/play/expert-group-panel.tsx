@@ -11,7 +11,16 @@ import {
 } from "@/components/play/expert-clue-board";
 import { PlayPhaseShell } from "@/components/play/play-phase-shell";
 import { PlayHeaderGroupPlace } from "@/components/play/play-header-group-place";
-import { activityCallout, activityPanelCard } from "@/components/activity/activity-layout-chrome";
+import {
+  PlayPhaseCallout,
+  PlayPhaseMessage,
+  PlayPhasePanel,
+  PlayPhaseSection,
+  PlayPhaseSectionBadge,
+  PlayPhaseWaitFootnote,
+  playPhaseFormActions,
+} from "@/components/play/play-phase-layout";
+import { activityLayoutType } from "@/components/activity/activity-layout-typography";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
@@ -30,7 +39,6 @@ type Props = {
   playerId: string;
   groupId: string;
   groupName: string | null;
-  /** 세션·샌드박스 id — 아이템별 코드명 시드 */
   roleScopeKey: string;
   assignedItemIds: string[];
   acquiredItemIds: Set<string>;
@@ -39,6 +47,8 @@ type Props = {
   sandboxAcquire?: (itemId: string, answer: string, clueStage: 1 | 2 | 3 | 4 | 5) => void;
   contained?: boolean;
 };
+
+const t = activityLayoutType;
 
 export function ExpertPhasePanel({
   pack,
@@ -138,56 +148,59 @@ export function ExpertPhasePanel({
           />
         ),
       }}
-      mainClassName="max-w-2xl"
     >
-      <div className={activityPanelCard}>
+      <PlayPhasePanel>
         {allAcquired ? (
-          <div className={activityCallout}>
-            <p className="text-sm font-semibold text-[var(--primary)] @md:text-base">
-              배정 아이템 획득 완료
-            </p>
-            <p className="mt-2 text-sm leading-relaxed text-[var(--foreground)] @md:text-base">
-              {PLAY_STUDENT_COPY.phaseExpert.acquiredReturn}
-            </p>
-            <p className="mt-4 text-center text-xs text-[var(--muted-foreground)] @md:text-sm">
-              {PLAY_STUDENT_COPY.waiting.waitForTeacher}
-            </p>
-          </div>
+          <PlayPhaseCallout title="배정 아이템 획득 완료" centered>
+            <p className={t.playPanelBody}>{PLAY_STUDENT_COPY.phaseExpert.acquiredReturn}</p>
+            <PlayPhaseWaitFootnote className="mt-4" />
+          </PlayPhaseCallout>
         ) : item && activeItemId ? (
           <>
             {assignedItemIds.length > 1 ? (
-              <ul className="flex flex-wrap gap-2">
-                {assignedItemIds.map((id) => {
-                  const done = acquiredItemIds.has(id);
-                  const label = codenameByItemId.get(id) ?? id;
-                  return (
-                    <li key={id}>
-                      <button
-                        type="button"
-                        disabled={done}
-                        onClick={() => {
-                          if (!done) setActiveItemId(id);
-                        }}
-                        className={cn(
-                          "rounded-full border px-3 py-1 text-xs transition @md:text-sm",
-                          done
-                            ? "border-[var(--border)] opacity-50"
-                            : activeItemId === id
-                              ? "border-[var(--primary)] bg-[var(--tint-accent-strong)] text-[var(--primary)]"
-                              : "border-[var(--border)] hover:border-[var(--accent)]",
-                        )}
-                      >
-                        {label}
-                        {done ? " ✓" : ""}
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
+              <PlayPhaseSection
+                title="내 배정 아이템"
+                headerExtra={
+                  <PlayPhaseSectionBadge>
+                    {acquiredItemIds.size}/{assignedItemIds.length} 획득
+                  </PlayPhaseSectionBadge>
+                }
+              >
+                <ul className="flex flex-wrap gap-2">
+                  {assignedItemIds.map((id) => {
+                    const done = acquiredItemIds.has(id);
+                    const label = codenameByItemId.get(id) ?? id;
+                    return (
+                      <li key={id}>
+                        <button
+                          type="button"
+                          disabled={done}
+                          onClick={() => {
+                            if (!done) setActiveItemId(id);
+                          }}
+                          className={cn(
+                            "rounded-full border px-3 py-1 transition",
+                            t.playPanelChip,
+                            done
+                              ? "border-[var(--border)] opacity-50"
+                              : activeItemId === id
+                                ? "border-[var(--primary)] bg-[var(--tint-accent-strong)] text-[var(--primary)]"
+                                : "border-[var(--border)] hover:border-[var(--accent)]",
+                          )}
+                        >
+                          {label}
+                          {done ? " ✓" : ""}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </PlayPhaseSection>
             ) : null}
 
             <ExpertClueBoard item={item} reveal={clueReveal} onRevealChange={setClueReveal} />
 
+            <PlayPhaseSection title="정답 제출" variant="active">
             <form id="expert-answer-form" className="space-y-3" onSubmit={handleSubmit}>
               <FormField label="이것은 무엇일까요?" htmlFor="item-answer">
                 <Input
@@ -200,16 +213,9 @@ export function ExpertPhasePanel({
                 />
               </FormField>
               {message ? (
-                <p
-                  className={cn(
-                    "text-sm @md:text-base",
-                    message.startsWith("정답") ? "text-[var(--primary)]" : "text-[var(--danger)]",
-                  )}
-                >
-                  {message}
-                </p>
+                <PlayPhaseMessage message={message} success={message.startsWith("정답")} />
               ) : null}
-              <div className="flex w-full justify-end pt-1">
+              <div className={playPhaseFormActions}>
                 <Button type="submit" className="@sm:min-w-[10rem]" disabled={submitting}>
                   {submitting ? (
                     <>
@@ -222,11 +228,12 @@ export function ExpertPhasePanel({
                 </Button>
               </div>
             </form>
+            </PlayPhaseSection>
           </>
         ) : (
-          <p className="text-sm text-[var(--danger)] @md:text-base">아이템 정보를 찾을 수 없습니다.</p>
+          <PlayPhaseMessage message="아이템 정보를 찾을 수 없습니다." />
         )}
-      </div>
+      </PlayPhasePanel>
     </PlayPhaseShell>
   );
 }

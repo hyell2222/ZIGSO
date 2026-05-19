@@ -1,8 +1,11 @@
 "use client";
 
 import { useMemo, useEffect } from "react";
-import { Lock, Eye, Lightbulb } from "lucide-react"; 
+import { Lock, Eye, Lightbulb } from "lucide-react";
 
+import { activityNestedCard } from "@/components/activity/activity-layout-chrome";
+import { activityLayoutType } from "@/components/activity/activity-layout-typography";
+import { PlayPhaseSection } from "@/components/play/play-phase-layout";
 import { Button } from "@/components/ui/button";
 import { clueTextForLevel } from "@/lib/activity-pack/engine";
 import type { Item } from "@/lib/activity-pack/types";
@@ -11,6 +14,8 @@ import { cn } from "@/lib/utils";
 
 const HINT_STAGES = [1, 2, 3, 4, 5] as const;
 type StageType = (typeof HINT_STAGES)[number];
+
+const t = activityLayoutType;
 
 export type ClueRevealState = Record<StageType, boolean>;
 
@@ -40,7 +45,7 @@ export function ExpertClueBoard({ item, reveal, onRevealChange }: Props) {
   }, [reveal, onRevealChange]);
 
   const clueLevelUsed = useMemo(() => clueLevelUsedFromReveal(item, reveal), [item, reveal]);
-  
+
   const stages = useMemo(
     () =>
       HINT_STAGES.map((stage, index) => {
@@ -66,91 +71,98 @@ export function ExpertClueBoard({ item, reveal, onRevealChange }: Props) {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-start gap-2.5 rounded-xl bg-[var(--accent)]/5 p-3.5 border border-[var(--accent)]/20">
-        <Lightbulb className="h-4 w-4 text-[var(--accent)] mt-0.5 flex-shrink-0" />
+    <PlayPhaseSection title="단서 보드">
+      <div
+        className={cn(
+          activityNestedCard,
+          "flex items-start gap-2.5 border-[color-mix(in_srgb,var(--primary)_30%,var(--border))] bg-[var(--tint-accent-weak)]",
+        )}
+      >
+        <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-[var(--accent)]" aria-hidden />
         <div className="space-y-1">
-          <p className="text-xs font-semibold text-[var(--foreground)]">
-            적은 단서로 정답을 맞출수록 높은 점수를 얻습니다!
-          </p>
-          <p className="text-xs text-[var(--muted-foreground)]">
+          <p className={t.playPanelHint}>적은 단서로 정답을 맞출수록 높은 점수를 얻습니다!</p>
+          <p className={t.caption}>
             현재 성공 시 획득 점수:{" "}
-            <span className="font-bold text-[var(--accent)] text-sm">
+            <span className={cn(t.nestedCardScore, "text-base @md:text-lg")}>
               {scoreForClueLevel(clueLevelUsed)}점
             </span>
           </p>
         </div>
       </div>
 
-      <ul className="space-y-3">
+      <ul className="mt-3 space-y-2">
         {stages.map(({ stage, text, open, isLocked, points }) => (
           <li
             key={stage}
             className={cn(
-              "relative overflow-hidden rounded-xl border p-4 transition-all duration-200",
-              open 
-                ? "border-[var(--accent)]/30 bg-[var(--background)] shadow-sm" 
+              activityNestedCard,
+              "transition-all duration-200",
+              open
+                ? "border-[color-mix(in_srgb,var(--primary)_30%,var(--border))]"
                 : isLocked
-                ? "border-[var(--border)]/40 bg-[var(--muted)]/10 opacity-60" 
-                : "border-[var(--border)] bg-[var(--background)] shadow-sm hover:border-[var(--border)]-hover" 
+                  ? "opacity-60"
+                  : "hover:border-[var(--accent)]",
             )}
           >
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-2">
-                <span className={cn(
-                  "inline-flex items-center justify-center rounded-md px-2 py-1 text-xs font-bold",
-                  open 
-                    ? "bg-[var(--accent)] text-white" 
-                    : "bg-[var(--muted)] text-[var(--muted-foreground)]"
-                )}>
+                <span
+                  className={cn(
+                    "inline-flex items-center justify-center rounded-md px-2 py-1 text-xs font-bold",
+                    open
+                      ? "bg-[var(--accent)] text-[var(--on-primary)]"
+                      : "bg-[var(--muted)] text-[var(--muted-foreground)]",
+                  )}
+                >
                   단서 {stage}
                 </span>
-                <span className="text-xs font-semibold text-[var(--muted-foreground)]">
-                  성공 시: <strong className="text-[var(--foreground)]">{points}점</strong>
+                <span className={t.playPanelRowMeta}>
+                  성공 시: <strong className={t.playPanelRow}>{points}점</strong>
                 </span>
               </div>
 
-              {!open && (
+              {!open ? (
                 <Button
                   type="button"
                   variant={isLocked ? "ghost" : "outline"}
                   size="sm"
                   disabled={isLocked}
                   className={cn(
-                    "h-8 text-xs font-medium gap-1.5 shadow-sm",
-                    !isLocked && "border-[var(--accent)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-white"
+                    "h-8 gap-1.5 text-xs font-medium",
+                    !isLocked &&
+                      "border-[var(--accent)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-[var(--on-primary)]",
                   )}
                   onClick={() => handleReveal(stage, points)}
                 >
                   {isLocked ? (
                     <>
-                      <Lock className="h-3 w-3" />
+                      <Lock className="h-3 w-3" aria-hidden />
                       이전 단서 먼저
                     </>
                   ) : (
                     <>
-                      <Eye className="h-3 w-3" />
+                      <Eye className="h-3 w-3" aria-hidden />
                       단서 열기
                     </>
                   )}
                 </Button>
-              )}
+              ) : null}
             </div>
 
             <div className="mt-3">
               {open ? (
-                <p className="text-sm leading-relaxed text-[var(--foreground)] animate-fadeIn">
-                  {text}
-                </p>
+                <p className={t.playPanelBody}>{text}</p>
               ) : (
-                <p className="text-xs text-[var(--muted-foreground)] italic select-none">
-                  {isLocked ? "이전 단계의 단서를 열어야 확인할 수 있습니다." : "버튼을 누르면 단서가 공개됩니다."}
+                <p className={cn(t.caption, "italic")}>
+                  {isLocked
+                    ? "이전 단계의 단서를 열어야 확인할 수 있습니다."
+                    : "버튼을 누르면 단서가 공개됩니다."}
                 </p>
               )}
             </div>
           </li>
         ))}
       </ul>
-    </div>
+    </PlayPhaseSection>
   );
 }

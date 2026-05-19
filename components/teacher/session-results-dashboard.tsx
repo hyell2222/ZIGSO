@@ -5,10 +5,10 @@ import { useMemo } from "react";
 import {
   activityCallout,
   activityNestedCard,
-  activitySectionCard,
   activityStackTight,
 } from "@/components/activity/activity-layout-chrome";
 import { activityLayoutType } from "@/components/activity/activity-layout-typography";
+import { PhaseSection, PhaseSectionBadge } from "@/components/activity/phase-section-layout";
 import { LoadingState } from "@/components/ui/loading-state";
 import { buildSessionResults } from "@/lib/activity-pack/session-results";
 import type { ActivityPack } from "@/lib/activity-pack/types";
@@ -71,14 +71,15 @@ export function SessionResultsDashboard({
   }
 
   return (
-    <section className={activitySectionCard}>
-      <header>
-        <h2 className={activityLayoutType.sectionTitle}>STAD 모둠 순위</h2>
-        <p className={activityLayoutType.sectionSubtitle}>
-          전체 모둠 총점 순위와 모둠별 MVP입니다. 모둠원 개인 순위는 학생 화면에서만 확인할 수
-          있습니다.
-        </p>
-      </header>
+    <PhaseSection
+      title="STAD 모둠 순위"
+      heading="section"
+      as="h2"
+      subtitle="전체 모둠 총점 순위와 모둠별 MVP입니다. 모둠원 개인 순위는 학생 화면에서만 확인할 수 있습니다."
+      headerExtra={
+        <PhaseSectionBadge>{results.rankedTeams.length}개 모둠</PhaseSectionBadge>
+      }
+    >
       <ol className={activityStackTight}>
         {results.rankedTeams.map((team) => (
           <li key={team.groupId} className={activityNestedCard}>
@@ -105,6 +106,6 @@ export function SessionResultsDashboard({
           </li>
         ))}
       </ol>
-    </section>
+    </PhaseSection>
   );
 }

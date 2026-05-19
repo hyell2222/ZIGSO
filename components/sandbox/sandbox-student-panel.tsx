@@ -135,9 +135,11 @@ export function SandboxStudentPanel({
       <PlayAtmosphere variant="contained">
         <PlayJoinModal
           open
+          titleId="sandbox-play-join"
           joinCode={SANDBOX_JOIN_CODE}
           nickname={nickname}
           modalVariant="contained"
+          joinCodeEditable={false}
           showMissingCodeClue={false}
           onNicknameChange={setNickname}
           onSubmit={() => {
@@ -217,7 +219,6 @@ export function SandboxStudentPanel({
             />
           ),
         }}
-        mainClassName="max-w-6xl"
       >
         <ActivityIntroductionLayout
           loading={false}
@@ -225,9 +226,6 @@ export function SandboxStudentPanel({
           description={description}
           activityPack={pack}
         />
-        <p className={cn("mt-3 text-center", sandboxType.caption)}>
-          {PLAY_STUDENT_COPY.waiting.waitForTeacher}
-        </p>
       </PlayPhaseShell>
     );
   }

@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { activityPageShell } from "@/components/activity/activity-layout-chrome";
 import { ExpertPhasePanel } from "@/components/play/expert-group-panel";
 import { ActivityIntroductionLayout } from "@/components/play/overview-layout";
 import { GroupPhasePanel } from "@/components/play/home-group-panel";
@@ -16,12 +17,11 @@ import {
 } from "@/components/play/play-atmosphere";
 import { PlayHeaderGroupPlace } from "@/components/play/play-header-group-place";
 import { WaitingLobbyBlock } from "@/components/play/waiting-lobby-block";
-import { Button } from "@/components/ui/button";
 import { LoadingState } from "@/components/ui/loading-state";
+import { PLAY_JOIN_COPY } from "@/components/play/play-join-copy";
 import { PlayJoinModal } from "@/components/play/play-join-modal";
-import { Modal } from "@/components/ui/modal";
+import { PlayResumeModal } from "@/components/play/play-resume-modal";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 
 import { parseActivityPack } from "@/lib/api/activities";
 import type { ActivityPhase } from "@/lib/api/activities";
@@ -63,6 +63,8 @@ export function PlaySessionShell({
   const queryClient = useQueryClient();
   const [nickname, setNickname] = useState(initialNickname);
   const autoJoinAttempted = useRef(false);
+  /** 이전 입장 기록을 거절하고 새 닉네임으로 입장할 때 URL 자동 입장 차단 */
+  const declinedResumeRef = useRef(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [playerId, setPlayerId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -265,14 +267,17 @@ export function PlaySessionShell({
 
   const handleJoinAsNewPlayer = () => {
     if (joinCode) clearResumeRecord(joinCode);
+    declinedResumeRef.current = true;
     setResumeDecided(true);
-    if (initialNickname.trim()) {
-      autoJoinAttempted.current = false;
-    }
+    setNickname("");
+    setMessage(null);
+    autoJoinAttempted.current = true;
+    queryClient.setQueryData(["play-resume", joinCode], null);
   };
 
   useEffect(() => {
     if (!initialNickname.trim()) return;
+    if (declinedResumeRef.current) return;
     if (playerId || sessionId) return;
     if (resumeQuery.isLoading) return;
     if (resumeQuery.data && !resumeDecided) return;
@@ -426,7 +431,6 @@ export function PlaySessionShell({
             />
           ),
         }}
-        mainClassName="max-w-6xl"
       >
         {playerQuery.isLoading && !hasAssignment ? (
           <LoadingState variant="section" tone="play" className="min-h-[min(16rem,40dvh)] py-8" />
@@ -438,9 +442,6 @@ export function PlaySessionShell({
             activityPack={activityPack}
           />
         )}
-        <p className="mt-6 text-center text-xs text-[var(--muted-foreground)]">
-          {PLAY_STUDENT_COPY.waiting.waitForTeacher}
-        </p>
       </PlayPhaseShell>
     );
   }
@@ -466,8 +467,8 @@ export function PlaySessionShell({
   if (!hasSupabaseEnv) {
     return (
       <PlayAtmosphere>
-        <main className="mx-auto w-full max-w-5xl px-4 py-8">
-          <Card className={cn("max-w-3xl", playSurfaceCool)}>
+        <main className={cn(activityPageShell, "py-8")}>
+          <Card className={cn("w-full", playSurfaceCool)}>
             <CardHeader>
               <CardTitle className="text-[var(--foreground)]">환경 설정 필요</CardTitle>
             </CardHeader>
@@ -481,25 +482,40 @@ export function PlaySessionShell({
   }
 
   const showResumeModal = Boolean(!hasJoinedSession && !resumeDecided && resumeQuery.data);
-  const showNicknameModal =
+
+  const awaitingAutoJoin =
+    Boolean(initialNickname.trim()) &&
+    !declinedResumeRef.current &&
     !hasJoinedSession &&
-    !showResumeModal &&
-    !(initialNickname.trim() && joinAndRegisterMutation.isPending) &&
-    (!initialNickname.trim() || joinAndRegisterMutation.isError);
+    !resumeDecided &&
+    (resumeQuery.isLoading ||
+      resumeQuery.isFetching ||
+      joinAndRegisterMutation.isPending);
+
+  const showJoinLoading = awaitingAutoJoin;
+
+  const showNicknameModal = !hasJoinedSession && !showResumeModal && !awaitingAutoJoin;
 
   return (
     <PlayAtmosphere>
       <div className="flex min-h-dvh flex-col">
-        <main className="mx-auto flex min-h-0 w-full max-w-5xl flex-1 flex-col px-4 py-6 pb-[max(3rem,env(safe-area-inset-bottom,0px))] sm:px-6 sm:py-8 md:px-8">
+        <main
+          className={cn(
+            activityPageShell,
+            "flex min-h-0 flex-1 flex-col py-6 pb-[max(3rem,env(safe-area-inset-bottom,0px))] sm:py-8",
+          )}
+        >
           {showResumeModal && resumeQuery.data ? (
-            <ResumeModal
-              record={resumeQuery.data}
+            <PlayResumeModal
+              open
+              joinCode={resumeQuery.data.joinCode}
+              nickname={resumeQuery.data.nickname}
               onContinue={() => handleContinueAsPlayer(resumeQuery.data!)}
               onNew={handleJoinAsNewPlayer}
             />
           ) : null}
 
-          {!hasJoinedSession && !showResumeModal && initialNickname.trim() && joinAndRegisterMutation.isPending ? (
+          {showJoinLoading ? (
             <section
               className={cn(
                 playLoaderRegion,
@@ -516,49 +532,27 @@ export function PlaySessionShell({
             nickname={nickname}
             message={message}
             pending={joinAndRegisterMutation.isPending}
+            title={declinedResumeRef.current || !initialNickname.trim() ? PLAY_JOIN_COPY.title : "다시 참가하기"}
+            description={
+              declinedResumeRef.current || !initialNickname.trim()
+                ? PLAY_JOIN_COPY.description
+                : "닉네임을 확인한 뒤 다시 참가해 주세요."
+            }
+            joinCodeEditable={false}
+            showMissingCodeClue={false}
             onNicknameChange={setNickname}
-            onSubmit={() => joinAndRegisterMutation.mutate({ nickname: nickname.trim() })}
+            onSubmit={() => {
+              const nick = nickname.trim();
+              if (!nick) {
+                setMessage("닉네임을 입력해 주세요.");
+                return;
+              }
+              joinAndRegisterMutation.mutate({ nickname: nick });
+            }}
           />
 
         </main>
       </div>
     </PlayAtmosphere>
-  );
-}
-
-function ResumeModal({
-  record,
-  onContinue,
-  onNew,
-}: {
-  record: ResumeRecord;
-  onContinue: () => void;
-  onNew: () => void;
-}) {
-  return (
-    <Modal
-      open
-      onClose={() => {}}
-      title="이전 입장 기록"
-      titleId="play-resume-modal-title"
-      hideCloseButton
-      closeOnBackdrop={false}
-      closeOnEscape={false}
-      bodyClassName="space-y-5"
-    >
-      <p className="text-sm text-[var(--muted-foreground)]">
-        이 참가 코드로{" "}
-        <span className="font-medium text-[var(--primary)]">{record.nickname}</span> 닉네임으로 입장한 기록이 있어요.
-        이어갈까요?
-      </p>
-      <div className="flex flex-col gap-2">
-        <Button onClick={onContinue} className="w-full">
-          계속하기
-        </Button>
-        <Button onClick={onNew} variant="outline" className="w-full">
-          새 닉네임으로 입장
-        </Button>
-      </div>
-    </Modal>
   );
 }

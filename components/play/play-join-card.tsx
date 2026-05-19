@@ -4,35 +4,22 @@ import { Modal } from "@/components/ui/modal";
 import { PLAY_JOIN_COPY } from "@/components/play/play-join-copy";
 import { PlayJoinForm, type PlayJoinFormProps } from "@/components/play/play-join-form";
 
-type Props = Omit<PlayJoinFormProps, "className"> & {
-  open: boolean;
-  modalVariant?: "viewport" | "contained";
+export type PlayJoinCardProps = Omit<PlayJoinFormProps, "className"> & {
   title?: string;
   description?: string;
 };
 
-/** 참가 모달 — 로그인·기타 모달과 동일 UI */
-export function PlayJoinModal({
-  open,
-  modalVariant = "viewport",
+/** `/play/` 입장 페이지·오버레이 공통 참가 카드 */
+export function PlayJoinCard({
   title = PLAY_JOIN_COPY.title,
   description = PLAY_JOIN_COPY.description,
-  titleId = "play-join-modal",
+  titleId = "play-join-card",
   submitLabel = PLAY_JOIN_COPY.submitLabel,
   pendingLabel = PLAY_JOIN_COPY.pendingLabel,
   ...formProps
-}: Props) {
+}: PlayJoinCardProps) {
   return (
-    <Modal
-      open={open}
-      variant={modalVariant}
-      title={title}
-      titleId={titleId}
-      zIndexClassName={modalVariant === "contained" ? "z-20" : "z-50"}
-      closeOnBackdrop={false}
-      closeOnEscape={false}
-      hideCloseButton
-    >
+    <Modal title={title} titleId={titleId}>
       {description ? (
         <p className="text-xs text-[var(--foreground)]">{description}</p>
       ) : null}

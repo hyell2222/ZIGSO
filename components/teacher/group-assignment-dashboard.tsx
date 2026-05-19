@@ -6,18 +6,19 @@ import {
   activityCardGrid,
   activityListRow,
   activityNestedCard,
-  activitySectionCard,
 } from "@/components/activity/activity-layout-chrome";
 import { activityLayoutType } from "@/components/activity/activity-layout-typography";
+import {
+  PhaseSection,
+  PhaseSectionBadge,
+} from "@/components/activity/phase-section-layout";
 import { LoadingState } from "@/components/ui/loading-state";
 import { cn } from "@/lib/utils";
 
 export type GroupAssignmentMember = {
   id: string;
   nickname: string | null;
-  /** 부원에게 배정된 담당 아이템 이름 */
   zoneName: string | null;
-  /** item 뷰에서 모둠명 표시 */
   groupName?: string | null;
 };
 
@@ -52,10 +53,6 @@ function buildItemBuckets(groups: GroupAssignmentGroup[]): ItemAssignmentBucket[
   });
 }
 
-/**
- * 호스트 화면 — 모둠·장소 배정 결과 카드 묶음.
- * (실 세션·샌드박스 양쪽에서 동일 외관으로 사용합니다.)
- */
 export function GroupAssignmentDashboard({
   groups,
   loading,
@@ -64,10 +61,11 @@ export function GroupAssignmentDashboard({
 }: {
   groups: GroupAssignmentGroup[];
   loading: boolean;
-  /** expert_group: 담당 아이템별 카드 */
   groupBy?: "group" | "item";
   contained?: boolean;
 }) {
+  void contained;
+
   const itemBuckets = useMemo(
     () => (groupBy === "item" ? buildItemBuckets(groups) : []),
     [groupBy, groups],
@@ -76,22 +74,39 @@ export function GroupAssignmentDashboard({
   const isItemView = groupBy === "item";
   const isEmpty = isItemView ? itemBuckets.length === 0 : groups.length === 0;
 
-  void contained;
+  const memberCount = useMemo(() => {
+    if (isItemView) {
+      return itemBuckets.reduce((sum, b) => sum + b.members.length, 0);
+    }
+    return groups.reduce((sum, g) => sum + g.members.length, 0);
+  }, [isItemView, itemBuckets, groups]);
+
+  const badgeLabel = isItemView
+    ? isEmpty
+      ? "0개 아이템"
+      : `${itemBuckets.length}개 아이템`
+    : isEmpty
+      ? "0개 모둠"
+      : `${groups.length}개 모둠`;
 
   return (
-    <section className={activitySectionCard}>
-      <header className="flex flex-wrap items-center justify-between gap-2">
-        <div className="min-w-0">
-          <h2 className={activityLayoutType.sectionTitle}>배정 결과</h2>
-          {isItemView ? (
-            <p className={activityLayoutType.sectionSubtitle}>담당 아이템별</p>
-          ) : null}
-        </div>
-      </header>
+    <PhaseSection
+      title="배정 결과"
+      heading="section"
+      as="h2"
+      subtitle={isItemView ? "담당 아이템별" : "모둠별"}
+      headerExtra={
+        !loading && !isEmpty ? (
+          <PhaseSectionBadge>
+            {badgeLabel} · {memberCount}명
+          </PhaseSectionBadge>
+        ) : null
+      }
+    >
       {loading ? (
         <LoadingState variant="section" label="불러오는 중…" />
       ) : isEmpty ? (
-        <p className="text-sm text-[var(--muted-foreground)]">
+        <p className={activityLayoutType.bodyMuted}>
           {isItemView ? "배정된 아이템이 없습니다." : "배정된 모둠이 없습니다."}
         </p>
       ) : isItemView ? (
@@ -152,6 +167,6 @@ export function GroupAssignmentDashboard({
           ))}
         </div>
       )}
-    </section>
+    </PhaseSection>
   );
 }
