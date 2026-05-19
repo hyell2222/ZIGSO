@@ -2,13 +2,20 @@
 
 import { useMemo } from "react";
 
+import {
+  activityCardGrid,
+  activityListRow,
+  activityNestedCard,
+  activitySectionCard,
+} from "@/components/activity/activity-layout-chrome";
+import { activityLayoutType } from "@/components/activity/activity-layout-typography";
 import { LoadingState } from "@/components/ui/loading-state";
 import { cn } from "@/lib/utils";
 
 export type GroupAssignmentMember = {
   id: string;
   nickname: string | null;
-  /** 부원에게 배정된 담당 항목 이름 */
+  /** 부원에게 배정된 담당 아이템 이름 */
   zoneName: string | null;
   /** item 뷰에서 모둠명 표시 */
   groupName?: string | null;
@@ -53,11 +60,13 @@ export function GroupAssignmentDashboard({
   groups,
   loading,
   groupBy = "group",
+  contained = false,
 }: {
   groups: GroupAssignmentGroup[];
   loading: boolean;
-  /** expert_group: 담당 항목별 카드 */
+  /** expert_group: 담당 아이템별 카드 */
   groupBy?: "group" | "item";
+  contained?: boolean;
 }) {
   const itemBuckets = useMemo(
     () => (groupBy === "item" ? buildItemBuckets(groups) : []),
@@ -67,22 +76,15 @@ export function GroupAssignmentDashboard({
   const isItemView = groupBy === "item";
   const isEmpty = isItemView ? itemBuckets.length === 0 : groups.length === 0;
 
+  void contained;
+
   return (
-    <section
-      className={cn(
-        "space-y-2 rounded-lg border border-[var(--border)] bg-[var(--card-bg)] p-2.5 shadow-[var(--elevation-sm)]",
-        "@md:space-y-3 @md:p-4",
-      )}
-    >
+    <section className={activitySectionCard}>
       <header className="flex flex-wrap items-center justify-between gap-2">
         <div className="min-w-0">
-          <h2 className="text-sm font-semibold text-[var(--foreground)] @md:text-base">
-            배정 결과
-          </h2>
+          <h2 className={activityLayoutType.sectionTitle}>배정 결과</h2>
           {isItemView ? (
-            <p className="mt-0.5 text-xs text-[var(--muted-foreground)] @md:text-sm">
-              담당 항목별
-            </p>
+            <p className={activityLayoutType.sectionSubtitle}>담당 아이템별</p>
           ) : null}
         </div>
       </header>
@@ -90,31 +92,23 @@ export function GroupAssignmentDashboard({
         <LoadingState variant="section" label="불러오는 중…" />
       ) : isEmpty ? (
         <p className="text-sm text-[var(--muted-foreground)]">
-          {isItemView ? "배정된 항목이 없습니다." : "배정된 모둠이 없습니다."}
+          {isItemView ? "배정된 아이템이 없습니다." : "배정된 모둠이 없습니다."}
         </p>
       ) : isItemView ? (
-        <div className="grid grid-cols-1 gap-2.5 @md:grid-cols-2 @md:gap-3 @lg:grid-cols-3 @lg:gap-4">
+        <div className={activityCardGrid}>
           {itemBuckets.map((item) => (
-            <div
-              key={item.itemKey}
-              className="rounded-md border border-[var(--border)] bg-[var(--surface)] p-2 shadow-sm @md:p-2.5"
-            >
+            <div key={item.itemKey} className={activityNestedCard}>
               <div className="flex items-baseline justify-between gap-2">
-                <p className="text-sm font-mono font-semibold text-[var(--accent)] @md:text-lg">
-                  {item.itemName}
-                </p>
-                <span className="text-xs text-[var(--muted-foreground)]">{item.members.length}명</span>
+                <p className={activityLayoutType.nestedCardHeader}>{item.itemName}</p>
+                <span className={activityLayoutType.nestedCardBadge}>{item.members.length}명</span>
               </div>
-              <ul className="mt-1 space-y-1.5 @md:mt-1.5 @md:space-y-1.5">
+              <ul className="mt-2 space-y-2">
                 {item.members.map((m) => (
-                  <li
-                    key={m.id}
-                    className="flex items-center justify-between gap-2 rounded border border-[var(--border)] bg-[var(--tint-accent-weak)] px-2 py-1 text-xs @md:text-sm"
-                  >
-                    <span className="min-w-0 flex-1 text-[var(--foreground)]">
+                  <li key={m.id} className={activityListRow}>
+                    <span className={cn(activityLayoutType.listRowPrimary, "min-w-0 flex-1")}>
                       {m.nickname ?? "참가자"}
                     </span>
-                    <span className="shrink-0 text-[var(--muted-foreground)]">
+                    <span className={activityLayoutType.listRowSecondary}>
                       {m.groupName ?? "—"}
                     </span>
                   </li>
@@ -124,33 +118,30 @@ export function GroupAssignmentDashboard({
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-2.5 @md:grid-cols-2 @md:gap-3 @lg:grid-cols-3 @lg:gap-4">
+        <div className={activityCardGrid}>
           {groups.map((g) => (
-            <div
-              key={g.group.id}
-              className="rounded-md border border-[var(--border)] bg-[var(--surface)] p-2 shadow-sm @md:p-2.5"
-            >
+            <div key={g.group.id} className={activityNestedCard}>
               <div className="flex items-baseline justify-between gap-2">
-                <p className="text-sm font-mono font-semibold text-[var(--accent)] @md:text-lg">
-                  {g.group.name ?? "—"}
-                </p>
-                <span className="text-xs text-[var(--muted-foreground)]">{g.members.length}명</span>
+                <p className={activityLayoutType.nestedCardHeader}>{g.group.name ?? "—"}</p>
+                <span className={activityLayoutType.nestedCardBadge}>{g.members.length}명</span>
               </div>
-              <ul className="mt-1 space-y-1.5 @md:mt-1.5 @md:space-y-1.5">
+              <ul className="mt-2 space-y-2">
                 {g.members.length === 0 ? (
-                  <li className="rounded border border-dashed border-[var(--border)] px-2 py-1 text-sm text-[var(--muted-foreground)] @md:py-1.5 @md:text-xs">
+                  <li className="rounded-md border border-dashed border-[var(--border)] px-3 py-2 text-sm text-[var(--muted-foreground)]">
                     아직 배정된 학생 없음
                   </li>
                 ) : (
                   g.members.map((m) => (
-                    <li
-                      key={m.id}
-                      className="flex items-center justify-between gap-2 rounded border border-[var(--border)] bg-[var(--tint-accent-weak)] px-2 py-1 text-xs @md:text-sm"
-                    >
-                      <span className="min-w-0 flex-1 text-[var(--foreground)]">
+                    <li key={m.id} className={activityListRow}>
+                      <span className={cn(activityLayoutType.listRowPrimary, "min-w-0 flex-1")}>
                         {m.nickname ?? "참가자"}
                       </span>
-                      <span className="shrink-0 text-[var(--accent)]">
+                      <span
+                        className={cn(
+                          activityLayoutType.listRowSecondary,
+                          "text-[var(--accent)]",
+                        )}
+                      >
                         {m.zoneName ?? "—"}
                       </span>
                     </li>

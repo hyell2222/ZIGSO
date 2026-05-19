@@ -371,7 +371,7 @@ function SessionHostContent() {
   if (!sessionId) {
     return (
       <div className="@container min-h-screen">
-        <main className="flex flex-col items-center justify-center mx-auto w-full max-w-7xl px-4 py-8">
+        <main className="flex flex-col items-center justify-center mx-auto w-full max-w-5xl px-4 py-8">
           <p className="text-sm text-[var(--muted-foreground)]">활동 세션을 찾을 수 없습니다.</p>
           <Button type="button" className="mt-4" variant="secondary" onClick={() => router.push(ROUTES.reports)}>
             활동 세션 기록
@@ -384,7 +384,7 @@ function SessionHostContent() {
   if (teacherSession.isLoading || (teacherSession.isFetching && !teacherSession.data)) {
     return (
       <div className="@container min-h-screen">
-        <main className="flex flex-col items-center justify-center mx-auto w-full max-w-7xl px-4 py-8">
+        <main className="flex flex-col items-center justify-center mx-auto w-full max-w-5xl px-4 py-8">
           <LoadingState variant="page" />
         </main>
       </div>
@@ -394,7 +394,7 @@ function SessionHostContent() {
   if (sessionQuery.isLoading) {
     return (
       <div className="@container min-h-screen">
-        <main className="mx-auto flex w-full max-w-7xl flex-col px-4 py-8">
+        <main className="mx-auto flex w-full max-w-5xl flex-col px-4 py-8">
           <LoadingState variant="page" />
         </main>
       </div>
@@ -404,7 +404,7 @@ function SessionHostContent() {
   if (sessionQuery.isError || !sessionQuery.data) {
     return (
       <div className="@container min-h-screen">
-        <main className="flex flex-col items-center justify-center mx-auto w-full max-w-7xl px-4 py-8">
+        <main className="flex flex-col items-center justify-center mx-auto w-full max-w-5xl px-4 py-8">
           <p className="text-sm text-[var(--danger)]">활동 세션을 불러오지 못했습니다.</p>
           <Button type="button" className="mt-4" variant="secondary" onClick={() => router.push(ROUTES.reports)}>
             활동 세션 기록
@@ -418,7 +418,7 @@ function SessionHostContent() {
   if (row.host_id !== teacherSession.data?.user.id) {
     return (
       <div className="@container min-h-screen">
-        <main className="mx-auto w-full max-w-7xl px-4 py-8">
+        <main className="mx-auto w-full max-w-5xl px-4 py-8">
           <p className="text-sm text-[var(--accent)]">이 활동 세션을 진행할 권한이 없습니다.</p>
         </main>
       </div>
@@ -527,7 +527,6 @@ function SessionHostContent() {
         onClose={closeTimerModal}
         title="타이머"
         titleId="host-timer-heading"
-        maxWidthClassName="max-w-sm"
         zIndexClassName="z-[90]"
         bodyClassName="py-5"
       >
@@ -542,7 +541,7 @@ export default function SessionHostPage() {
     <Suspense
       fallback={
         <div className="@container min-h-screen">
-          <main className="mx-auto flex w-full max-w-7xl flex-col px-4 py-8">
+          <main className="mx-auto flex w-full max-w-5xl flex-col px-4 py-8">
             <LoadingState variant="page" />
           </main>
         </div>

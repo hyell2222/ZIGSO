@@ -89,17 +89,17 @@ function readTask(raw: unknown, idx: number, itemIds: Set<string>): Task {
 
 function readItem(raw: unknown, idx: number, roleIdPrefix?: string): Item {
   const i = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
-  const hintsRaw = (i.hints ?? {}) as Record<string, unknown>;
+  const cluesRaw = (i.clues ?? {}) as Record<string, unknown>;
   const defaultId = roleIdPrefix ? `${roleIdPrefix}_item_${idx + 1}` : `item_${idx + 1}`;
   return {
     id: String(i.id ?? defaultId),
     name: String(i.name ?? "").trim(),
-    hints: {
-      stage1: String(hintsRaw.stage1 ?? "").trim(),
-      stage2: String(hintsRaw.stage2 ?? "").trim(),
-      stage3: String(hintsRaw.stage3 ?? "").trim(),
-      stage4: String(hintsRaw.stage4 ?? "").trim(),
-      stage5: String(hintsRaw.stage5 ?? "").trim(),
+    clues: {
+      stage1: String(cluesRaw.stage1 ?? "").trim(),
+      stage2: String(cluesRaw.stage2 ?? "").trim(),
+      stage3: String(cluesRaw.stage3 ?? "").trim(),
+      stage4: String(cluesRaw.stage4 ?? "").trim(),
+      stage5: String(cluesRaw.stage5 ?? "").trim(),
     },
     aliases: Array.isArray(i.aliases)
       ? i.aliases.map((a) => String(a).trim().toLowerCase()).filter(Boolean)

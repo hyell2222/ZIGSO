@@ -466,7 +466,7 @@ export function PlaySessionShell({
   if (!hasSupabaseEnv) {
     return (
       <PlayAtmosphere>
-        <main className="mx-auto w-full max-w-7xl px-4 py-8">
+        <main className="mx-auto w-full max-w-5xl px-4 py-8">
           <Card className={cn("max-w-3xl", playSurfaceCool)}>
             <CardHeader>
               <CardTitle className="text-[var(--foreground)]">환경 설정 필요</CardTitle>
@@ -490,7 +490,7 @@ export function PlaySessionShell({
   return (
     <PlayAtmosphere>
       <div className="flex min-h-dvh flex-col">
-        <main className="mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col px-4 py-6 pb-[max(3rem,env(safe-area-inset-bottom,0px))] sm:px-6 sm:py-8 md:px-8">
+        <main className="mx-auto flex min-h-0 w-full max-w-5xl flex-1 flex-col px-4 py-6 pb-[max(3rem,env(safe-area-inset-bottom,0px))] sm:px-6 sm:py-8 md:px-8">
           {showResumeModal && resumeQuery.data ? (
             <ResumeModal
               record={resumeQuery.data}

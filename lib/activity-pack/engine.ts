@@ -6,7 +6,7 @@ import type {
   Task,
 } from "@/lib/activity-pack/types";
 import { PLAYER_MESSAGES } from "@/lib/activity-pack/player-messages";
-import { scoreForHintLevel } from "@/lib/activity-pack/scoring";
+import { scoreForClueLevel } from "@/lib/activity-pack/scoring";
 import { isItemAnswerCorrect } from "@/lib/activity-pack/validate";
 
 export function getItemById(pack: ActivityPack, itemId: string): Item | undefined {
@@ -17,15 +17,15 @@ export function getTaskById(pack: ActivityPack, taskId: string): Task | undefine
   return pack.tasks.find((t) => t.id === taskId);
 }
 
-export function hintTextForLevel(item: Item, level: 1 | 2 | 3 | 4 | 5): string {
-  return item.hints[`stage${level}` as keyof typeof item.hints];
+export function clueTextForLevel(item: Item, level: 1 | 2 | 3 | 4 | 5): string {
+  return item.clues[`stage${level}` as keyof typeof item.clues];
 }
 
 export function tryAcquireItem(
   pack: ActivityPack,
   itemId: string,
   answer: string,
-  hintLevelUsed: 1 | 2 | 3 | 4 | 5,
+  clueLevelUsed: 1 | 2 | 3 | 4 | 5,
 ): { ok: true; record: AcquiredItem } | { ok: false; reason: string } {
   const item = getItemById(pack, itemId);
   if (!item) return { ok: false, reason: PLAYER_MESSAGES.unknownItem };
@@ -36,8 +36,8 @@ export function tryAcquireItem(
     ok: true,
     record: {
       itemId,
-      hintLevelUsed,
-      score: scoreForHintLevel(hintLevelUsed),
+      clueLevelUsed,
+      score: scoreForClueLevel(clueLevelUsed),
       acquiredAt: new Date().toISOString(),
     },
   };
@@ -57,7 +57,7 @@ export function taskSubmissionProgress(
   };
 }
 
-/** 필수 제출 항목을 모두 획득했는지 */
+/** 필수 제출 아이템을 모두 획득했는지 */
 export function groupHasItemsForTask(
   acquired: AcquiredItem[],
   task: Task,

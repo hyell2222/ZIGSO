@@ -70,9 +70,9 @@ function SandboxPageContent() {
   }, []);
 
   const handleAcquire = useCallback(
-    (groupId: string, itemId: string, answer: string, hintLevelUsed: 1 | 2 | 3 | 4 | 5) => {
+    (groupId: string, itemId: string, answer: string, clueLevelUsed: 1 | 2 | 3 | 4 | 5) => {
       if (!pack) return;
-      const result = tryAcquireItem(pack, itemId, answer, hintLevelUsed);
+      const result = tryAcquireItem(pack, itemId, answer, clueLevelUsed);
       if (!result.ok) throw new Error(result.reason);
       setState((prev) => ({
         ...prev,

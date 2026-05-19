@@ -104,7 +104,7 @@ export default function ActivitiesPage() {
   return (
     <div className="min-h-screen">
       <TopNav />
-      <main className="mx-auto w-full max-w-7xl space-y-6 px-4 py-8">
+      <main className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8">
         {sessionQuery.data ? (
           <div className="space-y-6">
             <PageHeader
@@ -132,7 +132,7 @@ export default function ActivitiesPage() {
                 </Button>
               </div>
             ) : (
-              <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-4">
+              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
                 {activitiesQuery.data?.map((row) => {
                   const isDeleting = pendingDeleteId === row.id;
                   return (

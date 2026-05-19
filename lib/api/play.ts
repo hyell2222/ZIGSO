@@ -337,13 +337,13 @@ export async function acquireItemForPlayer(args: {
   pack: ActivityPack;
   itemId: string;
   answer: string;
-  hintLevelUsed: 1 | 2 | 3 | 4 | 5;
+  clueLevelUsed: 1 | 2 | 3 | 4 | 5;
 }) {
   const result = tryAcquireItem(
     args.pack,
     args.itemId,
     args.answer,
-    args.hintLevelUsed,
+    args.clueLevelUsed,
   );
   if (!result.ok) throw new Error(result.reason);
 

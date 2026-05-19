@@ -2,8 +2,14 @@
 
 import { useMemo } from "react";
 
+import { activityLayoutType } from "@/components/activity/activity-layout-typography";
+import { PlayHeaderGroupPlace } from "@/components/play/play-header-group-place";
 import { PlayPhaseShell } from "@/components/play/play-phase-shell";
-import { playSurfaceCool } from "@/components/play/play-atmosphere";
+import {
+  activityNestedCard,
+  activityPanelCard,
+  activityStack,
+} from "@/components/activity/activity-layout-chrome";
 import { LoadingState } from "@/components/ui/loading-state";
 import {
   getStudentResultsSnapshot,
@@ -53,37 +59,33 @@ function RankCard({
   return (
     <article
       className={cn(
-        "rounded-xl border-2 px-4 py-4",
-        accent
-          ? "border-[color-mix(in_srgb,var(--primary)_35%,var(--border))] bg-[var(--tint-accent-weak)]"
-          : "border-[var(--border)] bg-[var(--background)]",
+        activityNestedCard,
+        accent && "border-[color-mix(in_srgb,var(--primary)_35%,var(--border))] bg-[var(--tint-accent-weak)]",
       )}
     >
-      <p className="text-xs font-bold uppercase tracking-wider text-[var(--accent)] @md:text-sm">
+      <p className="text-xs font-semibold uppercase tracking-wider text-[var(--accent)]">
         {label}
       </p>
       <p
         className={cn(
-          "mt-1 font-mono text-2xl font-extrabold leading-none tabular-nums @sm:text-3xl @md:text-4xl",
+          "mt-1 font-mono text-2xl font-bold leading-none tabular-nums @sm:text-3xl",
           tone,
         )}
       >
         {rank}
-        <span className="text-[0.45em] font-bold text-[var(--muted-foreground)]">위</span>
+        <span className="text-[0.45em] font-semibold text-[var(--muted-foreground)]">위</span>
       </p>
-      <p className="mt-1 text-sm text-[var(--muted-foreground)] @md:text-base">
+      <p className="mt-1 text-sm text-[var(--muted-foreground)]">
         전체 {total}
         {totalUnit} 중
       </p>
-      <p className="mt-3 font-mono text-lg font-bold tabular-nums text-[var(--foreground)] @sm:text-2xl">
+      <p className="mt-3 font-mono text-lg font-bold tabular-nums text-[var(--foreground)] @sm:text-xl">
         {score}
         <span className="text-[0.5em] font-semibold text-[var(--muted-foreground)]">점</span>
       </p>
-      <p className="mt-1 text-sm text-[var(--muted-foreground)] @md:text-base">{scoreLabel}</p>
+      <p className="mt-1 text-sm text-[var(--muted-foreground)]">{scoreLabel}</p>
       {detail ? (
-        <p className="mt-2 text-xs leading-relaxed text-[var(--muted-foreground)] @md:text-sm">
-          {detail}
-        </p>
+        <p className="mt-2 text-xs leading-relaxed text-[var(--muted-foreground)]">{detail}</p>
       ) : null}
     </article>
   );
@@ -109,41 +111,39 @@ export function ResultsPhasePanel({
 
   const copy = PLAY_STUDENT_COPY.phaseResults;
   const sessionTitle = title?.trim() || null;
-
   const displayGroupName = groupName ?? snapshot?.groupName ?? null;
   const displayRoleLabel = roleLabel ?? snapshot?.roleLabel ?? null;
 
+  const metaLine = [sessionTitle, displayGroupName, displayRoleLabel].filter(Boolean).join(" · ");
+
   return (
-    <PlayPhaseShell contained={contained} mainClassName="max-w-2xl">
+    <PlayPhaseShell
+      contained={contained}
+      mainClassName="max-w-2xl"
+      header={{
+        phase: 4,
+        title: copy.title,
+        description: metaLine ? `${copy.subtitle} · ${metaLine}` : copy.subtitle,
+        rightSlot:
+          displayGroupName || displayRoleLabel ? (
+            <PlayHeaderGroupPlace
+              groupName={displayGroupName}
+              placeName={displayRoleLabel}
+              placeLabel="나의 모둠"
+              contained={contained}
+            />
+          ) : undefined,
+      }}
+    >
       {loading ? (
         <LoadingState variant="section" tone="play" label="결과 집계 중…" />
       ) : !snapshot ? (
-        <p className="py-8 text-center text-sm text-[var(--muted-foreground)] @md:text-base">
-          {copy.emptyMessage}
-        </p>
+        <p className={cn("py-8 text-center", activityLayoutType.bodyMuted)}>{copy.emptyMessage}</p>
       ) : (
-        <div className={cn("space-y-4", playSurfaceCool, "px-4 py-5 @sm:px-5 @sm:py-6")}>
-          <div className="text-center">
-            <p className="text-2xl @sm:text-3xl" aria-hidden>
-              {copy.emoji}
-            </p>
-            <h1 className="mt-2 text-sm font-bold text-[var(--foreground)] @sm:text-base @md:text-xl @lg:text-2xl">
-              {copy.title}
-            </h1>
-            <p className="mt-1 text-sm leading-relaxed text-[var(--muted-foreground)] @md:text-base">
-              {copy.subtitle}
-            </p>
-            {sessionTitle ? (
-              <p className="mt-2 text-sm font-medium text-[var(--muted-foreground)] @md:text-base">
-                {sessionTitle}
-              </p>
-            ) : null}
-            {displayGroupName || displayRoleLabel ? (
-              <p className="mt-1 text-xs text-[var(--muted-foreground)] @md:text-sm">
-                {[displayGroupName, displayRoleLabel].filter(Boolean).join(" · ")}
-              </p>
-            ) : null}
-          </div>
+        <div className={activityPanelCard}>
+          <p className="text-center text-2xl @sm:text-3xl" aria-hidden>
+            {copy.emoji}
+          </p>
           <RankCard
             label={copy.groupRankLabel}
             rank={snapshot.groupRank}

@@ -6,6 +6,9 @@ import { useEffect, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
+/** 입장·AI 생성 등 일반 다이얼로그 기본 너비 (뷰포트·contained 공통) */
+export const MODAL_DEFAULT_MAX_WIDTH = "max-w-[min(100%,28rem)]";
+
 const panel =
   "border-[var(--border)] bg-[var(--card-bg)] text-[var(--foreground)] shadow-[0_20px_50px_-12px_color-mix(in_srgb,var(--primary)_18%,transparent)]";
 const divider = "border-[var(--border)]";
@@ -22,7 +25,7 @@ export type ModalProps = {
   footer?: ReactNode;
   /** 모바일에서는 하단 정렬 후 `sm:`에서 중앙 (예: 역할 상세 패널) */
   sheetOnNarrow?: boolean;
-  /** 기본 max-w-sm */
+  /** 기본 {@link MODAL_DEFAULT_MAX_WIDTH} */
   maxWidthClassName?: string;
   /** 패널 z-index (tailwind 클래스) */
   zIndexClassName?: string;
@@ -51,7 +54,7 @@ export function Modal({
   children,
   footer,
   sheetOnNarrow = false,
-  maxWidthClassName = "max-w-sm",
+  maxWidthClassName = MODAL_DEFAULT_MAX_WIDTH,
   zIndexClassName = "z-50",
   closeOnBackdrop = true,
   closeOnEscape = true,
@@ -95,7 +98,7 @@ export function Modal({
     >
       <div
         className={cn(
-          "flex max-h-[min(92dvh,880px)] w-full flex-col overflow-hidden rounded-xl border motion-safe:animate-[playModalRise_0.4s_cubic-bezier(0.22,1,0.36,1)_both]",
+          "mx-auto flex min-w-0 max-h-[min(92dvh,880px)] w-full shrink-0 flex-col overflow-hidden rounded-xl border motion-safe:animate-[playModalRise_0.4s_cubic-bezier(0.22,1,0.36,1)_both]",
           maxWidthClassName,
           panel,
           panelClassName,

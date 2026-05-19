@@ -21,7 +21,7 @@ type Props = {
   submitLabel?: string;
   pendingLabel?: string;
   modalVariant?: "viewport" | "contained";
-  showMissingCodeHint?: boolean;
+  showMissingCodeClue?: boolean;
   joinCodeEditable?: boolean;
   titlePrefix?: ReactNode;
   onJoinCodeChange?: (value: string) => void;
@@ -41,7 +41,7 @@ export function PlayJoinModal({
   submitLabel = "입장",
   pendingLabel = "입장 중…",
   modalVariant = "viewport",
-  showMissingCodeHint = true,
+  showMissingCodeClue = true,
   joinCodeEditable = false,
   titlePrefix,
   onJoinCodeChange,
@@ -110,7 +110,7 @@ export function PlayJoinModal({
           {pending ? pendingLabel : submitLabel}
         </Button>
       </form>
-      {showMissingCodeHint && !code ? (
+      {showMissingCodeClue && !code ? (
         <p className="text-xs text-[var(--accent)]">
           <a className="underline hover:text-[var(--primary)]" href={ROUTES.play}>
             입장 화면

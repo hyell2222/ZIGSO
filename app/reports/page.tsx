@@ -196,7 +196,7 @@ function ReportsPageInner() {
   return (
     <div className="min-h-screen">
       <TopNav />
-      <main className="mx-auto w-full max-w-7xl space-y-6 px-4 py-8">
+      <main className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8">
         <PageHeader
           title="활동 리포트"
           description={
@@ -231,7 +231,7 @@ export default function ReportsPage() {
       fallback={
         <div className="min-h-screen">
           <TopNav />
-          <main className="mx-auto max-w-7xl px-4 py-8">
+          <main className="mx-auto max-w-5xl px-4 py-8">
             <LoadingState variant="page" />
           </main>
         </div>

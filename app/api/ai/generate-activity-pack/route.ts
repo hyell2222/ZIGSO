@@ -21,11 +21,11 @@ const OPENAI_MODEL = process.env.OPENAI_MODEL ?? "gpt-4o-mini";
 const PACK_ITEM_SCHEMA = {
   type: "object",
   additionalProperties: false,
-  required: ["id", "name", "hints"],
+  required: ["id", "name", "clues"],
   properties: {
     id: { type: "string" },
     name: { type: "string" },
-    hints: {
+    clues: {
       type: "object",
       additionalProperties: false,
       required: ["stage1", "stage2", "stage3", "stage4", "stage5"],
@@ -97,12 +97,12 @@ function buildSystemPrompt(contentLanguage: ContentLanguage): string {
 
   const contentLanguageRule =
     contentLanguage === "ko"
-      ? "- All gameplay content in Korean: item names (answers), hints stage1–stage5, task titles and descriptions."
-      : "- All gameplay content in English: item names (answers), hints stage1–stage5, task titles and descriptions.";
+      ? "- All gameplay content in Korean: item names (answers), clues stage1–stage5, task titles and descriptions."
+      : "- All gameplay content in English: item names (answers), clues stage1–stage5, task titles and descriptions.";
 
   return [
     `You design jigsaw cooperative classroom activities for the 'Jigsaw' teacher platform.`,
-    `Default template style: '${EXAMPLE_GAME_NAME}' — expert groups deduce items from staged hints; home groups complete cooperative tasks by submitting acquired items.`,
+    `Default template style: '${EXAMPLE_GAME_NAME}' — expert groups deduce items from staged clues; home groups complete cooperative tasks by submitting acquired items.`,
     "",
     "Output JSON only.",
     "",
@@ -112,12 +112,12 @@ function buildSystemPrompt(contentLanguage: ContentLanguage): string {
     "- groupSize: must equal roles.length (2–12).",
     "- itemsPerPlayer: max items in any single role (usually 1–2).",
     "- roles: each has id (snake_case ASCII) and items[] (deduction targets). Role display names are auto-assigned codenames at play time — do not rely on role name.",
-    "- role items: id, name (correct answer), hints stage1–stage5 (stage1 hardest, stage5 easiest).",
+    "- role items: id, name (correct answer), clues stage1–stage5 (stage1 hardest, stage5 easiest).",
     "- tasks: cooperative home-group assignments. Each has id, title, description, acceptedItemIds (item ids that must ALL be acquired and submitted together to complete the task).",
     "- Every acceptedItemId must reference an item id inside roles. List every item the home group must submit for that task.",
     "- Create 2–6 roles with 1–2 items each and 2–6 tasks when the theme allows.",
     "- No violence, culturally appropriate for Korean middle/high school.",
-    "- Hint scoring: stage1=5pts … stage5=1pt — write hints accordingly.",
+    "- Clue scoring: stage1=5pts … stage5=1pt — write clues accordingly.",
   ].join("\n");
 }
 
@@ -131,12 +131,12 @@ function buildUserPrompt(opts: {
   const lines = [
     `Generate one complete '${EXAMPLE_GAME_NAME}'-style activity pack JSON following the schema.`,
     `Target tasks: about ${opts.taskCount}.`,
-    `Create exactly ${opts.roleCount} roles (group size equals role count). Each role should have 1–2 items with full 5-stage hints.`,
+    `Create exactly ${opts.roleCount} roles (group size equals role count). Each role should have 1–2 items with full 5-stage clues.`,
     `Content language for title and description: ${opts.contentLanguage === "ko" ? "Korean" : "English"}.`,
   ];
   if (opts.difficulty) {
     lines.push(
-      `Calibrate hint difficulty and task complexity for ${opts.difficulty} level (do not output a difficulty field).`,
+      `Calibrate clue difficulty and task complexity for ${opts.difficulty} level (do not output a difficulty field).`,
     );
   }
   if (opts.topic.trim()) {

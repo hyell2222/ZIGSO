@@ -53,7 +53,7 @@ export function ActivityIntroductionLayout({
             {description ?? "—"}
           </p>
           <p className="rounded-md border border-[var(--border)] bg-[var(--tint-accent-weak)] px-3 py-2 text-xs text-[var(--muted-foreground)] @sm:text-xs">
-            {PLAY_STUDENT_COPY.intro.timeHint}
+            {PLAY_STUDENT_COPY.intro.timeClue}
           </p>
         </CardContent>
       </Card>

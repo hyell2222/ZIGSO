@@ -1,7 +1,7 @@
 {
   "version": 2,
   "title": "School Festival Booth",
-  "description": "Expert groups deduce items from hints; home groups complete cooperative tasks by submitting acquired items.",
+  "description": "Expert groups deduce items from clues; home groups complete cooperative tasks by submitting acquired items.",
   "groupSize": 2,
   "itemsPerPlayer": 1,
   "roles": [
@@ -12,7 +12,7 @@
         {
           "id": "booth_manual",
           "name": "booth operations manual",
-          "hints": {
+          "clues": {
             "stage1": "Contains the festival day checklist.",
             "stage2": "Lists opening time and closing procedures.",
             "stage3": "The cover says 'Booth Operations'.",
@@ -29,7 +29,7 @@
         {
           "id": "admission_ticket",
           "name": "admission ticket",
-          "hints": {
+          "clues": {
             "stage1": "Visitors carry it in their hands.",
             "stage2": "A QR code is printed on it.",
             "stage3": "The words 'Admission Ticket' are visible.",
@@ -44,7 +44,7 @@
     {
       "id": "booth_manual",
       "name": "booth operations manual",
-      "hints": {
+      "clues": {
         "stage1": "Contains the festival day checklist.",
         "stage2": "Lists opening time and closing procedures.",
         "stage3": "The cover says 'Booth Operations'.",
@@ -55,7 +55,7 @@
     {
       "id": "admission_ticket",
       "name": "admission ticket",
-      "hints": {
+      "clues": {
         "stage1": "Visitors carry it in their hands.",
         "stage2": "A QR code is printed on it.",
         "stage3": "The words 'Admission Ticket' are visible.",

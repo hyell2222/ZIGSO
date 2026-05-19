@@ -105,13 +105,13 @@ function validateItem(raw: unknown, path: string, seenIds: Set<string>): PackVal
   if (typeof item.name !== "string" || !item.name.trim()) {
     issues.push({ path: `${path}.name`, message: "name required" });
   }
-  const hints = item.hints;
-  if (!hints || typeof hints !== "object") {
-    issues.push({ path: `${path}.hints`, message: "hints object required" });
+  const clues = item.clues;
+  if (!clues || typeof clues !== "object") {
+    issues.push({ path: `${path}.clues`, message: "clues object required" });
   } else {
     for (const key of HINT_KEYS) {
-      if (typeof hints[key] !== "string" || !hints[key].trim()) {
-        issues.push({ path: `${path}.hints.${key}`, message: "hint text required" });
+      if (typeof clues[key] !== "string" || !clues[key].trim()) {
+        issues.push({ path: `${path}.clues.${key}`, message: "clue text required" });
       }
     }
   }

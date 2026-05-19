@@ -66,7 +66,6 @@ export function AIActivityGenerateModal({ open, onClose, onApply }: Props) {
       onClose={onClose}
       title="AI 활동 팩 생성"
       titleId="ai-activity-generate-modal-title"
-      maxWidthClassName="max-w-sm sm:max-w-md"
       closeOnBackdrop={!loading}
     >
       <div className="space-y-4">
@@ -82,7 +81,7 @@ export function AIActivityGenerateModal({ open, onClose, onApply }: Props) {
 
         <FormField
           label="난이도 (생성 참고)"
-          help="활동에 저장되지 않습니다. AI가 힌트·미션 난이도를 맞출 때만 사용합니다."
+          help="활동에 저장되지 않습니다. AI가 단서·미션 난이도를 맞출 때만 사용합니다."
         >
           <div className="flex flex-wrap gap-2">
             {AI_DIFFICULTY_UI_OPTIONS.map((opt) => (
@@ -103,7 +102,7 @@ export function AIActivityGenerateModal({ open, onClose, onApply }: Props) {
           </div>
         </FormField>
 
-        <FormField label="안내 언어 (제목·설명·힌트·수행 문장)">
+        <FormField label="안내 언어 (제목·설명·단서·수행 문장)">
           <div className="flex flex-wrap gap-2">
             {CONTENT_LANGUAGE_OPTIONS.map((opt) => (
               <button
@@ -127,7 +126,7 @@ export function AIActivityGenerateModal({ open, onClose, onApply }: Props) {
         </FormField>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <FormField label="맞출 항목(역할) 수" help="모둠 인원과 동일합니다">
+          <FormField label="맞출 아이템(역할) 수" help="모둠 인원과 동일합니다">
             <div className="flex items-center gap-2">
               <Button
                 type="button"

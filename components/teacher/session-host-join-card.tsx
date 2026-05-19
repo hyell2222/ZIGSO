@@ -6,9 +6,10 @@ import { cn } from "@/lib/utils";
 type Props = {
   joinCode: string;
   sessionEnded?: boolean;
+  contained?: boolean;
 };
 
-export function SessionHostJoinCard({ joinCode, sessionEnded = false }: Props) {
+export function SessionHostJoinCard({ joinCode, sessionEnded = false, contained = false }: Props) {
   return (
     <div className="ml-auto w-fit max-w-full shrink-0 self-end @sm:self-auto">
       <div
@@ -20,20 +21,30 @@ export function SessionHostJoinCard({ joinCode, sessionEnded = false }: Props) {
       >
         {sessionEnded ? (
           <div className="py-0.5 text-center @sm:text-left">
-            <p className="mt-0.5 font-mono text-sm font-medium tracking-wide text-[var(--muted-foreground)] @md:text-base">
+            <p
+              className={cn(
+                "mt-0.5 font-mono font-medium tracking-wide text-[var(--muted-foreground)]",
+                contained ? "text-xs" : "text-sm @md:text-base",
+              )}
+            >
               종료된 세션
             </p>
           </div>
         ) : (
           <>
             <div className="leading-tight">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--muted-foreground)] @md:text-xs @md:tracking-wider">
+              <p
+                className={cn(
+                  "font-semibold uppercase tracking-[0.14em] text-[var(--muted-foreground)]",
+                  contained ? "text-[10px]" : "text-[10px] @md:text-xs @md:tracking-wider",
+                )}
+              >
                 참가 코드
               </p>
               <p
                 className={cn(
-                  "font-mono text-base font-semibold tracking-[0.12em] text-[var(--accent)] tabular-nums",
-                  "@md:text-lg @md:tracking-[0.15em] @lg:text-xl @xl:text-2xl",
+                  "font-mono font-semibold tracking-[0.12em] text-[var(--accent)] tabular-nums",
+                  contained ? "text-sm" : "text-base @md:text-lg @md:tracking-[0.15em] @lg:text-xl @xl:text-2xl",
                 )}
               >
                 {joinCode}

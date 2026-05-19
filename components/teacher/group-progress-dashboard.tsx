@@ -2,6 +2,12 @@
 
 import { useMemo } from "react";
 
+import {
+  activityCardGrid,
+  activityNestedCard,
+  activitySectionCard,
+} from "@/components/activity/activity-layout-chrome";
+import { activityLayoutType } from "@/components/activity/activity-layout-typography";
 import { LoadingState } from "@/components/ui/loading-state";
 import type { ActivityPack } from "@/lib/activity-pack/types";
 import { computeGroupTotalScore } from "@/lib/activity-pack/session-results";
@@ -17,26 +23,22 @@ export function GroupProgressDashboard({
   groups,
   loading,
   pack,
+  contained = false,
 }: {
   groups: GroupProgressGroup[];
   loading: boolean;
   pack: ActivityPack | null;
+  contained?: boolean;
 }) {
+  void contained;
   const taskTotal = pack?.tasks.length ?? 0;
 
   return (
-    <section
-      className={cn(
-        "space-y-2 rounded-lg border border-[var(--border)] bg-[var(--card-bg)] p-2.5 shadow-[var(--elevation-sm)]",
-        "@md:space-y-3 @md:p-4",
-      )}
-    >
+    <section className={activitySectionCard}>
       <header>
-        <h2 className="text-sm font-semibold text-[var(--foreground)] @md:text-base">
-          모둠 미션 진행
-        </h2>
-        <p className="mt-0.5 text-sm leading-snug text-[var(--muted-foreground)] @md:mt-1">
-          항목 획득·미션 해결·최종 제출 현황입니다.
+        <h2 className={activityLayoutType.sectionTitle}>모둠 미션 진행</h2>
+        <p className={activityLayoutType.sectionSubtitle}>
+          아이템 획득·미션 해결·최종 제출 현황입니다.
         </p>
       </header>
       {loading ? (
@@ -46,7 +48,7 @@ export function GroupProgressDashboard({
           배정된 모둠이 없습니다.
         </p>
       ) : (
-        <div className="grid grid-cols-1 gap-2.5 @md:grid-cols-2 @md:gap-3 @lg:grid-cols-3 @lg:gap-4">
+        <div className={activityCardGrid}>
           {groups.map((g) => (
             <GroupProgressCard key={g.group.id} entry={g} taskTotal={taskTotal} pack={pack} />
           ))}
@@ -84,16 +86,14 @@ function GroupProgressCard({
   );
 
   return (
-    <div className="rounded-md border border-[var(--border)] bg-[var(--surface)] p-2 shadow-sm @md:p-2.5">
+    <div className={activityNestedCard}>
       <div className="flex items-baseline justify-between gap-2">
-        <p className="text-sm font-mono font-semibold text-[var(--accent)] @md:text-lg">
-          {group.name ?? "—"}
-        </p>
+        <p className={activityLayoutType.nestedCardHeader}>{group.name ?? "—"}</p>
         <span className="text-xs text-[var(--muted-foreground)]">{memberCount}명</span>
       </div>
       <dl className="mt-2 space-y-1 text-xs @md:text-sm">
         <div className="flex justify-between gap-2">
-          <dt className="text-[var(--muted-foreground)]">항목</dt>
+          <dt className="text-[var(--muted-foreground)]">아이템</dt>
           <dd className="font-medium text-[var(--foreground)]">
             {acquired}/{itemTotal || "—"}
           </dd>

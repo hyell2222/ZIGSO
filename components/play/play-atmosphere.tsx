@@ -2,6 +2,14 @@
 
 import type { CSSProperties, ReactNode } from "react";
 
+import {
+  activityFooterChrome,
+  activityLoaderRegion,
+  activityMainContent,
+  activityMainInner,
+  activityPhaseHeaderInner,
+  activityPhaseHeaderShell,
+} from "@/components/activity/activity-layout-chrome";
 import { cn } from "@/lib/utils";
 
 type PlayAtmosphereProps = {
@@ -36,33 +44,26 @@ export const playSurfacePanelHeader =
 export const playSurfaceWarmHeader =
   "border-b-2 border-[color-mix(in_srgb,var(--highlight)_25%,var(--border))] bg-[color-mix(in_srgb,var(--highlight)_10%,white)]";
 
-export const playPhaseHeaderChrome =
-  "border-b-2 border-[color-mix(in_srgb,var(--primary)_16%,var(--border))] bg-[color-mix(in_srgb,white_88%,var(--entry-shell))] text-[var(--foreground)] shadow-[0_4px_0_color-mix(in_srgb,var(--primary)_8%,transparent),0_12px_28px_-8px_color-mix(in_srgb,var(--primary)_12%,transparent)] backdrop-blur-sm";
+/** @deprecated `activityPhaseHeaderShell` 사용 */
+export const playPhaseHeaderChrome = activityPhaseHeaderShell;
 
-export const playPhaseHeaderChromeShell = cn(
-  "shrink-0",
-  playPhaseHeaderChrome,
-  "motion-safe:animate-[playRevealUp_0.55s_cubic-bezier(0.22,1,0.36,1)_both]",
-);
+/** @deprecated `activityPhaseHeaderShell` 사용 */
+export const playPhaseHeaderChromeShell = cn("shrink-0", activityPhaseHeaderShell);
 
-export const playPhaseHeaderChromeInner =
-  "mx-auto w-full max-w-6xl px-4 py-2.5 text-left @sm:px-6 @sm:py-3 @md:px-8 @md:py-4";
+/** @deprecated `activityPhaseHeaderInner` 사용 */
+export const playPhaseHeaderChromeInner = activityPhaseHeaderInner;
 
-export const playLoaderRegion =
-  "flex w-full min-h-0 flex-1 flex-col items-center justify-center px-4 py-10";
+/** @deprecated `activityLoaderRegion` */
+export const playLoaderRegion = activityLoaderRegion;
 
-/** 스크롤·스크롤바는 뷰포트 전체 너비에 맞춤 */
-export const playPhaseMainInner = "w-full min-h-0 flex-1 overflow-y-auto overscroll-y-contain";
+/** @deprecated `activityMainInner` */
+export const playPhaseMainInner = activityMainInner;
 
-/** 본문 최대 너비·패딩 (main 안쪽) */
-export const playPhaseMainContent =
-  "mx-auto w-full px-4 py-5 pb-4 @sm:px-6 @sm:py-6 @md:px-8";
+/** @deprecated `activityMainContent` */
+export const playPhaseMainContent = activityMainContent;
 
-export const playPhaseFooterChrome = cn(
-  "sticky bottom-0 z-20 shrink-0 border-t-2 border-[color-mix(in_srgb,var(--primary)_14%,var(--border))]",
-  "bg-[color-mix(in_srgb,white_88%,var(--entry-shell))] px-4 py-3 shadow-[0_-4px_0_color-mix(in_srgb,var(--primary)_6%,transparent)]",
-  "pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] @sm:px-6 @md:px-8",
-);
+/** @deprecated `activityFooterChrome` */
+export const playPhaseFooterChrome = activityFooterChrome;
 
 export function PlayAtmosphere({
   children,

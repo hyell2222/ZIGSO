@@ -9,7 +9,7 @@ import {
   MIN_ROLES_PER_GROUP,
   normalizePackSizing,
 } from "@/lib/activity-pack/sizing";
-import type { ItemHints, Item, ActivityPack, Task, Role } from "@/lib/activity-pack/types";
+import type { ItemClues, Item, ActivityPack, Task, Role } from "@/lib/activity-pack/types";
 import { ACTIVITY_PACK_VERSION } from "@/lib/activity-pack/types";
 import { makeTempId } from "@/lib/temp-id";
 import { buildRoleCodenameMap } from "@/lib/play/role-codenames";
@@ -21,19 +21,19 @@ export {
 } from "@/lib/activity-pack/sizing";
 export { MAX_ITEMS_PER_ROLE, MIN_ITEMS_PER_ROLE } from "@/lib/activity-pack/roles";
 
-export const HINT_STAGE_LABELS: Record<keyof ItemHints, string> = {
-  stage1: "1단계 힌트 (5점 · 가장 어려움)",
-  stage2: "2단계 힌트 (4점)",
-  stage3: "3단계 힌트 (3점)",
-  stage4: "4단계 힌트 (2점)",
-  stage5: "5단계 힌트 (1점 · 가장 쉬움)",
+export const HINT_STAGE_LABELS: Record<keyof ItemClues, string> = {
+  stage1: "1단계 단서 (5점 · 가장 어려움)",
+  stage2: "2단계 단서 (4점)",
+  stage3: "3단계 단서 (3점)",
+  stage4: "4단계 단서 (2점)",
+  stage5: "5단계 단서 (1점 · 가장 쉬움)",
 };
 
 export type EditorItem = {
   localId: string;
   id: string;
   name: string;
-  hints: ItemHints;
+  clues: ItemClues;
 };
 
 export type EditorRole = {
@@ -63,7 +63,7 @@ export type FlatEditorItem = {
   roleLabel: string;
 };
 
-const EMPTY_HINTS = (): ItemHints => ({
+const EMPTY_HINTS = (): ItemClues => ({
   stage1: "",
   stage2: "",
   stage3: "",
@@ -76,7 +76,7 @@ export function createEmptyItem(): EditorItem {
     localId: makeTempId(),
     id: "",
     name: "",
-    hints: EMPTY_HINTS(),
+    clues: EMPTY_HINTS(),
   };
 }
 
@@ -132,7 +132,7 @@ export function createDefaultActivityDraft(): ActivityEditorDraft {
   const boothRole = createEmptyRole();
   const booth = boothRole.items[0]!;
   booth.name = "부스 운영 매뉴얼";
-  booth.hints = {
+  booth.clues = {
     stage1: "축제 당일 체크리스트가 들어 있습니다.",
     stage2: "개점 시간과 마감 절차가 적혀 있습니다.",
     stage3: "매뉴얼 표지에 ‘부스 운영’이라고 쓰여 있습니다.",
@@ -143,7 +143,7 @@ export function createDefaultActivityDraft(): ActivityEditorDraft {
   const ticketRole = createEmptyRole();
   const ticket = ticketRole.items[0]!;
   ticket.name = "입장권";
-  ticket.hints = {
+  ticket.clues = {
     stage1: "관람객이 손에 들고 다닙니다.",
     stage2: "QR 코드가 인쇄되어 있습니다.",
     stage3: "‘입장권’이라는 글자가 보입니다.",
@@ -190,7 +190,7 @@ export function packToEditorDraft(pack: ActivityPack): ActivityEditorDraft {
       localId: makeTempId(),
       id: item.id,
       name: item.name,
-      hints: { ...item.hints },
+      clues: { ...item.clues },
     })),
   }));
 
@@ -254,12 +254,12 @@ export function editorDraftToPack(draft: ActivityEditorDraft): ActivityPack {
       roleItems.push({
         id: itemId,
         name: rawItem.name.trim(),
-        hints: {
-          stage1: rawItem.hints.stage1.trim(),
-          stage2: rawItem.hints.stage2.trim(),
-          stage3: rawItem.hints.stage3.trim(),
-          stage4: rawItem.hints.stage4.trim(),
-          stage5: rawItem.hints.stage5.trim(),
+        clues: {
+          stage1: rawItem.clues.stage1.trim(),
+          stage2: rawItem.clues.stage2.trim(),
+          stage3: rawItem.clues.stage3.trim(),
+          stage4: rawItem.clues.stage4.trim(),
+          stage5: rawItem.clues.stage5.trim(),
         },
       });
     }
@@ -314,7 +314,7 @@ export const EDITOR_STEPS = [
   {
     id: "items",
     title: "역할·아이템",
-    description: "역할 개수와 역할별 맞출 아이템·힌트",
+    description: "역할 개수와 역할별 맞출 아이템·단서",
   },
   {
     id: "tasks",
@@ -346,8 +346,8 @@ function validateRolesAndItems(draft: ActivityEditorDraft, errors: string[]) {
     }
     for (const item of role.items) {
       if (!item.name.trim()) errors.push("맞출 아이템(정답) 이름을 입력하세요.");
-      for (const [key, label] of Object.entries(HINT_STAGE_LABELS) as [keyof ItemHints, string][]) {
-        if (!item.hints[key].trim()) {
+      for (const [key, label] of Object.entries(HINT_STAGE_LABELS) as [keyof ItemClues, string][]) {
+        if (!item.clues[key].trim()) {
           errors.push(`「${item.name || "아이템"}」 — ${label}을(를) 입력하세요.`);
         }
       }

@@ -5,8 +5,8 @@
 
 export const ACTIVITY_PACK_VERSION = 2 as const;
 
-/** 항목 5단계 힌트 (1=가장 어려움, 5=가장 쉬움) */
-export type ItemHints = {
+/** 아이템 5단계 단서 (1=가장 어려움, 5=가장 쉬움) */
+export type ItemClues = {
   stage1: string;
   stage2: string;
   stage3: string;
@@ -17,7 +17,7 @@ export type ItemHints = {
 export type Item = {
   id: string;
   name: string;
-  hints: ItemHints;
+  clues: ItemClues;
   aliases?: string[];
 };
 
@@ -28,7 +28,7 @@ export type Role = {
   items: Item[];
 };
 
-/** 모둠이 해결할 미션 — acceptedItemIds 에 체크된 항목을 모두 획득·제출해야 완료 */
+/** 모둠이 해결할 미션 — acceptedItemIds 에 체크된 아이템을 모두 획득·제출해야 완료 */
 export type Task = {
   id: string;
   title: string;
@@ -51,10 +51,10 @@ export type ActivityPack = {
   tasks: Task[];
 };
 
-/** 전문가 단계에서 획득한 항목 */
+/** 전문가 단계에서 획득한 아이템 */
 export type AcquiredItem = {
   itemId: string;
-  hintLevelUsed: 1 | 2 | 3 | 4 | 5;
+  clueLevelUsed: 1 | 2 | 3 | 4 | 5;
   score: number;
   acquiredAt: string;
 };

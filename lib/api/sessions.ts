@@ -51,7 +51,7 @@ export async function startSession(activity: ActivityRecord, hostId?: string | n
   }
   const pack = parseActivityPack(activity.activity_pack);
   if (!pack) {
-    throw new Error("이 활동에 활동 팩이 없습니다. 활동 편집에서 미션·항목을 설정해 주세요.");
+    throw new Error("이 활동에 활동 팩이 없습니다. 활동 편집에서 미션·아이템을 설정해 주세요.");
   }
 
   const joinCode = generateJoinCode(6);

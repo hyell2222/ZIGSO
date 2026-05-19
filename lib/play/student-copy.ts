@@ -3,20 +3,20 @@
 export const PLAY_STUDENT_COPY = {
   phaseOverview: {
     title: "활동 소개",
-    description: "모둠 배정과 오늘 완성할 미션을 확인하세요. 정답은 힌트로만 추리합니다.",
+    description: "모둠 배정과 오늘 완성할 미션을 확인하세요. 정답은 단서로만 추리합니다.",
     placeLabel: "배정 역할",
   },
   phaseExpert: {
     title: "전문가 집단",
     description:
-      "같은 전문가끼리 모여 힌트를 공개하며 맞출 항목을 추리하세요. 맞히면 모둠으로 돌아가 공유합니다.",
+      "같은 전문가끼리 모여 단서를 공개하며 맞출 아이템을 추리하세요. 맞히면 모둠으로 돌아가 공유합니다.",
     placeLabel: "배정 역할",
     acquiredReturn: "모둠으로 돌아가 모둠원에게 알려 주세요.",
   },
   phaseHome: {
     title: "홈 집단",
     description:
-      "획득한 항목으로 미션을 완성하세요. 각 미션마다 정해진 항목을 모두 모아 한 번에 제출해야 합니다.",
+      "획득한 아이템으로 미션을 완성하세요. 각 미션마다 정해진 아이템을 모두 모아 한 번에 제출해야 합니다.",
     scoreLabel: "모둠 점수",
   },
   waiting: {
@@ -26,13 +26,13 @@ export const PLAY_STUDENT_COPY = {
     loadingBody: "활동 내용을 불러오고 있어요.",
     loadingEmoji: "⏳",
     waitingTitle: "곧 활동이 시작돼요!",
-    waitingBody1: "선생님이 시작하면 모둠·담당 항목이 자동 배정돼요.",
+    waitingBody1: "선생님이 시작하면 모둠·담당 아이템이 자동 배정돼요.",
     waitingBody2: "배정이 끝나면 같은 모둠끼리 모여 주세요.",
     waitingEmoji: "🧩",
     waitForTeacher: "선생님이 다음 단계로 진행할 때까지 기다려 주세요.",
   },
   intro: {
-    timeHint: "제한 시간 안에 모둠 미션을 모두 완성하고 최종 제출하세요.",
+    timeClue: "제한 시간 안에 모둠 미션을 모두 완성하고 최종 제출하세요.",
   },
   phaseResults: {
     title: "활동 결과",

@@ -148,7 +148,7 @@ export function ActivityEditorForm({ draft, onChange, step }: Props) {
       <div className="max-w-2xl mx-auto w-full space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <p className="text-xs sm:text-sm text-[var(--muted-foreground)]">
-            각 모둠원이 가질 개별 역할과 수집해야 하는 전용 정답 단서 목록입니다. 항목을 열어 세부 힌트를 편집하세요.
+            각 모둠원이 가질 개별 역할과 수집해야 하는 전용 정답 단서 목록입니다. 아이템을 열어 세부 단서를 편집하세요.
           </p>
           {canAddRole && (
             <Button size="sm" onClick={() => onChange({ ...draft, roles: [...draft.roles, createEmptyRole()] })} className="gap-1 font-semibold text-xs shrink-0">
@@ -230,22 +230,22 @@ export function ActivityEditorForm({ draft, onChange, step }: Props) {
                       </FormField>
 
                       <div className="space-y-2.5 border-t border-[var(--border)] pt-3.5">
-                        <p className="text-xs font-bold text-[var(--foreground)]">단계별 추리 힌트 라인업</p>
+                        <p className="text-xs font-bold text-[var(--foreground)]">단계별 추리 단서 라인업</p>
                         <div className="grid gap-2">
                           {HINT_KEYS.map((key) => (
                             <div key={key} className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2">
                               <span className="text-xs text-[var(--muted-foreground)] font-semibold">{HINT_SHORT_LABELS[key]}</span>
                               <div className="sm:col-span-3">
                                 <Input
-                                  value={item.hints[key]}
+                                  value={item.clues[key]}
                                   onChange={(e) => {
                                     const val = e.target.value;
                                     updateRoleInDraft(role.localId, r => ({
                                       ...r,
-                                      items: r.items.map(i => i.localId === item.localId ? { ...i, hints: { ...i.hints, [key]: val } } : i)
+                                      items: r.items.map(i => i.localId === item.localId ? { ...i, clues: { ...i.clues, [key]: val } } : i)
                                     }));
                                   }}
-                                  placeholder="힌트 문장을 채워주세요."
+                                  placeholder="단서 문장을 채워주세요."
                                   className={inputBaseClass}
                                 />
                               </div>

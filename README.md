@@ -35,7 +35,7 @@ Session `status`: `active` | `ended` (set to `ended` when the session reaches `r
 
 Gameplay content lives under [`lib/activity-pack/`](lib/activity-pack/). An `activity_pack` (`ActivityPack`) includes:
 
-- **`items`** — answers and staged hints for expert groups
+- **`items`** — answers and staged clues for expert groups
 - **`tasks`** — home-group assignments with `itemIds` and ordered **`steps`**
 - **`actionCards`** — sentence pool students combine during the group phase
 
@@ -86,7 +86,7 @@ The exported app is generated to `/out` with `out/index.html` as the entry file.
 |-------|---------|
 | `POST /api/ai/generate-activity-pack` | AI draft for items, tasks, and step sentences (School Lunch Rush template) |
 
-Request body supports `contentLanguage` (`ko` | `en`) for title, description, hints, and steps.
+Request body supports `contentLanguage` (`ko` | `en`) for title, description, clues, and steps.
 
 ## Example activity pack
 

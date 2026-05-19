@@ -20,8 +20,10 @@ import {
   type SandboxPlayer,
   type SandboxGroup,
 } from "@/lib/sandbox/state";
+import { sandboxType } from "@/components/sandbox/sandbox-typography";
 import { buildItemCodenameMap, formatItemCodenames } from "@/lib/play/role-codenames";
 import { PLAY_STUDENT_COPY } from "@/lib/play/student-copy";
+import { cn } from "@/lib/utils";
 
 type Props = {
   activityId: string;
@@ -38,7 +40,7 @@ type Props = {
     groupId: string,
     itemId: string,
     answer: string,
-    hintStage: 1 | 2 | 3 | 4 | 5,
+    clueStage: 1 | 2 | 3 | 4 | 5,
   ) => void;
   onCompleteTask: (groupId: string, taskId: string, itemIds: string[]) => void;
   onCompleteActivity: (groupId: string) => void;
@@ -136,7 +138,7 @@ export function SandboxStudentPanel({
           joinCode={SANDBOX_JOIN_CODE}
           nickname={nickname}
           modalVariant="contained"
-          showMissingCodeHint={false}
+          showMissingCodeClue={false}
           onNicknameChange={setNickname}
           onSubmit={() => {
             const nick = nickname.trim();
@@ -159,7 +161,7 @@ export function SandboxStudentPanel({
             sessionTitle={activityTitle}
             state="waiting"
           />
-          <p className="mt-3 text-center text-[10px] text-[var(--muted-foreground)] @sm:text-xs">
+          <p className={cn("mt-3 text-center", sandboxType.caption)}>
             {PLAY_STUDENT_COPY.waiting.waitForTeacher}
           </p>
         </div>
@@ -177,8 +179,8 @@ export function SandboxStudentPanel({
         groupName={group.name}
         assignedItemIds={assignedIds}
         acquiredIds={acquiredIds}
-        onAcquire={(itemId, answer, hintStage) =>
-          onAcquire(group.id, itemId, answer, hintStage)
+        onAcquire={(itemId, answer, clueStage) =>
+          onAcquire(group.id, itemId, answer, clueStage)
         }
       />
     );
@@ -211,6 +213,7 @@ export function SandboxStudentPanel({
               groupName={group?.name ?? null}
               placeName={roleLabel}
               placeLabel={PLAY_STUDENT_COPY.phaseOverview.placeLabel}
+              contained
             />
           ),
         }}
@@ -222,7 +225,7 @@ export function SandboxStudentPanel({
           description={description}
           activityPack={pack}
         />
-        <p className="mt-3 text-center text-[10px] text-[var(--muted-foreground)] @sm:text-xs">
+        <p className={cn("mt-3 text-center", sandboxType.caption)}>
           {PLAY_STUDENT_COPY.waiting.waitForTeacher}
         </p>
       </PlayPhaseShell>
@@ -246,14 +249,19 @@ export function SandboxStudentPanel({
 
   return (
     <PlayPhaseShell contained>
-      <main className="flex min-h-[12rem] flex-1 items-center justify-center text-center text-sm text-[var(--muted-foreground)]">
+      <main
+        className={cn(
+          "flex min-h-[12rem] flex-1 items-center justify-center text-center",
+          sandboxType.bodyMuted,
+        )}
+      >
         {PLAY_STUDENT_COPY.waiting.waitForTeacher}
       </main>
     </PlayPhaseShell>
   );
 }
 
-/** API 대신 샌드박스 콜백으로 항목 획득 */
+/** API 대신 샌드박스 콜백으로 아이템 획득 */
 function SandboxExpertBridge({
   pack,
   roleScopeKey,
@@ -271,7 +279,7 @@ function SandboxExpertBridge({
   groupName: string;
   assignedItemIds: string[];
   acquiredIds: Set<string>;
-  onAcquire: (itemId: string, answer: string, hintStage: 1 | 2 | 3 | 4 | 5) => void;
+  onAcquire: (itemId: string, answer: string, clueStage: 1 | 2 | 3 | 4 | 5) => void;
 }) {
   const [, bump] = useState(0);
   return (

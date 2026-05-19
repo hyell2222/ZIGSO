@@ -2,7 +2,6 @@
 
 import { Loader2 } from "lucide-react";
 
-import { playSurfaceCool } from "@/components/play/play-atmosphere";
 import { cn } from "@/lib/utils";
 
 /**
@@ -15,12 +14,14 @@ export function PlayHeaderGroupPlace({
   placeLabel = "담당 장소",
   pending,
   className,
+  contained = false,
 }: {
   groupName: string | null;
   placeName: string | null;
   placeLabel?: string;
   pending?: boolean;
   className?: string;
+  contained?: boolean;
 }) {
   const group = groupName?.trim() || "—";
   const place = placeName?.trim() || "—";
@@ -28,8 +29,8 @@ export function PlayHeaderGroupPlace({
   return (
     <div
       className={cn(
-        playSurfaceCool,
-        "inline-flex w-fit min-w-0 max-w-full shrink-0 flex-row items-stretch px-2 py-1.5 @sm:px-3 @sm:py-2.5",
+        "inline-flex w-fit min-w-0 max-w-full shrink-0 flex-row items-stretch rounded-lg border border-[var(--border)] bg-[var(--card-bg)] shadow-[var(--elevation-sm)]",
+        contained ? "px-2 py-1" : "px-2 py-1.5 @sm:px-3 @sm:py-2.5",
         "motion-safe:animate-[playRevealUp_0.48s_cubic-bezier(0.22,1,0.36,1)_both]",
         className,
       )}
@@ -42,19 +43,39 @@ export function PlayHeaderGroupPlace({
       ) : (
         <>
           <div className="flex min-w-0 max-w-[5.5rem] shrink-0 flex-col justify-center @sm:max-w-[6.5rem] @md:max-w-[7.5rem]">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--muted-foreground)]">
+            <p
+              className={cn(
+                "font-semibold uppercase tracking-[0.14em] text-[var(--muted-foreground)]",
+                contained ? "text-[10px]" : "text-xs",
+              )}
+            >
               모둠
             </p>
-            <p className="mt-1 truncate text-sm font-mono font-semibold tabular-nums text-[var(--primary)] @sm:text-base">
+            <p
+              className={cn(
+                "mt-0.5 truncate font-mono font-semibold tabular-nums text-[var(--primary)]",
+                contained ? "text-xs" : "mt-1 text-sm @sm:text-base",
+              )}
+            >
               {group}
             </p>
           </div>
-          <div className="mx-2 w-px shrink-0 self-stretch bg-[var(--play-border-cool)] @sm:mx-2.5 @md:mx-3" aria-hidden />
+          <div className="mx-2 w-px shrink-0 self-stretch bg-[var(--border)] @sm:mx-2.5" aria-hidden />
           <div className="flex min-w-0 max-w-[min(100%,11rem)] flex-1 flex-col justify-center @sm:max-w-[min(100%,14rem)] @md:max-w-[16rem]">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--muted-foreground)]">
+            <p
+              className={cn(
+                "font-semibold uppercase tracking-[0.14em] text-[var(--muted-foreground)]",
+                contained ? "text-[10px]" : "text-xs",
+              )}
+            >
               {placeLabel}
             </p>
-            <p className="mt-1 line-clamp-2 break-words text-sm font-semibold leading-snug text-[var(--primary)] @sm:text-base">
+            <p
+              className={cn(
+                "line-clamp-2 break-words font-semibold leading-snug text-[var(--primary)]",
+                contained ? "mt-0.5 text-xs" : "mt-1 text-sm @sm:text-base",
+              )}
+            >
               {place}
             </p>
           </div>

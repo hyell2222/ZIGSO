@@ -4,14 +4,14 @@ import { Loader2 } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
 import {
-  ExpertHintBoard,
-  createHintRevealState,
-  hintLevelUsedFromReveal,
-  type HintRevealState,
-} from "@/components/play/expert-hint-board";
+  ExpertClueBoard,
+  createClueRevealState,
+  clueLevelUsedFromReveal,
+  type ClueRevealState,
+} from "@/components/play/expert-clue-board";
 import { PlayPhaseShell } from "@/components/play/play-phase-shell";
 import { PlayHeaderGroupPlace } from "@/components/play/play-header-group-place";
-import { playSurfaceCool } from "@/components/play/play-atmosphere";
+import { activityCallout, activityPanelCard } from "@/components/activity/activity-layout-chrome";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
@@ -22,7 +22,7 @@ import { formatAssignedSlots } from "@/lib/play/assignment-labels";
 import { buildItemCodenameMap, formatItemCodenames } from "@/lib/play/role-codenames";
 import { PLAY_STUDENT_COPY } from "@/lib/play/student-copy";
 import type { ActivityPack } from "@/lib/activity-pack/types";
-import { scoreForHintLevel } from "@/lib/activity-pack/scoring";
+import { scoreForClueLevel } from "@/lib/activity-pack/scoring";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -30,13 +30,13 @@ type Props = {
   playerId: string;
   groupId: string;
   groupName: string | null;
-  /** 세션·샌드박스 id — 항목별 코드명 시드 */
+  /** 세션·샌드박스 id — 아이템별 코드명 시드 */
   roleScopeKey: string;
   assignedItemIds: string[];
   acquiredItemIds: Set<string>;
   onAcquired: () => void;
   pending?: boolean;
-  sandboxAcquire?: (itemId: string, answer: string, hintStage: 1 | 2 | 3 | 4 | 5) => void;
+  sandboxAcquire?: (itemId: string, answer: string, clueStage: 1 | 2 | 3 | 4 | 5) => void;
   contained?: boolean;
 };
 
@@ -59,7 +59,7 @@ export function ExpertPhasePanel({
   );
 
   const [activeItemId, setActiveItemId] = useState<string | null>(itemsToAcquire[0] ?? null);
-  const [hintReveal, setHintReveal] = useState<HintRevealState>(createHintRevealState);
+  const [clueReveal, setClueReveal] = useState<ClueRevealState>(createClueRevealState);
   const [answer, setAnswer] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -71,7 +71,7 @@ export function ExpertPhasePanel({
   }, [activeItemId, itemsToAcquire]);
 
   useEffect(() => {
-    setHintReveal(createHintRevealState());
+    setClueReveal(createClueRevealState());
     setAnswer("");
     setMessage(null);
   }, [activeItemId]);
@@ -92,12 +92,12 @@ export function ExpertPhasePanel({
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!item || !activeItemId) return;
-    const hintLevelUsed = hintLevelUsedFromReveal(item, hintReveal);
+    const clueLevelUsed = clueLevelUsedFromReveal(item, clueReveal);
     setMessage(null);
     setSubmitting(true);
     try {
       if (sandboxAcquire) {
-        sandboxAcquire(activeItemId, answer, hintLevelUsed);
+        sandboxAcquire(activeItemId, answer, clueLevelUsed);
       } else {
         await acquireItemForPlayer({
           playerId,
@@ -105,13 +105,13 @@ export function ExpertPhasePanel({
           pack,
           itemId: activeItemId,
           answer,
-          hintLevelUsed,
+          clueLevelUsed,
         });
       }
       onAcquired();
       setAnswer("");
-      setHintReveal(createHintRevealState());
-      setMessage(acquireSuccessMessage(scoreForHintLevel(hintLevelUsed)));
+      setClueReveal(createClueRevealState());
+      setMessage(acquireSuccessMessage(scoreForClueLevel(clueLevelUsed)));
     } catch (err) {
       setMessage(err instanceof Error ? err.message : PLAYER_MESSAGES.operationFailed);
     } finally {
@@ -134,16 +134,17 @@ export function ExpertPhasePanel({
             placeName={placeLabel}
             placeLabel={PLAY_STUDENT_COPY.phaseExpert.placeLabel}
             pending={pending}
+            contained={contained}
           />
         ),
       }}
       mainClassName="max-w-2xl"
     >
-      <div className={cn("space-y-4 px-4 py-4", playSurfaceCool, "@sm:space-y-5 @sm:px-5 @sm:py-6")}>
+      <div className={activityPanelCard}>
         {allAcquired ? (
-          <div className="rounded-lg border border-[color-mix(in_srgb,var(--primary)_30%,var(--border))] bg-[var(--tint-accent-weak)] p-3 @sm:p-4">
+          <div className={activityCallout}>
             <p className="text-sm font-semibold text-[var(--primary)] @md:text-base">
-              배정 항목 획득 완료
+              배정 아이템 획득 완료
             </p>
             <p className="mt-2 text-sm leading-relaxed text-[var(--foreground)] @md:text-base">
               {PLAY_STUDENT_COPY.phaseExpert.acquiredReturn}
@@ -185,10 +186,10 @@ export function ExpertPhasePanel({
               </ul>
             ) : null}
 
-            <ExpertHintBoard item={item} reveal={hintReveal} onRevealChange={setHintReveal} />
+            <ExpertClueBoard item={item} reveal={clueReveal} onRevealChange={setClueReveal} />
 
             <form id="expert-answer-form" className="space-y-3" onSubmit={handleSubmit}>
-              <FormField label="맞출 항목은 무엇일까요?" htmlFor="item-answer">
+              <FormField label="이것은 무엇일까요?" htmlFor="item-answer">
                 <Input
                   id="item-answer"
                   value={answer}
@@ -223,7 +224,7 @@ export function ExpertPhasePanel({
             </form>
           </>
         ) : (
-          <p className="text-sm text-[var(--danger)] @md:text-base">항목 정보를 찾을 수 없습니다.</p>
+          <p className="text-sm text-[var(--danger)] @md:text-base">아이템 정보를 찾을 수 없습니다.</p>
         )}
       </div>
     </PlayPhaseShell>

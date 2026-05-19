@@ -72,7 +72,6 @@ export function PlayJoinQr({ joinCode, className }: PlayJoinQrProps) {
         onClose={() => setModalOpen(false)}
         title="학생 참가 QR"
         titleId="play-join-qr-title"
-        maxWidthClassName="max-w-xs sm:max-w-sm"
         bodyClassName="space-y-4"
       >
         <p className="break-all text-center text-sm text-[var(--muted-foreground)]">{playUrl}</p>

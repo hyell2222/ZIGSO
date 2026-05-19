@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 
 type KebabMenuProps = {
   onDelete: () => void;
-  /** 없으면 「수정」 항목을 숨깁니다. */
+  /** 없으면 「수정」 아이템을 숨깁니다. */
   onEdit?: () => void;
   disabled?: boolean;
 };

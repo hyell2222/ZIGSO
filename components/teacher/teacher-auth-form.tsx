@@ -41,7 +41,7 @@ export function TeacherAuthForm({
   }
 
   return (
-    <Card className="w-full max-w-md">
+    <Card className="w-full max-w-[min(100%,28rem)]">
       <CardHeader>
         <CardTitle>{mode === "sign-in" ? "로그인" : "회원가입"}</CardTitle>
       </CardHeader>

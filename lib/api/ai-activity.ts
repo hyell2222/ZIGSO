@@ -9,10 +9,10 @@ import type { ActivityPack } from "@/lib/activity-pack/types";
 export type AIActivityRequest = {
   topic?: string;
   difficulty?: AiDifficultyLevel;
-  /** 맞출 항목(역할) 수 — 모둠 인원과 동일하게 적용됩니다 */
+  /** 맞출 아이템(역할) 수 — 모둠 인원과 동일하게 적용됩니다 */
   roleCount?: number;
   taskCount?: number;
-  /** 제목·활동 안내·힌트·수행 문장 언어 */
+  /** 제목·활동 안내·단서·수행 문장 언어 */
   contentLanguage?: ContentLanguage;
 };
 

@@ -185,6 +185,7 @@ export function SandboxTeacherPanel({
   return (
     <div className="flex h-full min-h-0 flex-col overflow-y-auto text-sm">
       <SessionHostLayout
+        contained
         activityTitle={activityTitle}
         playerCount={playercount}
         joinCode={SANDBOX_JOIN_CODE}
@@ -203,6 +204,7 @@ export function SandboxTeacherPanel({
             groups={assignmentGroups}
             loading={false}
             groupBy={phase === "expert_group" ? "item" : "group"}
+            contained
           />
         ) : null}
 
@@ -211,6 +213,7 @@ export function SandboxTeacherPanel({
             groups={progressGroups}
             loading={false}
             pack={pack}
+            contained
           />
         ) : null}
 
@@ -221,6 +224,7 @@ export function SandboxTeacherPanel({
             pack={pack}
             roleScopeKey={`sandbox-${activityId}`}
             loading={false}
+            contained
           />
         ) : null}
       </SessionHostLayout>
@@ -230,7 +234,6 @@ export function SandboxTeacherPanel({
         onClose={() => setTimerModalOpen({ open: false, phaseAtOpen: null })}
         title="타이머"
         titleId="sandbox-timer-heading"
-        maxWidthClassName="max-w-sm"
         bodyClassName="py-5"
       >
         <PhaseTimerContent key={phase} phase={phase as TimedPhase} />

@@ -133,7 +133,7 @@ export function PhaseTimerContent({ phase }: { phase: TimedPhase }) {
 
             e.preventDefault();
           }}
-          className="h-20 !w-[9ch] border-none px-0 text-center font-mono text-5xl tabular-nums text-[var(--muted-foreground)] sm:h-24 sm:text-6xl md:text-7xl"
+          className="h-20 !w-[9ch] border-none px-0 text-center font-mono text-5xl tabular-nums text-[var(--muted-foreground)] sm:h-24 sm:text-6xl md:text-5xl"
         />
       ) : (
         <Button
@@ -143,7 +143,7 @@ export function PhaseTimerContent({ phase }: { phase: TimedPhase }) {
             setTimerInputDigits("");
             setIsEditing(true);
           }}
-          className="h-20 text-center font-mono text-5xl tabular-nums text-[var(--accent)] transition hover:text-[var(--highlight)] sm:h-24 sm:text-6xl md:text-7xl"
+          className="h-20 text-center font-mono text-5xl tabular-nums text-[var(--accent)] transition hover:text-[var(--highlight)] sm:h-24 sm:text-6xl md:text-5xl"
         >
           {formatTimerDisplay(timerRemainingSec)}
         </Button>

@@ -33,11 +33,11 @@ export const PHASE_GUIDES: Record<TimedPhase, PhaseGuide> = {
   expert_group: {
     title: "전문가 집단",
     summary:
-      "같은 전문가끼리 모여 힌트로 정보를 추리하고, 모둠으로 돌아와 공유합니다.",
+      "같은 전문가끼리 모여 단서로 정보를 추리하고, 모둠으로 돌아와 공유합니다.",
   },
   home_group: {
     title: "홈 집단",
-    summary: "획득한 정보로 모둠 미션을 완성하고 최종 결과를 제출합니다.",
+    summary: "획득한 아이템으로 모둠 미션을 완성하고 최종 결과를 제출합니다.",
   },
 };
 

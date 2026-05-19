@@ -2,6 +2,12 @@
 
 import type { ReactNode } from "react";
 
+import {
+  activityLayoutClasses,
+  activityPhaseHeaderShell,
+  activitySessionMetaShell,
+} from "@/components/activity/activity-layout-chrome";
+import { activityLayoutType } from "@/components/activity/activity-layout-typography";
 import { PhaseGuideCard } from "@/components/teacher/phase-guide-card";
 import { SessionHostJoinCard } from "@/components/teacher/session-host-join-card";
 import type { ActivityPhase } from "@/lib/api/activities";
@@ -18,6 +24,7 @@ type Props = {
   startButton?: ReactNode;
   nextButton?: ReactNode;
   children: ReactNode;
+  contained?: boolean;
 };
 
 /** 실세션 호스트·샌드박스 교사 패널 공통 레이아웃 */
@@ -31,67 +38,84 @@ export function SessionHostLayout({
   startButton,
   nextButton,
   children,
+  contained = false,
 }: Props) {
-  const showPhaseGuide = isTimedPhase(phase);
+  const layout = activityLayoutClasses(contained);
+  const showPhaseGuide = isTimedPhase(phase) || phase === "results";
   const showPhaseActions = Boolean(timerButton || startButton || nextButton);
+  const phaseActions = showPhaseActions ? (
+    <>
+      {timerButton}
+      {startButton}
+      {nextButton}
+    </>
+  ) : null;
 
   return (
     <main
       className={cn(
-        "mx-auto w-full max-w-full space-y-3 px-3 py-3 pb-[max(2.5rem,env(safe-area-inset-bottom,0px))]",
-        "@sm:space-y-4 @sm:px-4 @sm:pt-5",
-        "@md:max-w-7xl @md:space-y-6 @md:px-8 @md:pb-12 @md:pt-8",
+        "mx-auto w-full space-y-0",
+        contained
+          ? "pb-[max(1.5rem,env(safe-area-inset-bottom,0px))]"
+          : "pb-[max(2.5rem,env(safe-area-inset-bottom,0px))]",
       )}
     >
-      <header
-        className={cn(
-          "flex flex-col gap-2 border-b border-[var(--border)] pb-3",
-          "@sm:flex-row @sm:items-center @sm:justify-between",
-          "@md:flex-row @md:flex-wrap @md:items-start @md:gap-5 @md:pb-4",
-        )}
-      >
-        <div className="min-w-0 flex-1 space-y-0.5 @md:space-y-1">
-          <p
-            className={cn(
-              "break-words font-mono text-2xl font-semibold leading-tight tracking-wide text-[var(--accent)]",
-              "@md:text-3xl @lg:text-4xl @lg:leading-none @xl:text-[3.5rem]",
-            )}
-          >
-            {activityTitle ?? "시뮬레이션"}
-          </p>
-          <p className="text-xs text-[var(--muted-foreground)] @md:px-0.5 @md:text-sm">
-            접속 <span className="font-semibold text-[var(--foreground)]">{playerCount}</span>명
-          </p>
+      <header className={activitySessionMetaShell}>
+        <div className={layout.sessionMetaInner}>
+          <div className="min-w-0 flex-1 space-y-0.5">
+            <h1
+              className={cn(
+                contained
+                  ? activityLayoutType.activityTitleContained
+                  : activityLayoutType.activityTitle,
+              )}
+            >
+              {activityTitle ?? "시뮬레이션"}
+            </h1>
+            <p
+              className={cn(
+                contained ? activityLayoutType.activityMetaContained : activityLayoutType.activityMeta,
+              )}
+            >
+              접속{" "}
+              <span className={activityLayoutType.activityMetaStrong}>
+                {playerCount}
+              </span>
+              명
+            </p>
+          </div>
+          <SessionHostJoinCard joinCode={joinCode} sessionEnded={sessionEnded} contained={contained} />
         </div>
-        <SessionHostJoinCard joinCode={joinCode} sessionEnded={sessionEnded} />
       </header>
 
       {showPhaseGuide || showPhaseActions ? (
-        <div
-          className={cn(
-            "flex flex-col gap-2 @md:flex-row @md:flex-wrap @md:items-center",
-            "@md:gap-4 @lg:flex-nowrap",
-          )}
-        >
-          <div className="min-w-0 flex-1 @md:max-w-[min(100%,42rem)]">
-            {showPhaseGuide ? <PhaseGuideCard phase={phase} /> : null}
+        <section className={activityPhaseHeaderShell}>
+          <div className={layout.phaseHeaderInner}>
+            {showPhaseGuide ? (
+              <PhaseGuideCard
+                phase={phase}
+                contained={contained}
+                rightSlot={
+                  phaseActions ? (
+                    <div
+                      className={cn(
+                        "flex w-full flex-wrap items-stretch justify-end gap-2",
+                        "[&_button]:min-h-10 [&_button]:touch-manipulation @md:[&_button]:min-h-11",
+                      )}
+                    >
+                      {phaseActions}
+                    </div>
+                  ) : null
+                }
+              />
+            ) : (
+              <div className="flex justify-end gap-2">{phaseActions}</div>
+            )}
           </div>
-          {showPhaseActions ? (
-            <div
-              className={cn(
-                "flex w-full shrink-0 flex-wrap items-stretch justify-end gap-1.5 @md:ml-auto @md:w-auto",
-                "@md:gap-3 [&_button]:min-h-11 [&_button]:touch-manipulation",
-              )}
-            >
-              {timerButton}
-              {startButton}
-              {nextButton}
-            </div>
-          ) : null}
-        </div>
+        </section>
       ) : null}
 
-      {children}
+      <div className={layout.pageBody}>{children}</div>
     </main>
   );
 }

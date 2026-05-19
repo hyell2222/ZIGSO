@@ -32,7 +32,7 @@ export function TeacherSubNav() {
 
   return (
     <nav className="border-b border-[var(--border)] bg-[var(--background)]">
-      <div className="mx-auto flex w-full max-w-7xl items-center gap-2 px-4">
+      <div className="mx-auto flex w-full max-w-5xl items-center gap-2 px-4">
         {TABS.map((tab) => {
           const active = tab.match(pathname);
           const Icon = tab.icon;

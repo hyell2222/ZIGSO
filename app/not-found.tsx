@@ -6,7 +6,7 @@ import { ROUTES } from "@/lib/routes";
 export default function NotFound() {
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-lg flex-col items-center justify-center gap-6 px-6 py-16 text-center">
-      <p className="font-mono text-6xl font-bold tabular-nums text-[var(--accent)] md:text-7xl">404</p>
+      <p className="font-mono text-6xl font-bold tabular-nums text-[var(--accent)] md:text-5xl">404</p>
       <div className="space-y-2">
         <h1 className="text-xl font-semibold text-[var(--foreground)]">페이지를 찾을 수 없습니다</h1>
         <p className="text-sm leading-relaxed text-[var(--muted-foreground)]">

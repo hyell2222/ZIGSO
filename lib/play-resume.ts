@@ -12,7 +12,7 @@ export type ResumeRecord = {
   sessionId: string;
   playerId: string;
   nickname: string;
-  /** 저장 시각 (ms). 너무 오래된 항목은 무시한다. */
+  /** 저장 시각 (ms). 너무 오래된 아이템은 무시한다. */
   savedAt: number;
 };
 

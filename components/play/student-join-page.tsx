@@ -71,7 +71,7 @@ export function StudentJoinPage({
         onJoinCodeChange={setJoinCode}
         onNicknameChange={setNickname}
         onSubmit={() => void onSubmit()}
-        showMissingCodeHint={!codeLocked}
+        showMissingCodeClue={!codeLocked}
         titlePrefix={<span className="text-lg leading-none" aria-hidden>🎫</span>}
       />
     </PlayAtmosphere>
