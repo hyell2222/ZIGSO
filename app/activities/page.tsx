@@ -138,7 +138,7 @@ export default function ActivitiesPage() {
                   return (
                     <div
                       key={row.id}
-                      className="relative space-y-3 rounded-md border border-[var(--border)] bg-[var(--surface)] p-3 text-left transition hover:border-[var(--mystery)]/50"
+                      className="relative space-y-3 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4 text-left shadow-[var(--elevation-sm)] transition hover:border-[color-mix(in_srgb,var(--primary)_35%,var(--border))] hover:shadow-[var(--elevation-md)]"
                     >
                       <div className="flex items-start gap-2">
                         <p className="min-w-0 flex-1 font-semibold text-[var(--foreground)]">

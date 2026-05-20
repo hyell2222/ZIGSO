@@ -18,34 +18,60 @@
 :root {
   color-scheme: light;
 
-  --background: #f3ede3;
-  --surface: #e4d9c9;
-  --foreground: #1d1814;
-  --muted-foreground: #5a5147;
+  /**
+   * Surface hierarchy: canvas → sunken → elevated → overlay.
+   * surface가 background보다 어두웠던 구조를 뒤집어 카드·입력란 대비를 확보.
+   */
+  --background: #e8e2d8;
+  --surface: #faf7f2;
+  --surface-overlay: #fffdf9;
+  --muted: #ddd6cb;
+  --foreground: #1a1612;
+  --muted-foreground: #5c5348;
 
-  --accent: #76583c;
-  --mystery: #2a2225;
-  --ink: #16110e;
+  /* Brand chroma — green · amber · brown 역할 분리 */
+  --primary: #1a5240;
+  --primary-muted: #2d6b55;
+  --on-primary: #eef6f1;
 
-  --primary: #1b4a3a;
-  --on-primary: #f0f6f2;
+  --accent: #6b4f38;
+  --highlight: #c46a1a;
+  --mystery: #241c1f;
+  --ink: #14100d;
 
-  --danger: #c81e1d;
+  --success: #1f6b4f;
+  --info: #2a5f7a;
+  --warning: #b8610a;
+
+  --danger: #c41e1e;
   --on-danger: #fff5f5;
 
-  --border: color-mix(in srgb, var(--accent) 32%, var(--mystery));
+  --border: color-mix(
+    in srgb,
+    var(--primary) 14%,
+    color-mix(in srgb, var(--accent) 24%, #c4b9ab)
+  );
+  --border-strong: color-mix(in srgb, var(--primary) 24%, var(--accent));
+
+  --tint-primary-weak: color-mix(in srgb, var(--primary) 7%, transparent);
+  --tint-primary: color-mix(in srgb, var(--primary) 12%, transparent);
+  --tint-primary-medium: color-mix(in srgb, var(--primary) 18%, transparent);
+
+  --tint-highlight-weak: color-mix(in srgb, var(--highlight) 8%, transparent);
+  --tint-highlight: color-mix(in srgb, var(--highlight) 14%, transparent);
+  --tint-highlight-medium: color-mix(in srgb, var(--highlight) 20%, transparent);
 
   --tint-accent-weak: color-mix(in srgb, var(--accent) 6%, transparent);
   --tint-accent: color-mix(in srgb, var(--accent) 11%, transparent);
   --tint-accent-medium: color-mix(in srgb, var(--accent) 15%, transparent);
   --tint-accent-strong: color-mix(in srgb, var(--accent) 20%, transparent);
   --tint-mystery: color-mix(in srgb, var(--mystery) 8%, transparent);
-  --highlight: #b86220;
 
-  --card-bg: color-mix(in srgb, var(--surface) 92%, var(--background));
-  --elevation-sm: 0 4px 20px color-mix(in srgb, var(--mystery) 7%, transparent);
-  --ring-focus: color-mix(in srgb, var(--mystery) 25%, transparent);
-  --input-inset: inset 0 1px 0 color-mix(in srgb, var(--mystery) 4%, transparent);
+  --card-bg: var(--surface);
+  --elevation-sm: 0 4px 20px color-mix(in srgb, var(--mystery) 8%, transparent);
+  --elevation-md: 0 8px 32px color-mix(in srgb, var(--primary) 10%, transparent);
+  --ring-focus: color-mix(in srgb, var(--primary) 28%, transparent);
+  --input-inset: inset 0 1px 0 color-mix(in srgb, var(--mystery) 5%, transparent);
 
   --entry-shell: color-mix(in srgb, var(--ink) 78%, var(--mystery));
   --entry-shell-deep: color-mix(in srgb, var(--ink) 92%, var(--mystery));
@@ -99,7 +125,28 @@ html {
 }
 
 body {
-  background: var(--background);
+  background-color: var(--background);
+  background-image:
+    radial-gradient(
+      ellipse 120% 70% at 50% -15%,
+      color-mix(in srgb, var(--primary) 9%, transparent),
+      transparent 55%
+    ),
+    radial-gradient(
+      ellipse 70% 50% at 100% 40%,
+      color-mix(in srgb, var(--highlight) 6%, transparent),
+      transparent 50%
+    ),
+    radial-gradient(
+      ellipse 60% 45% at 0% 80%,
+      color-mix(in srgb, var(--info) 5%, transparent),
+      transparent 48%
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--surface) 35%, var(--background)) 0%,
+      var(--background) 22%
+    );
   color: var(--foreground);
   font-family: var(--font-dunggeunmo);
 }
@@ -116,7 +163,7 @@ body {
 }
 
 ::selection {
-  background-color: color-mix(in srgb, var(--mystery) 20%, transparent);
+  background-color: color-mix(in srgb, var(--primary) 22%, transparent);
   color: var(--foreground);
 }
 

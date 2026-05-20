@@ -31,7 +31,7 @@ export function TeacherSubNav() {
   const pathname = usePathname() ?? "";
 
   return (
-    <nav className="border-b border-[var(--border)] bg-[var(--background)]">
+    <nav className="border-b border-[var(--border)] bg-[var(--surface)] shadow-[0_1px_0_color-mix(in_srgb,var(--primary)_5%,transparent)]">
       <div className="mx-auto flex w-full max-w-5xl items-center gap-2 px-4">
         {TABS.map((tab) => {
           const active = tab.match(pathname);

@@ -15,13 +15,21 @@ export function Card({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
 }
 
 export function CardHeader({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn("border-b border-[var(--border)] px-5 py-4", className)} {...props} />;
+  return (
+    <div
+      className={cn(
+        "border-b border-[var(--border)] bg-[color-mix(in_srgb,var(--tint-primary-weak)_55%,var(--surface))] px-5 py-4",
+        className,
+      )}
+      {...props}
+    />
+  );
 }
 
 export function CardTitle({ className, ...props }: HTMLAttributes<HTMLHeadingElement>) {
   return (
     <h3
-      className={cn("text-base font-semibold tracking-wide text-[var(--mystery)]", className)}
+      className={cn("text-base font-semibold tracking-wide text-[var(--primary)]", className)}
       {...props}
     />
   );

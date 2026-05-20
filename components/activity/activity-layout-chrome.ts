@@ -12,9 +12,9 @@ export const activityPageShell = cn("mx-auto w-full", ACTIVITY_LAYOUT_MAX, activ
 
 /** 단계 헤더 바 */
 export const activityPhaseHeaderShell = cn(
-  "shrink-0 border-b border-[color-mix(in_srgb,var(--primary)_14%,var(--border))]",
-  "bg-[color-mix(in_srgb,var(--background)_88%,white)]",
-  "shadow-[0_1px_0_color-mix(in_srgb,var(--primary)_6%,transparent)]",
+  "shrink-0 border-b border-[color-mix(in_srgb,var(--primary)_18%,var(--border))]",
+  "bg-[var(--surface)]",
+  "shadow-[0_1px_0_color-mix(in_srgb,var(--primary)_8%,transparent)]",
   "motion-safe:animate-[playRevealUp_0.45s_cubic-bezier(0.22,1,0.36,1)_both]",
 );
 
@@ -31,7 +31,8 @@ export const activityPhaseHeaderInnerContained = cn(
 );
 
 /** 교사 — 활동 제목·참가 코드 행 */
-export const activitySessionMetaShell = "border-b border-[var(--border)] bg-[var(--background)]";
+export const activitySessionMetaShell =
+  "border-b border-[var(--border)] bg-[color-mix(in_srgb,var(--tint-primary-weak)_40%,var(--surface))]";
 
 export const activitySessionMetaInner = cn(
   "mx-auto flex w-full flex-col gap-3",
@@ -71,9 +72,9 @@ export const activityMainContentContained = cn(activityPageGutterContained, "py-
 export const activityMainInner = "w-full min-h-0 flex-1 overflow-y-auto overscroll-y-contain";
 
 export const activityFooterChrome = cn(
-  "sticky bottom-0 z-20 shrink-0 border-t border-[color-mix(in_srgb,var(--primary)_14%,var(--border))]",
-  "bg-[color-mix(in_srgb,var(--background)_88%,white)]",
-  "shadow-[0_-1px_0_color-mix(in_srgb,var(--primary)_6%,transparent)]",
+  "sticky bottom-0 z-20 shrink-0 border-t border-[color-mix(in_srgb,var(--primary)_18%,var(--border))]",
+  "bg-[var(--surface)]",
+  "shadow-[0_-1px_0_color-mix(in_srgb,var(--primary)_8%,transparent)]",
 );
 
 export const activityFooterInner = cn(
@@ -120,24 +121,24 @@ export const playPhasePanelStack = "flex flex-col gap-4";
 
 /** 그리드 안 모둠·아이템 카드 */
 export const activityNestedCard = cn(
-  "rounded-md border border-[var(--border)] bg-[var(--surface)] p-3 shadow-sm",
+  "rounded-md border border-[var(--border)] bg-[var(--muted)] p-3 shadow-sm",
 );
 
 export const activityCardGrid = "grid grid-cols-1 gap-3 @md:grid-cols-2 @lg:grid-cols-3";
 
 /** 목록 한 줄(학생 칩·배정 행) */
 export const activityListRow = cn(
-  "flex items-center justify-between gap-2 rounded-md border border-[var(--border)]",
-  "bg-[var(--tint-accent-weak)] px-3 py-1.5",
+  "flex items-center justify-between gap-2 rounded-md border border-[color-mix(in_srgb,var(--primary)_16%,var(--border))]",
+  "bg-[var(--tint-primary-weak)] px-3 py-1.5",
 );
 
 export const activityCallout = cn(
   "rounded-lg border border-[color-mix(in_srgb,var(--primary)_30%,var(--border))]",
-  "bg-[var(--tint-accent-weak)] p-4",
+  "bg-[var(--tint-primary-weak)] p-4",
 );
 
 export const activityEmptyState = cn(
-  "rounded-lg border border-dashed border-[var(--border)] bg-[var(--background)] p-6 text-center",
+  "rounded-lg border border-dashed border-[color-mix(in_srgb,var(--primary)_20%,var(--border))] bg-[var(--muted)] p-6 text-center",
 );
 
 export function activityLayoutClasses(contained = false) {

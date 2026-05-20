@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 export const MODAL_DEFAULT_MAX_WIDTH = "w-full max-w-[min(100%,28rem)]";
 
 const closeMuted =
-  "text-[var(--muted-foreground)] hover:bg-[var(--tint-accent)] hover:text-[var(--foreground)]";
+  "text-[var(--muted-foreground)] hover:bg-[var(--tint-primary-weak)] hover:text-[var(--foreground)]";
 
 type ModalPanelProps = {
   title: string;

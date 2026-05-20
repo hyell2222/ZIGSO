@@ -12,11 +12,11 @@ export const buttonVariants = cva(
         default:
           "cursor-pointer bg-[var(--primary)] text-[var(--on-primary)] hover:brightness-95",
         secondary:
-          "cursor-pointer border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] hover:border-[color-mix(in_srgb,var(--mystery)_55%,var(--border))] hover:bg-[var(--tint-accent-medium)]",
+          "cursor-pointer border border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] hover:border-[color-mix(in_srgb,var(--primary)_35%,var(--border))] hover:bg-[var(--tint-primary-weak)]",
         outline:
-          "cursor-pointer border border-[color-mix(in_srgb,var(--mystery)_32%,var(--border))] bg-[color-mix(in_srgb,var(--surface)_58%,var(--background))] text-[var(--mystery)] shadow-[0_4px_16px_color-mix(in_srgb,var(--mystery)_4%,transparent)] hover:border-[color-mix(in_srgb,var(--primary)_28%,var(--border))] hover:bg-[color-mix(in_srgb,var(--surface)_88%,var(--background))] hover:text-[color-mix(in_srgb,var(--mystery)_88%,var(--primary))]",
+          "cursor-pointer border border-[color-mix(in_srgb,var(--primary)_22%,var(--border))] bg-[var(--surface)] text-[var(--primary)] shadow-[var(--elevation-sm)] hover:border-[color-mix(in_srgb,var(--primary)_38%,var(--border))] hover:bg-[var(--tint-primary-weak)]",
         ghost:
-          "cursor-pointer text-[var(--foreground)] hover:bg-[var(--tint-accent)]",
+          "cursor-pointer text-[var(--foreground)] hover:bg-[var(--tint-primary-weak)]",
         tab:
           "cursor-pointer rounded-none border-b-2 bg-transparent text-[var(--muted-foreground,#94a3b8)] hover:shadow-none active:scale-100",
         danger:
@@ -24,7 +24,7 @@ export const buttonVariants = cva(
         transparent:
           "cursor-pointer rounded-lg border border-[var(--on-primary)]/20 bg-[var(--on-primary)]/10 px-4 text-sm font-semibold text-[var(--on-primary)] shadow-sm transition-colors hover:bg-[var(--on-primary)]/18 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-60",
         chip:
-          "cursor-pointer rounded-full border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] hover:border-[color-mix(in_srgb,var(--mystery)_55%,var(--border))] hover:bg-[var(--tint-accent-medium)] active:scale-[0.98]",
+          "cursor-pointer rounded-full border border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] hover:border-[color-mix(in_srgb,var(--primary)_35%,var(--border))] hover:bg-[var(--tint-primary-weak)] active:scale-[0.98]",
       },
       size: {
         default: "h-10 px-4 py-2",

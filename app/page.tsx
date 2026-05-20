@@ -16,7 +16,7 @@ import { hasSupabaseEnv } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 
 const bulletClass =
-  "group flex flex-col items-center gap-3.5 rounded-2xl border border-[color-mix(in_srgb,var(--border)_88%,transparent)] bg-[color-mix(in_srgb,var(--surface)_82%,var(--background))] px-5 py-6 text-center shadow-[var(--elevation-sm)] ring-1 ring-[color-mix(in_srgb,var(--on-primary)_55%,transparent)] transition duration-300 hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--primary)_22%,var(--border))] hover:shadow-[0_12px_36px_color-mix(in_srgb,var(--mystery)_9%,transparent)] sm:items-start sm:gap-4 sm:px-5 sm:py-7 sm:text-left";
+  "group flex flex-col items-center gap-3.5 rounded-2xl border border-[color-mix(in_srgb,var(--primary)_14%,var(--border))] bg-[var(--surface)] px-5 py-6 text-center shadow-[var(--elevation-sm)] ring-1 ring-[color-mix(in_srgb,var(--primary)_8%,transparent)] transition duration-300 hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--primary)_28%,var(--border))] hover:shadow-[var(--elevation-md)] sm:items-start sm:gap-4 sm:px-5 sm:py-7 sm:text-left";
 
 export default function HomePage() {
   const router = useRouter();
@@ -92,7 +92,7 @@ export default function HomePage() {
 
             <ul className="mt-10 grid gap-5 sm:mt-12 sm:grid-cols-3 sm:gap-x-5 sm:gap-y-5 md:mt-14 md:gap-x-6">
               <li className={bulletClass}>
-                <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-[color-mix(in_srgb,var(--primary)_10%,var(--tint-accent-weak))] text-[var(--primary)] shadow-[inset_var(--input-inset)] transition group-hover:bg-[color-mix(in_srgb,var(--primary)_14%,var(--tint-accent-weak))]">
+                <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--tint-primary-weak)] text-[var(--primary)] shadow-[inset_var(--input-inset)] transition group-hover:bg-[var(--tint-primary)]">
                   <Sparkles className="h-5 w-5" aria-hidden />
                 </span>
                 <div>
@@ -105,7 +105,7 @@ export default function HomePage() {
                 </div>
               </li>
               <li className={bulletClass}>
-                <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--tint-mystery)] text-[color-mix(in_srgb,var(--mystery)_92%,var(--primary))] shadow-[inset_var(--input-inset)] transition group-hover:bg-[color-mix(in_srgb,var(--mystery)_12%,var(--surface))]">
+                <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-[color-mix(in_srgb,var(--info)_12%,var(--surface))] text-[var(--info)] shadow-[inset_var(--input-inset)] transition group-hover:bg-[color-mix(in_srgb,var(--info)_18%,var(--surface))]">
                   <Puzzle className="h-5 w-5" aria-hidden />
                 </span>
                 <div>
@@ -118,7 +118,7 @@ export default function HomePage() {
                 </div>
               </li>
               <li className={bulletClass}>
-                <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-[color-mix(in_srgb,var(--highlight)_12%,var(--tint-accent))] text-[color-mix(in_srgb,var(--highlight)_58%,var(--mystery))] shadow-[inset_var(--input-inset)] transition group-hover:bg-[color-mix(in_srgb,var(--highlight)_16%,var(--tint-accent))]">
+                <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--tint-highlight-weak)] text-[var(--highlight)] shadow-[inset_var(--input-inset)] transition group-hover:bg-[var(--tint-highlight)]">
                   <ClipboardList className="h-5 w-5" aria-hidden />
                 </span>
                 <div>
