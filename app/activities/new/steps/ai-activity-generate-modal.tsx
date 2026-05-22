@@ -34,8 +34,8 @@ const TASK_COUNT_MAX = 6;
 export function AIActivityGenerateModal({ open, onClose, onApply }: Props) {
   const [topic, setTopic] = useState("");
   const [difficulty, setDifficulty] = useState<AiDifficultyLevel>("Normal");
-  const [roleCount, setRoleCount] = useState(4);
-  const [taskCount, setTaskCount] = useState(6);
+  const [roleCount, setRoleCount] = useState(3);
+  const [taskCount, setTaskCount] = useState(3);
   const [contentLanguage, setContentLanguage] = useState<ContentLanguage>(DEFAULT_CONTENT_LANGUAGE);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

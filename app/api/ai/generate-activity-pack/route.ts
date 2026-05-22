@@ -13,10 +13,11 @@ import type { ActivityPack } from "@/lib/activity-pack/types";
 import { ACTIVITY_PACK_VERSION } from "@/lib/activity-pack/types";
 
 export const runtime = "nodejs";
+/** Pro plan: up to 60s. Hobby is capped at 10s — keep role/task counts low or set AI_GENERATION_TIMEOUT_MS. */
 export const maxDuration = 60;
 
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-const OPENAI_MODEL = process.env.OPENAI_MODEL ?? "gpt-4o-mini";
+const DEFAULT_OPENAI_MODEL = "gpt-4o-mini";
+const DEFAULT_OPENAI_TIMEOUT_MS = 50_000;
 
 const PACK_ITEM_SCHEMA = {
   type: "object",
@@ -57,7 +58,6 @@ const ACTIVITY_PACK_SCHEMA = {
         required: ["id", "items"],
         properties: {
           id: { type: "string" },
-          name: { type: "string" },
           items: {
             type: "array",
             items: PACK_ITEM_SCHEMA,
@@ -147,13 +147,34 @@ function buildUserPrompt(opts: {
   return lines.join("\n");
 }
 
+function readOpenAiConfig() {
+  const apiKey = process.env.OPENAI_API_KEY?.trim();
+  const model = process.env.OPENAI_MODEL?.trim() || DEFAULT_OPENAI_MODEL;
+  const timeoutMs = Number(process.env.AI_GENERATION_TIMEOUT_MS) || DEFAULT_OPENAI_TIMEOUT_MS;
+  return { apiKey, model, timeoutMs: Number.isFinite(timeoutMs) && timeoutMs > 0 ? timeoutMs : DEFAULT_OPENAI_TIMEOUT_MS };
+}
+
+/** Quick check that the route is deployed and env is visible (no OpenAI call). */
+export async function GET() {
+  const { apiKey, model } = readOpenAiConfig();
+  return NextResponse.json({
+    ok: true,
+    openaiConfigured: Boolean(apiKey),
+    model,
+  });
+}
+
 export async function POST(req: NextRequest) {
-  if (!OPENAI_API_KEY) {
+  const { apiKey, model, timeoutMs } = readOpenAiConfig();
+
+  if (!apiKey) {
     return NextResponse.json(
       { error: "OPENAI_API_KEY 환경변수가 설정되어 있지 않습니다." },
       { status: 500 },
     );
   }
+
+  try {
 
   let body: unknown;
   try {
@@ -185,16 +206,20 @@ export async function POST(req: NextRequest) {
       : DEFAULT_CONTENT_LANGUAGE;
 
   let openaiResponse: Response;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
     openaiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${OPENAI_API_KEY}`,
+        Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
+      signal: controller.signal,
       body: JSON.stringify({
-        model: OPENAI_MODEL,
+        model,
         temperature: 0.85,
+        max_tokens: 4096,
         messages: [
           { role: "system", content: buildSystemPrompt(contentLanguage) },
           {
@@ -219,26 +244,41 @@ export async function POST(req: NextRequest) {
       }),
     });
   } catch (e) {
-    const msg = e instanceof Error ? e.message : "OpenAI 연결 실패";
+    const aborted = e instanceof Error && e.name === "AbortError";
+    const msg = aborted
+      ? `OpenAI 응답이 ${Math.round(timeoutMs / 1000)}초 안에 오지 않았습니다. 역할·미션 수를 줄이거나 Vercel Pro(60초)에서 재시도해 주세요.`
+      : e instanceof Error
+        ? e.message
+        : "OpenAI 연결 실패";
+    console.error("[generate-activity-pack] OpenAI fetch failed:", msg);
     return NextResponse.json(
-      { error: "OpenAI API에 연결할 수 없습니다.", detail: msg },
-      { status: 502 },
+      { error: aborted ? "AI 생성 시간 초과" : "OpenAI API에 연결할 수 없습니다.", detail: msg },
+      { status: aborted ? 504 : 502 },
     );
+  } finally {
+    clearTimeout(timeout);
   }
 
   if (!openaiResponse.ok) {
     const errText = await openaiResponse.text().catch(() => "");
+    console.error("[generate-activity-pack] OpenAI HTTP error:", openaiResponse.status, errText.slice(0, 200));
     return NextResponse.json(
       { error: "OpenAI API 오류", detail: errText.slice(0, 500) },
       { status: 502 },
     );
   }
 
-  const completion = (await openaiResponse.json()) as {
-    choices?: Array<{ message?: { content?: string } }>;
-  };
+  let completion: { choices?: Array<{ message?: { content?: string } }> };
+  try {
+    completion = (await openaiResponse.json()) as typeof completion;
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "OpenAI JSON 파싱 실패";
+    console.error("[generate-activity-pack] OpenAI response JSON parse failed:", msg);
+    return NextResponse.json({ error: "OpenAI 응답 파싱 실패", detail: msg }, { status: 502 });
+  }
   const content = completion.choices?.[0]?.message?.content;
   if (!content) {
+    console.error("[generate-activity-pack] OpenAI returned empty content");
     return NextResponse.json({ error: "AI 응답이 비어 있습니다." }, { status: 502 });
   }
 
@@ -246,6 +286,7 @@ export async function POST(req: NextRequest) {
   try {
     parsed = JSON.parse(content);
   } catch {
+    console.error("[generate-activity-pack] AI content JSON parse failed:", content.slice(0, 200));
     return NextResponse.json({ error: "AI JSON 파싱 실패" }, { status: 502 });
   }
 
@@ -257,6 +298,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(pack);
   } catch (e) {
     const msg = e instanceof Error ? e.message : "정규화 실패";
+    console.error("[generate-activity-pack] pack validation failed:", msg);
     return NextResponse.json({ error: msg }, { status: 502 });
+  }
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "서버 오류";
+    console.error("[generate-activity-pack] unhandled error:", e);
+    return NextResponse.json({ error: "활동 팩 생성 실패", detail: msg }, { status: 500 });
   }
 }

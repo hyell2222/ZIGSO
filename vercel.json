@@ -1,0 +1,8 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "app/api/ai/generate-activity-pack/route.ts": {
+      "maxDuration": 60
+    }
+  }
+}
