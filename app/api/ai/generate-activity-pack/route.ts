@@ -114,6 +114,7 @@ function buildSystemPrompt(contentLanguage: ContentLanguage): string {
     "- roles: each has id (snake_case ASCII) and items[] (deduction targets). Role display names are auto-assigned codenames at play time — do not rely on role name.",
     "- role items: id, name (correct answer), clues stage1–stage5 (stage1 hardest, stage5 easiest).",
     "- tasks: cooperative home-group assignments. Each has id, title, description, acceptedItemIds (item ids that must ALL be acquired and submitted together to complete the task).",
+    "- acceptedItemIds: MUST use exact item id strings from roles (e.g. rice, carrot). Never use Korean/English display names.",
     "- Every acceptedItemId must reference an item id inside roles. List every item the home group must submit for that task.",
     "- Create 2–6 roles with 1–2 items each and 2–6 tasks when the theme allows.",
     "- No violence, culturally appropriate for Korean middle/high school.",
