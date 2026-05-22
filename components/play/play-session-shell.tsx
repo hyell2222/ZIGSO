@@ -47,8 +47,8 @@ import {
 import { getSessionRoomChannelName } from "@/lib/realtime/session-presence";
 import { ROUTES } from "@/lib/routes";
 import { hasSupabaseEnv, supabase } from "@/lib/supabase";
+import { formatAssignedRoleLabels } from "@/lib/activity-pack/roles";
 import { formatAssignedSlots } from "@/lib/play/assignment-labels";
-import { buildItemCodenameMap, formatItemCodenames } from "@/lib/play/role-codenames";
 import { PLAY_STUDENT_COPY } from "@/lib/play/student-copy";
 import { cn } from "@/lib/utils";
 
@@ -78,7 +78,6 @@ export function PlaySessionShell({
     refetchIntervalInBackground: true,
   });
 
-  const assignedRoleId = playerQuery.data?.assigned_role_id ?? null;
   const assignedItemIds = useMemo(
     () => (playerQuery.data ? parseAssignedItemIds(playerQuery.data) : []),
     [playerQuery.data],
@@ -112,10 +111,15 @@ export function PlaySessionShell({
     [sessionQuery.data?.activities?.activity_pack],
   );
 
-  const itemCodenameById = useMemo(() => {
-    if (!sessionId || !activityPack) return new Map<string, string>();
-    return buildItemCodenameMap(sessionId, activityPack.items.map((i) => i.id));
-  }, [sessionId, activityPack]);
+  const assignedRoleLabel = useMemo(() => {
+    if (!sessionId || !activityPack || assignedItemIds.length === 0) {
+      return formatAssignedSlots(assignedItemIds.length);
+    }
+    return (
+      formatAssignedRoleLabels(activityPack, assignedItemIds, sessionId) ??
+      formatAssignedSlots(assignedItemIds.length)
+    );
+  }, [sessionId, activityPack, assignedItemIds]);
 
   const resumeQuery = useQuery({
     queryKey: ["play-resume", joinCode],
@@ -349,17 +353,14 @@ export function PlaySessionShell({
           nickname: p.nickname,
           groupId: p.group_id as string,
           assignedRoleId: p.assigned_role_id,
+          assignedItemIds: parseAssignedItemIds(p),
         })),
       sessionId ?? undefined,
     );
   }, [activityPack, resultsQuery.data, sessionId]);
 
   if (hasSupabaseEnv && isResultsPhase && activityPack) {
-    const resultsRoleLabel =
-      formatItemCodenames(assignedItemIds, itemCodenameById) ??
-      (assignedRoleId
-        ? (activityPack?.roles.find((r) => r.id === assignedRoleId)?.name ?? assignedRoleId)
-        : null);
+    const resultsRoleLabel = assignedRoleLabel;
     return (
       <ResultsPhasePanel
         loading={resultsQuery.isLoading}
@@ -413,9 +414,7 @@ export function PlaySessionShell({
   }
 
   if (hasSupabaseEnv && isActivityIntroduction) {
-    const roleLabel =
-      formatItemCodenames(assignedItemIds, itemCodenameById) ??
-      formatAssignedSlots(assignedItemIds.length);
+    const roleLabel = assignedRoleLabel;
     return (
       <PlayPhaseShell
         header={{

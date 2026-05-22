@@ -42,7 +42,7 @@ export function SessionHostLayout({
   contained = false,
 }: Props) {
   const layout = activityLayoutClasses(contained);
-  const showPhaseGuide = isTimedPhase(phase) || phase === "results";
+  const showPhaseGuide = isTimedPhase(phase);
   const showPhaseActions = Boolean(timerButton || startButton || nextButton);
   const phaseActions = showPhaseActions ? (
     <>

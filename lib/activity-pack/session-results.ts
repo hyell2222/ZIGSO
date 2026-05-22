@@ -1,4 +1,5 @@
 import { totalGroupScore } from "@/lib/activity-pack/engine";
+import { formatAssignedRoleLabels } from "@/lib/activity-pack/roles";
 import type { ActivityPack } from "@/lib/activity-pack/types";
 import type { AcquiredItem, CompletedTask } from "@/lib/activity-pack/types";
 import { codenameForItem } from "@/lib/play/role-codenames";
@@ -18,6 +19,7 @@ export type ResultsMemberInput = {
   nickname: string | null;
   groupId: string;
   assignedRoleId: string | null;
+  assignedItemIds?: string[];
 };
 
 export type MemberResult = {
@@ -149,8 +151,15 @@ function computeMemberResults(
   const teamShareEach = (taskPoints + completionBonus) / count;
 
   return members.map((m) => {
+    const assignedItemIds =
+      m.assignedItemIds?.filter(Boolean) ??
+      (m.assignedRoleId ? [m.assignedRoleId] : []);
+    const roleLabel =
+      (roleScopeKey
+        ? formatAssignedRoleLabels(pack, assignedItemIds, roleScopeKey)
+        : null) ?? roleLabelFor(pack, m.assignedRoleId, roleScopeKey);
     const expertScore = group.acquired_items
-      .filter((a) => a.itemId === m.assignedRoleId)
+      .filter((a) => assignedItemIds.includes(a.itemId))
       .reduce((sum, a) => sum + a.score, 0);
     const teamShareScore = Math.round(teamShareEach * 10) / 10;
     const totalScore = Math.round((expertScore + teamShareEach) * 10) / 10;
@@ -158,7 +167,7 @@ function computeMemberResults(
       playerId: m.id,
       nickname: m.nickname?.trim() || "참가자",
       assignedRoleId: m.assignedRoleId,
-      roleLabel: roleLabelFor(pack, m.assignedRoleId, roleScopeKey),
+      roleLabel,
       expertScore,
       teamShareScore,
       totalScore,

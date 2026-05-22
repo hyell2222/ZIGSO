@@ -3,7 +3,6 @@
 import { useMemo } from "react";
 
 import { activityLayoutType } from "@/components/activity/activity-layout-typography";
-import { PlayHeaderGroupPlace } from "@/components/play/play-header-group-place";
 import { PlayPhaseShell } from "@/components/play/play-phase-shell";
 import {
   activityNestedCard,
@@ -93,11 +92,8 @@ function RankCard({
 
 export function ResultsPhasePanel({
   loading,
-  title,
   results,
   highlightGroupId,
-  groupName,
-  roleLabel,
   currentPlayerId,
   contained = false,
 }: Props) {
@@ -110,30 +106,9 @@ export function ResultsPhasePanel({
   );
 
   const copy = PLAY_STUDENT_COPY.phaseResults;
-  const sessionTitle = title?.trim() || null;
-  const displayGroupName = groupName ?? snapshot?.groupName ?? null;
-  const displayRoleLabel = roleLabel ?? snapshot?.roleLabel ?? null;
-
-  const metaLine = [sessionTitle, displayGroupName, displayRoleLabel].filter(Boolean).join(" · ");
 
   return (
-    <PlayPhaseShell
-      contained={contained}
-      header={{
-        phase: 4,
-        title: copy.title,
-        description: metaLine ? `${copy.subtitle} · ${metaLine}` : copy.subtitle,
-        rightSlot:
-          displayGroupName || displayRoleLabel ? (
-            <PlayHeaderGroupPlace
-              groupName={displayGroupName}
-              placeName={displayRoleLabel}
-              placeLabel="나의 모둠"
-              contained={contained}
-            />
-          ) : undefined,
-      }}
-    >
+    <PlayPhaseShell contained={contained}>
       {loading ? (
         <LoadingState variant="section" tone="play" label="결과 집계 중…" />
       ) : !snapshot ? (

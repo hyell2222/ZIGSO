@@ -3,8 +3,8 @@
  * 사건 id 로 시드를 두어 새로고침해도 같은 사건이면 순서가 유지됩니다.
  */
 
-/** 가상 접속 표시 인원 (10명 초과 요구 반영) */
-export const SANDBOX_LOBBY_BOT_COUNT = 12;
+/** 가상 접속 표시 인원 */
+export const SANDBOX_LOBBY_BOT_COUNT = 24;
 
 /** 풀 크기보다 많이 들어있어야 순서 변경 시 중복 선택이 가능 */
 const NICKNAME_POOL = [

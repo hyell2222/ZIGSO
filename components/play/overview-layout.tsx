@@ -85,10 +85,6 @@ export function ActivityIntroductionLayout({
           )}
         </PlayPhaseSectionCard>
       </div>
-
-      <PlayPhaseSection title="선생님 안내">
-        <PlayPhaseWaitFootnote />
-      </PlayPhaseSection>
     </PlayPhasePanel>
   );
 }

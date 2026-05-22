@@ -63,13 +63,6 @@ export function ExpertClueBoard({ item, reveal, onRevealChange }: Props) {
     [item, reveal],
   );
 
-  const handleReveal = (stage: StageType, points: number) => {
-    const message = `다음 단서를 확인하시겠습니까?\n이 단서를 열면 획득 가능한 최대 점수가 ${points}점으로 변경됩니다.`;
-    if (window.confirm(message)) {
-      onRevealChange({ ...reveal, [stage]: true });
-    }
-  };
-
   return (
     <PlayPhaseSection title="단서 보드">
       <div
@@ -132,7 +125,7 @@ export function ExpertClueBoard({ item, reveal, onRevealChange }: Props) {
                     !isLocked &&
                       "border-[var(--accent)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-[var(--on-primary)]",
                   )}
-                  onClick={() => handleReveal(stage, points)}
+                  onClick={() => onRevealChange({ ...reveal, [stage]: true })}
                 >
                   {isLocked ? (
                     <>

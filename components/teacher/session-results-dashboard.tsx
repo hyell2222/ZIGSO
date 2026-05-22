@@ -20,6 +20,7 @@ export type SessionResultsMember = {
   nickname: string | null;
   groupId: string;
   assignedRoleId: string | null;
+  assignedItemIds?: string[];
 };
 
 type Props = {
@@ -57,6 +58,7 @@ export function SessionResultsDashboard({
         nickname: m.nickname,
         groupId: m.groupId,
         assignedRoleId: m.assignedRoleId,
+        assignedItemIds: m.assignedItemIds,
       })),
       roleScopeKey,
     );
@@ -72,7 +74,7 @@ export function SessionResultsDashboard({
 
   return (
     <PhaseSection
-      title="STAD 모둠 순위"
+      title="모둠 순위"
       heading="section"
       as="h2"
       subtitle="전체 모둠 총점 순위와 모둠별 MVP입니다. 모둠원 개인 순위는 학생 화면에서만 확인할 수 있습니다."

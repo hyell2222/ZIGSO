@@ -1,4 +1,5 @@
 import type { ActivityPack, Item, Role } from "@/lib/activity-pack/types";
+import { formatRoleCodenames } from "@/lib/play/role-codenames";
 
 /** 역할당 아이템 수 상한 */
 export const MAX_ITEMS_PER_ROLE = 8;
@@ -38,6 +39,34 @@ export function ensurePackRoles(pack: ActivityPack): ActivityPack {
 
 export function getRoleById(pack: ActivityPack, roleId: string): Role | undefined {
   return pack.roles.find((r) => r.id === roleId);
+}
+
+export function roleIdForItemId(pack: ActivityPack, itemId: string): string | undefined {
+  return pack.roles.find((r) => r.items.some((i) => i.id === itemId))?.id;
+}
+
+/** 아이템 id 목록 → 역할 id (중복 제거, pack.roles 순서 유지) */
+export function roleIdsForItemIds(pack: ActivityPack, itemIds: string[]): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const itemId of itemIds) {
+    const roleId = roleIdForItemId(pack, itemId);
+    if (roleId && !seen.has(roleId)) {
+      seen.add(roleId);
+      result.push(roleId);
+    }
+  }
+  return result;
+}
+
+/** 배정 아이템 → 역할 코드명 (복수 역할이면 쉼표로 연결) */
+export function formatAssignedRoleLabels(
+  pack: ActivityPack,
+  itemIds: string[],
+  scopeKey: string,
+): string | null {
+  const roleIdsInPack = pack.roles.map((r) => r.id);
+  return formatRoleCodenames(roleIdsForItemIds(pack, itemIds), scopeKey, roleIdsInPack);
 }
 
 export function maxItemsPerRole(roles: Role[]): number {

@@ -1,7 +1,7 @@
 import { PLAYER_MESSAGES } from "@/lib/activity-pack/player-messages";
 import { itemsToRoles, flattenRoleItems } from "@/lib/activity-pack/roles";
 import { normalizePackSizing } from "@/lib/activity-pack/sizing";
-import { validateActivityPack, type PackValidationIssue } from "@/lib/activity-pack/validate";
+import { validateActivityPack } from "@/lib/activity-pack/validate";
 import type { ActivityPack, Item, ItemClues, Role, Task } from "@/lib/activity-pack/types";
 import { ACTIVITY_PACK_VERSION } from "@/lib/activity-pack/types";
 
@@ -9,44 +9,11 @@ const CLUE_KEYS = ["stage1", "stage2", "stage3", "stage4", "stage5"] as const;
 
 /** JSON(unknown) → ActivityPack. 형식이 맞지 않으면 null */
 export function parseActivityPack(raw: unknown): ActivityPack | null {
-  const { pack, issues } = buildActivityPack(raw);
-  return pack && issues.length === 0 ? pack : null;
-}
-
-/** parse + 검증 실패 시 throw (AI 생성·저장 등) */
-export function loadActivityPack(raw: unknown): ActivityPack {
-  const { pack, issues } = buildActivityPack(raw);
-  if (!pack || issues.length > 0) {
-    const detail = formatPackIssues(issues);
-    throw new Error(detail ? `활동 팩 검증 실패 — ${detail}` : "활동 팩을 읽을 수 없습니다.");
-  }
-
-  if (!pack.title.trim()) {
-    pack.title = PLAYER_MESSAGES.defaultPackTitle;
-  }
-
-  return normalizePackSizing(pack);
-}
-
-export function isValidActivityPack(pack: unknown): pack is ActivityPack {
-  return parseActivityPack(pack) !== null;
-}
-
-function buildActivityPack(raw: unknown): { pack: ActivityPack | null; issues: PackValidationIssue[] } {
-  if (!raw || typeof raw !== "object") {
-    return { pack: null, issues: [{ path: "root", message: "must be an object" }] };
-  }
+  if (!raw || typeof raw !== "object") return null;
   const p = raw as Record<string, unknown>;
 
-  if (p.version !== ACTIVITY_PACK_VERSION) {
-    return {
-      pack: null,
-      issues: [{ path: "version", message: `version must be ${ACTIVITY_PACK_VERSION}` }],
-    };
-  }
-  if (!Array.isArray(p.tasks) || p.tasks.length === 0) {
-    return { pack: null, issues: [{ path: "tasks", message: "at least one task required" }] };
-  }
+  if (p.version !== ACTIVITY_PACK_VERSION) return null;
+  if (!Array.isArray(p.tasks) || p.tasks.length === 0) return null;
 
   const seenItemIds = new Set<string>();
   let roles: Role[];
@@ -58,13 +25,11 @@ function buildActivityPack(raw: unknown): { pack: ActivityPack | null; issues: P
     );
     roles = itemsToRoles(items);
   } else {
-    return { pack: null, issues: [{ path: "roles", message: "roles or items required" }] };
+    return null;
   }
 
   const items = flattenRoleItems(roles);
-  if (items.length === 0) {
-    return { pack: null, issues: [{ path: "roles", message: "at least one item required" }] };
-  }
+  if (items.length === 0) return null;
 
   const itemLookup = buildItemLookup(items);
   const tasks = (p.tasks as unknown[]).map((entry, idx) => readTask(entry, idx, itemLookup));
@@ -80,14 +45,25 @@ function buildActivityPack(raw: unknown): { pack: ActivityPack | null; issues: P
     tasks,
   });
 
-  return { pack, issues: validateActivityPack(pack) };
+  return validateActivityPack(pack).length === 0 ? pack : null;
 }
 
-function formatPackIssues(issues: PackValidationIssue[]): string {
-  return issues
-    .slice(0, 4)
-    .map((issue) => `${issue.path}: ${issue.message}`)
-    .join("; ");
+/** parse + 검증 실패 시 throw (AI 생성·저장 등) */
+export function loadActivityPack(raw: unknown): ActivityPack {
+  const pack = parseActivityPack(raw);
+  if (!pack) {
+    throw new Error("활동 팩을 읽을 수 없습니다.");
+  }
+
+  if (!pack.title.trim()) {
+    pack.title = PLAYER_MESSAGES.defaultPackTitle;
+  }
+
+  return normalizePackSizing(pack);
+}
+
+export function isValidActivityPack(pack: unknown): pack is ActivityPack {
+  return parseActivityPack(pack) !== null;
 }
 
 function buildItemLookup(items: Item[]) {

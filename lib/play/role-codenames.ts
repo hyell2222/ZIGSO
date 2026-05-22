@@ -92,3 +92,26 @@ export function formatItemCodenames(itemIds: string[], map: Map<string, string>)
   if (labels.length === 0) return null;
   return labels.join(", ");
 }
+
+/** 배정 역할 1개 → 코드명 1개 */
+export function formatRoleCodename(
+  roleId: string | null | undefined,
+  scopeKey: string,
+  roleIdsInPack: string[],
+): string | null {
+  if (!roleId) return null;
+  return codenameForRole(scopeKey, roleId, roleIdsInPack);
+}
+
+/** 배정 역할 여러 개 → 코드명을 쉼표로 연결 */
+export function formatRoleCodenames(
+  roleIds: string[],
+  scopeKey: string,
+  roleIdsInPack: string[],
+): string | null {
+  const unique = [...new Set(roleIds.filter(Boolean))];
+  if (unique.length === 0) return null;
+  const map = buildRoleCodenameMap(scopeKey, roleIdsInPack);
+  const labels = unique.map((id) => map.get(id)).filter((name): name is string => Boolean(name));
+  return labels.length ? labels.join(", ") : null;
+}

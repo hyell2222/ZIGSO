@@ -24,7 +24,7 @@ export function SessionHostWaitingRoster({ players }: Props) {
       {players.length === 0 ? (
         <p className={cn("py-2 text-center", activityLayoutType.bodyMuted)}>아직 없음</p>
       ) : (
-        <ul className="flex flex-wrap gap-2">
+        <ul className="flex max-h-56 flex-wrap gap-2 overflow-y-auto overscroll-y-contain pr-1">
           {players.map((p) => (
             <li
               key={p.id}

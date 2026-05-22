@@ -8,7 +8,6 @@ import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import {
   getHostSessionDetails,
   listSessionPlayers,
-  parseAssignedItemIds,
   listSessionGroups,
   setPlayersOnline,
 } from "@/lib/api/play";
@@ -21,7 +20,8 @@ import {
   type ActivityPhase,
 } from "@/lib/api/activities";
 import { useRequireTeacherSession } from "@/lib/auth/use-require-teacher-session";
-import { buildItemCodenameMap, formatItemCodenames } from "@/lib/play/role-codenames";
+import { formatAssignedRoleLabels } from "@/lib/activity-pack/roles";
+import { parseAssignedItemIds } from "@/lib/api/play";
 import { groupPlayersByGroup } from "@/lib/teacher/group-players-by-group";
 import { SessionHostLayout } from "@/components/teacher/session-host-layout";
 import { SessionHostWaitingRoster } from "@/components/teacher/session-host-waiting-roster";
@@ -307,24 +307,22 @@ function SessionHostContent() {
     [sessionQuery.data?.activities?.activity_pack],
   );
 
-  const itemCodenameById = useMemo(() => {
-    if (!sessionId || !activityPack) return new Map<string, string>();
-    return buildItemCodenameMap(sessionId, activityPack.items.map((i) => i.id));
-  }, [sessionId, activityPack]);
-
   const assignmentGroups = useMemo<GroupAssignmentGroup[]>(() => {
     return groupPlayersByGroup(onlinePlayers, groupRows).map((g) => ({
       group: { id: g.group.id, name: g.group.name },
       members: g.members.map((m) => ({
         id: m.id,
         nickname: m.nickname,
-        zoneName: (() => {
-          const ids = parseAssignedItemIds(m);
-          return ids.length ? formatItemCodenames(ids, itemCodenameById) : null;
-        })(),
+        zoneName: activityPack
+          ? formatAssignedRoleLabels(
+              activityPack,
+              parseAssignedItemIds(m),
+              sessionId ?? "",
+            )
+          : null,
       })),
     }));
-  }, [onlinePlayers, groupRows, itemCodenameById]);
+  }, [onlinePlayers, groupRows, activityPack, sessionId]);
 
   const progressGroups = useMemo<GroupProgressGroup[]>(() => {
     const grouped = groupPlayersByGroup(onlinePlayers, groupRows);
@@ -343,6 +341,7 @@ function SessionHostContent() {
           nickname: p.nickname,
           groupId: p.group_id as string,
           assignedRoleId: p.assigned_role_id,
+          assignedItemIds: parseAssignedItemIds(p),
         })),
     [playersQuery.data],
   );

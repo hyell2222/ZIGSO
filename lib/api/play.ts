@@ -277,7 +277,8 @@ export async function assignGroupsAndRoles(sessionId: string, pack: ActivityPack
   if (tErr) throw tErr;
 
   const groupSize = Math.max(2, pack.groupSize);
-  const numGroups = Math.max(1, Math.ceil(players.length / groupSize));
+  const shuffled = [...players].sort(() => Math.random() - 0.5);
+  const numGroups = Math.max(1, Math.ceil(shuffled.length / groupSize));
 
   const groupRowsByLabel = new Map<string, { id: string; name: string | null }>();
   for (const t of existingGroups ?? []) {
@@ -301,15 +302,11 @@ export async function assignGroupsAndRoles(sessionId: string, pack: ActivityPack
     .filter((v): v is string => Boolean(v));
   if (groupIds.length === 0) return;
 
-  const shuffled = [...players].sort(() => Math.random() - 0.5);
-  const byGroup: string[][] = groupIds.map(() => []);
-  shuffled.forEach((p, i) => {
-    byGroup[i % groupIds.length]!.push(p.id);
-  });
-
-  for (let ti = 0; ti < byGroup.length; ti++) {
-    const memberIds = byGroup[ti]!;
-    const groupId = groupIds[ti]!;
+  for (let gi = 0; gi < groupIds.length; gi++) {
+    const groupId = groupIds[gi]!;
+    const memberIds = shuffled
+      .filter((_, idx) => idx % numGroups === gi)
+      .map((p) => p.id);
     const roleAssignment = assignRolesToPlayers(pack, memberIds);
     for (const playerId of memberIds) {
       const assigned = roleAssignment.get(playerId);

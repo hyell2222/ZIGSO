@@ -30,7 +30,7 @@ export async function generateActivityPackWithAI(
     let detail = "";
     try {
       const json = (await res.json()) as { error?: string; detail?: string };
-      detail = [json.error, json.detail].filter(Boolean).join(": ");
+      detail = json.error ?? json.detail ?? "";
     } catch {
       detail = await res.text().catch(() => "");
     }

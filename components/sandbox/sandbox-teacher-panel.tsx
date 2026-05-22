@@ -35,7 +35,8 @@ import {
 import type { SessionStatus } from "@/lib/types";
 import { isSessionEnded } from "@/lib/activity-phases";
 import { isTimedPhase, type TimedPhase } from "@/lib/teacher/phase-guide";
-import { buildItemCodenameMap, formatItemCodenames } from "@/lib/play/role-codenames";
+import { buildRoleCodenameMap } from "@/lib/play/role-codenames";
+import { formatAssignedRoleLabels } from "@/lib/activity-pack/roles";
 
 type Props = {
   activityTitle: string | null;
@@ -80,17 +81,16 @@ export function SandboxTeacherPanel({
   );
 
   const waitingOnlinePlayers = useMemo(
-    () => buildSandboxWaitingRoster(activityId, pack, realStudentNickname),
-    [activityId, pack, realStudentNickname],
+    () => buildSandboxWaitingRoster(activityId, realStudentNickname, pack.groupSize),
+    [activityId, realStudentNickname, pack.groupSize],
   );
 
   const playercount = sessionStarted ? players.length : waitingOnlinePlayers.length;
 
-  const itemCodenameById = useMemo(
-    () => buildItemCodenameMap(`sandbox-${activityId}`, pack.items.map((i) => i.id)),
-    [activityId, pack.items],
+  const roleCodenameById = useMemo(
+    () => buildRoleCodenameMap(`sandbox-${activityId}`, pack.roles.map((r) => r.id)),
+    [activityId, pack.roles],
   );
-
   const assignmentGroups = useMemo<GroupAssignmentGroup[]>(() => {
     const byGroup = new Map<string, SandboxPlayer[]>();
     for (const p of players) {
@@ -104,11 +104,12 @@ export function SandboxTeacherPanel({
         id: m.id,
         nickname: m.nickname,
         zoneName:
-          formatItemCodenames(m.itemIds.length > 0 ? m.itemIds : [m.itemId], itemCodenameById) ??
+          formatAssignedRoleLabels(pack, m.itemIds, `sandbox-${activityId}`) ??
+          roleCodenameById.get(m.roleId) ??
           null,
       })),
     }));
-  }, [players, groups, itemCodenameById]);
+  }, [players, groups, pack, activityId, roleCodenameById]);
 
   const progressGroups = useMemo<GroupProgressGroup[]>(() => {
     const counts = new Map<string, number>();
@@ -132,7 +133,8 @@ export function SandboxTeacherPanel({
         id: p.id,
         nickname: p.nickname,
         groupId: p.groupId,
-        assignedRoleId: p.itemId,
+        assignedRoleId: p.roleId,
+        assignedItemIds: p.itemIds?.length ? p.itemIds : p.itemId ? [p.itemId] : [],
       })),
     [players],
   );

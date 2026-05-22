@@ -2,10 +2,11 @@
  * 시뮬레이션 모드 — 교사 혼자서 활동 흐름을 시연·검수하기 위한 in-memory 모델.
  */
 
+import { MIN_ROLES_PER_GROUP } from "@/lib/activity-pack/sizing";
 import type { ActivityPhase, SessionStatus } from "@/lib/types";
 import { assignRolesToPlayers } from "@/lib/activity-pack/engine";
 import type { AcquiredItem, CompletedTask, ActivityPack } from "@/lib/activity-pack/types";
-import { pickSandboxLobbyBotNicknames } from "@/lib/sandbox/waiting-nicknames";
+import { pickSandboxLobbyBotNicknames, SANDBOX_LOBBY_BOT_COUNT } from "@/lib/sandbox/waiting-nicknames";
 import {
   HOST_SESSION_START_LABEL,
   hostSessionNextPhaseLabel,
@@ -23,6 +24,7 @@ export type SandboxPlayer = {
   id: string;
   nickname: string;
   groupId: string;
+  roleId: string;
   /** @deprecated — itemIds 사용 */
   itemId: string;
   itemIds: string[];
@@ -48,14 +50,15 @@ export type SandboxWaitingChip = {
 
 export function buildSandboxWaitingRoster(
   activityId: string,
-  pack: ActivityPack,
   realStudentNickname: string | null,
+  groupSize = MIN_ROLES_PER_GROUP,
 ): SandboxWaitingChip[] {
-  const slotCount = Math.max(pack.roles.length, pack.groupSize, 4);
-  const bots = pickSandboxLobbyBotNicknames(activityId.trim() || "_").slice(0, slotCount);
-  const out: SandboxWaitingChip[] = bots.map((nickname, i) => ({
+  const slotsPerGroup = Math.max(MIN_ROLES_PER_GROUP, groupSize);
+  const botCount = slotsPerGroup * Math.ceil(SANDBOX_LOBBY_BOT_COUNT / slotsPerGroup);
+  const nicknames = pickSandboxLobbyBotNicknames(activityId.trim() || "_");
+  const out: SandboxWaitingChip[] = Array.from({ length: botCount }, (_, i) => ({
     id: `sandbox-lobby-bot-${i}`,
-    nickname,
+    nickname: nicknames[i % nicknames.length] ?? `참가자 ${i + 1}`,
   }));
 
   const realNick = realStudentNickname?.trim();
@@ -106,10 +109,10 @@ export function buildSandboxAssignments(
   }
   const fallbackItemId = pack.items[0]?.id ?? "";
 
-  const chips = buildSandboxWaitingRoster(activityId, pack, realStudentNickname);
+  const chips = buildSandboxWaitingRoster(activityId, realStudentNickname, pack.groupSize);
   shuffleArrayInPlace(chips);
 
-  const groupSize = Math.max(2, pack.groupSize);
+  const groupSize = Math.max(MIN_ROLES_PER_GROUP, pack.groupSize);
   const numGroups = Math.max(1, Math.ceil(chips.length / groupSize));
 
   const groups: SandboxGroup[] = Array.from({ length: numGroups }, (_, i) => ({
@@ -127,9 +130,9 @@ export function buildSandboxAssignments(
 
   const players: SandboxPlayer[] = [];
 
-  for (let ti = 0; ti < groups.length; ti++) {
-    const group = groups[ti]!;
-    const groupChips = byGroup[ti]!;
+  for (let gi = 0; gi < groups.length; gi++) {
+    const group = groups[gi]!;
+    const groupChips = byGroup[gi]!;
     const groupPlayerIds = groupChips.map((chip) =>
       chip.isReal ? SANDBOX_REAL_STUDENT_PLAYER_ID : `sandbox-player-${chip.id}`,
     );
@@ -142,6 +145,7 @@ export function buildSandboxAssignments(
         id: playerId,
         nickname: chip.nickname.trim() || "참가자",
         groupId: group.id,
+        roleId: assigned?.roleId ?? pack.roles[0]?.id ?? "",
         itemId: itemIds[0] ?? fallbackItemId,
         itemIds,
         isReal: chip.isReal ? true : undefined,

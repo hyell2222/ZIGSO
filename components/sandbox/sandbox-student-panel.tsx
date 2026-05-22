@@ -21,7 +21,7 @@ import {
   type SandboxGroup,
 } from "@/lib/sandbox/state";
 import { sandboxType } from "@/components/sandbox/sandbox-typography";
-import { buildItemCodenameMap, formatItemCodenames } from "@/lib/play/role-codenames";
+import { formatAssignedRoleLabels } from "@/lib/activity-pack/roles";
 import { PLAY_STUDENT_COPY } from "@/lib/play/student-copy";
 import { cn } from "@/lib/utils";
 
@@ -100,12 +100,7 @@ export function SandboxStudentPanel({
     : primaryPlayer?.itemId
       ? [primaryPlayer.itemId]
       : [];
-  const itemCodenameById = useMemo(
-    () => buildItemCodenameMap(`sandbox-${activityId}`, pack.items.map((i) => i.id)),
-    [activityId, pack.items],
-  );
-
-  const roleLabel = formatItemCodenames(assignedIds, itemCodenameById);
+  const roleLabel = formatAssignedRoleLabels(pack, assignedIds, `sandbox-${activityId}`);
 
   const sessionResults = useMemo(() => {
     if (phase !== "results" || showJoinModal) return null;
@@ -124,7 +119,8 @@ export function SandboxStudentPanel({
           id: p.id,
           nickname: p.nickname,
           groupId: p.groupId,
-          assignedRoleId: p.itemIds[0] ?? p.itemId,
+          assignedRoleId: p.roleId,
+          assignedItemIds: p.itemIds?.length ? p.itemIds : p.itemId ? [p.itemId] : [],
         })),
       `sandbox-${activityId}`,
     );
