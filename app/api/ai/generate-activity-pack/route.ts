@@ -184,38 +184,47 @@ export async function POST(req: NextRequest) {
       ? input.contentLanguage
       : DEFAULT_CONTENT_LANGUAGE;
 
-  const openaiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${OPENAI_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: OPENAI_MODEL,
-      temperature: 0.85,
-      messages: [
-        { role: "system", content: buildSystemPrompt(contentLanguage) },
-        {
-          role: "user",
-          content: buildUserPrompt({
-            topic,
-            difficulty,
-            roleCount,
-            taskCount,
-            contentLanguage,
-          }),
-        },
-      ],
-      response_format: {
-        type: "json_schema",
-        json_schema: {
-          name: "activity_pack",
-          strict: true,
-          schema: ACTIVITY_PACK_SCHEMA,
-        },
+  let openaiResponse: Response;
+  try {
+    openaiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
+        "Content-Type": "application/json",
       },
-    }),
-  });
+      body: JSON.stringify({
+        model: OPENAI_MODEL,
+        temperature: 0.85,
+        messages: [
+          { role: "system", content: buildSystemPrompt(contentLanguage) },
+          {
+            role: "user",
+            content: buildUserPrompt({
+              topic,
+              difficulty,
+              roleCount,
+              taskCount,
+              contentLanguage,
+            }),
+          },
+        ],
+        response_format: {
+          type: "json_schema",
+          json_schema: {
+            name: "activity_pack",
+            strict: true,
+            schema: ACTIVITY_PACK_SCHEMA,
+          },
+        },
+      }),
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "OpenAI 연결 실패";
+    return NextResponse.json(
+      { error: "OpenAI API에 연결할 수 없습니다.", detail: msg },
+      { status: 502 },
+    );
+  }
 
   if (!openaiResponse.ok) {
     const errText = await openaiResponse.text().catch(() => "");

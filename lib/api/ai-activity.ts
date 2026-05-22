@@ -21,7 +21,7 @@ export type AIActivityResponse = ActivityPack;
 export async function generateActivityPackWithAI(
   body: AIActivityRequest,
 ): Promise<AIActivityResponse> {
-  const res = await fetch("/api/ai/generate-activity-pack", {
+  const res = await fetch("/api/ai/generate-activity-pack/", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -30,7 +30,7 @@ export async function generateActivityPackWithAI(
     let detail = "";
     try {
       const json = (await res.json()) as { error?: string; detail?: string };
-      detail = json.error ?? json.detail ?? "";
+      detail = [json.error, json.detail].filter(Boolean).join(": ");
     } catch {
       detail = await res.text().catch(() => "");
     }
