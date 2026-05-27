@@ -120,7 +120,7 @@ export type RoleAssignment = {
   itemIds: string[];
 };
 
-/** 한 모둠 안에서 역할·아이템 배정 (인원 부족 시 한 사람에게 여러 역할의 아이템) */
+/** 한 모둠 안에서 역할·아이템 배정 (인원 불일치 시 한 역할에 여러 학생 배정) */
 export function assignRolesToPlayers(
   pack: ActivityPack,
   playerIds: string[],
@@ -132,51 +132,25 @@ export function assignRolesToPlayers(
   const playerCount = playerIds.length;
   const roleCount = roles.length;
 
-  if (playerCount >= roleCount) {
-    let roleIndex = 0;
-    for (const playerId of playerIds) {
-      const role = roles[roleIndex % roleCount]!;
+  let playerIndex = 0;
+  for (let ri = 0; ri < roleCount && playerIndex < playerCount; ri++) {
+    const remainingPlayers = playerCount - playerIndex;
+    const remainingRoles = roleCount - ri;
+    const playersForThisRole = Math.ceil(remainingPlayers / remainingRoles);
+
+    for (let j = 0; j < playersForThisRole && playerIndex < playerCount; j++) {
+      const playerId = playerIds[playerIndex]!;
+      const role = roles[ri]!;
       const primaryItem = role.items[0];
       assignment.set(playerId, {
         roleId: role.id,
         itemIds: primaryItem ? [primaryItem.id] : [],
       });
-      roleIndex++;
+      playerIndex++;
     }
-    return assignment;
   }
 
-  for (const playerId of playerIds) {
-    assignment.set(playerId, { roleId: "", itemIds: [] });
-  }
-  for (let ri = 0; ri < roleCount; ri++) {
-    const role = roles[ri]!;
-    const primaryItem = role.items[0];
-    if (!primaryItem) continue;
-    const playerId = playerIds[ri % playerCount]!;
-    const entry = assignment.get(playerId)!;
-    if (!entry.roleId) entry.roleId = role.id;
-    entry.itemIds.push(primaryItem.id);
-  }
-  for (const [, entry] of assignment) {
-    if (!entry.roleId) {
-      const role = roles.find((r) => r.items.some((i) => entry.itemIds.includes(i.id)));
-      entry.roleId = role?.id ?? roles[0]!.id;
-    }
-  }
   return assignment;
-}
-
-/** @deprecated assignRolesToPlayers 사용 */
-export function assignItemsToPlayers(
-  pack: ActivityPack,
-  playerIds: string[],
-): Map<string, string[]> {
-  const map = new Map<string, string[]>();
-  for (const [playerId, { itemIds }] of assignRolesToPlayers(pack, playerIds)) {
-    map.set(playerId, itemIds);
-  }
-  return map;
 }
 
 export function totalGroupScore(
