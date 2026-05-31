@@ -8,7 +8,7 @@ import {
   totalGroupScore,
   PLAYER_MESSAGES,
 } from "@/lib/activity-pack/engine";
-import { assignRolesToPlayers } from "@/lib/activity-pack/engine";
+import { assignRolesToPlayers, computeSessionGroupCount } from "@/lib/activity-pack/engine";
 import type {
   ActivityPack,
   WordCard,
@@ -304,9 +304,9 @@ export async function assignGroupsAndRoles(sessionId: string, pack: ActivityPack
     .eq("session_id", sessionId);
   if (tErr) throw tErr;
 
-  const groupSize = Math.max(2, pack.groupSize);
+  const roleCount = Math.max(2, pack.groupSize);
   const shuffled = [...players].sort(() => Math.random() - 0.5);
-  const numGroups = Math.max(1, Math.ceil(shuffled.length / groupSize));
+  const numGroups = computeSessionGroupCount(shuffled.length, roleCount);
 
   const groupRowsByLabel = new Map<string, { id: string; name: string | null }>();
   for (const t of existingGroups ?? []) {

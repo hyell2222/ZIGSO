@@ -143,7 +143,48 @@ export function isWorksheetComplete(pack: ActivityPack, placements: WorksheetPla
 export type RoleAssignment = {
   roleId: string;
   itemIds: string[];
+  /** 학습지 빈칸 소유자 — 같은 역할 2명일 때 첫 번째만 true */
+  isSlotOwner: boolean;
 };
+
+export type AssignableMember = {
+  id: string;
+  assigned_role_id: string | null;
+  created_at?: string | null;
+};
+
+/** 세션·샌드박스 공통 — 모둠 수 (인원이 역할 수보다 많으면 모둠을 키워 2인 1역할 배정 가능) */
+export function computeSessionGroupCount(playerCount: number, rolesPerGroup: number): number {
+  const roleCount = Math.max(2, rolesPerGroup);
+  if (playerCount <= 0) return 0;
+  if (playerCount <= roleCount) return 1;
+  return Math.max(1, Math.floor(playerCount / roleCount));
+}
+
+/** 역할별 학습지 빈칸 소유 학생 (같은 역할 2명이면 먼저 배정된 1명) */
+export function slotOwnerForRole(
+  members: AssignableMember[],
+  roleId: string,
+): AssignableMember | undefined {
+  const candidates = members.filter((m) => m.assigned_role_id === roleId);
+  candidates.sort((a, b) => {
+    const ta = Date.parse(a.created_at ?? "");
+    const tb = Date.parse(b.created_at ?? "");
+    const na = Number.isNaN(ta) ? 0 : ta;
+    const nb = Number.isNaN(tb) ? 0 : tb;
+    if (na !== nb) return na - nb;
+    return a.id.localeCompare(b.id);
+  });
+  return candidates[0];
+}
+
+export function isSlotOwnerForRole(
+  playerId: string,
+  members: AssignableMember[],
+  roleId: string,
+): boolean {
+  return slotOwnerForRole(members, roleId)?.id === playerId;
+}
 
 export function assignRolesToPlayers(
   pack: ActivityPack,
@@ -155,6 +196,27 @@ export function assignRolesToPlayers(
 
   const playerCount = playerIds.length;
   const roleCount = roles.length;
+
+  if (playerCount > roleCount) {
+    const pairedRoleCount = playerCount - roleCount;
+    let playerIndex = 0;
+    for (let ri = 0; ri < roleCount && playerIndex < playerCount; ri++) {
+      const role = roles[ri]!;
+      const primaryItem = role.items[0];
+      const itemIds = primaryItem ? [primaryItem.id] : [];
+      const playersForThisRole = ri < pairedRoleCount ? 2 : 1;
+
+      for (let j = 0; j < playersForThisRole && playerIndex < playerCount; j++) {
+        assignment.set(playerIds[playerIndex]!, {
+          roleId: role.id,
+          itemIds,
+          isSlotOwner: j === 0,
+        });
+        playerIndex++;
+      }
+    }
+    return assignment;
+  }
 
   let playerIndex = 0;
   for (let ri = 0; ri < roleCount && playerIndex < playerCount; ri++) {
@@ -169,6 +231,7 @@ export function assignRolesToPlayers(
       assignment.set(playerId, {
         roleId: role.id,
         itemIds: primaryItem ? [primaryItem.id] : [],
+        isSlotOwner: j === 0,
       });
       playerIndex++;
     }

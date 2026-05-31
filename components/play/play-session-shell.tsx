@@ -337,6 +337,7 @@ export function PlaySessionShell({
         assigned_role_id: m.assigned_role_id,
         assigned_item_ids: m.assigned_item_ids,
         word_cards: m.word_cards,
+        created_at: m.created_at,
       })),
     [groupMembersQuery.data],
   );

@@ -29,6 +29,7 @@ import {
   totalGroupScore,
   worksheetProgress,
   PLAYER_MESSAGES,
+  slotOwnerForRole,
 } from "@/lib/activity-pack/engine";
 import { parsePassageSegments } from "@/lib/activity-pack/worksheet";
 import type { ActivityPack } from "@/lib/activity-pack/types";
@@ -38,7 +39,7 @@ const t = activityLayoutType;
 
 export type GroupMember = Pick<
   PlayerSelfRow,
-  "id" | "nickname" | "assigned_role_id" | "assigned_item_ids" | "word_cards"
+  "id" | "nickname" | "assigned_role_id" | "assigned_item_ids" | "word_cards" | "created_at"
 >;
 
 type Props = {
@@ -99,11 +100,13 @@ export function GroupPhasePanel({
 
   const ownerPlayerByRole = useMemo(() => {
     const map = new Map<string, GroupMember>();
-    for (const m of members) {
-      if (m.assigned_role_id) map.set(m.assigned_role_id, m);
+    for (const role of pack.roles) {
+      const ownerId = slotOwnerForRole(members, role.id)?.id;
+      const owner = ownerId ? members.find((m) => m.id === ownerId) : undefined;
+      if (owner) map.set(role.id, owner);
     }
     return map;
-  }, [members]);
+  }, [members, pack.roles]);
 
   const inventory = availableWordCards(wordCards);
   const progress = worksheetProgress(pack, group.worksheet_placements);
@@ -321,7 +324,12 @@ export function GroupPhasePanel({
         <PlayPhaseSection title="팀원 활성 슬롯">
           <ul className="space-y-2">
             {members
-              .filter((m) => m.id !== playerId)
+              .filter(
+                (m) =>
+                  m.id !== playerId &&
+                  m.assigned_role_id &&
+                  slotOwnerForRole(members, m.assigned_role_id)?.id === m.id,
+              )
               .map((m) => {
                 const roleSlots = worksheet.slots.filter(
                   (s) => s.ownerRoleId === m.assigned_role_id,
@@ -409,5 +417,6 @@ export async function fetchGroupMembersForPlay(groupId: string): Promise<GroupMe
     assigned_role_id: r.assigned_role_id,
     assigned_item_ids: r.assigned_item_ids,
     word_cards: r.word_cards,
+    created_at: r.created_at,
   }));
 }

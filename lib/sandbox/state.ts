@@ -5,7 +5,7 @@
 import { ACTIVITY_PHASE_LABELS } from "@/lib/activity-phases";
 import { MIN_ROLES_PER_GROUP } from "@/lib/activity-pack/sizing";
 import type { ActivityPhase, SessionStatus } from "@/lib/types";
-import { assignRolesToPlayers } from "@/lib/activity-pack/engine";
+import { assignRolesToPlayers, computeSessionGroupCount } from "@/lib/activity-pack/engine";
 import type { ActivityPack, WordCard, WorksheetPlacement } from "@/lib/activity-pack/types";
 import { pickSandboxLobbyBotNicknames, SANDBOX_LOBBY_BOT_COUNT } from "@/lib/sandbox/waiting-nicknames";
 import { getNextPhase } from "@/lib/api/sessions";
@@ -107,8 +107,8 @@ export function buildSandboxAssignments(
   const chips = buildSandboxWaitingRoster(activityId, realStudentNickname, pack.groupSize);
   shuffleArrayInPlace(chips);
 
-  const groupSize = Math.max(MIN_ROLES_PER_GROUP, pack.groupSize);
-  const numGroups = Math.max(1, Math.ceil(chips.length / groupSize));
+  const roleCount = Math.max(MIN_ROLES_PER_GROUP, pack.groupSize);
+  const numGroups = computeSessionGroupCount(chips.length, roleCount);
 
   const groups: SandboxGroup[] = Array.from({ length: numGroups }, (_, i) => ({
     id: `sandbox-group-${i}`,

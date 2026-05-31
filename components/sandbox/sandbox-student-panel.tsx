@@ -88,12 +88,13 @@ export function SandboxStudentPanel({
     if (!group) return [];
     return players
       .filter((p) => p.groupId === group.id)
-      .map((p) => ({
+      .map((p, index) => ({
         id: p.id,
         nickname: p.nickname,
         assigned_role_id: p.roleId,
         assigned_item_ids: p.itemIds,
         word_cards: p.word_cards,
+        created_at: new Date(1_000 + index).toISOString(),
       }));
   }, [group, players]);
 
