@@ -26,11 +26,13 @@ import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { acquireItemForPlayer } from "@/lib/api/play";
 import { getItemById } from "@/lib/activity-pack/engine";
-import { acquireSuccessMessage, PLAYER_MESSAGES } from "@/lib/activity-pack/player-messages";
+import { acquireSuccessMessage, PLAYER_MESSAGES } from "@/lib/copy/player";
 import { formatAssignedSlots } from "@/lib/play/assignment-labels";
 import { buildItemCodenameMap, formatItemCodenames } from "@/lib/play/role-codenames";
-import { PLAY_STUDENT_COPY } from "@/lib/play/student-copy";
+import { STUDENT_COPY } from "@/lib/copy/student";
 import type { ActivityPack } from "@/lib/activity-pack/types";
+
+const EXPERT = STUDENT_COPY.phaseExpert;
 import { scoreForClueLevel } from "@/lib/activity-pack/scoring";
 import { cn } from "@/lib/utils";
 
@@ -136,13 +138,13 @@ export function ExpertPhasePanel({
       contained={contained}
       header={{
         phase: 2,
-        title: PLAY_STUDENT_COPY.phaseExpert.title,
-        description: PLAY_STUDENT_COPY.phaseExpert.description,
+        title: EXPERT.title,
+        description: EXPERT.description,
         rightSlot: (
           <PlayHeaderGroupPlace
             groupName={groupName}
             placeName={placeLabel}
-            placeLabel={PLAY_STUDENT_COPY.phaseExpert.placeLabel}
+            placeLabel={EXPERT.placeLabel}
             pending={pending}
             contained={contained}
           />
@@ -151,18 +153,18 @@ export function ExpertPhasePanel({
     >
       <PlayPhasePanel>
         {allAcquired ? (
-          <PlayPhaseCallout title="배정 아이템 획득 완료" centered>
-            <p className={t.playPanelBody}>{PLAY_STUDENT_COPY.phaseExpert.acquiredReturn}</p>
+          <PlayPhaseCallout title={EXPERT.acquiredCallout} centered>
+            <p className={t.playPanelBody}>{EXPERT.acquiredReturn}</p>
             <PlayPhaseWaitFootnote className="mt-4" />
           </PlayPhaseCallout>
         ) : item && activeItemId ? (
           <>
             {assignedItemIds.length > 1 ? (
               <PlayPhaseSection
-                title="내 배정 아이템"
+                title={EXPERT.myItemsSection}
                 headerExtra={
                   <PlayPhaseSectionBadge>
-                    {acquiredItemIds.size}/{assignedItemIds.length} 획득
+                    {EXPERT.acquiredBadge(acquiredItemIds.size, assignedItemIds.length)}
                   </PlayPhaseSectionBadge>
                 }
               >
@@ -200,30 +202,30 @@ export function ExpertPhasePanel({
 
             <ExpertClueBoard item={item} reveal={clueReveal} onRevealChange={setClueReveal} />
 
-            <PlayPhaseSection title="정답 제출" variant="active">
+            <PlayPhaseSection title={EXPERT.submitSection} variant="active">
             <form id="expert-answer-form" className="space-y-3" onSubmit={handleSubmit}>
-              <FormField label="이것은 무엇일까요?" htmlFor="item-answer">
+              <FormField label={EXPERT.itemNameLabel} htmlFor="item-answer">
                 <Input
                   id="item-answer"
                   value={answer}
                   onChange={(e) => setAnswer(e.target.value)}
-                  placeholder="정답 입력"
+                  placeholder={EXPERT.itemNamePlaceholder}
                   autoComplete="off"
                   required
                 />
               </FormField>
               {message ? (
-                <PlayPhaseMessage message={message} success={message.startsWith("정답")} />
+                <PlayPhaseMessage message={message} success={message.includes("획득")} />
               ) : null}
               <div className={playPhaseFormActions}>
                 <Button type="submit" className="@sm:min-w-[10rem]" disabled={submitting}>
                   {submitting ? (
                     <>
                       <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin @sm:h-4 @sm:w-4" aria-hidden />
-                      확인 중…
+                      {EXPERT.submitting}
                     </>
                   ) : (
-                    "정답 제출"
+                    EXPERT.submitButton
                   )}
                 </Button>
               </div>
@@ -231,7 +233,7 @@ export function ExpertPhasePanel({
             </PlayPhaseSection>
           </>
         ) : (
-          <PlayPhaseMessage message="아이템 정보를 찾을 수 없습니다." />
+          <PlayPhaseMessage message={PLAYER_MESSAGES.unknownItem} />
         )}
       </PlayPhasePanel>
     </PlayPhaseShell>

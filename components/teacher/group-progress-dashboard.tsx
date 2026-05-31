@@ -9,6 +9,7 @@ import {
 import { activityLayoutType } from "@/components/activity/activity-layout-typography";
 import { PhaseSection, PhaseSectionBadge } from "@/components/activity/phase-section-layout";
 import { LoadingState } from "@/components/ui/loading-state";
+import { HOST_COPY } from "@/lib/copy/teacher";
 import type { ActivityPack } from "@/lib/activity-pack/types";
 import { computeGroupTotalScore } from "@/lib/activity-pack/session-results";
 import type { GroupRow } from "@/lib/api/play";
@@ -36,10 +37,10 @@ export function GroupProgressDashboard({
 
   return (
     <PhaseSection
-      title="모둠 미션 진행"
+      title={HOST_COPY.progressTitle}
       heading="section"
       as="h2"
-      subtitle="아이템 획득·미션 해결·최종 제출 현황입니다."
+      subtitle={HOST_COPY.progressSubtitle}
       headerExtra={
         !loading && groups.length > 0 ? (
           <PhaseSectionBadge>
@@ -118,7 +119,7 @@ function GroupProgressCard({
                 : "text-[var(--muted-foreground)]"
             }
           >
-            {activityCompleted ? "완료" : "진행 중"}
+            {activityCompleted ? HOST_COPY.progressComplete : HOST_COPY.progressOngoing}
           </dd>
         </div>
         <div className="flex justify-between gap-2 border-t border-[var(--border)] pt-1">

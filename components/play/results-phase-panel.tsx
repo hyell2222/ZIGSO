@@ -14,7 +14,7 @@ import {
   getStudentResultsSnapshot,
   type SessionResultsSummary,
 } from "@/lib/activity-pack/session-results";
-import { PLAY_STUDENT_COPY } from "@/lib/play/student-copy";
+import { STUDENT_COPY } from "@/lib/copy/student";
 import { cn } from "@/lib/utils";
 
 const rankToneClass: Record<number, string> = {
@@ -105,12 +105,12 @@ export function ResultsPhasePanel({
     [results, highlightGroupId, currentPlayerId],
   );
 
-  const copy = PLAY_STUDENT_COPY.phaseResults;
+  const copy = STUDENT_COPY.phaseResults;
 
   return (
     <PlayPhaseShell contained={contained}>
       {loading ? (
-        <LoadingState variant="section" tone="play" label="결과 집계 중…" />
+        <LoadingState variant="section" tone="play" label={copy.aggregating} />
       ) : !snapshot ? (
         <p className={cn("py-8 text-center", activityLayoutType.bodyMuted)}>{copy.emptyMessage}</p>
       ) : (
@@ -122,7 +122,7 @@ export function ResultsPhasePanel({
             label={copy.groupRankLabel}
             rank={snapshot.groupRank}
             total={snapshot.totalTeams}
-            totalUnit="개 모둠"
+            totalUnit={copy.groupUnit}
             score={snapshot.groupScore}
             scoreLabel={`${snapshot.groupName} · ${copy.groupScoreLabel}`}
             accent
@@ -131,7 +131,7 @@ export function ResultsPhasePanel({
             label={copy.personalRankLabel}
             rank={snapshot.personalRank}
             total={snapshot.totalPlayers}
-            totalUnit="명"
+            totalUnit={copy.personUnit}
             score={snapshot.personalScore}
             scoreLabel={copy.personalScoreLabel}
             detail={`${snapshot.roleLabel} · 전문가 ${snapshot.expertScore}점 · 팀 기여 ${snapshot.teamShareScore}점`}

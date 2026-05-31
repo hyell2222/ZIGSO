@@ -13,6 +13,7 @@ import { LoadingState } from "@/components/ui/loading-state";
 import { buildSessionResults } from "@/lib/activity-pack/session-results";
 import type { ActivityPack } from "@/lib/activity-pack/types";
 import type { GroupRow } from "@/lib/api/play";
+import { HOST_COPY } from "@/lib/copy/teacher";
 import { cn } from "@/lib/utils";
 
 export type SessionResultsMember = {
@@ -65,19 +66,19 @@ export function SessionResultsDashboard({
   }, [pack, groups, members, roleScopeKey]);
 
   if (loading) {
-    return <LoadingState variant="section" label="결과 집계 중…" />;
+    return <LoadingState variant="section" label={HOST_COPY.resultsAggregating} />;
   }
 
   if (!results?.rankedTeams.length) {
-    return <p className={activityLayoutType.bodyMuted}>집계할 모둠 결과가 없습니다.</p>;
+    return <p className={activityLayoutType.bodyMuted}>{HOST_COPY.resultsEmpty}</p>;
   }
 
   return (
     <PhaseSection
-      title="모둠 순위"
+      title={HOST_COPY.resultsTitle}
       heading="section"
       as="h2"
-      subtitle="전체 모둠 총점 순위와 모둠별 MVP입니다. 모둠원 개인 순위는 학생 화면에서만 확인할 수 있습니다."
+      subtitle={HOST_COPY.resultsSubtitle}
       headerExtra={
         <PhaseSectionBadge>{results.rankedTeams.length}개 모둠</PhaseSectionBadge>
       }

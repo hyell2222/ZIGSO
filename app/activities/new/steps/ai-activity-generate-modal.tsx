@@ -18,6 +18,7 @@ import {
   type ContentLanguage,
 } from "@/lib/activity-pack/content-language";
 import type { ActivityPack } from "@/lib/activity-pack/types";
+import { TEACHER_AI_COPY } from "@/lib/copy/teacher";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -54,7 +55,7 @@ export function AIActivityGenerateModal({ open, onClose, onApply }: Props) {
       onApply(pack);
       onClose();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "생성 실패");
+      setError(e instanceof Error ? e.message : TEACHER_AI_COPY.generateFailed);
     } finally {
       setLoading(false);
     }
@@ -64,25 +65,26 @@ export function AIActivityGenerateModal({ open, onClose, onApply }: Props) {
     <Modal
       open={open}
       onClose={onClose}
-      title="AI 활동 팩 생성"
+      title={TEACHER_AI_COPY.modalTitle}
       titleId="ai-activity-generate-modal-title"
       closeOnBackdrop={!loading}
     >
       <div className="space-y-4">
-        <FormField label="활동 주제" htmlFor="ai-activity-topic">
+        <FormField
+          label={TEACHER_AI_COPY.topicLabel}
+          help={TEACHER_AI_COPY.topicHelp}
+          htmlFor="ai-activity-topic"
+        >
           <Textarea
             id="ai-activity-topic"
-            placeholder="예: 환경 보호, 협동 독서, 음식 문화"
+            placeholder={TEACHER_AI_COPY.topicPlaceholder}
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
             rows={3}
           />
         </FormField>
 
-        <FormField
-          label="난이도 (생성 참고)"
-          help="활동에 저장되지 않습니다. AI가 단서·미션 난이도를 맞출 때만 사용합니다."
-        >
+        <FormField label={TEACHER_AI_COPY.difficultyLabel} help={TEACHER_AI_COPY.difficultyHelp}>
           <div className="flex flex-wrap gap-2">
             {AI_DIFFICULTY_UI_OPTIONS.map((opt) => (
               <button
@@ -102,7 +104,7 @@ export function AIActivityGenerateModal({ open, onClose, onApply }: Props) {
           </div>
         </FormField>
 
-        <FormField label="안내 언어 (제목·설명·단서·수행 문장)">
+        <FormField label={TEACHER_AI_COPY.languageLabel}>
           <div className="flex flex-wrap gap-2">
             {CONTENT_LANGUAGE_OPTIONS.map((opt) => (
               <button
@@ -126,7 +128,7 @@ export function AIActivityGenerateModal({ open, onClose, onApply }: Props) {
         </FormField>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <FormField label="맞출 아이템(역할) 수" help="모둠 인원과 동일합니다">
+          <FormField label={TEACHER_AI_COPY.roleCountLabel} help={TEACHER_AI_COPY.roleCountHelp}>
             <div className="flex items-center gap-2">
               <Button
                 type="button"
@@ -149,7 +151,7 @@ export function AIActivityGenerateModal({ open, onClose, onApply }: Props) {
               </Button>
             </div>
           </FormField>
-          <FormField label="미션 수">
+          <FormField label={TEACHER_AI_COPY.missionCountLabel} help={TEACHER_AI_COPY.missionCountHelp}>
             <div className="flex items-center gap-2">
               <Button
                 type="button"
@@ -180,12 +182,12 @@ export function AIActivityGenerateModal({ open, onClose, onApply }: Props) {
           {loading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              생성 중…
+              {TEACHER_AI_COPY.generating}
             </>
           ) : (
             <>
               <Sparkles className="mr-2 h-4 w-4" />
-              활동 팩 생성
+              {TEACHER_AI_COPY.generate}
             </>
           )}
         </Button>

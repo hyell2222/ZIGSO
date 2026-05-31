@@ -22,7 +22,7 @@ import {
 } from "@/lib/sandbox/state";
 import { sandboxType } from "@/components/sandbox/sandbox-typography";
 import { formatAssignedRoleLabels } from "@/lib/activity-pack/roles";
-import { PLAY_STUDENT_COPY } from "@/lib/play/student-copy";
+import { STUDENT_COPY } from "@/lib/copy/student";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -160,7 +160,7 @@ export function SandboxStudentPanel({
             state="waiting"
           />
           <p className={cn("mt-3 text-center", sandboxType.caption)}>
-            {PLAY_STUDENT_COPY.waiting.waitForTeacher}
+            {STUDENT_COPY.waiting.waitForTeacher}
           </p>
         </div>
       </PlayPhaseShell>
@@ -204,13 +204,13 @@ export function SandboxStudentPanel({
         contained
         header={{
           phase: 1,
-          title: PLAY_STUDENT_COPY.phaseOverview.title,
-          description: PLAY_STUDENT_COPY.phaseOverview.description,
+          title: STUDENT_COPY.phaseOverview.title,
+          description: STUDENT_COPY.phaseOverview.description,
           rightSlot: (
             <PlayHeaderGroupPlace
               groupName={group?.name ?? null}
               placeName={roleLabel}
-              placeLabel={PLAY_STUDENT_COPY.phaseOverview.placeLabel}
+              placeLabel={STUDENT_COPY.phaseOverview.placeLabel}
               contained
             />
           ),
@@ -249,7 +249,7 @@ export function SandboxStudentPanel({
           sandboxType.bodyMuted,
         )}
       >
-        {PLAY_STUDENT_COPY.waiting.waitForTeacher}
+        {STUDENT_COPY.waiting.waitForTeacher}
       </main>
     </PlayPhaseShell>
   );

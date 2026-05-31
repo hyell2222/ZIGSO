@@ -3,6 +3,8 @@
 import { activityListRow } from "@/components/activity/activity-layout-chrome";
 import { activityLayoutType } from "@/components/activity/activity-layout-typography";
 import { PhaseSection, PhaseSectionBadge } from "@/components/activity/phase-section-layout";
+import { COPY_DEFAULTS } from "@/lib/copy/defaults";
+import { HOST_COPY } from "@/lib/copy/teacher";
 import { cn } from "@/lib/utils";
 
 type Player = { id: string; nickname: string | null };
@@ -15,10 +17,10 @@ type Props = {
 export function SessionHostWaitingRoster({ players }: Props) {
   return (
     <PhaseSection
-      title="대기 학생"
+      title={HOST_COPY.waitingRosterTitle}
       heading="section"
       as="h2"
-      subtitle="입장했지만 아직 활동이 시작되지 않은 학생입니다."
+      subtitle={HOST_COPY.waitingRosterSubtitle}
       headerExtra={<PhaseSectionBadge>{players.length}명</PhaseSectionBadge>}
     >
       {players.length === 0 ? (
@@ -31,7 +33,9 @@ export function SessionHostWaitingRoster({ players }: Props) {
               className={cn(activityListRow, "inline-flex min-h-9 w-auto items-center gap-1.5")}
             >
               <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--primary)]" aria-hidden />
-              <span className={activityLayoutType.listRowPrimary}>{p.nickname ?? "참가자"}</span>
+              <span className={activityLayoutType.listRowPrimary}>
+                {p.nickname ?? COPY_DEFAULTS.participant}
+              </span>
             </li>
           ))}
         </ul>

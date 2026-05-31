@@ -18,7 +18,8 @@ import {
 import { PlayHeaderGroupPlace } from "@/components/play/play-header-group-place";
 import { WaitingLobbyBlock } from "@/components/play/waiting-lobby-block";
 import { LoadingState } from "@/components/ui/loading-state";
-import { PLAY_JOIN_COPY } from "@/components/play/play-join-copy";
+import { COPY_DEFAULTS } from "@/lib/copy/defaults";
+import { JOIN_COPY } from "@/lib/copy/join";
 import { PlayJoinModal } from "@/components/play/play-join-modal";
 import { PlayResumeModal } from "@/components/play/play-resume-modal";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -49,7 +50,7 @@ import { ROUTES } from "@/lib/routes";
 import { hasSupabaseEnv, supabase } from "@/lib/supabase";
 import { formatAssignedRoleLabels } from "@/lib/activity-pack/roles";
 import { formatAssignedSlots } from "@/lib/play/assignment-labels";
-import { PLAY_STUDENT_COPY } from "@/lib/play/student-copy";
+import { STUDENT_COPY } from "@/lib/copy/student";
 import { cn } from "@/lib/utils";
 
 export function PlaySessionShell({
@@ -183,7 +184,7 @@ export function PlaySessionShell({
           void channel.track({
             role: "player",
             player_id: playerId,
-            nickname: nickname.trim() || "참가자",
+            nickname: nickname.trim() || COPY_DEFAULTS.participant,
           });
           return;
         }
@@ -216,8 +217,8 @@ export function PlaySessionShell({
     mutationFn: async (args?: { nickname?: string }) => {
       const normalizedJoinCode = joinCode.trim().toUpperCase();
       const nick = (args?.nickname ?? nickname).trim();
-      if (!normalizedJoinCode) throw new Error("참가 코드를 입력해 주세요.");
-      if (!nick) throw new Error("닉네임을 입력해 주세요.");
+      if (!normalizedJoinCode) throw new Error(JOIN_COPY.errors.codeRequired);
+      if (!nick) throw new Error(JOIN_COPY.errors.nicknameRequired);
       const session = await getSessionByJoinCode(normalizedJoinCode);
       setSessionId(session.id);
       const result = await joinPlayerSession({
@@ -419,13 +420,13 @@ export function PlaySessionShell({
       <PlayPhaseShell
         header={{
           phase: 1,
-          title: PLAY_STUDENT_COPY.phaseOverview.title,
-          description: PLAY_STUDENT_COPY.phaseOverview.description,
+          title: STUDENT_COPY.phaseOverview.title,
+          description: STUDENT_COPY.phaseOverview.description,
           rightSlot: (
             <PlayHeaderGroupPlace
               groupName={groupName}
               placeName={roleLabel}
-              placeLabel={PLAY_STUDENT_COPY.phaseOverview.placeLabel}
+              placeLabel={STUDENT_COPY.phaseOverview.placeLabel}
               pending={playerQuery.isLoading || !hasAssignment}
             />
           ),
@@ -456,7 +457,7 @@ export function PlaySessionShell({
             state={waitingLobbyState}
           />
           <p className="mt-6 text-center text-xs text-[var(--muted-foreground)]">
-            {PLAY_STUDENT_COPY.waiting.waitForTeacher}
+            {STUDENT_COPY.waiting.waitForTeacher}
           </p>
         </div>
       </PlayPhaseShell>
@@ -531,11 +532,15 @@ export function PlaySessionShell({
             nickname={nickname}
             message={message}
             pending={joinAndRegisterMutation.isPending}
-            title={declinedResumeRef.current || !initialNickname.trim() ? PLAY_JOIN_COPY.title : "다시 참가하기"}
+            title={
+              declinedResumeRef.current || !initialNickname.trim()
+                ? JOIN_COPY.title
+                : JOIN_COPY.resumeTitle
+            }
             description={
               declinedResumeRef.current || !initialNickname.trim()
-                ? PLAY_JOIN_COPY.description
-                : "닉네임을 확인한 뒤 다시 참가해 주세요."
+                ? JOIN_COPY.description
+                : JOIN_COPY.resumeNicknameHint
             }
             joinCodeEditable={false}
             showMissingCodeClue={false}
@@ -543,7 +548,7 @@ export function PlaySessionShell({
             onSubmit={() => {
               const nick = nickname.trim();
               if (!nick) {
-                setMessage("닉네임을 입력해 주세요.");
+                setMessage(JOIN_COPY.errors.nicknameRequired);
                 return;
               }
               joinAndRegisterMutation.mutate({ nickname: nick });

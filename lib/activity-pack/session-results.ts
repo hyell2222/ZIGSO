@@ -1,3 +1,4 @@
+import { COPY_DEFAULTS } from "@/lib/copy/defaults";
 import { totalGroupScore } from "@/lib/activity-pack/engine";
 import { formatAssignedRoleLabels } from "@/lib/activity-pack/roles";
 import type { ActivityPack } from "@/lib/activity-pack/types";
@@ -165,7 +166,7 @@ function computeMemberResults(
     const totalScore = Math.round((expertScore + teamShareEach) * 10) / 10;
     return {
       playerId: m.id,
-      nickname: m.nickname?.trim() || "참가자",
+      nickname: m.nickname?.trim() || COPY_DEFAULTS.participant,
       assignedRoleId: m.assignedRoleId,
       roleLabel,
       expertScore,
@@ -236,7 +237,7 @@ export function buildSessionResults(
     const mvp = pickMvp(memberResults);
     return {
       groupId: group.id,
-      groupName: group.name?.trim() || "모둠",
+      groupName: group.name?.trim() || COPY_DEFAULTS.group,
       totalScore: computeGroupTotalScore(group),
       itemsAcquired: group.acquired_items.length,
       tasksCompleted: group.completed_tasks.length,

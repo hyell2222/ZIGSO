@@ -49,8 +49,12 @@ import {
 } from "@/lib/realtime/session-presence";
 import { hasSupabaseEnv, supabase } from "@/lib/supabase";
 import { isSessionEnded } from "@/lib/activity-phases";
-import { isTimedPhase, type TimedPhase } from "@/lib/teacher/phase-guide";
-import { HOST_SESSION_START_LABEL, hostSessionNextPhaseLabel } from "@/lib/teacher/host-session-labels";
+import {
+  HOST_SESSION_START_LABEL,
+  hostSessionNextPhaseLabel,
+  isTimedPhase,
+  type TimedPhase,
+} from "@/lib/copy/teacher";
 import { cn } from "@/lib/utils";
 
 function SessionHostContent() {

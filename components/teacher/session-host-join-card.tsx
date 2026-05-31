@@ -1,6 +1,7 @@
 "use client";
 
 import { PlayJoinQr } from "@/components/teacher/play-join-qr";
+import { HOST_COPY } from "@/lib/copy/teacher";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -27,7 +28,7 @@ export function SessionHostJoinCard({ joinCode, sessionEnded = false, contained 
                 contained ? "text-xs" : "text-sm @md:text-base",
               )}
             >
-              종료된 세션
+              {HOST_COPY.sessionEnded}
             </p>
           </div>
         ) : (
@@ -39,7 +40,7 @@ export function SessionHostJoinCard({ joinCode, sessionEnded = false, contained 
                   contained ? "text-[10px]" : "text-[10px] @md:text-xs @md:tracking-wider",
                 )}
               >
-                참가 코드
+                {HOST_COPY.joinCodeLabel}
               </p>
               <p
                 className={cn(

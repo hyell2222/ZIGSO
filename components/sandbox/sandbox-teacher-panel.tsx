@@ -28,13 +28,14 @@ import {
   type SandboxPlayer,
   type SandboxGroup,
 } from "@/lib/sandbox/state";
+import type { SessionStatus } from "@/lib/types";
+import { isSessionEnded } from "@/lib/activity-phases";
 import {
   HOST_SESSION_START_LABEL,
   hostSessionNextPhaseLabel,
-} from "@/lib/teacher/host-session-labels";
-import type { SessionStatus } from "@/lib/types";
-import { isSessionEnded } from "@/lib/activity-phases";
-import { isTimedPhase, type TimedPhase } from "@/lib/teacher/phase-guide";
+  isTimedPhase,
+  type TimedPhase,
+} from "@/lib/copy/teacher";
 import { buildRoleCodenameMap } from "@/lib/play/role-codenames";
 import { formatAssignedRoleLabels } from "@/lib/activity-pack/roles";
 

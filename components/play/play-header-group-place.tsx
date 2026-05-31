@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 export function PlayHeaderGroupPlace({
   groupName,
   placeName,
-  placeLabel = "담당 장소",
+  placeLabel = "나의 역할",
   pending,
   className,
   contained = false,

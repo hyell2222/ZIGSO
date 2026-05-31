@@ -126,7 +126,7 @@ export function PlayJoinForm({
       <FormField label="닉네임" htmlFor={`${titleId}-nickname`}>
         <Input
           id={`${titleId}-nickname`}
-          placeholder="활동에서 쓸 닉네임"
+          placeholder="수업에서 부를 이름"
           value={nickname}
           onChange={(event) => onNicknameChange(event.target.value)}
           disabled={pending}

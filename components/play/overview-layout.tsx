@@ -11,8 +11,8 @@ import {
   playPhaseTwoColumnGrid,
 } from "@/components/play/play-phase-layout";
 import { LoadingState } from "@/components/ui/loading-state";
-import { PLAYER_MESSAGES } from "@/lib/activity-pack/player-messages";
-import { PLAY_STUDENT_COPY } from "@/lib/play/student-copy";
+import { PLAYER_MESSAGES } from "@/lib/copy/player";
+import { STUDENT_COPY } from "@/lib/copy/student";
 import type { ActivityPack } from "@/lib/activity-pack/types";
 import { cn } from "@/lib/utils";
 
@@ -42,7 +42,7 @@ export function ActivityIntroductionLayout({
   return (
     <PlayPhasePanel>
       <div className={playPhaseTwoColumnGrid}>
-        <PlayPhaseSectionCard title="활동 안내">
+        <PlayPhaseSectionCard title={STUDENT_COPY.phaseOverview.introSection}>
           <p className={t.playPanelLead}>{title ?? PLAYER_MESSAGES.defaultPackTitle}</p>
           <p className={t.playPanelBody}>{description ?? "—"}</p>
           <p
@@ -51,16 +51,16 @@ export function ActivityIntroductionLayout({
               t.caption,
             )}
           >
-            {PLAY_STUDENT_COPY.intro.timeClue}
+            {STUDENT_COPY.intro.timeClue}
           </p>
         </PlayPhaseSectionCard>
 
         <PlayPhaseSectionCard
-          title="해결할 미션"
+          title={STUDENT_COPY.phaseOverview.missionsSection}
           icon={<ListChecks className="h-4 w-4 shrink-0 text-[var(--accent)]" aria-hidden />}
         >
           {!activityPack?.tasks?.length ? (
-            <p className={t.playPanelBody}>미션 정보가 없습니다.</p>
+            <p className={t.playPanelBody}>{STUDENT_COPY.phaseOverview.missionsEmpty}</p>
           ) : (
             <ul className="space-y-2">
               {activityPack.tasks.map((ch) => (
@@ -72,7 +72,7 @@ export function ActivityIntroductionLayout({
                     <span className={t.playPanelRow}>{ch.title}</span>
                     {ch.acceptedItemIds.length > 0 ? (
                       <span className={t.playPanelRowMeta}>
-                        필수 제출 {ch.acceptedItemIds.length}개
+                        {STUDENT_COPY.phaseOverview.requiredItems(ch.acceptedItemIds.length)}
                       </span>
                     ) : null}
                   </div>

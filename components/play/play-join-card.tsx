@@ -1,7 +1,7 @@
 "use client";
 
 import { Modal } from "@/components/ui/modal";
-import { PLAY_JOIN_COPY } from "@/components/play/play-join-copy";
+import { JOIN_COPY } from "@/lib/copy/join";
 import { PlayJoinForm, type PlayJoinFormProps } from "@/components/play/play-join-form";
 
 export type PlayJoinCardProps = Omit<PlayJoinFormProps, "className"> & {
@@ -11,11 +11,11 @@ export type PlayJoinCardProps = Omit<PlayJoinFormProps, "className"> & {
 
 /** `/play/` 입장 페이지·오버레이 공통 참가 카드 */
 export function PlayJoinCard({
-  title = PLAY_JOIN_COPY.title,
-  description = PLAY_JOIN_COPY.description,
+  title = JOIN_COPY.title,
+  description = JOIN_COPY.description,
   titleId = "play-join-card",
-  submitLabel = PLAY_JOIN_COPY.submitLabel,
-  pendingLabel = PLAY_JOIN_COPY.pendingLabel,
+  submitLabel = JOIN_COPY.submitLabel,
+  pendingLabel = JOIN_COPY.pendingLabel,
   ...formProps
 }: PlayJoinCardProps) {
   return (

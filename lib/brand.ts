@@ -1,6 +1,13 @@
-/** 플랫폼 브랜드 (예시 게임 템플릿과 구분) */
-export const PLATFORM_NAME = "Jigsaw";
-export const PLATFORM_TAGLINE = "직소 모둠 협동 학습을 돕는 교사 도구";
+/** 출품·시작 화면·연구보고서와 공유하는 표기 */
 
-/** 내장 예시 게임 (교사가 참고·복제할 수 있는 샘플) */
-export const EXAMPLE_GAME_NAME = "School Lunch Rush";
+export const PRODUCT_NAME = "Jigsaw";
+
+/** 연구보고서 제목(소프트웨어 시작 화면·USB document와 동일 권장) */
+export const RESEARCH_REPORT_TITLE =
+  "중·고 협동학습 수업을 위한 직소·STAD 온라인 활동 플랫폼 Jigsaw 개발 및 적용";
+
+/** 2025학년도부터 중·고에 적용되는 2022 개정 교육과정 대상 학교급 */
+export const TARGET_GRADE_LABEL = "중·고등학교";
+
+/** AI 생성 기본 템플릿 예시 활동명(영문 식별자) */
+export const EXAMPLE_GAME_NAME = "Cooperative Inquiry Activity";

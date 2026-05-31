@@ -2,6 +2,8 @@
  * 시뮬레이션 모드 — 교사 혼자서 활동 흐름을 시연·검수하기 위한 in-memory 모델.
  */
 
+import { ACTIVITY_PHASE_LABELS } from "@/lib/copy/phases";
+import { COPY_DEFAULTS } from "@/lib/copy/defaults";
 import { MIN_ROLES_PER_GROUP } from "@/lib/activity-pack/sizing";
 import type { ActivityPhase, SessionStatus } from "@/lib/types";
 import { assignRolesToPlayers } from "@/lib/activity-pack/engine";
@@ -10,7 +12,7 @@ import { pickSandboxLobbyBotNicknames, SANDBOX_LOBBY_BOT_COUNT } from "@/lib/san
 import {
   HOST_SESSION_START_LABEL,
   hostSessionNextPhaseLabel,
-} from "@/lib/teacher/host-session-labels";
+} from "@/lib/copy/teacher";
 
 export type SandboxGroup = {
   id: string;
@@ -58,7 +60,7 @@ export function buildSandboxWaitingRoster(
   const nicknames = pickSandboxLobbyBotNicknames(activityId.trim() || "_");
   const out: SandboxWaitingChip[] = Array.from({ length: botCount }, (_, i) => ({
     id: `sandbox-lobby-bot-${i}`,
-    nickname: nicknames[i % nicknames.length] ?? `참가자 ${i + 1}`,
+    nickname: nicknames[i % nicknames.length] ?? `${COPY_DEFAULTS.participant} ${i + 1}`,
   }));
 
   const realNick = realStudentNickname?.trim();
@@ -143,7 +145,7 @@ export function buildSandboxAssignments(
       const itemIds = assigned?.itemIds ?? [];
       players.push({
         id: playerId,
-        nickname: chip.nickname.trim() || "참가자",
+        nickname: chip.nickname.trim() || COPY_DEFAULTS.participant,
         groupId: group.id,
         roleId: assigned?.roleId ?? pack.roles[0]?.id ?? "",
         itemId: itemIds[0] ?? fallbackItemId,
@@ -176,10 +178,4 @@ export function getSandboxNextPhaseLabel(current: ActivityPhase): string {
   return hostSessionNextPhaseLabel(current);
 }
 
-export const SANDBOX_PHASE_LABEL: Record<ActivityPhase, string> = {
-  waiting: "대기",
-  overview: "활동 소개",
-  expert_group: "전문가 집단",
-  home_group: "홈 집단",
-  results: "결과",
-};
+export const SANDBOX_PHASE_LABEL = ACTIVITY_PHASE_LABELS;

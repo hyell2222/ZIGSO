@@ -13,6 +13,8 @@ import {
   PhaseSectionBadge,
 } from "@/components/activity/phase-section-layout";
 import { LoadingState } from "@/components/ui/loading-state";
+import { COPY_DEFAULTS } from "@/lib/copy/defaults";
+import { HOST_COPY } from "@/lib/copy/teacher";
 import { cn } from "@/lib/utils";
 
 export type GroupAssignmentMember = {
@@ -38,7 +40,7 @@ function buildItemBuckets(groups: GroupAssignmentGroup[]): ItemAssignmentBucket[
 
   for (const g of groups) {
     for (const m of g.members) {
-      const itemName = m.zoneName?.trim() || "미배정";
+      const itemName = m.zoneName?.trim() || COPY_DEFAULTS.unassignedItem;
       const itemKey = itemName;
       const bucket = map.get(itemKey) ?? { itemKey, itemName, members: [] };
       bucket.members.push({ ...m, groupName: g.group.name });
@@ -47,8 +49,8 @@ function buildItemBuckets(groups: GroupAssignmentGroup[]): ItemAssignmentBucket[
   }
 
   return [...map.values()].sort((a, b) => {
-    if (a.itemName === "미배정") return 1;
-    if (b.itemName === "미배정") return -1;
+    if (a.itemName === COPY_DEFAULTS.unassignedItem) return 1;
+    if (b.itemName === COPY_DEFAULTS.unassignedItem) return -1;
     return a.itemName.localeCompare(b.itemName, "ko");
   });
 }
@@ -91,10 +93,10 @@ export function GroupAssignmentDashboard({
 
   return (
     <PhaseSection
-      title="배정 결과"
+      title={HOST_COPY.assignmentTitle}
       heading="section"
       as="h2"
-      subtitle={isItemView ? "담당 아이템별" : "모둠별"}
+      subtitle={isItemView ? HOST_COPY.assignmentByItem : HOST_COPY.assignmentByGroup}
       headerExtra={
         !loading && !isEmpty ? (
           <PhaseSectionBadge>
@@ -107,7 +109,7 @@ export function GroupAssignmentDashboard({
         <LoadingState variant="section" label="불러오는 중…" />
       ) : isEmpty ? (
         <p className={activityLayoutType.bodyMuted}>
-          {isItemView ? "배정된 아이템이 없습니다." : "배정된 모둠이 없습니다."}
+          {isItemView ? HOST_COPY.noAssignmentItem : HOST_COPY.noAssignmentGroup}
         </p>
       ) : isItemView ? (
         <div className={activityCardGrid}>
@@ -121,7 +123,7 @@ export function GroupAssignmentDashboard({
                 {item.members.map((m) => (
                   <li key={m.id} className={activityListRow}>
                     <span className={cn(activityLayoutType.listRowPrimary, "min-w-0 flex-1")}>
-                      {m.nickname ?? "참가자"}
+                      {m.nickname ?? COPY_DEFAULTS.participant}
                     </span>
                     <span className={activityLayoutType.listRowSecondary}>
                       {m.groupName ?? "—"}
@@ -149,7 +151,7 @@ export function GroupAssignmentDashboard({
                   g.members.map((m) => (
                     <li key={m.id} className={activityListRow}>
                       <span className={cn(activityLayoutType.listRowPrimary, "min-w-0 flex-1")}>
-                        {m.nickname ?? "참가자"}
+                        {m.nickname ?? COPY_DEFAULTS.participant}
                       </span>
                       <span
                         className={cn(

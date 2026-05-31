@@ -1,6 +1,6 @@
 "use client";
 
-import { PLAY_JOIN_COPY } from "@/components/play/play-join-copy";
+import { JOIN_COPY } from "@/lib/copy/join";
 import { PlayJoinReadonlyFields } from "@/components/play/play-join-form";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
@@ -29,7 +29,7 @@ export function PlayResumeModal({
     <Modal
       open={open}
       variant={modalVariant}
-      title={PLAY_JOIN_COPY.title}
+      title={JOIN_COPY.title}
       titleId={titleId}
       zIndexClassName={modalVariant === "contained" ? "z-20" : "z-50"}
       closeOnBackdrop={false}
@@ -43,14 +43,14 @@ export function PlayResumeModal({
           onContinue();
         }}
       >
-        <p className="text-xs text-[var(--foreground)]">{PLAY_JOIN_COPY.resumeDescription}</p>
+        <p className="text-xs text-[var(--foreground)]">{JOIN_COPY.resumeDescription}</p>
         <PlayJoinReadonlyFields titleId={titleId} joinCode={joinCode} nickname={nickname} />
         <div className="flex flex-col gap-2 pt-4">
           <Button type="submit" className="w-full">
-            {PLAY_JOIN_COPY.resumeContinueLabel}
+            {JOIN_COPY.resumeContinueLabel}
           </Button>
           <Button type="button" variant="outline" className="w-full" onClick={onNew}>
-            {PLAY_JOIN_COPY.resumeNewNicknameLabel}
+            {JOIN_COPY.resumeNewNicknameLabel}
           </Button>
         </div>
       </form>

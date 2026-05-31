@@ -3,7 +3,8 @@
 import { parseActivityPack } from "@/lib/api/activities";
 import { tryAcquireItem, tryCompleteTask } from "@/lib/activity-pack/engine";
 import { assignRolesToPlayers } from "@/lib/activity-pack/engine";
-import { PLAYER_MESSAGES } from "@/lib/activity-pack/player-messages";
+import { ERROR_COPY } from "@/lib/copy/errors";
+import { PLAYER_MESSAGES } from "@/lib/copy/player";
 import type { AcquiredItem, CompletedTask, ActivityPack } from "@/lib/activity-pack/types";
 import { supabase } from "@/lib/supabase";
 
@@ -254,7 +255,7 @@ function groupLabel(index: number) {
 
 export async function assignGroupsAndRoles(sessionId: string, pack: ActivityPack) {
   if (pack.roles.length === 0) {
-    throw new Error("활동 팩에 역할이 없습니다.");
+    throw new Error(ERROR_COPY.packNoRoles);
   }
 
   const { data: allPlayers, error: pErr } = await supabase
@@ -388,13 +389,13 @@ export async function completeTaskForGroup(args: {
 export async function completeActivityForGroup(groupId: string, pack: ActivityPack) {
   const group = await getGroupById(groupId);
   if (group.completed_at) {
-    throw new Error("이미 활동을 완료했습니다.");
+    throw new Error(ERROR_COPY.activityAlreadyComplete);
   }
   const requiredIds = pack.tasks.map((t) => t.id);
   const completedIds = new Set(group.completed_tasks.map((t) => t.taskId));
   const missing = requiredIds.filter((id) => !completedIds.has(id));
   if (missing.length > 0) {
-    throw new Error(`아직 해결하지 않은 미션이 있습니다: ${missing.join(", ")}`);
+    throw new Error(ERROR_COPY.missionsIncomplete(missing));
   }
 
   const { error } = await supabase

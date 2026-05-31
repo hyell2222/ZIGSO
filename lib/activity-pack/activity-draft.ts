@@ -13,6 +13,7 @@ import type { ItemClues, Item, ActivityPack, Task, Role } from "@/lib/activity-p
 import { ACTIVITY_PACK_VERSION } from "@/lib/activity-pack/types";
 import { makeTempId } from "@/lib/temp-id";
 import { buildRoleCodenameMap } from "@/lib/play/role-codenames";
+import { TEACHER_EDITOR_COPY } from "@/lib/copy/teacher";
 
 export {
   derivedActivityScale,
@@ -114,7 +115,7 @@ export function editorRoleLabel(index: number): string {
 }
 
 export function editorItemLabel(index: number): string {
-  return `아이템 ${index + 1}`;
+  return `맞출 아이템 ${index + 1}`;
 }
 
 export function flattenEditorItems(draft: ActivityEditorDraft): FlatEditorItem[] {
@@ -306,28 +307,16 @@ export function editorDraftToPack(draft: ActivityEditorDraft): ActivityPack {
 }
 
 export const EDITOR_STEPS = [
-  {
-    id: "basics",
-    title: "기본 정보",
-    description: "활동 제목·설명",
-  },
-  {
-    id: "items",
-    title: "역할·아이템",
-    description: "역할 개수와 역할별 맞출 아이템·단서",
-  },
-  {
-    id: "tasks",
-    title: "모둠 미션",
-    description: "홈 집단에서 해결할 미션",
-  },
+  { id: "basics", ...TEACHER_EDITOR_COPY.steps.basics },
+  { id: "items", ...TEACHER_EDITOR_COPY.steps.items },
+  { id: "tasks", ...TEACHER_EDITOR_COPY.steps.tasks },
 ] as const;
 
 export type EditorStepId = (typeof EDITOR_STEPS)[number]["id"];
 
 function validateRolesAndItems(draft: ActivityEditorDraft, errors: string[]) {
   if (draft.roles.length === 0) {
-    errors.push("역할을 한 가지 이상 추가하세요.");
+    errors.push("모둠원 역할을 한 가지 이상 추가하세요.");
   } else if (
     draft.roles.length < MIN_ROLES_PER_GROUP ||
     draft.roles.length > MAX_ROLES_PER_GROUP
@@ -345,10 +334,10 @@ function validateRolesAndItems(draft: ActivityEditorDraft, errors: string[]) {
       );
     }
     for (const item of role.items) {
-      if (!item.name.trim()) errors.push("맞출 아이템(정답) 이름을 입력하세요.");
+      if (!item.name.trim()) errors.push("맞출 아이템 이름을 입력하세요.");
       for (const [key, label] of Object.entries(HINT_STAGE_LABELS) as [keyof ItemClues, string][]) {
         if (!item.clues[key].trim()) {
-          errors.push(`「${item.name || "아이템"}」 — ${label}을(를) 입력하세요.`);
+          errors.push(`「${item.name || "맞출 아이템"}」 — ${label}을(를) 입력하세요.`);
         }
       }
     }
@@ -359,8 +348,8 @@ export function validateEditorDraftStep(draft: ActivityEditorDraft, step: Editor
   const errors: string[] = [];
 
   if (step === "basics") {
-    if (!draft.title.trim()) errors.push("활동 제목을 입력하세요.");
-    if (!draft.description.trim()) errors.push("활동 설명을 입력하세요.");
+    if (!draft.title.trim()) errors.push("수업·활동 제목을 입력하세요.");
+    if (!draft.description.trim()) errors.push("활동 안내(학습 상황)를 입력하세요.");
     return errors;
   }
 
@@ -387,10 +376,10 @@ export function validateEditorDraft(draft: ActivityEditorDraft): string[] {
   const errors: string[] = [];
 
   if (!draft.title.trim()) {
-    errors.push("활동 제목을 입력하세요.");
+    errors.push("수업·활동 제목을 입력하세요.");
   }
   if (!draft.description.trim()) {
-    errors.push("활동 설명을 입력하세요.");
+    errors.push("활동 안내(학습 상황)를 입력하세요.");
   }
   validateRolesAndItems(draft, errors);
 

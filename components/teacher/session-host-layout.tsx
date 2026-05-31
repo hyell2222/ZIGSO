@@ -8,11 +8,12 @@ import {
   activitySessionMetaShell,
 } from "@/components/activity/activity-layout-chrome";
 import { PhaseSectionPanel } from "@/components/activity/phase-section-layout";
+import { COPY_DEFAULTS } from "@/lib/copy/defaults";
 import { activityLayoutType } from "@/components/activity/activity-layout-typography";
 import { PhaseGuideCard } from "@/components/teacher/phase-guide-card";
 import { SessionHostJoinCard } from "@/components/teacher/session-host-join-card";
 import type { ActivityPhase } from "@/lib/api/activities";
-import { isTimedPhase } from "@/lib/teacher/phase-guide";
+import { isTimedPhase } from "@/lib/copy/teacher";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -71,7 +72,7 @@ export function SessionHostLayout({
                   : activityLayoutType.activityTitle,
               )}
             >
-              {activityTitle ?? "시뮬레이션"}
+              {activityTitle ?? COPY_DEFAULTS.sandboxActivityTitle}
             </h1>
             <p
               className={cn(

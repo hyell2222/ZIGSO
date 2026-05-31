@@ -5,7 +5,7 @@ import type {
   ActivityPack,
   Task,
 } from "@/lib/activity-pack/types";
-import { PLAYER_MESSAGES } from "@/lib/activity-pack/player-messages";
+import { PLAYER_MESSAGES } from "@/lib/copy/player";
 import { scoreForClueLevel } from "@/lib/activity-pack/scoring";
 import { isItemAnswerCorrect } from "@/lib/activity-pack/validate";
 

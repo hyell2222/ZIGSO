@@ -1,6 +1,6 @@
 "use client";
 
-import { PLAY_STUDENT_COPY } from "@/lib/play/student-copy";
+import { STUDENT_COPY } from "@/lib/copy/student";
 import { cn } from "@/lib/utils";
 import styles from "@/components/play/waiting-lobby-block.module.css";
 
@@ -9,16 +9,16 @@ const WAITING_LOBBY: Record<
   { title: string; body1: string; body2: string | null; emoji: string }
 > = {
   session_loading: {
-    title: PLAY_STUDENT_COPY.waiting.loadingTitle,
-    body1: PLAY_STUDENT_COPY.waiting.loadingBody,
+    title: STUDENT_COPY.waiting.loadingTitle,
+    body1: STUDENT_COPY.waiting.loadingBody,
     body2: null,
-    emoji: PLAY_STUDENT_COPY.waiting.loadingEmoji,
+    emoji: STUDENT_COPY.waiting.loadingEmoji,
   },
   waiting: {
-    title: PLAY_STUDENT_COPY.waiting.waitingTitle,
-    body1: PLAY_STUDENT_COPY.waiting.waitingBody1,
-    body2: PLAY_STUDENT_COPY.waiting.waitingBody2,
-    emoji: PLAY_STUDENT_COPY.waiting.waitingEmoji,
+    title: STUDENT_COPY.waiting.waitingTitle,
+    body1: STUDENT_COPY.waiting.waitingBody1,
+    body2: STUDENT_COPY.waiting.waitingBody2,
+    emoji: STUDENT_COPY.waiting.waitingEmoji,
   },
 };
 

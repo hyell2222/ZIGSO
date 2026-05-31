@@ -4,6 +4,7 @@ import { useMemo, useState, useSyncExternalStore } from "react";
 import QRCode from "react-qr-code";
 
 import { Modal } from "@/components/ui/modal";
+import { HOST_COPY } from "@/lib/copy/teacher";
 import { ROUTES } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 
@@ -70,7 +71,7 @@ export function PlayJoinQr({ joinCode, className }: PlayJoinQrProps) {
       <Modal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
-        title="학생 참가 QR"
+        title={HOST_COPY.joinQrTitle}
         titleId="play-join-qr-title"
         contentClassName="space-y-4"
       >

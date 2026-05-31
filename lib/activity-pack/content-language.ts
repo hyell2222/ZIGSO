@@ -10,12 +10,12 @@ export const CONTENT_LANGUAGE_OPTIONS: Array<{
   {
     value: "ko",
     label: "한국어",
-    description: "제목·활동 안내·단서·수행 문장 모두 한국어",
+    description: "활동 제목·안내·단서·미션 문장을 한국어로 생성",
   },
   {
     value: "en",
     label: "영어",
-    description: "제목·활동 안내·단서·수행 문장 모두 영어",
+    description: "활동 제목·안내·단서·미션 문장을 영어로 생성",
   },
 ];
 

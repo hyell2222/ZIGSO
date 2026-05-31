@@ -10,7 +10,7 @@ import {
   playPhaseSectionShell,
 } from "@/components/activity/activity-layout-chrome";
 import { activityLayoutType } from "@/components/activity/activity-layout-typography";
-import { PLAY_STUDENT_COPY } from "@/lib/play/student-copy";
+import { STUDENT_COPY } from "@/lib/copy/student";
 import { cn } from "@/lib/utils";
 
 const t = activityLayoutType;
@@ -149,7 +149,7 @@ export function PhaseSectionCallout({
 export function PhaseSectionWaitFootnote({ className }: { className?: string }) {
   return (
     <p className={cn("text-center", t.playPanelCalloutFootnote, className)}>
-      {PLAY_STUDENT_COPY.waiting.waitForTeacher}
+      {STUDENT_COPY.waiting.waitForTeacher}
     </p>
   );
 }

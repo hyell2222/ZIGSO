@@ -1,4 +1,5 @@
-import { PLAYER_MESSAGES } from "@/lib/activity-pack/player-messages";
+import { ERROR_COPY } from "@/lib/copy/errors";
+import { PLAYER_MESSAGES } from "@/lib/copy/player";
 import { itemsToRoles, flattenRoleItems } from "@/lib/activity-pack/roles";
 import { normalizePackSizing } from "@/lib/activity-pack/sizing";
 import { validateActivityPack } from "@/lib/activity-pack/validate";
@@ -52,7 +53,7 @@ export function parseActivityPack(raw: unknown): ActivityPack | null {
 export function loadActivityPack(raw: unknown): ActivityPack {
   const pack = parseActivityPack(raw);
   if (!pack) {
-    throw new Error("활동 팩을 읽을 수 없습니다.");
+    throw new Error(ERROR_COPY.packParseFailed);
   }
 
   if (!pack.title.trim()) {

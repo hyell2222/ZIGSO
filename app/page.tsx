@@ -10,10 +10,17 @@ import { TopNav } from "@/components/layout/top-nav";
 import { ButtonLink } from "@/components/ui/button";
 import { getCurrentSession } from "@/lib/api/auth";
 import { AUTH_SESSION_QUERY_KEY } from "@/lib/auth-session-query";
-import { PLATFORM_NAME, PLATFORM_TAGLINE } from "@/lib/brand";
+import {
+  LANDING_EYEBROW,
+  LANDING_FEATURES,
+  LANDING_RESEARCH_TITLE,
+  LANDING_TAGLINE,
+} from "@/lib/copy/landing";
 import { ROUTES } from "@/lib/routes";
 import { hasSupabaseEnv } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
+
+const FEATURE_ICONS = [Sparkles, Puzzle, ClipboardList] as const;
 
 const bulletClass =
   "group flex flex-col items-center gap-3.5 rounded-2xl border border-[color-mix(in_srgb,var(--primary)_14%,var(--border))] bg-[var(--surface)] px-5 py-6 text-center shadow-[var(--elevation-sm)] ring-1 ring-[color-mix(in_srgb,var(--primary)_8%,transparent)] transition duration-300 hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--primary)_28%,var(--border))] hover:shadow-[var(--elevation-md)] sm:items-start sm:gap-4 sm:px-5 sm:py-7 sm:text-left";
@@ -64,72 +71,68 @@ export default function HomePage() {
               "px-5 py-10 pb-[max(2.5rem,env(safe-area-inset-bottom,0px))] pt-8 text-center sm:px-6 sm:py-12 md:px-8 md:py-14",
             )}
           >
-            <div className="flex flex-col items-center justify-center gap-2.5 sm:gap-3">
+            <header className="flex flex-col items-center">
               <div className="flex items-center gap-2.5 text-[var(--accent)] sm:gap-3.5">
                 <span className="h-px w-8 max-sm:w-5 bg-[color-mix(in_srgb,var(--accent)_45%,transparent)]" aria-hidden />
-                <p className="text-[11px] font-bold uppercase tracking-[0.26em] text-[color-mix(in_srgb,var(--accent)_92%,var(--mystery))]">
-                  {PLATFORM_TAGLINE}
+                <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[color-mix(in_srgb,var(--accent)_92%,var(--mystery))]">
+                  {LANDING_EYEBROW}
                 </p>
                 <span className="h-px w-8 max-sm:w-5 bg-[color-mix(in_srgb,var(--accent)_45%,transparent)]" aria-hidden />
               </div>
-              <h1 className="bg-[linear-gradient(165deg,var(--primary)_0%,color-mix(in_srgb,var(--primary)_72%,var(--mystery))_100%)] bg-clip-text text-4xl font-bold leading-[1.08] tracking-[-0.02em] text-transparent drop-shadow-[0_1px_0_color-mix(in_srgb,var(--on-primary)_35%,transparent)] sm:text-6xl sm:tracking-[-0.03em]">
-                {PLATFORM_NAME}
+
+              <h1 className="mt-2.5 bg-[linear-gradient(165deg,var(--primary)_0%,color-mix(in_srgb,var(--primary)_72%,var(--mystery))_100%)] bg-clip-text text-4xl font-bold leading-[1.08] tracking-[-0.02em] text-transparent drop-shadow-[0_1px_0_color-mix(in_srgb,var(--on-primary)_35%,transparent)] sm:mt-3 sm:text-6xl sm:tracking-[-0.03em]">
+                Jigsaw
               </h1>
-            </div>
-            <p className="mx-auto mt-4 max-w-xl text-balance text-base leading-relaxed text-[color-mix(in_srgb,var(--muted-foreground)_94%,var(--mystery))] sm:mt-5 md:mt-6 md:text-[1.05rem] md:leading-[1.65]">
-              교사가 직소·STAD형 협동 활동을 설계하고, 학생이 참가 코드로 입장해 전문가 집단과 모둠
-              미션을 진행할 수 있게 돕습니다.
-            </p>
+
+              <p className="mx-auto mt-4 max-w-md text-balance text-base font-medium leading-snug text-[var(--foreground)] sm:mt-5 sm:text-lg sm:leading-snug">
+                {LANDING_TAGLINE}
+              </p>
+
+              <p className="mx-auto mt-3 max-w-lg text-balance text-xs leading-relaxed text-[color-mix(in_srgb,var(--muted-foreground)_92%,var(--mystery))] sm:text-[13px]">
+                {LANDING_RESEARCH_TITLE}
+              </p>
+            </header>
 
             <div className="mt-8 flex flex-col items-stretch justify-center gap-3 sm:mt-10 sm:flex-row sm:items-center sm:justify-center sm:gap-4">
               <ButtonLink href={ROUTES.login} variant="default" size="lg">
-                지금 시작하기
+                교사로 시작하기
               </ButtonLink>
               <ButtonLink href={ROUTES.play} variant="outline" size="lg">
-                학생으로 참가하기
+                학생으로 입장하기
               </ButtonLink>
             </div>
 
-            <ul className="mt-10 grid gap-5 sm:mt-12 sm:grid-cols-3 sm:gap-x-5 sm:gap-y-5 md:mt-14 md:gap-x-6">
-              <li className={bulletClass}>
-                <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--tint-primary-weak)] text-[var(--primary)] shadow-[inset_var(--input-inset)] transition group-hover:bg-[var(--tint-primary)]">
-                  <Sparkles className="h-5 w-5" aria-hidden />
-                </span>
-                <div>
-                  <p className="text-sm font-semibold text-[color-mix(in_srgb,var(--mystery)_94%,var(--primary))]">
-                    AI 활동 팩 생성
-                  </p>
-                  <p className="mt-2 text-xs break-keep leading-snug text-[color-mix(in_srgb,var(--muted-foreground)_96%,var(--accent))]">
-                    주제·난이도·모둠 인원을 입력하면 미션·맞출 아이템·단서를 자동 생성해요.
-                  </p>
-                </div>
-              </li>
-              <li className={bulletClass}>
-                <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-[color-mix(in_srgb,var(--info)_12%,var(--surface))] text-[var(--info)] shadow-[inset_var(--input-inset)] transition group-hover:bg-[color-mix(in_srgb,var(--info)_18%,var(--surface))]">
-                  <Puzzle className="h-5 w-5" aria-hidden />
-                </span>
-                <div>
-                  <p className="text-sm font-semibold text-[color-mix(in_srgb,var(--mystery)_94%,var(--primary))]">
-                    직소·STAD 협동
-                  </p>
-                  <p className="mt-2 text-xs break-keep leading-snug text-[color-mix(in_srgb,var(--muted-foreground)_96%,var(--accent))]">
-                    전문가 집단에서 정보를 맞추고, 모둠으로 돌아와 모둠 미션을 함께 완성해요.
-                  </p>
-                </div>
-              </li>
-              <li className={bulletClass}>
-                <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--tint-highlight-weak)] text-[var(--highlight)] shadow-[inset_var(--input-inset)] transition group-hover:bg-[var(--tint-highlight)]">
-                  <ClipboardList className="h-5 w-5" aria-hidden />
-                </span>
-                <div>
-                  <p className="text-sm font-semibold text-[color-mix(in_srgb,var(--mystery)_94%,var(--primary))]">
-                    실시간 진행·기록
-                  </p>
-                  <p className="mt-2 text-xs break-keep leading-snug text-[color-mix(in_srgb,var(--muted-foreground)_96%,var(--accent))]">
-                    단계별 타이머와 모둠 진행 현황으로 활동 흐름을 한눈에 관리해요.
-                  </p>
-                </div>
-              </li>
+            <ul className="mt-10 grid gap-4 sm:mt-12 sm:grid-cols-3 sm:gap-5 md:mt-14">
+              {LANDING_FEATURES.map((feature, index) => {
+                const Icon = FEATURE_ICONS[index] ?? Sparkles;
+                const iconWrap =
+                  index === 0
+                    ? "bg-[var(--tint-primary-weak)] text-[var(--primary)] group-hover:bg-[var(--tint-primary)]"
+                    : index === 1
+                      ? "bg-[color-mix(in_srgb,var(--info)_12%,var(--surface))] text-[var(--info)] group-hover:bg-[color-mix(in_srgb,var(--info)_18%,var(--surface))]"
+                      : "bg-[var(--tint-highlight-weak)] text-[var(--highlight)] group-hover:bg-[var(--tint-highlight)]";
+
+                return (
+                  <li key={feature.title} className={bulletClass}>
+                    <span
+                      className={cn(
+                        "inline-flex h-11 w-11 items-center justify-center rounded-xl shadow-[inset_var(--input-inset)] transition",
+                        iconWrap,
+                      )}
+                    >
+                      <Icon className="h-5 w-5" aria-hidden />
+                    </span>
+                    <div>
+                      <p className="text-sm font-semibold text-[color-mix(in_srgb,var(--mystery)_94%,var(--primary))]">
+                        {feature.title}
+                      </p>
+                      <p className="mt-1.5 text-xs leading-snug text-[color-mix(in_srgb,var(--muted-foreground)_96%,var(--accent))]">
+                        {feature.body}
+                      </p>
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           </div>
         </div>

@@ -19,6 +19,7 @@ import {
   nextSandboxPhase,
   type SandboxState,
 } from "@/lib/sandbox/state";
+import { ERROR_COPY } from "@/lib/copy/errors";
 import { cn } from "@/lib/utils";
 
 function SandboxPageContent() {
@@ -124,7 +125,7 @@ function SandboxPageContent() {
         const required = pack.tasks.map((m) => m.id);
         const done = new Set(group.completed_tasks.map((m) => m.taskId));
         if (required.some((id) => !done.has(id))) {
-          throw new Error("아직 해결하지 않은 미션이 있습니다.");
+          throw new Error(ERROR_COPY.sandboxMissionsIncomplete);
         }
         return {
           ...prev,

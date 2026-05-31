@@ -7,6 +7,7 @@ import { activityPageShell } from "@/components/activity/activity-layout-chrome"
 import { PlayAtmosphere } from "@/components/play/play-atmosphere";
 import { PlayJoinCard } from "@/components/play/play-join-card";
 import { getSessionByJoinCode } from "@/lib/api/play";
+import { JOIN_COPY } from "@/lib/copy/join";
 import { ROUTES } from "@/lib/routes";
 import { hasSupabaseEnv } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
@@ -41,7 +42,7 @@ export function StudentJoinPage({
     const code = joinCode.trim().toUpperCase();
     const nick = nickname.trim();
     if (!code || !nick) {
-      setError("참가 코드와 닉네임을 모두 입력해 주세요.");
+      setError(JOIN_COPY.errors.codeAndNicknameRequired);
       return;
     }
     if (!hasSupabaseEnv) {
@@ -53,7 +54,7 @@ export function StudentJoinPage({
       await getSessionByJoinCode(code);
       router.push(ROUTES.playSessionJoin(code, nick));
     } catch {
-      setError("참가 코드를 확인할 수 없습니다. 담당 선생님께 문의하세요.");
+      setError(JOIN_COPY.errors.codeNotFound);
     } finally {
       setBusy(false);
     }

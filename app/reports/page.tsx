@@ -19,15 +19,13 @@ import { PageHeader } from "@/components/layout/page-header";
 import { TopNav } from "@/components/layout/top-nav";
 import { LoadingState } from "@/components/ui/loading-state";
 import { groupPlayersByGroup } from "@/lib/teacher/group-players-by-group";
+import { ACTIVITY_PHASE_LABELS } from "@/lib/copy/phases";
+import type { ActivityPhase } from "@/lib/types";
+import { COPY_DEFAULTS } from "@/lib/copy/defaults";
+import { TEACHER_REPORTS_COPY } from "@/lib/copy/teacher";
 import { ROUTES } from "@/lib/routes";
 
-const PHASE_KR: Record<string, string> = {
-  waiting: "대기",
-  overview: "활동 소개",
-  expert_group: "전문가 집단",
-  home_group: "모둠 미션 완성",
-  results: "종료",
-};
+const PHASE_KR = ACTIVITY_PHASE_LABELS;
 
 function formatWhen(iso: string | null) {
   if (!iso) return "—";
@@ -57,12 +55,8 @@ function ReportsSessionsListPanel({ teacherUserId }: { teacherUserId: string }) 
   });
 
   const handleDelete = (row: HostSessionListRow) => {
-    const label = row.activities?.title?.trim() || "제목 없는 활동";
-    if (
-      !window.confirm(
-        `「${label}」세션을 삭제할까요?\n모둠·참가 기록이 모두 삭제되며 되돌릴 수 없습니다.\n활동 원본은 그대로 남습니다.`,
-      )
-    ) {
+    const label = row.activities?.title?.trim() || COPY_DEFAULTS.untitledActivity;
+    if (!window.confirm(TEACHER_REPORTS_COPY.deleteConfirm(label))) {
       return;
     }
     deleteMutation.mutate(row.id);
@@ -71,8 +65,10 @@ function ReportsSessionsListPanel({ teacherUserId }: { teacherUserId: string }) 
   return (
     <ul className="space-y-3">
       {listQuery.data?.map((row) => {
-        const title = row.activities?.title?.trim() || "제목 없는 활동";
-        const phase = row.phase ? (PHASE_KR[row.phase] ?? row.phase) : "—";
+        const title = row.activities?.title?.trim() || COPY_DEFAULTS.untitledActivity;
+        const phase = row.phase
+          ? (PHASE_KR[row.phase as ActivityPhase] ?? row.phase)
+          : "—";
         return (
           <li
             key={row.id}
@@ -98,7 +94,7 @@ function ReportsSessionsListPanel({ teacherUserId }: { teacherUserId: string }) 
                   className="inline-flex h-10 items-center gap-1.5 rounded-md bg-[var(--primary)] px-3 text-sm font-semibold text-[var(--on-primary)]"
                 >
                   <FileText className="h-3.5 w-3.5" aria-hidden />
-                  요약 보기
+                  {TEACHER_REPORTS_COPY.viewSummary}
                 </Link>
                 <KebabMenu onDelete={() => handleDelete(row)} />
               </div>
@@ -148,11 +144,11 @@ function ReportsSessionDetailPanel({ sessionId, teacherUserId }: { sessionId: st
   }
 
   if (sessionQuery.isError || !sessionQuery.data) {
-    return <p className="text-sm text-[var(--danger)]">세션을 불러오지 못했습니다.</p>;
+    return <p className="text-sm text-[var(--danger)]">{TEACHER_REPORTS_COPY.loadError}</p>;
   }
 
   if (sessionQuery.data.host_id !== teacherUserId) {
-    return <p className="text-sm text-[var(--accent)]">이 세션을 볼 권한이 없습니다.</p>;
+    return <p className="text-sm text-[var(--accent)]">{TEACHER_REPORTS_COPY.forbidden}</p>;
   }
 
   return (
@@ -162,14 +158,15 @@ function ReportsSessionDetailPanel({ sessionId, teacherUserId }: { sessionId: st
           href={ROUTES.reports}
           className="inline-flex text-sm font-medium text-[var(--accent)] underline-offset-2 hover:underline"
         >
-          ← 세션 목록
+          {TEACHER_REPORTS_COPY.backToList}
         </Link>
         <h2 className="mt-2 font-mono text-2xl font-semibold text-[var(--accent)]">
-          {sessionQuery.data.activities?.title ?? "세션"}
+          {sessionQuery.data.activities?.title ?? COPY_DEFAULTS.untitledSession}
         </h2>
         <p className="text-sm text-[var(--muted-foreground)]">
           코드 {sessionQuery.data.join_code} · {formatWhen(sessionQuery.data.created_at ?? null)} ·{" "}
-          {PHASE_KR[sessionQuery.data.phase ?? ""] ?? sessionQuery.data.phase}
+          {PHASE_KR[(sessionQuery.data.phase ?? "waiting") as ActivityPhase] ??
+            sessionQuery.data.phase}
         </p>
       </div>
       <GroupProgressDashboard
@@ -198,11 +195,9 @@ function ReportsPageInner() {
       <TopNav />
       <main className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8">
         <PageHeader
-          title="활동 리포트"
+          title={TEACHER_REPORTS_COPY.pageTitle}
           description={
-            sessionId
-              ? "모둠별 미션 진행과 점수를 확인합니다."
-              : "진행한 세션별로 모둠 성과를 확인할 수 있습니다."
+            sessionId ? TEACHER_REPORTS_COPY.detailDescription : TEACHER_REPORTS_COPY.listDescription
           }
         />
         {sessionId ? (
@@ -211,11 +206,11 @@ function ReportsPageInner() {
           <LoadingState variant="section" label="불러오는 중…" />
         ) : (listQuery.data?.length ?? 0) === 0 ? (
           <p className="rounded-lg border border-dashed border-[var(--border)] px-4 py-8 text-center text-sm text-[var(--muted-foreground)]">
-            아직 연 세션이 없습니다.{" "}
+            {TEACHER_REPORTS_COPY.empty}{" "}
             <Link className="underline text-[var(--accent)]" href={ROUTES.activities}>
-              내 활동
+              {TEACHER_REPORTS_COPY.emptyLink}
             </Link>
-            에서 플레이를 시작해 주세요.
+            {TEACHER_REPORTS_COPY.emptyAction}
           </p>
         ) : (
           <ReportsSessionsListPanel teacherUserId={teacherUserId} />

@@ -1,6 +1,7 @@
 import type { ActivityPhase } from "@/lib/types";
 
-import { PHASES, RESULTS_PHASE_STEP } from "@/lib/teacher/phase-guide";
+import { ACTIVITY_PHASE_LABELS } from "@/lib/copy/phases";
+import { PHASES, RESULTS_PHASE_STEP } from "@/lib/copy/teacher";
 
 /** 단계 번호·오버라인 — 교사·학생 헤더 공통 */
 export function getActivityPhaseStep(phase: ActivityPhase): {
@@ -8,7 +9,7 @@ export function getActivityPhaseStep(phase: ActivityPhase): {
   stepLabel: string;
 } {
   if (phase === "waiting") {
-    return { stepNumber: null, stepLabel: "대기" };
+    return { stepNumber: null, stepLabel: ACTIVITY_PHASE_LABELS.waiting };
   }
   if (phase === "results") {
     return {

@@ -23,6 +23,7 @@ import {
   type ActivityEditorDraft,
   type EditorStepId,
 } from "@/lib/activity-pack/activity-draft";
+import { TEACHER_EDITOR_COPY as ED } from "@/lib/copy/teacher";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -112,7 +113,7 @@ export function ActivityEditorForm({ draft, onChange, step }: Props) {
     return (
       <div className="max-w-2xl mx-auto w-full space-y-4">
         <p className="text-xs text-center sm:text-left sm:text-sm leading-relaxed text-[var(--muted-foreground)]">
-          활동의 첫인상을 결정하는 대주제 및 방탈출 공간에 전반적으로 적용될 인트로 시나리오 가이드를 기획합니다.
+          수업 주제와 활동 안내를 정합니다. 학생이 처음 보는 화면과 전체 학습 흐름의 기준이 됩니다.
         </p>
         <div className="rounded-2xl border border-[var(--border)] bg-[var(--card-bg)] p-5 shadow-xs space-y-4">
           <FormField label="활동 제목" htmlFor="activity-title">
@@ -124,13 +125,13 @@ export function ActivityEditorForm({ draft, onChange, step }: Props) {
               className={inputBaseClass}
             />
           </FormField>
-          <FormField label="전체 시나리오 설명" htmlFor="activity-desc">
+          <FormField label={ED.labels.activityDesc} htmlFor="activity-desc">
             <Textarea
               id="activity-desc"
               rows={6}
               value={draft.description}
               onChange={(e) => onChange({ ...draft, description: e.target.value })}
-              placeholder="스토리 가이드라인을 상세히 적어주세요..."
+              placeholder={ED.placeholders.desc}
               className="text-sm"
             />
           </FormField>
@@ -147,12 +148,10 @@ export function ActivityEditorForm({ draft, onChange, step }: Props) {
     return (
       <div className="max-w-2xl mx-auto w-full space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <p className="text-xs sm:text-sm text-[var(--muted-foreground)]">
-            각 모둠원이 가질 개별 역할과 수집해야 하는 전용 정답 단서 목록입니다. 아이템을 열어 세부 단서를 편집하세요.
-          </p>
+          <p className="text-xs sm:text-sm text-[var(--muted-foreground)]">{ED.itemsIntro}</p>
           {canAddRole && (
             <Button size="sm" onClick={() => onChange({ ...draft, roles: [...draft.roles, createEmptyRole()] })} className="gap-1 font-semibold text-xs shrink-0">
-              <Plus className="h-3.5 w-3.5" /> 역할 추가
+              <Plus className="h-3.5 w-3.5" /> {ED.actions.addRole}
             </Button>
           )}
         </div>
@@ -184,7 +183,7 @@ export function ActivityEditorForm({ draft, onChange, step }: Props) {
                         }}
                         className="text-[var(--primary)] hover:underline text-xs font-bold flex items-center gap-0.5"
                       >
-                        <Plus className="h-3.5 w-3.5" /> 단서 추가
+                        <Plus className="h-3.5 w-3.5" /> {ED.actions.addClue}
                       </button>
                     )}
                     {canRemoveRole && (
@@ -192,7 +191,7 @@ export function ActivityEditorForm({ draft, onChange, step }: Props) {
                         type="button"
                         onClick={() => onChange({ ...draft, roles: draft.roles.filter(r => r.localId !== role.localId) })}
                         className="flex h-8 w-8 items-center justify-center rounded-md text-[var(--muted-foreground)] hover:text-[var(--danger)] hover:bg-[color-mix(in_srgb,var(--danger)_8%,transparent)]"
-                        title="역할 삭제"
+                        title={ED.actions.deleteRole}
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -205,7 +204,7 @@ export function ActivityEditorForm({ draft, onChange, step }: Props) {
                     <AccordionItem
                       key={item.localId}
                       icon={<FileText className="h-4 w-4" />}
-                      title={item.name.trim() ? item.name.trim() : `${editorItemLabel(iIdx)} (정답 단서 명칭 미입력)`}
+                      title={item.name.trim() ? item.name.trim() : ED.unnamedItem(iIdx + 1)}
                       isOpen={openItemId === item.localId}
                       onToggle={() => setOpenItemId(openItemId === item.localId ? null : item.localId)}
                       onDelete={() => {
@@ -213,7 +212,7 @@ export function ActivityEditorForm({ draft, onChange, step }: Props) {
                       }}
                       disabledDelete={role.items.length <= MIN_ITEMS_PER_ROLE}
                     >
-                      <FormField label="정답 단서명" htmlFor={`item-name-${item.localId}`}>
+                      <FormField label={ED.labels.itemName} htmlFor={`item-name-${item.localId}`}>
                         <Input
                           id={`item-name-${item.localId}`}
                           value={item.name}
@@ -224,13 +223,13 @@ export function ActivityEditorForm({ draft, onChange, step }: Props) {
                               items: r.items.map(i => i.localId === item.localId ? { ...i, name: text } : i)
                             }));
                           }}
-                          placeholder="예: 부스 운영 매뉴얼"
+                          placeholder={ED.placeholders.itemName}
                           className={inputBaseClass}
                         />
                       </FormField>
 
                       <div className="space-y-2.5 border-t border-[var(--border)] pt-3.5">
-                        <p className="text-xs font-bold text-[var(--foreground)]">단계별 추리 단서 라인업</p>
+                        <p className="text-xs font-bold text-[var(--foreground)]">{ED.labels.clueStages}</p>
                         <div className="grid gap-2">
                           {HINT_KEYS.map((key) => (
                             <div key={key} className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2">
@@ -245,7 +244,7 @@ export function ActivityEditorForm({ draft, onChange, step }: Props) {
                                       items: r.items.map(i => i.localId === item.localId ? { ...i, clues: { ...i.clues, [key]: val } } : i)
                                     }));
                                   }}
-                                  placeholder="단서 문장을 채워주세요."
+                                  placeholder={ED.placeholders.clue}
                                   className={inputBaseClass}
                                 />
                               </div>
@@ -268,11 +267,9 @@ export function ActivityEditorForm({ draft, onChange, step }: Props) {
   return (
     <div className="max-w-2xl mx-auto w-full space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <p className="text-xs sm:text-sm text-[var(--muted-foreground)]">
-          팀원 전체가 협동하여 통과해야 하는 체크포인트 룰셋입니다. 각 과제를 선택해 올바른 정답 풀을 매핑하세요.
-        </p>
+        <p className="text-xs sm:text-sm text-[var(--muted-foreground)]">{ED.tasksIntro}</p>
         <Button size="sm" onClick={() => onChange({ ...draft, tasks: [...draft.tasks, createEmptyTask()] })} className="gap-1 font-semibold text-xs shrink-0">
-          <Plus className="h-3.5 w-3.5" /> 미션 추가
+          <Plus className="h-3.5 w-3.5" /> {ED.actions.addMission}
         </Button>
       </div>
 
@@ -281,7 +278,7 @@ export function ActivityEditorForm({ draft, onChange, step }: Props) {
           <AccordionItem
             key={task.localId}
             icon={<Layers className="h-4 w-4" />}
-            title={task.title.trim() ? task.title.trim() : `과제 ${idx + 1} (미입력 미션 상황)`}
+            title={task.title.trim() ? task.title.trim() : ED.unnamedMission(idx + 1)}
             isOpen={openTaskId === task.localId}
             onToggle={() => setOpenTaskId(openTaskId === task.localId ? null : task.localId)}
             onDelete={() => onChange({ ...draft, tasks: draft.tasks.filter(t => t.localId !== task.localId) })}
@@ -289,7 +286,7 @@ export function ActivityEditorForm({ draft, onChange, step }: Props) {
           >
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="sm:col-span-2">
-                <FormField label="과제 제목" htmlFor={`task-title-${task.localId}`}>
+                <FormField label={ED.labels.missionTitle} htmlFor={`task-title-${task.localId}`}>
                   <Input
                     id={`task-title-${task.localId}`}
                     value={task.title}
@@ -297,14 +294,14 @@ export function ActivityEditorForm({ draft, onChange, step }: Props) {
                       const text = e.target.value;
                       onChange({ ...draft, tasks: draft.tasks.map(t => t.localId === task.localId ? { ...t, title: text } : t) });
                     }}
-                    placeholder="예: 부스 개점 준비하기"
+                    placeholder={ED.placeholders.missionTitle}
                     className={inputBaseClass}
                   />
                 </FormField>
               </div>
             </div>
 
-            <FormField label="과제 구체적 상황 설명" htmlFor={`task-desc-${task.localId}`}>
+            <FormField label={ED.labels.missionDesc} htmlFor={`task-desc-${task.localId}`}>
               <Textarea
                 id={`task-desc-${task.localId}`}
                 rows={3}
@@ -313,15 +310,12 @@ export function ActivityEditorForm({ draft, onChange, step }: Props) {
                   const text = e.target.value;
                   onChange({ ...draft, tasks: draft.tasks.map(t => t.localId === task.localId ? { ...t, description: text } : t) });
                 }}
-                placeholder="학생들이 직면하게 될 상세 트러블 미션을 적어주세요."
+                placeholder={ED.placeholders.missionDesc}
                 className="text-sm"
               />
             </FormField>
 
-            <FormField
-              label="필수 제출 아이템"
-              help="체크한 아이템은 모둠이 모두 획득한 뒤 한 번에 제출해야 미션을 완료할 수 있습니다."
-            >
+            <FormField label={ED.labels.requiredItems} help={ED.help.requiredItems}>
               <ul className="grid gap-2 grid-cols-1 sm:grid-cols-2 max-h-48 overflow-y-auto p-2 bg-[var(--background)] border border-[var(--border)] rounded-xl">
                 {flatItems.map(({ item, roleLabel }) => {
                   const isChecked = task.acceptedItemIds.includes(item.localId);
@@ -340,7 +334,9 @@ export function ActivityEditorForm({ draft, onChange, step }: Props) {
                           }}
                           className="accent-[var(--primary)] h-4 w-4 shrink-0"
                         />
-                        <span className="truncate font-semibold text-xs">[{roleLabel}] {item.name.trim() || "이름 미지정 단서"}</span>
+                        <span className="truncate font-semibold text-xs">
+                          [{roleLabel}] {item.name.trim() || ED.unnamedLinkedItem}
+                        </span>
                       </label>
                     </li>
                   );

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { PHASE_MINUTES, type TimedPhase } from "@/lib/teacher/phase-guide";
+import { PHASE_MINUTES, type TimedPhase } from "@/lib/copy/teacher";
 
 function formatHhMmSs(totalSeconds: number) {
   const s = Math.max(0, Math.floor(totalSeconds));
