@@ -1,8 +1,6 @@
-import { COPY_DEFAULTS } from "@/lib/copy/defaults";
 import { totalGroupScore } from "@/lib/activity-pack/engine";
 import { formatAssignedRoleLabels } from "@/lib/activity-pack/roles";
-import type { ActivityPack } from "@/lib/activity-pack/types";
-import type { AcquiredItem, CompletedTask } from "@/lib/activity-pack/types";
+import type { ActivityPack, WordCard, WorksheetPlacement } from "@/lib/activity-pack/types";
 import { codenameForItem } from "@/lib/play/role-codenames";
 
 export const ACTIVITY_COMPLETION_BONUS = 5;
@@ -10,8 +8,7 @@ export const ACTIVITY_COMPLETION_BONUS = 5;
 export type ResultsGroupInput = {
   id: string;
   name: string | null;
-  acquired_items: AcquiredItem[];
-  completed_tasks: CompletedTask[];
+  worksheet_placements: WorksheetPlacement[];
   completed_at: string | null;
 };
 
@@ -21,6 +18,7 @@ export type ResultsMemberInput = {
   groupId: string;
   assignedRoleId: string | null;
   assignedItemIds?: string[];
+  word_cards?: WordCard[];
 };
 
 export type MemberResult = {
@@ -46,8 +44,8 @@ export type RankedTeamResult = {
   groupId: string;
   groupName: string;
   totalScore: number;
-  itemsAcquired: number;
-  tasksCompleted: number;
+  wordCardsAcquired: number;
+  slotsFilled: number;
   activityCompleted: boolean;
   mvp: TeamMvpResult;
   members: MemberResult[];
@@ -122,8 +120,11 @@ export function getStudentResultsSnapshot(
   };
 }
 
-export function computeGroupTotalScore(group: ResultsGroupInput): number {
-  const base = totalGroupScore(group.acquired_items, group.completed_tasks);
+export function computeGroupTotalScore(
+  group: ResultsGroupInput,
+  memberWordCards: WordCard[],
+): number {
+  const base = totalGroupScore(memberWordCards, group.worksheet_placements);
   return group.completed_at ? base + ACTIVITY_COMPLETION_BONUS : base;
 }
 
@@ -147,9 +148,9 @@ function computeMemberResults(
   roleScopeKey?: string,
 ): MemberResult[] {
   const count = Math.max(members.length, 1);
-  const taskPoints = group.completed_tasks.reduce((sum, t) => sum + t.score, 0);
+  const placementPoints = group.worksheet_placements.length * 3;
   const completionBonus = group.completed_at ? ACTIVITY_COMPLETION_BONUS : 0;
-  const teamShareEach = (taskPoints + completionBonus) / count;
+  const teamShareEach = (placementPoints + completionBonus) / count;
 
   return members.map((m) => {
     const assignedItemIds =
@@ -159,14 +160,12 @@ function computeMemberResults(
       (roleScopeKey
         ? formatAssignedRoleLabels(pack, assignedItemIds, roleScopeKey)
         : null) ?? roleLabelFor(pack, m.assignedRoleId, roleScopeKey);
-    const expertScore = group.acquired_items
-      .filter((a) => assignedItemIds.includes(a.itemId))
-      .reduce((sum, a) => sum + a.score, 0);
+    const expertScore = (m.word_cards ?? []).reduce((sum, c) => sum + c.score, 0);
     const teamShareScore = Math.round(teamShareEach * 10) / 10;
     const totalScore = Math.round((expertScore + teamShareEach) * 10) / 10;
     return {
       playerId: m.id,
-      nickname: m.nickname?.trim() || COPY_DEFAULTS.participant,
+      nickname: m.nickname?.trim() || "참가자",
       assignedRoleId: m.assignedRoleId,
       roleLabel,
       expertScore,
@@ -203,8 +202,8 @@ function pickMvp(members: MemberResult[]): TeamMvpResult {
 function assignRanks(teams: Omit<RankedTeamResult, "rank">[]): RankedTeamResult[] {
   const sorted = [...teams].sort((a, b) => {
     if (b.totalScore !== a.totalScore) return b.totalScore - a.totalScore;
-    if (b.tasksCompleted !== a.tasksCompleted) return b.tasksCompleted - a.tasksCompleted;
-    return b.itemsAcquired - a.itemsAcquired;
+    if (b.slotsFilled !== a.slotsFilled) return b.slotsFilled - a.slotsFilled;
+    return b.wordCardsAcquired - a.wordCardsAcquired;
   });
 
   let rank = 0;
@@ -234,13 +233,14 @@ export function buildSessionResults(
   const teams = groups.map((group) => {
     const groupMembers = byGroup.get(group.id) ?? [];
     const memberResults = computeMemberResults(pack, group, groupMembers, roleScopeKey);
+    const allWordCards = groupMembers.flatMap((m) => m.word_cards ?? []);
     const mvp = pickMvp(memberResults);
     return {
       groupId: group.id,
-      groupName: group.name?.trim() || COPY_DEFAULTS.group,
-      totalScore: computeGroupTotalScore(group),
-      itemsAcquired: group.acquired_items.length,
-      tasksCompleted: group.completed_tasks.length,
+      groupName: group.name?.trim() || "모둠",
+      totalScore: computeGroupTotalScore(group, allWordCards),
+      wordCardsAcquired: allWordCards.length,
+      slotsFilled: group.worksheet_placements.length,
       activityCompleted: Boolean(group.completed_at),
       mvp,
       members: memberResults.sort((a, b) => b.totalScore - a.totalScore),

@@ -8,7 +8,6 @@ import { getCurrentSession, signOutTeacher } from "@/lib/api/auth";
 import { TeacherSubNav } from "@/components/layout/teacher-sub-nav";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { AUTH_SESSION_QUERY_KEY } from "@/lib/auth-session-query";
-import { TOP_NAV_COPY } from "@/lib/copy/teacher";
 import { ROUTES } from "@/lib/routes";
 import { hasSupabaseEnv } from "@/lib/supabase";
 
@@ -65,7 +64,7 @@ export function TopNav() {
                 href={ROUTES.play}
                 className="inline-flex h-9 items-center rounded-md px-2.5 text-sm text-[var(--on-primary)]/90 underline-offset-4 transition hover:text-[var(--on-primary)] hover:underline"
               >
-                {TOP_NAV_COPY.studentEntry}
+                학생 입장
               </Link>
             ) : null}
             {sessionQuery.data ? (
@@ -75,7 +74,7 @@ export function TopNav() {
                 onClick={() => signOutMutation.mutate()}
                 disabled={signOutMutation.isPending}
               >
-                {TOP_NAV_COPY.signOut}
+                로그아웃
               </Button>
             ) : (
               <ButtonLink
@@ -84,7 +83,7 @@ export function TopNav() {
                 size="sm"
                 className="max-sm:hidden"
               >
-                {TOP_NAV_COPY.teacherLogin}
+                교사 로그인
               </ButtonLink>
             )}
           </nav>

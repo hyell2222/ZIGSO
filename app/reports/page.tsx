@@ -18,11 +18,9 @@ import { KebabMenu } from "@/components/ui/kebab-menu";
 import { PageHeader } from "@/components/layout/page-header";
 import { TopNav } from "@/components/layout/top-nav";
 import { LoadingState } from "@/components/ui/loading-state";
-import { groupPlayersByGroup } from "@/lib/teacher/group-players-by-group";
-import { ACTIVITY_PHASE_LABELS } from "@/lib/copy/phases";
+import { groupPlayersByGroup, collectGroupWordCards } from "@/lib/teacher/group-players-by-group";
+import { ACTIVITY_PHASE_LABELS } from "@/lib/activity-phases";
 import type { ActivityPhase } from "@/lib/types";
-import { COPY_DEFAULTS } from "@/lib/copy/defaults";
-import { TEACHER_REPORTS_COPY } from "@/lib/copy/teacher";
 import { ROUTES } from "@/lib/routes";
 
 const PHASE_KR = ACTIVITY_PHASE_LABELS;
@@ -55,8 +53,12 @@ function ReportsSessionsListPanel({ teacherUserId }: { teacherUserId: string }) 
   });
 
   const handleDelete = (row: HostSessionListRow) => {
-    const label = row.activities?.title?.trim() || COPY_DEFAULTS.untitledActivity;
-    if (!window.confirm(TEACHER_REPORTS_COPY.deleteConfirm(label))) {
+    const label = row.activities?.title?.trim() || "제목 없는 활동";
+    if (
+      !window.confirm(
+        `「${label}」수업 기록을 삭제할까요?\n모둠·참가 데이터가 삭제되며 되돌릴 수 없습니다. 활동 원본은 유지됩니다.`,
+      )
+    ) {
       return;
     }
     deleteMutation.mutate(row.id);
@@ -65,7 +67,7 @@ function ReportsSessionsListPanel({ teacherUserId }: { teacherUserId: string }) 
   return (
     <ul className="space-y-3">
       {listQuery.data?.map((row) => {
-        const title = row.activities?.title?.trim() || COPY_DEFAULTS.untitledActivity;
+        const title = row.activities?.title?.trim() || "제목 없는 활동";
         const phase = row.phase
           ? (PHASE_KR[row.phase as ActivityPhase] ?? row.phase)
           : "—";
@@ -94,7 +96,7 @@ function ReportsSessionsListPanel({ teacherUserId }: { teacherUserId: string }) 
                   className="inline-flex h-10 items-center gap-1.5 rounded-md bg-[var(--primary)] px-3 text-sm font-semibold text-[var(--on-primary)]"
                 >
                   <FileText className="h-3.5 w-3.5" aria-hidden />
-                  {TEACHER_REPORTS_COPY.viewSummary}
+                  요약 보기
                 </Link>
                 <KebabMenu onDelete={() => handleDelete(row)} />
               </div>
@@ -136,6 +138,7 @@ function ReportsSessionDetailPanel({ sessionId, teacherUserId }: { sessionId: st
     return grouped.map((g) => ({
       group: g.group,
       memberCount: g.members.length,
+      memberWordCards: collectGroupWordCards(g.members),
     }));
   }, [playersQuery.data, groupsQuery.data]);
 
@@ -144,11 +147,11 @@ function ReportsSessionDetailPanel({ sessionId, teacherUserId }: { sessionId: st
   }
 
   if (sessionQuery.isError || !sessionQuery.data) {
-    return <p className="text-sm text-[var(--danger)]">{TEACHER_REPORTS_COPY.loadError}</p>;
+    return <p className="text-sm text-[var(--danger)]">수업 기록을 불러오지 못했습니다.</p>;
   }
 
   if (sessionQuery.data.host_id !== teacherUserId) {
-    return <p className="text-sm text-[var(--accent)]">{TEACHER_REPORTS_COPY.forbidden}</p>;
+    return <p className="text-sm text-[var(--accent)]">이 수업 기록을 볼 권한이 없습니다.</p>;
   }
 
   return (
@@ -158,10 +161,10 @@ function ReportsSessionDetailPanel({ sessionId, teacherUserId }: { sessionId: st
           href={ROUTES.reports}
           className="inline-flex text-sm font-medium text-[var(--accent)] underline-offset-2 hover:underline"
         >
-          {TEACHER_REPORTS_COPY.backToList}
+          ← 수업 목록
         </Link>
         <h2 className="mt-2 font-mono text-2xl font-semibold text-[var(--accent)]">
-          {sessionQuery.data.activities?.title ?? COPY_DEFAULTS.untitledSession}
+          {sessionQuery.data.activities?.title ?? "세션"}
         </h2>
         <p className="text-sm text-[var(--muted-foreground)]">
           코드 {sessionQuery.data.join_code} · {formatWhen(sessionQuery.data.created_at ?? null)} ·{" "}
@@ -195,9 +198,11 @@ function ReportsPageInner() {
       <TopNav />
       <main className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8">
         <PageHeader
-          title={TEACHER_REPORTS_COPY.pageTitle}
+          title="수업 기록"
           description={
-            sessionId ? TEACHER_REPORTS_COPY.detailDescription : TEACHER_REPORTS_COPY.listDescription
+            sessionId
+              ? "이 수업의 공유 학습지 진행과 점수를 확인합니다."
+              : "진행한 수업별 공유 학습지·점수를 확인합니다."
           }
         />
         {sessionId ? (
@@ -206,11 +211,11 @@ function ReportsPageInner() {
           <LoadingState variant="section" label="불러오는 중…" />
         ) : (listQuery.data?.length ?? 0) === 0 ? (
           <p className="rounded-lg border border-dashed border-[var(--border)] px-4 py-8 text-center text-sm text-[var(--muted-foreground)]">
-            {TEACHER_REPORTS_COPY.empty}{" "}
+            아직 진행한 수업이 없습니다.{" "}
             <Link className="underline text-[var(--accent)]" href={ROUTES.activities}>
-              {TEACHER_REPORTS_COPY.emptyLink}
+              내 활동
             </Link>
-            {TEACHER_REPORTS_COPY.emptyAction}
+            에서 수업을 시작해 주세요.
           </p>
         ) : (
           <ReportsSessionsListPanel teacherUserId={teacherUserId} />

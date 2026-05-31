@@ -8,12 +8,11 @@ import {
   activitySessionMetaShell,
 } from "@/components/activity/activity-layout-chrome";
 import { PhaseSectionPanel } from "@/components/activity/phase-section-layout";
-import { COPY_DEFAULTS } from "@/lib/copy/defaults";
 import { activityLayoutType } from "@/components/activity/activity-layout-typography";
 import { PhaseGuideCard } from "@/components/teacher/phase-guide-card";
 import { SessionHostJoinCard } from "@/components/teacher/session-host-join-card";
 import type { ActivityPhase } from "@/lib/api/activities";
-import { isTimedPhase } from "@/lib/copy/teacher";
+import { isTimedPhase } from "@/lib/activity-phases";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -72,7 +71,7 @@ export function SessionHostLayout({
                   : activityLayoutType.activityTitle,
               )}
             >
-              {activityTitle ?? COPY_DEFAULTS.sandboxActivityTitle}
+              {activityTitle ?? "수업 미리보기"}
             </h1>
             <p
               className={cn(

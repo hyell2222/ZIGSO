@@ -22,7 +22,7 @@ import {
 import { useRequireTeacherSession } from "@/lib/auth/use-require-teacher-session";
 import { formatAssignedRoleLabels } from "@/lib/activity-pack/roles";
 import { parseAssignedItemIds } from "@/lib/api/play";
-import { groupPlayersByGroup } from "@/lib/teacher/group-players-by-group";
+import { groupPlayersByGroup, collectGroupWordCards } from "@/lib/teacher/group-players-by-group";
 import { SessionHostLayout } from "@/components/teacher/session-host-layout";
 import { SessionHostWaitingRoster } from "@/components/teacher/session-host-waiting-roster";
 import { PhaseTimerContent } from "@/components/teacher/phase-timer-content";
@@ -48,13 +48,8 @@ import {
   type SessionPresenceRow,
 } from "@/lib/realtime/session-presence";
 import { hasSupabaseEnv, supabase } from "@/lib/supabase";
-import { isSessionEnded } from "@/lib/activity-phases";
-import {
-  HOST_SESSION_START_LABEL,
-  hostSessionNextPhaseLabel,
-  isTimedPhase,
-  type TimedPhase,
-} from "@/lib/copy/teacher";
+import { isSessionEnded, isTimedPhase, type TimedPhase } from "@/lib/activity-phases";
+import { hostSessionNextPhaseLabel } from "@/lib/api/sessions";
 import { cn } from "@/lib/utils";
 
 function SessionHostContent() {
@@ -333,6 +328,7 @@ function SessionHostContent() {
     return grouped.map((g) => ({
       group: g.group,
       memberCount: g.members.length,
+      memberWordCards: collectGroupWordCards(g.members),
     }));
   }, [onlinePlayers, groupRows]);
 
@@ -346,6 +342,7 @@ function SessionHostContent() {
           groupId: p.group_id as string,
           assignedRoleId: p.assigned_role_id,
           assignedItemIds: parseAssignedItemIds(p),
+          word_cards: p.word_cards ?? [],
         })),
     [playersQuery.data],
   );
@@ -454,7 +451,7 @@ function SessionHostContent() {
           <Loader2 className="h-4 w-4 shrink-0 animate-spin text-[var(--primary)]" aria-hidden />
         </>
       ) : (
-        <>{HOST_SESSION_START_LABEL}</>
+        <>수업 시작</>
       )}
     </Button>
   ) : null;

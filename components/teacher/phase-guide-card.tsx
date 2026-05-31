@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { ActivityPhaseHeader } from "@/components/activity/activity-phase-header";
 import type { ActivityPhase } from "@/lib/api/activities";
 import { getActivityPhaseStep } from "@/lib/activity/phase-steps";
-import { PHASE_GUIDES, isTimedPhase } from "@/lib/copy/teacher";
+import { TEACHER_PHASE_GUIDES, isTimedPhase, type TimedPhase } from "@/lib/activity-phases";
 
 /**
  * 호스트 화면 단계 안내 — `ActivityPhaseHeader` 래퍼.
@@ -29,7 +29,7 @@ export function PhaseGuideCard({
 
   if (!isTimedPhase(phase)) return null;
 
-  const guide = PHASE_GUIDES[phase];
+  const guide = TEACHER_PHASE_GUIDES[phase];
 
   return (
     <ActivityPhaseHeader

@@ -18,7 +18,6 @@ import {
   type ContentLanguage,
 } from "@/lib/activity-pack/content-language";
 import type { ActivityPack } from "@/lib/activity-pack/types";
-import { TEACHER_AI_COPY } from "@/lib/copy/teacher";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -29,14 +28,11 @@ type Props = {
 
 const GROUP_SIZE_MIN = 2;
 const GROUP_SIZE_MAX = 12;
-const TASK_COUNT_MIN = 1;
-const TASK_COUNT_MAX = 6;
 
 export function AIActivityGenerateModal({ open, onClose, onApply }: Props) {
   const [topic, setTopic] = useState("");
   const [difficulty, setDifficulty] = useState<AiDifficultyLevel>("Normal");
   const [roleCount, setRoleCount] = useState(3);
-  const [taskCount, setTaskCount] = useState(3);
   const [contentLanguage, setContentLanguage] = useState<ContentLanguage>(DEFAULT_CONTENT_LANGUAGE);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -49,13 +45,13 @@ export function AIActivityGenerateModal({ open, onClose, onApply }: Props) {
         topic: topic.trim() || undefined,
         difficulty,
         roleCount,
-        taskCount,
+        taskCount: roleCount,
         contentLanguage,
       });
       onApply(pack);
       onClose();
     } catch (e) {
-      setError(e instanceof Error ? e.message : TEACHER_AI_COPY.generateFailed);
+      setError(e instanceof Error ? e.message : "생성에 실패했습니다.");
     } finally {
       setLoading(false);
     }
@@ -65,26 +61,26 @@ export function AIActivityGenerateModal({ open, onClose, onApply }: Props) {
     <Modal
       open={open}
       onClose={onClose}
-      title={TEACHER_AI_COPY.modalTitle}
+      title="AI로 활동 초안 만들기"
       titleId="ai-activity-generate-modal-title"
       closeOnBackdrop={!loading}
     >
       <div className="space-y-4">
         <FormField
-          label={TEACHER_AI_COPY.topicLabel}
-          help={TEACHER_AI_COPY.topicHelp}
+          label="수업 주제"
+          help="단원·차시 주제를 적으면 역할·단서·공유 학습지에 반영됩니다."
           htmlFor="ai-activity-topic"
         >
           <Textarea
             id="ai-activity-topic"
-            placeholder={TEACHER_AI_COPY.topicPlaceholder}
+            placeholder="예: 중2 과학 ‘식물의 구조’, 고1 영어 ‘환경 보호’"
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
             rows={3}
           />
         </FormField>
 
-        <FormField label={TEACHER_AI_COPY.difficultyLabel} help={TEACHER_AI_COPY.difficultyHelp}>
+        <FormField label="난이도" help="저장되지 않습니다. 단서·공유 학습지 난이도 조절에만 사용합니다.">
           <div className="flex flex-wrap gap-2">
             {AI_DIFFICULTY_UI_OPTIONS.map((opt) => (
               <button
@@ -104,7 +100,7 @@ export function AIActivityGenerateModal({ open, onClose, onApply }: Props) {
           </div>
         </FormField>
 
-        <FormField label={TEACHER_AI_COPY.languageLabel}>
+        <FormField label="콘텐츠 언어">
           <div className="flex flex-wrap gap-2">
             {CONTENT_LANGUAGE_OPTIONS.map((opt) => (
               <button
@@ -128,7 +124,7 @@ export function AIActivityGenerateModal({ open, onClose, onApply }: Props) {
         </FormField>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <FormField label={TEACHER_AI_COPY.roleCountLabel} help={TEACHER_AI_COPY.roleCountHelp}>
+          <FormField label="역할 수" help="모둠 인원과 같습니다. 역할당 단어 1개">
             <div className="flex items-center gap-2">
               <Button
                 type="button"
@@ -151,28 +147,13 @@ export function AIActivityGenerateModal({ open, onClose, onApply }: Props) {
               </Button>
             </div>
           </FormField>
-          <FormField label={TEACHER_AI_COPY.missionCountLabel} help={TEACHER_AI_COPY.missionCountHelp}>
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                disabled={taskCount <= TASK_COUNT_MIN}
-                onClick={() => setTaskCount((n) => Math.max(TASK_COUNT_MIN, n - 1))}
-              >
-                <Minus className="h-4 w-4" />
-              </Button>
-              <span className="w-8 text-center font-mono">{taskCount}</span>
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                disabled={taskCount >= TASK_COUNT_MAX}
-                onClick={() => setTaskCount((n) => Math.min(TASK_COUNT_MAX, n + 1))}
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
+          <FormField
+            label="학습지 빈칸 수"
+            help="최종 요약문에 넣을 빈칸(역할별 단어) 수 — 보통 역할 수와 같습니다"
+          >
+            <p className="text-sm text-[var(--muted-foreground)]">
+              역할 수({roleCount})와 같게 생성됩니다 — 역할마다 학습지 빈칸 1개
+            </p>
           </FormField>
         </div>
 
@@ -182,12 +163,12 @@ export function AIActivityGenerateModal({ open, onClose, onApply }: Props) {
           {loading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              {TEACHER_AI_COPY.generating}
+              생성 중…
             </>
           ) : (
             <>
               <Sparkles className="mr-2 h-4 w-4" />
-              {TEACHER_AI_COPY.generate}
+              활동 초안 생성
             </>
           )}
         </Button>

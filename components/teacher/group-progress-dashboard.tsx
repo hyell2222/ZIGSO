@@ -9,14 +9,15 @@ import {
 import { activityLayoutType } from "@/components/activity/activity-layout-typography";
 import { PhaseSection, PhaseSectionBadge } from "@/components/activity/phase-section-layout";
 import { LoadingState } from "@/components/ui/loading-state";
-import { HOST_COPY } from "@/lib/copy/teacher";
 import type { ActivityPack } from "@/lib/activity-pack/types";
 import { computeGroupTotalScore } from "@/lib/activity-pack/session-results";
 import type { GroupRow } from "@/lib/api/play";
+import type { WordCard } from "@/lib/activity-pack/types";
 
 export type GroupProgressGroup = {
   group: GroupRow;
   memberCount: number;
+  memberWordCards: WordCard[];
 };
 
 export function GroupProgressDashboard({
@@ -31,16 +32,16 @@ export function GroupProgressDashboard({
   contained?: boolean;
 }) {
   void contained;
-  const taskTotal = pack?.tasks.length ?? 0;
+  const slotTotal = pack?.homeWorksheet.slots.length ?? 0;
 
   const completedCount = groups.filter((g) => Boolean(g.group.completed_at)).length;
 
   return (
     <PhaseSection
-      title={HOST_COPY.progressTitle}
+      title="공유 학습지 진행"
       heading="section"
       as="h2"
-      subtitle={HOST_COPY.progressSubtitle}
+      subtitle="단어 카드 획득·빈칸 채우기·학습지 제출 현황"
       headerExtra={
         !loading && groups.length > 0 ? (
           <PhaseSectionBadge>
@@ -56,7 +57,7 @@ export function GroupProgressDashboard({
       ) : (
         <div className={activityCardGrid}>
           {groups.map((g) => (
-            <GroupProgressCard key={g.group.id} entry={g} taskTotal={taskTotal} pack={pack} />
+            <GroupProgressCard key={g.group.id} entry={g} slotTotal={slotTotal} pack={pack} />
           ))}
         </div>
       )}
@@ -66,29 +67,31 @@ export function GroupProgressDashboard({
 
 function GroupProgressCard({
   entry,
-  taskTotal,
+  slotTotal,
   pack,
 }: {
   entry: GroupProgressGroup;
-  taskTotal: number;
+  slotTotal: number;
   pack: ActivityPack | null;
 }) {
-  const { group, memberCount } = entry;
-  const acquired = group.acquired_items.length;
+  const { group, memberCount, memberWordCards } = entry;
+  const wordCardsAcquired = memberWordCards.length;
   const itemTotal = pack?.items.length ?? 0;
-  const tasksDone = group.completed_tasks.length;
+  const slotsFilled = group.worksheet_placements.length;
   const activityCompleted = Boolean(group.completed_at);
 
   const score = useMemo(
     () =>
-      computeGroupTotalScore({
-        id: group.id,
-        name: group.name,
-        acquired_items: group.acquired_items,
-        completed_tasks: group.completed_tasks,
-        completed_at: group.completed_at,
-      }),
-    [group],
+      computeGroupTotalScore(
+        {
+          id: group.id,
+          name: group.name,
+          worksheet_placements: group.worksheet_placements,
+          completed_at: group.completed_at,
+        },
+        memberWordCards,
+      ),
+    [group, memberWordCards],
   );
 
   return (
@@ -99,15 +102,15 @@ function GroupProgressCard({
       </div>
       <dl className="mt-2 space-y-1 text-xs @md:text-sm">
         <div className="flex justify-between gap-2">
-          <dt className="text-[var(--muted-foreground)]">아이템</dt>
+          <dt className="text-[var(--muted-foreground)]">단어 카드</dt>
           <dd className="font-medium text-[var(--foreground)]">
-            {acquired}/{itemTotal || "—"}
+            {wordCardsAcquired}/{itemTotal || "—"}
           </dd>
         </div>
         <div className="flex justify-between gap-2">
-          <dt className="text-[var(--muted-foreground)]">미션</dt>
+          <dt className="text-[var(--muted-foreground)]">빈칸</dt>
           <dd className="font-medium text-[var(--foreground)]">
-            {tasksDone}/{taskTotal || "—"}
+            {slotsFilled}/{slotTotal || "—"}
           </dd>
         </div>
         <div className="flex justify-between gap-2">
@@ -119,7 +122,7 @@ function GroupProgressCard({
                 : "text-[var(--muted-foreground)]"
             }
           >
-            {activityCompleted ? HOST_COPY.progressComplete : HOST_COPY.progressOngoing}
+            {activityCompleted ? "완료" : "진행 중"}
           </dd>
         </div>
         <div className="flex justify-between gap-2 border-t border-[var(--border)] pt-1">

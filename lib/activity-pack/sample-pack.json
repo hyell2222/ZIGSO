@@ -1,40 +1,57 @@
 {
-  "version": 2,
-  "title": "School Festival Booth",
-  "description": "Expert groups deduce items from clues; home groups complete cooperative tasks by submitting acquired items.",
-  "groupSize": 2,
+  "version": 3,
+  "title": "Textbook Reading: Save Our Planet",
+  "description": "Based on a middle-school English textbook passage. Expert groups deduce key vocabulary from clues and earn word cards. Home groups complete a shared summary worksheet — you cannot place your own word in your own blank.",
+  "groupSize": 3,
   "itemsPerPlayer": 1,
   "roles": [
     {
-      "id": "booth_ops",
-      "name": "Booth operations",
+      "id": "environment_expert",
+      "name": "Environment",
       "items": [
         {
-          "id": "booth_manual",
-          "name": "booth operations manual",
+          "id": "environment",
+          "name": "environment",
           "clues": {
-            "stage1": "Contains the festival day checklist.",
-            "stage2": "Lists opening time and closing procedures.",
-            "stage3": "The cover says 'Booth Operations'.",
-            "stage4": "Title: Booth Operations Manual.",
-            "stage5": "Answer: booth operations manual"
+            "stage1": "It means all the natural world around us.",
+            "stage2": "We must protect our ___ to live safely.",
+            "stage3": "The first sentence of the passage says 'our environment'.",
+            "stage4": "An 11-letter English word starting with e.",
+            "stage5": "Answer: environment"
           }
         }
       ]
     },
     {
-      "id": "admission",
-      "name": "Admission",
+      "id": "pollution_expert",
+      "name": "Pollution",
       "items": [
         {
-          "id": "admission_ticket",
-          "name": "admission ticket",
+          "id": "pollution",
+          "name": "pollution",
           "clues": {
-            "stage1": "Visitors carry it in their hands.",
-            "stage2": "A QR code is printed on it.",
-            "stage3": "The words 'Admission Ticket' are visible.",
-            "stage4": "It is a paper ticket.",
-            "stage5": "Answer: admission ticket"
+            "stage1": "It makes air, water, or land dirty.",
+            "stage2": "Factories cause a lot of ___.",
+            "stage3": "The passage says 'reduce pollution'.",
+            "stage4": "A 10-letter English word starting with p.",
+            "stage5": "Answer: pollution"
+          }
+        }
+      ]
+    },
+    {
+      "id": "recycle_expert",
+      "name": "Recycle",
+      "items": [
+        {
+          "id": "recycle",
+          "name": "recycle",
+          "clues": {
+            "stage1": "Using paper or plastic again instead of throwing it away.",
+            "stage2": "We should ___ plastic bottles.",
+            "stage3": "It appears in the last sentence of the passage.",
+            "stage4": "An English word spelled re-___-le.",
+            "stage5": "Answer: recycle"
           }
         }
       ]
@@ -42,34 +59,57 @@
   ],
   "items": [
     {
-      "id": "booth_manual",
-      "name": "booth operations manual",
+      "id": "environment",
+      "name": "environment",
       "clues": {
-        "stage1": "Contains the festival day checklist.",
-        "stage2": "Lists opening time and closing procedures.",
-        "stage3": "The cover says 'Booth Operations'.",
-        "stage4": "Title: Booth Operations Manual.",
-        "stage5": "Answer: booth operations manual"
+        "stage1": "It means all the natural world around us.",
+        "stage2": "We must protect our ___ to live safely.",
+        "stage3": "The first sentence of the passage says 'our environment'.",
+        "stage4": "An 11-letter English word starting with e.",
+        "stage5": "Answer: environment"
       }
     },
     {
-      "id": "admission_ticket",
-      "name": "admission ticket",
+      "id": "pollution",
+      "name": "pollution",
       "clues": {
-        "stage1": "Visitors carry it in their hands.",
-        "stage2": "A QR code is printed on it.",
-        "stage3": "The words 'Admission Ticket' are visible.",
-        "stage4": "It is a paper ticket.",
-        "stage5": "Answer: admission ticket"
+        "stage1": "It makes air, water, or land dirty.",
+        "stage2": "Factories cause a lot of ___.",
+        "stage3": "The passage says 'reduce pollution'.",
+        "stage4": "A 10-letter English word starting with p.",
+        "stage5": "Answer: pollution"
+      }
+    },
+    {
+      "id": "recycle",
+      "name": "recycle",
+      "clues": {
+        "stage1": "Using paper or plastic again instead of throwing it away.",
+        "stage2": "We should ___ plastic bottles.",
+        "stage3": "It appears in the last sentence of the passage.",
+        "stage4": "An English word spelled re-___-le.",
+        "stage5": "Answer: recycle"
       }
     }
   ],
-  "tasks": [
-    {
-      "id": "booth_opening",
-      "title": "Booth opening prep",
-      "description": "Organize materials and steps needed before opening the booth.",
-      "acceptedItemIds": ["booth_manual", "admission_ticket"]
-    }
-  ]
+  "homeWorksheet": {
+    "summaryPassage": "According to the reading passage, we should protect our {{slot_environment}}, reduce {{slot_pollution}}, and {{slot_recycle}} more often.",
+    "slots": [
+      {
+        "id": "slot_environment",
+        "itemId": "environment",
+        "ownerRoleId": "environment_expert"
+      },
+      {
+        "id": "slot_pollution",
+        "itemId": "pollution",
+        "ownerRoleId": "pollution_expert"
+      },
+      {
+        "id": "slot_recycle",
+        "itemId": "recycle",
+        "ownerRoleId": "recycle_expert"
+      }
+    ]
+  }
 }

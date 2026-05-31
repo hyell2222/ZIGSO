@@ -10,10 +10,7 @@ import { Button } from "@/components/ui/button";
 import { clueTextForLevel } from "@/lib/activity-pack/engine";
 import type { Item } from "@/lib/activity-pack/types";
 import { scoreForClueLevel } from "@/lib/activity-pack/scoring";
-import { STUDENT_COPY } from "@/lib/copy/student";
 import { cn } from "@/lib/utils";
-
-const EXPERT = STUDENT_COPY.phaseExpert;
 
 const HINT_STAGES = [1, 2, 3, 4, 5] as const;
 type StageType = (typeof HINT_STAGES)[number];
@@ -67,7 +64,7 @@ export function ExpertClueBoard({ item, reveal, onRevealChange }: Props) {
   );
 
   return (
-    <PlayPhaseSection title={EXPERT.clueSection}>
+    <PlayPhaseSection title="단서 탐색">
       <div
         className={cn(
           activityNestedCard,
@@ -76,9 +73,9 @@ export function ExpertClueBoard({ item, reveal, onRevealChange }: Props) {
       >
         <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-[var(--accent)]" aria-hidden />
         <div className="space-y-1">
-          <p className={t.playPanelHint}>{EXPERT.clueScoreHint}</p>
+          <p className={t.playPanelHint}>앞 단계 단서일수록 높은 점수를 받아요.</p>
           <p className={t.caption}>
-            {EXPERT.clueCurrentScore(scoreForClueLevel(clueLevelUsed))}
+            단어 카드 획득 시 +{scoreForClueLevel(clueLevelUsed)}점
           </p>
         </div>
       </div>
@@ -148,8 +145,8 @@ export function ExpertClueBoard({ item, reveal, onRevealChange }: Props) {
               ) : (
                 <p className={cn(t.caption, "italic")}>
                   {isLocked
-                    ? EXPERT.clueLocked
-                    : EXPERT.clueReveal}
+                    ? "앞 단계 단서를 먼저 열어야 볼 수 있어요."
+                    : "버튼을 누르면 단서가 공개돼요."}
                 </p>
               )}
             </div>

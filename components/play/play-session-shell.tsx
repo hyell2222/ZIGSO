@@ -4,22 +4,16 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { activityPageShell } from "@/components/activity/activity-layout-chrome";
+import { activityPageShell, activityLoaderRegion } from "@/components/activity/activity-layout-chrome";
 import { ExpertPhasePanel } from "@/components/play/expert-group-panel";
 import { ActivityIntroductionLayout } from "@/components/play/overview-layout";
-import { GroupPhasePanel } from "@/components/play/home-group-panel";
+import { GroupPhasePanel, type GroupMember } from "@/components/play/home-group-panel";
 import { ResultsPhasePanel } from "@/components/play/results-phase-panel";
 import { PlayPhaseShell } from "@/components/play/play-phase-shell";
-import {
-  PlayAtmosphere,
-  playLoaderRegion,
-  playSurfaceCool,
-} from "@/components/play/play-atmosphere";
+import { PlayAtmosphere, playSurfaceCool } from "@/components/play/play-atmosphere";
 import { PlayHeaderGroupPlace } from "@/components/play/play-header-group-place";
 import { WaitingLobbyBlock } from "@/components/play/waiting-lobby-block";
 import { LoadingState } from "@/components/ui/loading-state";
-import { COPY_DEFAULTS } from "@/lib/copy/defaults";
-import { JOIN_COPY } from "@/lib/copy/join";
 import { PlayJoinModal } from "@/components/play/play-join-modal";
 import { PlayResumeModal } from "@/components/play/play-resume-modal";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -37,6 +31,7 @@ import {
   listSessionGroups,
   listSessionPlayers,
   setPlayerOnline,
+  listGroupMembers,
 } from "@/lib/api/play";
 import { buildSessionResults } from "@/lib/activity-pack/session-results";
 import {
@@ -50,7 +45,6 @@ import { ROUTES } from "@/lib/routes";
 import { hasSupabaseEnv, supabase } from "@/lib/supabase";
 import { formatAssignedRoleLabels } from "@/lib/activity-pack/roles";
 import { formatAssignedSlots } from "@/lib/play/assignment-labels";
-import { STUDENT_COPY } from "@/lib/copy/student";
 import { cn } from "@/lib/utils";
 
 export function PlaySessionShell({
@@ -176,7 +170,10 @@ export function PlaySessionShell({
         "postgres_changes",
         { event: "*", schema: "public", table: "groups", filter: `session_id=eq.${sessionId}` },
         () => {
-          if (groupId) void queryClient.invalidateQueries({ queryKey: ["play-group", groupId] });
+          if (groupId) {
+            void queryClient.invalidateQueries({ queryKey: ["play-group", groupId] });
+            void queryClient.invalidateQueries({ queryKey: ["play-group-members", groupId] });
+          }
         },
       )
       .subscribe((status) => {
@@ -184,7 +181,7 @@ export function PlaySessionShell({
           void channel.track({
             role: "player",
             player_id: playerId,
-            nickname: nickname.trim() || COPY_DEFAULTS.participant,
+            nickname: nickname.trim() || "참가자",
           });
           return;
         }
@@ -217,8 +214,8 @@ export function PlaySessionShell({
     mutationFn: async (args?: { nickname?: string }) => {
       const normalizedJoinCode = joinCode.trim().toUpperCase();
       const nick = (args?.nickname ?? nickname).trim();
-      if (!normalizedJoinCode) throw new Error(JOIN_COPY.errors.codeRequired);
-      if (!nick) throw new Error(JOIN_COPY.errors.nicknameRequired);
+      if (!normalizedJoinCode) throw new Error("참가 코드를 입력해 주세요.");
+      if (!nick) throw new Error("닉네임을 입력해 주세요.");
       const session = await getSessionByJoinCode(normalizedJoinCode);
       setSessionId(session.id);
       const result = await joinPlayerSession({
@@ -297,9 +294,11 @@ export function PlaySessionShell({
   const hasAssignment = Boolean(assignedItemIds.length > 0 && groupId);
 
   const groupAcquiredIds = useMemo(
-    () => new Set((groupQuery.data?.acquired_items ?? []).map((a) => a.itemId)),
-    [groupQuery.data?.acquired_items],
+    () => new Set((playerQuery.data?.word_cards ?? []).map((c) => c.itemId)),
+    [playerQuery.data?.word_cards],
   );
+
+  const wordCards = playerQuery.data?.word_cards ?? [];
 
   const isWaitingLobby =
     hasJoinedSession &&
@@ -322,6 +321,26 @@ export function PlaySessionShell({
   const isGroupPhase = hasJoinedSession && sessionPhase === "home_group";
   const isResultsPhase = hasJoinedSession && sessionPhase === "results";
 
+  const groupMembersQuery = useQuery({
+    queryKey: ["play-group-members", groupId],
+    queryFn: async () => listGroupMembers(groupId as string),
+    enabled: Boolean(groupId && isGroupPhase),
+    refetchInterval: groupId && isGroupPhase ? 3_000 : false,
+    refetchIntervalInBackground: true,
+  });
+
+  const groupMembers: GroupMember[] = useMemo(
+    () =>
+      (groupMembersQuery.data ?? []).map((m) => ({
+        id: m.id,
+        nickname: m.nickname,
+        assigned_role_id: m.assigned_role_id,
+        assigned_item_ids: m.assigned_item_ids,
+        word_cards: m.word_cards,
+      })),
+    [groupMembersQuery.data],
+  );
+
   const resultsQuery = useQuery({
     queryKey: ["play-results", sessionId],
     queryFn: async () => {
@@ -343,8 +362,7 @@ export function PlaySessionShell({
       resultsQuery.data.groups.map((g) => ({
         id: g.id,
         name: g.name,
-        acquired_items: g.acquired_items,
-        completed_tasks: g.completed_tasks,
+        worksheet_placements: g.worksheet_placements,
         completed_at: g.completed_at,
       })),
       resultsQuery.data.players
@@ -355,6 +373,7 @@ export function PlaySessionShell({
           groupId: p.group_id as string,
           assignedRoleId: p.assigned_role_id,
           assignedItemIds: parseAssignedItemIds(p),
+          word_cards: p.word_cards ?? [],
         })),
       sessionId ?? undefined,
     );
@@ -393,23 +412,29 @@ export function PlaySessionShell({
         assignedItemIds={assignedItemIds}
         acquiredItemIds={groupAcquiredIds}
         onAcquired={() => {
-          void queryClient.invalidateQueries({ queryKey: ["play-group", groupId] });
+          void queryClient.invalidateQueries({ queryKey: ["play-player", playerId] });
         }}
         pending={playerQuery.isLoading}
       />
     );
   }
 
-  if (hasSupabaseEnv && isGroupPhase && activityPack && groupQuery.data) {
+  if (hasSupabaseEnv && isGroupPhase && activityPack && groupQuery.data && playerId) {
     return (
       <GroupPhasePanel
         pack={activityPack}
         group={groupQuery.data}
         groupName={groupName}
+        playerId={playerId}
+        assignedRoleId={playerQuery.data?.assigned_role_id ?? null}
+        wordCards={wordCards}
+        members={groupMembers}
         onUpdate={() => {
           void queryClient.invalidateQueries({ queryKey: ["play-group", groupId] });
+          void queryClient.invalidateQueries({ queryKey: ["play-group-members", groupId] });
+          void queryClient.invalidateQueries({ queryKey: ["play-player", playerId] });
         }}
-        pending={groupQuery.isLoading}
+        pending={groupQuery.isLoading || groupMembersQuery.isLoading}
       />
     );
   }
@@ -420,13 +445,14 @@ export function PlaySessionShell({
       <PlayPhaseShell
         header={{
           phase: 1,
-          title: STUDENT_COPY.phaseOverview.title,
-          description: STUDENT_COPY.phaseOverview.description,
+          title: "활동 소개",
+          description:
+            "모둠·역할·공유 학습지를 확인하세요. 전문가 집단에서는 5단계 단서로 단어 카드를 얻습니다.",
           rightSlot: (
             <PlayHeaderGroupPlace
               groupName={groupName}
               placeName={roleLabel}
-              placeLabel={STUDENT_COPY.phaseOverview.placeLabel}
+              placeLabel="나의 역할"
               pending={playerQuery.isLoading || !hasAssignment}
             />
           ),
@@ -449,7 +475,7 @@ export function PlaySessionShell({
   if (hasSupabaseEnv && hasJoinedSession && isWaitingLobby) {
     return (
       <PlayPhaseShell>
-        <div className={playLoaderRegion}>
+        <div className={activityLoaderRegion}>
           <WaitingLobbyBlock
             joinCode={joinCode}
             nickname={nickname}
@@ -457,7 +483,7 @@ export function PlaySessionShell({
             state={waitingLobbyState}
           />
           <p className="mt-6 text-center text-xs text-[var(--muted-foreground)]">
-            {STUDENT_COPY.waiting.waitForTeacher}
+            선생님이 다음 단계로 넘길 때까지 기다려 주세요.
           </p>
         </div>
       </PlayPhaseShell>
@@ -518,7 +544,7 @@ export function PlaySessionShell({
           {showJoinLoading ? (
             <section
               className={cn(
-                playLoaderRegion,
+                activityLoaderRegion,
                 "motion-safe:animate-[playRevealUp_0.5s_ease-out_both]",
               )}
             >
@@ -534,13 +560,13 @@ export function PlaySessionShell({
             pending={joinAndRegisterMutation.isPending}
             title={
               declinedResumeRef.current || !initialNickname.trim()
-                ? JOIN_COPY.title
-                : JOIN_COPY.resumeTitle
+                ? "활동 참가"
+                : "다시 참가하기"
             }
             description={
               declinedResumeRef.current || !initialNickname.trim()
-                ? JOIN_COPY.description
-                : JOIN_COPY.resumeNicknameHint
+                ? "선생님이 알려준 참가 코드와 닉네임을 입력하세요."
+                : "닉네임을 확인한 뒤 다시 참가해 주세요."
             }
             joinCodeEditable={false}
             showMissingCodeClue={false}
@@ -548,7 +574,7 @@ export function PlaySessionShell({
             onSubmit={() => {
               const nick = nickname.trim();
               if (!nick) {
-                setMessage(JOIN_COPY.errors.nicknameRequired);
+                setMessage("닉네임을 입력해 주세요.");
                 return;
               }
               joinAndRegisterMutation.mutate({ nickname: nick });

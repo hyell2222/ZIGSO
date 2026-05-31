@@ -7,14 +7,12 @@ import { PlayPhaseShell } from "@/components/play/play-phase-shell";
 import {
   activityNestedCard,
   activityPanelCard,
-  activityStack,
 } from "@/components/activity/activity-layout-chrome";
 import { LoadingState } from "@/components/ui/loading-state";
 import {
   getStudentResultsSnapshot,
   type SessionResultsSummary,
 } from "@/lib/activity-pack/session-results";
-import { STUDENT_COPY } from "@/lib/copy/student";
 import { cn } from "@/lib/utils";
 
 const rankToneClass: Record<number, string> = {
@@ -105,35 +103,35 @@ export function ResultsPhasePanel({
     [results, highlightGroupId, currentPlayerId],
   );
 
-  const copy = STUDENT_COPY.phaseResults;
-
   return (
     <PlayPhaseShell contained={contained}>
       {loading ? (
-        <LoadingState variant="section" tone="play" label={copy.aggregating} />
+        <LoadingState variant="section" tone="play" label="결과 집계 중…" />
       ) : !snapshot ? (
-        <p className={cn("py-8 text-center", activityLayoutType.bodyMuted)}>{copy.emptyMessage}</p>
+        <p className={cn("py-8 text-center", activityLayoutType.bodyMuted)}>
+          결과를 불러오지 못했어요. 잠시 후 다시 확인해 주세요.
+        </p>
       ) : (
         <div className={activityPanelCard}>
           <p className="text-center text-2xl @sm:text-3xl" aria-hidden>
-            {copy.emoji}
+            🏆
           </p>
           <RankCard
-            label={copy.groupRankLabel}
+            label="모둠 순위"
             rank={snapshot.groupRank}
             total={snapshot.totalTeams}
-            totalUnit={copy.groupUnit}
+            totalUnit="개 모둠"
             score={snapshot.groupScore}
-            scoreLabel={`${snapshot.groupName} · ${copy.groupScoreLabel}`}
+            scoreLabel={`${snapshot.groupName} · 모둠 점수`}
             accent
           />
           <RankCard
-            label={copy.personalRankLabel}
+            label="나의 순위"
             rank={snapshot.personalRank}
             total={snapshot.totalPlayers}
-            totalUnit={copy.personUnit}
+            totalUnit="명"
             score={snapshot.personalScore}
-            scoreLabel={copy.personalScoreLabel}
+            scoreLabel="나의 점수"
             detail={`${snapshot.roleLabel} · 전문가 ${snapshot.expertScore}점 · 팀 기여 ${snapshot.teamShareScore}점`}
           />
         </div>

@@ -13,7 +13,6 @@ import { LoadingState } from "@/components/ui/loading-state";
 import { buildSessionResults } from "@/lib/activity-pack/session-results";
 import type { ActivityPack } from "@/lib/activity-pack/types";
 import type { GroupRow } from "@/lib/api/play";
-import { HOST_COPY } from "@/lib/copy/teacher";
 import { cn } from "@/lib/utils";
 
 export type SessionResultsMember = {
@@ -22,6 +21,7 @@ export type SessionResultsMember = {
   groupId: string;
   assignedRoleId: string | null;
   assignedItemIds?: string[];
+  word_cards?: import("@/lib/activity-pack/types").WordCard[];
 };
 
 type Props = {
@@ -50,8 +50,7 @@ export function SessionResultsDashboard({
       groups.map((g) => ({
         id: g.id,
         name: g.name,
-        acquired_items: g.acquired_items,
-        completed_tasks: g.completed_tasks,
+        worksheet_placements: g.worksheet_placements,
         completed_at: g.completed_at,
       })),
       members.map((m) => ({
@@ -60,25 +59,26 @@ export function SessionResultsDashboard({
         groupId: m.groupId,
         assignedRoleId: m.assignedRoleId,
         assignedItemIds: m.assignedItemIds,
+        word_cards: m.word_cards,
       })),
       roleScopeKey,
     );
   }, [pack, groups, members, roleScopeKey]);
 
   if (loading) {
-    return <LoadingState variant="section" label={HOST_COPY.resultsAggregating} />;
+    return <LoadingState variant="section" label="결과 집계 중…" />;
   }
 
   if (!results?.rankedTeams.length) {
-    return <p className={activityLayoutType.bodyMuted}>{HOST_COPY.resultsEmpty}</p>;
+    return <p className={activityLayoutType.bodyMuted}>집계할 모둠 결과가 없습니다.</p>;
   }
 
   return (
     <PhaseSection
-      title={HOST_COPY.resultsTitle}
+      title="모둠 순위"
       heading="section"
       as="h2"
-      subtitle={HOST_COPY.resultsSubtitle}
+      subtitle="모둠별 총점과 MVP. 개인 순위는 학생 화면에서 확인합니다."
       headerExtra={
         <PhaseSectionBadge>{results.rankedTeams.length}개 모둠</PhaseSectionBadge>
       }
@@ -92,7 +92,7 @@ export function SessionResultsDashboard({
               <p className={cn(activityLayoutType.nestedCardScore, "ml-auto")}>{team.totalScore}점</p>
             </div>
             <p className={activityLayoutType.nestedCardMeta}>
-              아이템 {team.itemsAcquired} · 미션 {team.tasksCompleted}
+              단어 카드 {team.wordCardsAcquired} · 빈칸 {team.slotsFilled}
               {team.activityCompleted ? " · 최종 제출" : ""}
             </p>
             <div className={cn(activityCallout, "mt-2 px-3 py-2")}>

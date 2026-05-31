@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FileText, LucideIcon, Puzzle } from "lucide-react";
 
-import { TEACHER_NAV_COPY } from "@/lib/copy/teacher";
 import { ROUTES } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 
@@ -16,13 +15,13 @@ const TABS: {
 }[] = [
   {
     href: ROUTES.activities,
-    label: TEACHER_NAV_COPY.activities,
+    label: "내 활동",
     icon: Puzzle,
     match: (path) => path === ROUTES.activities || path.startsWith(`${ROUTES.activities}/`),
   },
   {
     href: ROUTES.reports,
-    label: TEACHER_NAV_COPY.reports,
+    label: "수업 기록",
     icon: FileText,
     match: (path) => path === ROUTES.reports || path.startsWith(`${ROUTES.reports}/`),
   },

@@ -1,9 +1,9 @@
 /**
  * Jigsaw 활동 팩(ActivityPack) 데이터 모델.
- * 게임 엔진은 이 JSON 구조만으로 동작하며, AI는 초안 생성기 역할만 한다.
+ * 전문가 집단(단어 카드) + 홈 집단(공유 학습지) 구조.
  */
 
-export const ACTIVITY_PACK_VERSION = 2 as const;
+export const ACTIVITY_PACK_VERSION = 3 as const;
 
 /** 아이템 5단계 단서 (1=가장 어려움, 5=가장 쉬움) */
 export type ItemClues = {
@@ -21,54 +21,52 @@ export type Item = {
   aliases?: string[];
 };
 
-/** 홈 모둠 역할 — 역할별로 맞출 아이템(정답)이 여러 개일 수 있음 */
+/** 홈 모둠 역할 — 역할별 본문 핵심 단어 */
 export type Role = {
   id: string;
   name: string;
   items: Item[];
 };
 
-/** 모둠이 해결할 미션 — acceptedItemIds 에 체크된 아이템을 모두 획득·제출해야 완료 */
-export type Task = {
+/** 홈 집단 공유 학습지 — 빈칸 슬롯 */
+export type WorksheetSlot = {
   id: string;
-  title: string;
-  description: string;
-  /** 미션 완료에 필수로 제출해야 하는 아이템 id 목록 */
-  acceptedItemIds: string[];
+  itemId: string;
+  /** 슬롯 소유 역할 — 해당 역할 학생 화면의 빈칸(본인은 직접 채울 수 없음) */
+  ownerRoleId: string;
+};
+
+/** 홈 집단 공유 학습지 — summaryPassage 내 {{slot_id}} 가 빈칸 */
+export type HomeWorksheet = {
+  summaryPassage: string;
+  slots: WorksheetSlot[];
 };
 
 export type ActivityPack = {
   version: typeof ACTIVITY_PACK_VERSION;
   title: string;
   description: string;
-  /** 모둠 인원 — 역할 수와 동일 (저장 시 자동 정규화) */
   groupSize: number;
-  /** 역할당 최대 아이템 수 (저장 시 자동 정규화) */
   itemsPerPlayer: number;
   roles: Role[];
-  /** roles를 펼친 아이템 목록 — 엔진·미션 참조용 */
   items: Item[];
-  tasks: Task[];
+  homeWorksheet: HomeWorksheet;
 };
 
-/** 전문가 단계에서 획득한 아이템 */
-export type AcquiredItem = {
+/** 전문가 집단에서 획득한 단어 카드 (플레이어 개인 인벤토리) */
+export type WordCard = {
   itemId: string;
   clueLevelUsed: 1 | 2 | 3 | 4 | 5;
   score: number;
   acquiredAt: string;
+  /** 학습지에 배치된 시각 — 배치 후 인벤토리에서 사용 불가 */
+  placedAt?: string;
 };
 
-/** 모둠이 완성한 미션 (DB 컬럼명 completed_tasks) */
-export type CompletedTask = {
-  taskId: string;
-  submittedItemIds: string[];
-  completedAt: string;
-  score: number;
-};
-
-/** 모둠 최종 제출 */
-export type CompletedActivity = {
-  taskIds: string[];
-  submittedAt: string;
+/** 홈 집단 학습지 빈칸 배치 */
+export type WorksheetPlacement = {
+  slotId: string;
+  itemId: string;
+  placedByPlayerId: string;
+  placedAt: string;
 };

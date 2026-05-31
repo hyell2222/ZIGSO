@@ -1,6 +1,5 @@
 "use client";
 
-import { STUDENT_COPY } from "@/lib/copy/student";
 import { cn } from "@/lib/utils";
 import styles from "@/components/play/waiting-lobby-block.module.css";
 
@@ -9,16 +8,16 @@ const WAITING_LOBBY: Record<
   { title: string; body1: string; body2: string | null; emoji: string }
 > = {
   session_loading: {
-    title: STUDENT_COPY.waiting.loadingTitle,
-    body1: STUDENT_COPY.waiting.loadingBody,
+    title: "준비 중",
+    body1: "활동 안내를 불러오고 있어요.",
     body2: null,
-    emoji: STUDENT_COPY.waiting.loadingEmoji,
+    emoji: "⏳",
   },
   waiting: {
-    title: STUDENT_COPY.waiting.waitingTitle,
-    body1: STUDENT_COPY.waiting.waitingBody1,
-    body2: STUDENT_COPY.waiting.waitingBody2,
-    emoji: STUDENT_COPY.waiting.waitingEmoji,
+    title: "곧 활동이 시작됩니다",
+    body1: "시작하면 모둠·역할·단어가 배정됩니다.",
+    body2: "배정이 끝나면 같은 모둠끼리 모여 주세요.",
+    emoji: "🧩",
   },
 };
 

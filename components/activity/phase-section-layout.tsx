@@ -10,7 +10,6 @@ import {
   playPhaseSectionShell,
 } from "@/components/activity/activity-layout-chrome";
 import { activityLayoutType } from "@/components/activity/activity-layout-typography";
-import { STUDENT_COPY } from "@/lib/copy/student";
 import { cn } from "@/lib/utils";
 
 const t = activityLayoutType;
@@ -149,7 +148,7 @@ export function PhaseSectionCallout({
 export function PhaseSectionWaitFootnote({ className }: { className?: string }) {
   return (
     <p className={cn("text-center", t.playPanelCalloutFootnote, className)}>
-      {STUDENT_COPY.waiting.waitForTeacher}
+      선생님이 다음 단계로 넘길 때까지 기다려 주세요.
     </p>
   );
 }

@@ -1,6 +1,5 @@
 "use client";
 
-import { JOIN_COPY } from "@/lib/copy/join";
 import { PlayJoinReadonlyFields } from "@/components/play/play-join-form";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
@@ -29,7 +28,7 @@ export function PlayResumeModal({
     <Modal
       open={open}
       variant={modalVariant}
-      title={JOIN_COPY.title}
+      title="활동 참가"
       titleId={titleId}
       zIndexClassName={modalVariant === "contained" ? "z-20" : "z-50"}
       closeOnBackdrop={false}
@@ -43,14 +42,16 @@ export function PlayResumeModal({
           onContinue();
         }}
       >
-        <p className="text-xs text-[var(--foreground)]">{JOIN_COPY.resumeDescription}</p>
+        <p className="text-xs text-[var(--foreground)]">
+          이전 입장 기록이 있어요. 이어서 참가할지, 새 닉네임으로 들어갈지 선택하세요.
+        </p>
         <PlayJoinReadonlyFields titleId={titleId} joinCode={joinCode} nickname={nickname} />
         <div className="flex flex-col gap-2 pt-4">
           <Button type="submit" className="w-full">
-            {JOIN_COPY.resumeContinueLabel}
+            이어서 참가하기
           </Button>
           <Button type="button" variant="outline" className="w-full" onClick={onNew}>
-            {JOIN_COPY.resumeNewNicknameLabel}
+            새 닉네임으로 입장
           </Button>
         </div>
       </form>

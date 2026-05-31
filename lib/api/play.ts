@@ -1,11 +1,19 @@
 "use client";
 
 import { parseActivityPack } from "@/lib/api/activities";
-import { tryAcquireItem, tryCompleteTask } from "@/lib/activity-pack/engine";
+import {
+  tryAcquireWordCard,
+  tryPlaceWordCard,
+  isWorksheetComplete,
+  totalGroupScore,
+  PLAYER_MESSAGES,
+} from "@/lib/activity-pack/engine";
 import { assignRolesToPlayers } from "@/lib/activity-pack/engine";
-import { ERROR_COPY } from "@/lib/copy/errors";
-import { PLAYER_MESSAGES } from "@/lib/copy/player";
-import type { AcquiredItem, CompletedTask, ActivityPack } from "@/lib/activity-pack/types";
+import type {
+  ActivityPack,
+  WordCard,
+  WorksheetPlacement,
+} from "@/lib/activity-pack/types";
 import { supabase } from "@/lib/supabase";
 
 // =====================================================================
@@ -71,12 +79,13 @@ export type PlayerSelfRow = {
   group_id: string | null;
   assigned_role_id: string | null;
   assigned_item_ids: string[] | null;
+  word_cards: WordCard[];
   is_online: boolean | null;
   created_at: string;
 };
 
 const PLAYER_SELECT =
-  "id,nickname,session_id,group_id,assigned_role_id,assigned_item_ids,is_online,created_at";
+  "id,nickname,session_id,group_id,assigned_role_id,assigned_item_ids,word_cards,is_online,created_at";
 
 export function parseAssignedItemIds(player: {
   assigned_item_ids?: unknown;
@@ -89,14 +98,13 @@ export function parseAssignedItemIds(player: {
   return [];
 }
 
-const PLAYER_SELECT_WITH_GROUP = `${PLAYER_SELECT},groups(id,name,acquired_items,completed_tasks,completed_at)`;
+const PLAYER_SELECT_WITH_GROUP = `${PLAYER_SELECT},groups(id,name,worksheet_placements,completed_at)`;
 
 export type SessionPlayerRow = PlayerSelfRow & {
   groups: {
     id: string;
     name: string | null;
-    acquired_items: AcquiredItem[] | null;
-    completed_tasks: CompletedTask[] | null;
+    worksheet_placements: WorksheetPlacement[] | null;
     completed_at: string | null;
   } | null;
 };
@@ -108,7 +116,10 @@ export async function getPlayerById(playerId: string) {
     .eq("id", playerId)
     .single();
   if (error) throw error;
-  return data as PlayerSelfRow;
+  return {
+    ...(data as PlayerSelfRow),
+    word_cards: parseWordCards(data?.word_cards),
+  };
 }
 
 export async function listSessionPlayers(sessionId: string) {
@@ -187,32 +198,37 @@ export type GroupRow = {
   id: string;
   session_id: string | null;
   name: string | null;
-  acquired_items: AcquiredItem[];
-  completed_tasks: CompletedTask[];
+  worksheet_placements: WorksheetPlacement[];
   completed_at: string | null;
 };
 
-const GROUP_SELECT =
-  "id,session_id,name,acquired_items,completed_tasks,completed_at";
+const GROUP_SELECT = "id,session_id,name,worksheet_placements,completed_at";
 
-function parseAcquired(raw: unknown): AcquiredItem[] {
-  return Array.isArray(raw) ? (raw as AcquiredItem[]) : [];
-}
-
-function parseCompleted(raw: unknown): CompletedTask[] {
+function parseWordCards(raw: unknown): WordCard[] {
   if (!Array.isArray(raw)) return [];
   return raw.map((row) => {
     const r = row as Record<string, unknown>;
-    const taskId = String(r.taskId ?? "");
     return {
-      taskId,
-      submittedItemIds: Array.isArray(r.submittedItemIds)
-        ? (r.submittedItemIds as string[])
-        : Array.isArray(r.submittedSteps)
-          ? []
-          : [],
-      completedAt: String(r.completedAt ?? new Date().toISOString()),
+      itemId: String(r.itemId ?? ""),
+      clueLevelUsed: (typeof r.clueLevelUsed === "number"
+        ? Math.min(5, Math.max(1, Math.floor(r.clueLevelUsed)))
+        : 5) as 1 | 2 | 3 | 4 | 5,
       score: typeof r.score === "number" ? r.score : 0,
+      acquiredAt: String(r.acquiredAt ?? new Date().toISOString()),
+      placedAt: typeof r.placedAt === "string" ? r.placedAt : undefined,
+    };
+  });
+}
+
+function parsePlacements(raw: unknown): WorksheetPlacement[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.map((row) => {
+    const r = row as Record<string, unknown>;
+    return {
+      slotId: String(r.slotId ?? ""),
+      itemId: String(r.itemId ?? ""),
+      placedByPlayerId: String(r.placedByPlayerId ?? ""),
+      placedAt: String(r.placedAt ?? new Date().toISOString()),
     };
   });
 }
@@ -226,8 +242,7 @@ export async function listSessionGroups(sessionId: string) {
   if (error) throw error;
   return (data ?? []).map((row) => ({
     ...row,
-    acquired_items: parseAcquired(row.acquired_items),
-    completed_tasks: parseCompleted(row.completed_tasks),
+    worksheet_placements: parsePlacements(row.worksheet_placements),
   })) as GroupRow[];
 }
 
@@ -236,9 +251,21 @@ export async function getGroupById(groupId: string) {
   if (error) throw error;
   return {
     ...data,
-    acquired_items: parseAcquired(data.acquired_items),
-    completed_tasks: parseCompleted(data.completed_tasks),
+    worksheet_placements: parsePlacements(data.worksheet_placements),
   } as GroupRow;
+}
+
+export async function listGroupMembers(groupId: string): Promise<PlayerSelfRow[]> {
+  const { data, error } = await supabase
+    .from("players")
+    .select(PLAYER_SELECT)
+    .eq("group_id", groupId)
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+  return (data ?? []).map((row) => ({
+    ...(row as PlayerSelfRow),
+    word_cards: parseWordCards(row.word_cards),
+  }));
 }
 
 // =====================================================================
@@ -255,7 +282,7 @@ function groupLabel(index: number) {
 
 export async function assignGroupsAndRoles(sessionId: string, pack: ActivityPack) {
   if (pack.roles.length === 0) {
-    throw new Error(ERROR_COPY.packNoRoles);
+    throw new Error("활동에 역할이 없습니다.");
   }
 
   const { data: allPlayers, error: pErr } = await supabase
@@ -329,7 +356,7 @@ export async function assignGroupsAndRoles(sessionId: string, pack: ActivityPack
 // gameplay
 // =====================================================================
 
-export async function acquireItemForPlayer(args: {
+export async function acquireWordCardForPlayer(args: {
   playerId: string;
   groupId: string;
   pack: ActivityPack;
@@ -337,7 +364,7 @@ export async function acquireItemForPlayer(args: {
   answer: string;
   clueLevelUsed: 1 | 2 | 3 | 4 | 5;
 }) {
-  const result = tryAcquireItem(
+  const result = tryAcquireWordCard(
     args.pack,
     args.itemId,
     args.answer,
@@ -345,57 +372,79 @@ export async function acquireItemForPlayer(args: {
   );
   if (!result.ok) throw new Error(result.reason);
 
-  const group = await getGroupById(args.groupId);
-  const existing = group.acquired_items;
-  if (existing.some((a) => a.itemId === args.itemId)) {
+  const { data: player, error: pe } = await supabase
+    .from("players")
+    .select("word_cards")
+    .eq("id", args.playerId)
+    .single();
+  if (pe) throw pe;
+
+  const existing = parseWordCards(player?.word_cards);
+  if (existing.some((c) => c.itemId === args.itemId && !c.placedAt)) {
     return result.record;
   }
 
   const { error } = await supabase
-    .from("groups")
-    .update({ acquired_items: [...existing, result.record] })
-    .eq("id", args.groupId);
+    .from("players")
+    .update({ word_cards: [...existing, result.record] })
+    .eq("id", args.playerId);
   if (error) throw error;
+
   return result.record;
 }
 
-export async function completeTaskForGroup(args: {
+export async function placeWordCardOnSlot(args: {
+  actorPlayerId: string;
+  slotOwnerPlayerId: string;
   groupId: string;
   pack: ActivityPack;
-  taskId: string;
-  submittedItemIds: string[];
+  slotId: string;
+  itemId: string;
 }) {
-  const group = await getGroupById(args.groupId);
-  if (group.completed_tasks.some((m) => m.taskId === args.taskId)) {
-    throw new Error(PLAYER_MESSAGES.taskAlreadyCompleted);
-  }
+  const [group, actorRow, ownerRow] = await Promise.all([
+    getGroupById(args.groupId),
+    getPlayerById(args.actorPlayerId),
+    getPlayerById(args.slotOwnerPlayerId),
+  ]);
 
-  const result = tryCompleteTask(
-    args.pack,
-    args.taskId,
-    group.acquired_items,
-    args.submittedItemIds,
-  );
+  const actorCards = actorRow.word_cards ?? [];
+  const placements = group.worksheet_placements;
+
+  const result = tryPlaceWordCard(args.pack, actorCards, placements, {
+    actorPlayerId: args.actorPlayerId,
+    slotOwnerPlayerId: args.slotOwnerPlayerId,
+    slotOwnerRoleId: ownerRow.assigned_role_id ?? "",
+    slotId: args.slotId,
+    itemId: args.itemId,
+  });
   if (!result.ok) throw new Error(result.reason);
 
-  const { error } = await supabase
+  const updatedCards = actorCards.map((c) =>
+    c.itemId === args.itemId && !c.placedAt ? result.updatedCard : c,
+  );
+
+  const { error: actorErr } = await supabase
+    .from("players")
+    .update({ word_cards: updatedCards })
+    .eq("id", args.actorPlayerId);
+  if (actorErr) throw actorErr;
+
+  const { error: groupErr } = await supabase
     .from("groups")
-    .update({ completed_tasks: [...group.completed_tasks, result.record] })
+    .update({ worksheet_placements: [...placements, result.record] })
     .eq("id", args.groupId);
-  if (error) throw error;
+  if (groupErr) throw groupErr;
+
   return result.record;
 }
 
 export async function completeActivityForGroup(groupId: string, pack: ActivityPack) {
   const group = await getGroupById(groupId);
   if (group.completed_at) {
-    throw new Error(ERROR_COPY.activityAlreadyComplete);
+    throw new Error("이미 활동을 완료했습니다.");
   }
-  const requiredIds = pack.tasks.map((t) => t.id);
-  const completedIds = new Set(group.completed_tasks.map((t) => t.taskId));
-  const missing = requiredIds.filter((id) => !completedIds.has(id));
-  if (missing.length > 0) {
-    throw new Error(ERROR_COPY.missionsIncomplete(missing));
+  if (!isWorksheetComplete(pack, group.worksheet_placements)) {
+    throw new Error(PLAYER_MESSAGES.worksheetIncomplete);
   }
 
   const { error } = await supabase
@@ -404,3 +453,5 @@ export async function completeActivityForGroup(groupId: string, pack: ActivityPa
     .eq("id", groupId);
   if (error) throw error;
 }
+
+export { totalGroupScore };

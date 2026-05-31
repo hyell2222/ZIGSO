@@ -23,8 +23,6 @@ import {
 } from "@/lib/activity-pack/activity-draft";
 import type { ActivityPack } from "@/lib/activity-pack/types";
 import { useRequireTeacherSession } from "@/lib/auth/use-require-teacher-session";
-import { TEACHER_EDITOR_COPY } from "@/lib/copy/teacher";
-import { ERROR_COPY } from "@/lib/copy/errors";
 import { ROUTES } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 
@@ -104,13 +102,13 @@ export function ActivitySteps(props: Props) {
         title: activityPack.title,
         description: activityPack.description,
         activity_pack: activityPack,
-        task_count: activityPack.tasks.length,
+        task_count: activityPack.homeWorksheet.slots.length,
         group_size: activityPack.groupSize,
       };
 
       if (props.mode === "create") {
         const uid = sessionQuery.data?.user?.id;
-        if (!uid) throw new Error(ERROR_COPY.signInRequired);
+        if (!uid) throw new Error("로그인이 필요합니다.");
         await createActivity({ ...payload, creator_id: uid });
       } else {
         await updateActivity(props.activityId, payload);
@@ -143,13 +141,13 @@ export function ActivitySteps(props: Props) {
           <PageHeader
             title={
               props.pageTitle ??
-              (props.mode === "edit" ? TEACHER_EDITOR_COPY.editTitle : TEACHER_EDITOR_COPY.createTitle)
+              (props.mode === "edit" ? "활동 수정" : "활동 만들기")
             }
-            description={TEACHER_EDITOR_COPY.flowDescription}
+            description="활동 안내 → 역할·단어·단서 → 공유 학습지 순으로 설계합니다."
             actions={
               <Button type="button" variant="outline" onClick={() => setAiOpen(true)}>
                 <Sparkles className="mr-1.5 h-4 w-4 text-[var(--primary)]" />
-                {TEACHER_EDITOR_COPY.aiButton}
+                AI로 초안 만들기
               </Button>
             }
           />

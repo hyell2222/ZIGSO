@@ -1,32 +1,47 @@
 import type {
-  AcquiredItem,
-  CompletedTask,
-  Item,
   ActivityPack,
-  Task,
+  Item,
+  WordCard,
+  WorksheetPlacement,
+  WorksheetSlot,
 } from "@/lib/activity-pack/types";
-import { PLAYER_MESSAGES } from "@/lib/copy/player";
 import { scoreForClueLevel } from "@/lib/activity-pack/scoring";
 import { isItemAnswerCorrect } from "@/lib/activity-pack/validate";
+
+/** activity-pack 엔진·API 공통 검증 메시지 */
+export const PLAYER_MESSAGES = {
+  defaultPackTitle: "새 활동",
+  unknownItem: "단어 정보를 찾을 수 없어요.",
+  unknownSlot: "빈칸 정보를 찾을 수 없어요.",
+  incorrectAnswer: "아직 맞는 단어가 아니에요. 단서를 다시 보고 추리해 보세요.",
+  cannotPlaceOnOwnSlot: "내 빈칸에는 내 단어 카드를 직접 넣을 수 없어요. 팀원에게 도움을 요청하세요.",
+  slotOwnerMismatch: "이 빈칸은 해당 팀원의 슬롯이 아니에요.",
+  slotWordMismatch: "이 빈칸에 들어갈 단어와 카드가 일치하지 않아요.",
+  slotAlreadyFilled: "이미 채워진 빈칸이에요.",
+  wordCardNotAvailable: "사용할 수 있는 단어 카드가 없어요.",
+  worksheetIncomplete: "아직 채우지 않은 빈칸이 있어요.",
+  submissionAlreadySent: "이미 최종 제출을 마쳤어요.",
+  operationFailed: "요청을 처리하지 못했어요. 잠시 후 다시 시도해 주세요.",
+} as const;
 
 export function getItemById(pack: ActivityPack, itemId: string): Item | undefined {
   return pack.items.find((i) => i.id === itemId);
 }
 
-export function getTaskById(pack: ActivityPack, taskId: string): Task | undefined {
-  return pack.tasks.find((t) => t.id === taskId);
+export function getWorksheetSlot(pack: ActivityPack, slotId: string): WorksheetSlot | undefined {
+  return pack.homeWorksheet.slots.find((s) => s.id === slotId);
 }
 
 export function clueTextForLevel(item: Item, level: 1 | 2 | 3 | 4 | 5): string {
   return item.clues[`stage${level}` as keyof typeof item.clues];
 }
 
-export function tryAcquireItem(
+export function tryAcquireWordCard(
   pack: ActivityPack,
   itemId: string,
   answer: string,
   clueLevelUsed: 1 | 2 | 3 | 4 | 5,
-): { ok: true; record: AcquiredItem } | { ok: false; reason: string } {
+): { ok: true; record: WordCard } | { ok: false; reason: string } {
   const item = getItemById(pack, itemId);
   if (!item) return { ok: false, reason: PLAYER_MESSAGES.unknownItem };
   if (!isItemAnswerCorrect(item, answer)) {
@@ -43,76 +58,86 @@ export function tryAcquireItem(
   };
 }
 
-export function taskSubmissionProgress(
-  acquired: AcquiredItem[],
-  task: Task,
-): { required: number; acquired: number; ready: boolean } {
-  const acquiredSet = new Set(acquired.map((a) => a.itemId));
-  const required = task.acceptedItemIds.length;
-  const acquiredCount = task.acceptedItemIds.filter((id) => acquiredSet.has(id)).length;
-  return {
-    required,
-    acquired: acquiredCount,
-    ready: required > 0 && acquiredCount === required,
-  };
+export function availableWordCards(cards: WordCard[]): WordCard[] {
+  return cards.filter((c) => !c.placedAt);
 }
 
-/** 필수 제출 아이템을 모두 획득했는지 */
-export function groupHasItemsForTask(
-  acquired: AcquiredItem[],
-  task: Task,
-): boolean {
-  return taskSubmissionProgress(acquired, task).ready;
+export function hasWordCard(cards: WordCard[], itemId: string): boolean {
+  return availableWordCards(cards).some((c) => c.itemId === itemId);
 }
 
-export function tryCompleteTask(
+export type WorksheetPlacementInput = {
+  actorPlayerId: string;
+  slotOwnerPlayerId: string;
+  slotOwnerRoleId: string;
+  slotId: string;
+  itemId: string;
+};
+
+/** 단어 카드를 팀원 슬롯에 배치 — 본인 슬롯에는 불가 */
+export function tryPlaceWordCard(
   pack: ActivityPack,
-  taskId: string,
-  acquired: AcquiredItem[],
-  submittedItemIds: string[],
-): { ok: true; record: CompletedTask } | { ok: false; reason: string } {
-  const task = getTaskById(pack, taskId);
-  if (!task) return { ok: false, reason: PLAYER_MESSAGES.unknownTask };
+  actorCards: WordCard[],
+  placements: WorksheetPlacement[],
+  input: WorksheetPlacementInput,
+): { ok: true; record: WorksheetPlacement; updatedCard: WordCard } | { ok: false; reason: string } {
+  const slot = getWorksheetSlot(pack, input.slotId);
+  if (!slot) return { ok: false, reason: PLAYER_MESSAGES.unknownSlot };
 
-  const acquiredSet = new Set(acquired.map((a) => a.itemId));
-  const required = task.acceptedItemIds;
-  const requiredSet = new Set(required);
-  const uniqueSubmitted = [...new Set(submittedItemIds)];
-
-  if (required.length === 0) {
-    return { ok: false, reason: PLAYER_MESSAGES.taskIncompleteSubmission };
+  if (input.actorPlayerId === input.slotOwnerPlayerId) {
+    return { ok: false, reason: PLAYER_MESSAGES.cannotPlaceOnOwnSlot };
   }
 
-  for (const id of uniqueSubmitted) {
-    if (!requiredSet.has(id)) {
-      return { ok: false, reason: PLAYER_MESSAGES.taskInvalidItem };
-    }
-    if (!acquiredSet.has(id)) {
-      return { ok: false, reason: PLAYER_MESSAGES.missingItems };
-    }
+  if (slot.ownerRoleId !== input.slotOwnerRoleId) {
+    return { ok: false, reason: PLAYER_MESSAGES.slotOwnerMismatch };
   }
 
-  if (uniqueSubmitted.length !== required.length) {
-    return { ok: false, reason: PLAYER_MESSAGES.taskIncompleteSubmission };
+  if (slot.itemId !== input.itemId) {
+    return { ok: false, reason: PLAYER_MESSAGES.slotWordMismatch };
   }
 
-  for (const id of required) {
-    if (!uniqueSubmitted.includes(id)) {
-      return { ok: false, reason: PLAYER_MESSAGES.taskIncompleteSubmission };
-    }
+  if (placements.some((p) => p.slotId === input.slotId)) {
+    return { ok: false, reason: PLAYER_MESSAGES.slotAlreadyFilled };
   }
 
-  const score = required.length * 3;
+  const card = availableWordCards(actorCards).find((c) => c.itemId === input.itemId);
+  if (!card) {
+    return { ok: false, reason: PLAYER_MESSAGES.wordCardNotAvailable };
+  }
 
+  const placedAt = new Date().toISOString();
   return {
     ok: true,
     record: {
-      taskId,
-      submittedItemIds: uniqueSubmitted,
-      completedAt: new Date().toISOString(),
-      score,
+      slotId: input.slotId,
+      itemId: input.itemId,
+      placedByPlayerId: input.actorPlayerId,
+      placedAt,
     },
+    updatedCard: { ...card, placedAt },
   };
+}
+
+export function worksheetProgress(
+  pack: ActivityPack,
+  placements: WorksheetPlacement[],
+): { required: number; filled: number; complete: boolean } {
+  const required = pack.homeWorksheet.slots.length;
+  const filled = placements.length;
+  return {
+    required,
+    filled,
+    complete: required > 0 && filled >= required,
+  };
+}
+
+export function isWorksheetComplete(pack: ActivityPack, placements: WorksheetPlacement[]): boolean {
+  const slotIds = new Set(pack.homeWorksheet.slots.map((s) => s.id));
+  const placedIds = new Set(placements.map((p) => p.slotId));
+  for (const id of slotIds) {
+    if (!placedIds.has(id)) return false;
+  }
+  return slotIds.size > 0;
 }
 
 export type RoleAssignment = {
@@ -120,7 +145,6 @@ export type RoleAssignment = {
   itemIds: string[];
 };
 
-/** 한 모둠 안에서 역할·아이템 배정 (인원 불일치 시 한 역할에 여러 학생 배정) */
 export function assignRolesToPlayers(
   pack: ActivityPack,
   playerIds: string[],
@@ -153,12 +177,8 @@ export function assignRolesToPlayers(
   return assignment;
 }
 
-export function totalGroupScore(
-  acquired: AcquiredItem[],
-  completed: CompletedTask[],
-): number {
-  return (
-    acquired.reduce((sum, a) => sum + a.score, 0) +
-    completed.reduce((sum, t) => sum + t.score, 0)
-  );
+export function totalGroupScore(wordCards: WordCard[], placements: WorksheetPlacement[]): number {
+  const acquisitionScore = wordCards.reduce((sum, c) => sum + c.score, 0);
+  const placementScore = placements.length * 3;
+  return acquisitionScore + placementScore;
 }

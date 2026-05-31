@@ -3,11 +3,11 @@ import {
   MIN_ITEMS_PER_ROLE,
 } from "@/lib/activity-pack/roles";
 import { MAX_ROLES_PER_GROUP, MIN_ROLES_PER_GROUP } from "@/lib/activity-pack/sizing";
-import type { Item, ActivityPack, Task } from "@/lib/activity-pack/types";
+import { extractSlotIdsFromPassage } from "@/lib/activity-pack/worksheet";
+import type { ActivityPack, HomeWorksheet, Item, WorksheetSlot } from "@/lib/activity-pack/types";
 import { ACTIVITY_PACK_VERSION } from "@/lib/activity-pack/types";
 
 const HINT_KEYS = ["stage1", "stage2", "stage3", "stage4", "stage5"] as const;
-const ITEM_CATEGORIES = ["primary", "secondary", "tertiary", "quaternary", "bonus", "other"] as const;
 
 export type PackValidationIssue = { path: string; message: string };
 
@@ -46,10 +46,6 @@ export function validateActivityPack(pack: ActivityPack): PackValidationIssue[] 
     });
   }
 
-  if (pack.tasks.length < 1) {
-    issues.push({ path: "tasks", message: "at least one task required" });
-  }
-
   const roleIds = new Set<string>();
   const itemIds = new Set<string>();
 
@@ -81,9 +77,54 @@ export function validateActivityPack(pack: ActivityPack): PackValidationIssue[] 
     issues.push({ path: "items", message: "flattened items must match role items" });
   }
 
-  const taskIds = new Set<string>();
-  for (let i = 0; i < pack.tasks.length; i++) {
-    issues.push(...validateTask(pack.tasks[i], `tasks[${i}]`, taskIds, itemIds));
+  issues.push(...validateHomeWorksheet(pack.homeWorksheet, itemIds, roleIds));
+
+  return issues;
+}
+
+function validateHomeWorksheet(
+  worksheet: HomeWorksheet,
+  itemIds: Set<string>,
+  roleIds: Set<string>,
+): PackValidationIssue[] {
+  const issues: PackValidationIssue[] = [];
+  if (!worksheet || typeof worksheet !== "object") {
+    return [{ path: "homeWorksheet", message: "homeWorksheet required" }];
+  }
+  if (typeof worksheet.summaryPassage !== "string" || !worksheet.summaryPassage.trim()) {
+    issues.push({ path: "homeWorksheet.summaryPassage", message: "summaryPassage required" });
+  }
+  if (!Array.isArray(worksheet.slots) || worksheet.slots.length < 1) {
+    issues.push({ path: "homeWorksheet.slots", message: "at least one slot required" });
+  }
+
+  const tokenIds = extractSlotIdsFromPassage(worksheet.summaryPassage ?? "");
+  const slotIds = new Set<string>();
+  for (let i = 0; i < (worksheet.slots?.length ?? 0); i++) {
+    const slot = worksheet.slots[i] as WorksheetSlot;
+    const path = `homeWorksheet.slots[${i}]`;
+    if (typeof slot.id !== "string" || !slot.id.trim()) {
+      issues.push({ path: `${path}.id`, message: "slot id required" });
+    } else if (slotIds.has(slot.id)) {
+      issues.push({ path: `${path}.id`, message: "duplicate slot id" });
+    } else {
+      slotIds.add(slot.id);
+    }
+    if (typeof slot.itemId !== "string" || !itemIds.has(slot.itemId)) {
+      issues.push({ path: `${path}.itemId`, message: `unknown item: ${slot.itemId}` });
+    }
+    if (typeof slot.ownerRoleId !== "string" || !roleIds.has(slot.ownerRoleId)) {
+      issues.push({ path: `${path}.ownerRoleId`, message: `unknown role: ${slot.ownerRoleId}` });
+    }
+  }
+
+  for (const tokenId of tokenIds) {
+    if (!slotIds.has(tokenId)) {
+      issues.push({
+        path: "homeWorksheet.summaryPassage",
+        message: `passage references unknown slot: ${tokenId}`,
+      });
+    }
   }
 
   return issues;
@@ -113,42 +154,6 @@ function validateItem(raw: unknown, path: string, seenIds: Set<string>): PackVal
       if (typeof clues[key] !== "string" || !clues[key].trim()) {
         issues.push({ path: `${path}.clues.${key}`, message: "clue text required" });
       }
-    }
-  }
-  return issues;
-}
-
-function validateTask(
-  raw: unknown,
-  path: string,
-  seenIds: Set<string>,
-  itemIds: Set<string>,
-): PackValidationIssue[] {
-  const issues: PackValidationIssue[] = [];
-  if (!raw || typeof raw !== "object") {
-    return [{ path, message: "must be an object" }];
-  }
-  const task = raw as Task;
-  if (typeof task.id !== "string" || !task.id.trim()) {
-    issues.push({ path: `${path}.id`, message: "id required" });
-  } else if (seenIds.has(task.id)) {
-    issues.push({ path: `${path}.id`, message: "duplicate task id" });
-  } else {
-    seenIds.add(task.id);
-  }
-  if (typeof task.title !== "string" || !task.title.trim()) {
-    issues.push({ path: `${path}.title`, message: "title required" });
-  }
-  if (typeof task.description !== "string") {
-    issues.push({ path: `${path}.description`, message: "description must be a string" });
-  }
-  const accepted = Array.isArray(task.acceptedItemIds) ? task.acceptedItemIds : [];
-  if (accepted.length < 1) {
-    issues.push({ path: `${path}.acceptedItemIds`, message: "at least one accepted item" });
-  }
-  for (const id of accepted) {
-    if (typeof id !== "string" || !itemIds.has(id)) {
-      issues.push({ path: `${path}.acceptedItemIds`, message: `unknown item: ${id}` });
     }
   }
   return issues;

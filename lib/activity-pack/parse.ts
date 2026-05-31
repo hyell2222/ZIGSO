@@ -1,20 +1,31 @@
-import { ERROR_COPY } from "@/lib/copy/errors";
-import { PLAYER_MESSAGES } from "@/lib/copy/player";
+import { PLAYER_MESSAGES } from "@/lib/activity-pack/engine";
 import { itemsToRoles, flattenRoleItems } from "@/lib/activity-pack/roles";
 import { normalizePackSizing } from "@/lib/activity-pack/sizing";
 import { validateActivityPack } from "@/lib/activity-pack/validate";
-import type { ActivityPack, Item, ItemClues, Role, Task } from "@/lib/activity-pack/types";
+import {
+  buildDefaultHomeWorksheet,
+  syncWorksheetSlotsFromPassage,
+} from "@/lib/activity-pack/worksheet";
+import type {
+  ActivityPack,
+  HomeWorksheet,
+  Item,
+  ItemClues,
+  Role,
+  WorksheetSlot,
+} from "@/lib/activity-pack/types";
 import { ACTIVITY_PACK_VERSION } from "@/lib/activity-pack/types";
 
 const CLUE_KEYS = ["stage1", "stage2", "stage3", "stage4", "stage5"] as const;
+const LEGACY_VERSION = 2;
 
 /** JSON(unknown) → ActivityPack. 형식이 맞지 않으면 null */
 export function parseActivityPack(raw: unknown): ActivityPack | null {
   if (!raw || typeof raw !== "object") return null;
   const p = raw as Record<string, unknown>;
 
-  if (p.version !== ACTIVITY_PACK_VERSION) return null;
-  if (!Array.isArray(p.tasks) || p.tasks.length === 0) return null;
+  const version = p.version;
+  if (version !== ACTIVITY_PACK_VERSION && version !== LEGACY_VERSION) return null;
 
   const seenItemIds = new Set<string>();
   let roles: Role[];
@@ -33,7 +44,14 @@ export function parseActivityPack(raw: unknown): ActivityPack | null {
   if (items.length === 0) return null;
 
   const itemLookup = buildItemLookup(items);
-  const tasks = (p.tasks as unknown[]).map((entry, idx) => readTask(entry, idx, itemLookup));
+
+  let homeWorksheet: HomeWorksheet;
+  if (p.homeWorksheet && typeof p.homeWorksheet === "object") {
+    homeWorksheet = readHomeWorksheet(p.homeWorksheet, itemLookup, roles);
+  } else {
+    homeWorksheet = buildDefaultHomeWorksheet(roles, items);
+  }
+  homeWorksheet = syncWorksheetSlotsFromPassage(homeWorksheet, roles);
 
   const pack = normalizePackSizing({
     version: ACTIVITY_PACK_VERSION,
@@ -43,7 +61,7 @@ export function parseActivityPack(raw: unknown): ActivityPack | null {
     itemsPerPlayer: 1,
     roles,
     items,
-    tasks,
+    homeWorksheet,
   });
 
   return validateActivityPack(pack).length === 0 ? pack : null;
@@ -53,7 +71,7 @@ export function parseActivityPack(raw: unknown): ActivityPack | null {
 export function loadActivityPack(raw: unknown): ActivityPack {
   const pack = parseActivityPack(raw);
   if (!pack) {
-    throw new Error(ERROR_COPY.packParseFailed);
+    throw new Error("활동 콘텐츠를 읽을 수 없습니다.");
   }
 
   if (!pack.title.trim()) {
@@ -77,6 +95,32 @@ function buildItemLookup(items: Item[]) {
   return { byId, byName };
 }
 
+function readHomeWorksheet(
+  raw: unknown,
+  lookup: ReturnType<typeof buildItemLookup>,
+  roles: Role[],
+): HomeWorksheet {
+  const w = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+  const roleIds = new Set(roles.map((r) => r.id));
+  const slotsRaw = Array.isArray(w.slots) ? w.slots : [];
+  const slots: WorksheetSlot[] = slotsRaw.map((entry, idx) => {
+    const s = (entry && typeof entry === "object" ? entry : {}) as Record<string, unknown>;
+    const itemId = resolveItemId(String(s.itemId ?? ""), lookup);
+    const ownerRoleId = String(s.ownerRoleId ?? roles[idx]?.id ?? roles[0]!.id);
+    const id = String(s.id ?? (itemId ? `slot_${itemId}` : `slot_${idx + 1}`));
+    return {
+      id,
+      itemId: itemId || roles[0]!.items[0]!.id,
+      ownerRoleId: roleIds.has(ownerRoleId) ? ownerRoleId : roles[0]!.id,
+    };
+  });
+
+  return {
+    summaryPassage: String(w.summaryPassage ?? "").trim(),
+    slots: slots.length > 0 ? slots : buildDefaultHomeWorksheet(roles, flattenRoleItems(roles)).slots,
+  };
+}
+
 function readRole(raw: unknown, idx: number, seenItemIds: Set<string>): Role {
   const r = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
   const roleId = String(r.id ?? `role_${idx + 1}`);
@@ -89,38 +133,11 @@ function readRole(raw: unknown, idx: number, seenItemIds: Set<string>): Role {
   return { id: roleId, name: name || items[0]!.name, items };
 }
 
-function readTask(
-  raw: unknown,
-  idx: number,
-  lookup: ReturnType<typeof buildItemLookup>,
-): Task {
-  const t = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
-  const acceptedItemIds = resolveAcceptedItemIds(
-    Array.isArray(t.acceptedItemIds) ? t.acceptedItemIds : [],
-    lookup,
-  );
-
-  return {
-    id: String(t.id ?? `task_${idx + 1}`),
-    title: String(t.title ?? "").trim(),
-    description: String(t.description ?? "").trim(),
-    acceptedItemIds,
-  };
-}
-
-function resolveAcceptedItemIds(raw: unknown[], lookup: ReturnType<typeof buildItemLookup>): string[] {
-  const resolved: string[] = [];
-  for (const entry of raw) {
-    const value = String(entry).trim();
-    if (!value) continue;
-    if (lookup.byId.has(value)) {
-      resolved.push(value);
-      continue;
-    }
-    const byName = lookup.byName.get(value.toLowerCase());
-    if (byName) resolved.push(byName);
-  }
-  return [...new Set(resolved)];
+function resolveItemId(value: string, lookup: ReturnType<typeof buildItemLookup>): string {
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+  if (lookup.byId.has(trimmed)) return trimmed;
+  return lookup.byName.get(trimmed.toLowerCase()) ?? trimmed;
 }
 
 function readItem(

@@ -11,15 +11,15 @@ import { LoadingState } from "@/components/ui/loading-state";
 import { getActivity, parseActivityPack } from "@/lib/api/activities";
 import type { ActivityPhase } from "@/lib/api/activities";
 import { useRequireTeacherSession } from "@/lib/auth/use-require-teacher-session";
-import { tryAcquireItem, tryCompleteTask } from "@/lib/activity-pack/engine";
-import type { AcquiredItem, CompletedTask } from "@/lib/activity-pack/types";
+import { tryAcquireWordCard, tryPlaceWordCard, isWorksheetComplete } from "@/lib/activity-pack/engine";
+import type { WordCard } from "@/lib/activity-pack/types";
 import {
   buildSandboxAssignments,
   createInitialSandboxState,
   nextSandboxPhase,
+  SANDBOX_REAL_STUDENT_PLAYER_ID,
   type SandboxState,
 } from "@/lib/sandbox/state";
-import { ERROR_COPY } from "@/lib/copy/errors";
 import { cn } from "@/lib/utils";
 
 function SandboxPageContent() {
@@ -71,43 +71,55 @@ function SandboxPageContent() {
   }, []);
 
   const handleAcquire = useCallback(
-    (groupId: string, itemId: string, answer: string, clueLevelUsed: 1 | 2 | 3 | 4 | 5) => {
+    (groupId: string, playerId: string, itemId: string, answer: string, clueLevelUsed: 1 | 2 | 3 | 4 | 5) => {
       if (!pack) return;
-      const result = tryAcquireItem(pack, itemId, answer, clueLevelUsed);
+      const result = tryAcquireWordCard(pack, itemId, answer, clueLevelUsed);
       if (!result.ok) throw new Error(result.reason);
       setState((prev) => ({
         ...prev,
-        groups: prev.groups.map((t) => {
-          if (t.id !== groupId) return t;
-          if (t.acquired_items.some((a) => a.itemId === itemId)) return t;
-          return {
-            ...t,
-            acquired_items: [...t.acquired_items, result.record],
-          };
+        players: prev.players.map((p) => {
+          if (p.id !== playerId) return p;
+          if (p.word_cards.some((c) => c.itemId === itemId && !c.placedAt)) return p;
+          return { ...p, word_cards: [...p.word_cards, result.record] };
         }),
       }));
     },
     [pack],
   );
 
-  const handleCompleteTask = useCallback(
-    (groupId: string, taskId: string, submittedItemIds: string[]) => {
+  const handlePlaceWord = useCallback(
+    (groupId: string, actorPlayerId: string, slotOwnerPlayerId: string, slotId: string, itemId: string) => {
       if (!pack) return;
       setState((prev) => {
         const group = prev.groups.find((t) => t.id === groupId);
-        if (!group) return prev;
-        const result = tryCompleteTask(
-          pack,
-          taskId,
-          group.acquired_items,
-          submittedItemIds,
-        );
+        const actor = prev.players.find((p) => p.id === actorPlayerId);
+        const owner = prev.players.find((p) => p.id === slotOwnerPlayerId);
+        if (!group || !actor || !owner) return prev;
+
+        const result = tryPlaceWordCard(pack, actor.word_cards, group.worksheet_placements, {
+          actorPlayerId,
+          slotOwnerPlayerId,
+          slotOwnerRoleId: owner.roleId,
+          slotId,
+          itemId,
+        });
         if (!result.ok) throw new Error(result.reason);
+
         return {
           ...prev,
+          players: prev.players.map((p) =>
+            p.id === actorPlayerId
+              ? {
+                  ...p,
+                  word_cards: p.word_cards.map((c) =>
+                    c.itemId === itemId && !c.placedAt ? result.updatedCard : c,
+                  ),
+                }
+              : p,
+          ),
           groups: prev.groups.map((t) =>
             t.id === groupId
-              ? { ...t, completed_tasks: [...t.completed_tasks, result.record] }
+              ? { ...t, worksheet_placements: [...t.worksheet_placements, result.record] }
               : t,
           ),
         };
@@ -122,10 +134,8 @@ function SandboxPageContent() {
       setState((prev) => {
         const group = prev.groups.find((t) => t.id === groupId);
         if (!group || group.completed_at) return prev;
-        const required = pack.tasks.map((m) => m.id);
-        const done = new Set(group.completed_tasks.map((m) => m.taskId));
-        if (required.some((id) => !done.has(id))) {
-          throw new Error(ERROR_COPY.sandboxMissionsIncomplete);
+        if (!isWorksheetComplete(pack, group.worksheet_placements)) {
+          throw new Error("아직 채우지 않은 학습지 빈칸이 있습니다.");
         }
         return {
           ...prev,
@@ -242,8 +252,10 @@ function SandboxPageContent() {
           realStudentNickname={state.realStudentNickname}
           onJoinAsStudent={joinAsStudent}
           onLeaveAsStudent={leaveAsStudent}
-          onAcquire={handleAcquire}
-          onCompleteTask={handleCompleteTask}
+          onAcquire={(groupId, itemId, answer, clueStage) =>
+            handleAcquire(groupId, SANDBOX_REAL_STUDENT_PLAYER_ID, itemId, answer, clueStage)
+          }
+          onPlaceWord={handlePlaceWord}
           onCompleteActivity={handleCompleteActivity}
         />
       </BrowserWindow>

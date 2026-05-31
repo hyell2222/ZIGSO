@@ -9,16 +9,23 @@ import {
   activityMainInner,
   activityPhaseHeaderShell,
 } from "@/components/activity/activity-layout-chrome";
-import { PlayAtmosphere } from "@/components/play/play-atmosphere";
 import {
-  PlayPhaseHeader,
-  type PlayPhaseHeaderProps,
-} from "@/components/play/play-phase-header";
+  ActivityPhaseHeader,
+} from "@/components/activity/activity-phase-header";
+import { PlayAtmosphere } from "@/components/play/play-atmosphere";
 import { cn } from "@/lib/utils";
 
 export type PlayPhaseShellProps = {
   contained?: boolean;
-  header?: PlayPhaseHeaderProps;
+  header?: {
+    phase?: 1 | 2 | 3 | 4;
+    title: string;
+    description: string;
+    stepLabel?: string;
+    rightSlot?: ReactNode;
+    className?: string;
+    meta?: ReactNode;
+  };
   footer?: ReactNode;
   footerClue?: ReactNode;
   mainClassName?: string;
@@ -41,7 +48,17 @@ export function PlayPhaseShell({
         {header ? (
           <header className={cn(activityPhaseHeaderShell, "z-20")}>
             <div className={layout.phaseHeaderInner}>
-              <PlayPhaseHeader {...header} contained={contained} />
+              <ActivityPhaseHeader
+                stepNumber={header.phase ?? null}
+                as="h1"
+                contained={contained}
+                title={header.title}
+                description={header.description}
+                stepLabel={header.stepLabel}
+                rightSlot={header.rightSlot}
+                className={header.className}
+                meta={header.meta}
+              />
             </div>
           </header>
         ) : null}

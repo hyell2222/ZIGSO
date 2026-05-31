@@ -17,8 +17,6 @@ import { LoadingState } from "@/components/ui/loading-state";
 import { PageHeader } from "@/components/layout/page-header";
 import { TopNav } from "@/components/layout/top-nav";
 import { Button } from "@/components/ui/button";
-import { COPY_DEFAULTS } from "@/lib/copy/defaults";
-import { TEACHER_ACTIVITIES_COPY } from "@/lib/copy/teacher";
 import { ROUTES } from "@/lib/routes";
 
 export default function ActivitiesPage() {
@@ -92,8 +90,12 @@ export default function ActivitiesPage() {
   };
 
   const handleDelete = (row: ActivityListRow) => {
-    const title = row.title?.trim() || COPY_DEFAULTS.untitledActivity;
-    if (!window.confirm(TEACHER_ACTIVITIES_COPY.deleteConfirm(title))) {
+    const title = row.title?.trim() || "제목 없는 활동";
+    if (
+      !window.confirm(
+        `「${title}」활동을 삭제할까요?\n연결된 수업 기록·진행 데이터도 함께 삭제되며 되돌릴 수 없습니다.`,
+      )
+    ) {
       return;
     }
     deleteMutation.mutate(row.id);
@@ -106,8 +108,8 @@ export default function ActivitiesPage() {
         {sessionQuery.data ? (
           <div className="space-y-6">
             <PageHeader
-              title={TEACHER_ACTIVITIES_COPY.pageTitle}
-              description={TEACHER_ACTIVITIES_COPY.pageDescription}
+              title="내 활동"
+              description="활동을 설계한 뒤 수업을 시작하면, 학생이 참가 코드로 입장해 직소·STAD 단계를 진행합니다."
               actions={
                 (activitiesQuery.data?.length ?? 0) > 0 ? (
                   <Button
@@ -116,7 +118,7 @@ export default function ActivitiesPage() {
                     className="flex items-center gap-2"
                   >
                     <PlusIcon className="h-4 w-4" />
-                    {TEACHER_ACTIVITIES_COPY.createButton}
+                    새 활동 만들기
                   </Button>
                 ) : null
               }
@@ -127,7 +129,7 @@ export default function ActivitiesPage() {
               <div className="flex justify-center py-10">
                 <Button type="button" onClick={() => router.push(ROUTES.activitiesNew)} className="flex items-center gap-2">
                   <PlusIcon className="h-4 w-4" />
-                  {TEACHER_ACTIVITIES_COPY.createButton}
+                  새 활동 만들기
                 </Button>
               </div>
             ) : (
@@ -141,7 +143,7 @@ export default function ActivitiesPage() {
                     >
                       <div className="flex items-start gap-2">
                         <p className="min-w-0 flex-1 font-semibold text-[var(--foreground)]">
-                          {row.title ?? COPY_DEFAULTS.untitledActivity}
+                          {row.title ?? "제목 없는 활동"}
                         </p>
                         <div className="ml-auto shrink-0">
                           <KebabMenu
@@ -152,7 +154,7 @@ export default function ActivitiesPage() {
                         </div>
                       </div>
                       <p className="text-xs text-[var(--muted-foreground)] pb-2">
-                        {TEACHER_ACTIVITIES_COPY.groupMeta(row.group_size ?? "—", row.task_count ?? "—")}
+                        모둠 {row.group_size ?? "—"}명 · 학습지 빈칸 {row.task_count ?? "—"}개
                       </p>
                       <div className="flex flex-col gap-2">
                         <Button
@@ -167,10 +169,10 @@ export default function ActivitiesPage() {
                           {startGameMutation.isPending ? (
                             <>
                               <Loader2 className="mr-2 h-4 w-4 shrink-0 animate-spin text-[var(--primary)]" aria-hidden />
-                              {TEACHER_ACTIVITIES_COPY.startingSession}
+                              수업 시작하는 중…
                             </>
                           ) : (
-                            TEACHER_ACTIVITIES_COPY.startSession
+                            "수업 시작"
                           )}
                         </Button>
                         <Button
@@ -181,7 +183,7 @@ export default function ActivitiesPage() {
                           className="gap-2"
                         >
                           <FlaskConical className="h-4 w-4 shrink-0 text-[var(--accent)]" aria-hidden />
-                          {TEACHER_ACTIVITIES_COPY.preview}
+                          수업 미리보기
                         </Button>
                       </div>
                     </div>

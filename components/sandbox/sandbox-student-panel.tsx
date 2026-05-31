@@ -4,11 +4,12 @@ import { useMemo, useState } from "react";
 
 import { ExpertPhasePanel } from "@/components/play/expert-group-panel";
 import { ActivityIntroductionLayout } from "@/components/play/overview-layout";
-import { GroupPhasePanel } from "@/components/play/home-group-panel";
+import { GroupPhasePanel, type GroupMember } from "@/components/play/home-group-panel";
 import { PlayJoinModal } from "@/components/play/play-join-modal";
 import { ResultsPhasePanel } from "@/components/play/results-phase-panel";
 import { buildSessionResults } from "@/lib/activity-pack/session-results";
-import { PlayAtmosphere, playLoaderRegion } from "@/components/play/play-atmosphere";
+import { PlayAtmosphere } from "@/components/play/play-atmosphere";
+import { activityLoaderRegion } from "@/components/activity/activity-layout-chrome";
 import { PlayPhaseShell } from "@/components/play/play-phase-shell";
 import { PlayHeaderGroupPlace } from "@/components/play/play-header-group-place";
 import { WaitingLobbyBlock } from "@/components/play/waiting-lobby-block";
@@ -20,9 +21,8 @@ import {
   type SandboxPlayer,
   type SandboxGroup,
 } from "@/lib/sandbox/state";
-import { sandboxType } from "@/components/sandbox/sandbox-typography";
+import { activityLayoutType } from "@/components/activity/activity-layout-typography";
 import { formatAssignedRoleLabels } from "@/lib/activity-pack/roles";
-import { STUDENT_COPY } from "@/lib/copy/student";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -42,7 +42,13 @@ type Props = {
     answer: string,
     clueStage: 1 | 2 | 3 | 4 | 5,
   ) => void;
-  onCompleteTask: (groupId: string, taskId: string, itemIds: string[]) => void;
+  onPlaceWord: (
+    groupId: string,
+    actorPlayerId: string,
+    slotOwnerPlayerId: string,
+    slotId: string,
+    itemId: string,
+  ) => void;
   onCompleteActivity: (groupId: string) => void;
 };
 
@@ -58,7 +64,7 @@ export function SandboxStudentPanel({
   onJoinAsStudent,
   onLeaveAsStudent,
   onAcquire,
-  onCompleteTask,
+  onPlaceWord,
   onCompleteActivity,
 }: Props) {
   void onLeaveAsStudent;
@@ -78,28 +84,36 @@ export function SandboxStudentPanel({
     [primaryPlayer, groups],
   );
 
+  const groupMembers = useMemo<GroupMember[]>(() => {
+    if (!group) return [];
+    return players
+      .filter((p) => p.groupId === group.id)
+      .map((p) => ({
+        id: p.id,
+        nickname: p.nickname,
+        assigned_role_id: p.roleId,
+        assigned_item_ids: p.itemIds,
+        word_cards: p.word_cards,
+      }));
+  }, [group, players]);
+
   const groupRow: GroupRow | null = useMemo(() => {
     if (!group) return null;
     return {
       id: group.id,
       session_id: null,
       name: group.name,
-      acquired_items: group.acquired_items,
-      completed_tasks: group.completed_tasks,
+      worksheet_placements: group.worksheet_placements,
       completed_at: group.completed_at,
     };
   }, [group]);
 
   const acquiredIds = useMemo(
-    () => new Set(group?.acquired_items.map((a) => a.itemId) ?? []),
-    [group],
+    () => new Set(primaryPlayer?.word_cards.map((c) => c.itemId) ?? []),
+    [primaryPlayer?.word_cards],
   );
 
-  const assignedIds = primaryPlayer?.itemIds?.length
-    ? primaryPlayer.itemIds
-    : primaryPlayer?.itemId
-      ? [primaryPlayer.itemId]
-      : [];
+  const assignedIds = primaryPlayer?.itemIds ?? [];
   const roleLabel = formatAssignedRoleLabels(pack, assignedIds, `sandbox-${activityId}`);
 
   const sessionResults = useMemo(() => {
@@ -109,8 +123,7 @@ export function SandboxStudentPanel({
       groups.map((g) => ({
         id: g.id,
         name: g.name,
-        acquired_items: g.acquired_items,
-        completed_tasks: g.completed_tasks,
+        worksheet_placements: g.worksheet_placements,
         completed_at: g.completed_at,
       })),
       players
@@ -120,7 +133,8 @@ export function SandboxStudentPanel({
           nickname: p.nickname,
           groupId: p.groupId,
           assignedRoleId: p.roleId,
-          assignedItemIds: p.itemIds?.length ? p.itemIds : p.itemId ? [p.itemId] : [],
+          assignedItemIds: p.itemIds,
+          word_cards: p.word_cards,
         })),
       `sandbox-${activityId}`,
     );
@@ -152,15 +166,15 @@ export function SandboxStudentPanel({
   if (phase === "waiting") {
     return (
       <PlayPhaseShell contained>
-        <div className={playLoaderRegion}>
+        <div className={activityLoaderRegion}>
           <WaitingLobbyBlock
             joinCode={SANDBOX_JOIN_CODE}
             nickname={activeNickname}
             sessionTitle={activityTitle}
             state="waiting"
           />
-          <p className={cn("mt-3 text-center", sandboxType.caption)}>
-            {STUDENT_COPY.waiting.waitForTeacher}
+          <p className={cn("mt-3 text-center", activityLayoutType.caption)}>
+            선생님이 다음 단계로 넘길 때까지 기다려 주세요.
           </p>
         </div>
       </PlayPhaseShell>
@@ -184,14 +198,24 @@ export function SandboxStudentPanel({
     );
   }
 
-  if (phase === "home_group" && group && groupRow) {
+  if (phase === "home_group" && group && groupRow && primaryPlayer) {
     return (
       <SandboxGroupBridge
         pack={pack}
         group={groupRow}
         groupName={group.name}
-        onCompleteTask={(taskId, itemIds) =>
-          onCompleteTask(group.id, taskId, itemIds)
+        playerId={primaryPlayer.id}
+        assignedRoleId={primaryPlayer.roleId}
+        wordCards={primaryPlayer.word_cards}
+        members={groupMembers}
+        onPlaceWord={(slotOwnerPlayerId, slotId, itemId) =>
+          onPlaceWord(
+            group.id,
+            primaryPlayer.id,
+            slotOwnerPlayerId,
+            slotId,
+            itemId,
+          )
         }
         onCompleteActivity={() => onCompleteActivity(group.id)}
       />
@@ -204,13 +228,14 @@ export function SandboxStudentPanel({
         contained
         header={{
           phase: 1,
-          title: STUDENT_COPY.phaseOverview.title,
-          description: STUDENT_COPY.phaseOverview.description,
+          title: "활동 소개",
+          description:
+            "모둠·역할·공유 학습지를 확인하세요. 전문가 집단에서는 5단계 단서로 단어 카드를 얻습니다.",
           rightSlot: (
             <PlayHeaderGroupPlace
               groupName={group?.name ?? null}
               placeName={roleLabel}
-              placeLabel={STUDENT_COPY.phaseOverview.placeLabel}
+              placeLabel="나의 역할"
               contained
             />
           ),
@@ -246,16 +271,15 @@ export function SandboxStudentPanel({
       <main
         className={cn(
           "flex min-h-[12rem] flex-1 items-center justify-center text-center",
-          sandboxType.bodyMuted,
+          activityLayoutType.bodyMuted,
         )}
       >
-        {STUDENT_COPY.waiting.waitForTeacher}
+        선생님이 다음 단계로 넘길 때까지 기다려 주세요.
       </main>
     </PlayPhaseShell>
   );
 }
 
-/** API 대신 샌드박스 콜백으로 아이템 획득 */
 function SandboxExpertBridge({
   pack,
   roleScopeKey,
@@ -296,13 +320,21 @@ function SandboxGroupBridge({
   pack,
   group,
   groupName,
-  onCompleteTask,
+  playerId,
+  assignedRoleId,
+  wordCards,
+  members,
+  onPlaceWord,
   onCompleteActivity,
 }: {
   pack: ActivityPack;
   group: GroupRow;
   groupName: string;
-  onCompleteTask: (taskId: string, itemIds: string[]) => void;
+  playerId: string;
+  assignedRoleId: string;
+  wordCards: SandboxPlayer["word_cards"];
+  members: GroupMember[];
+  onPlaceWord: (slotOwnerPlayerId: string, slotId: string, itemId: string) => void;
   onCompleteActivity: () => void;
 }) {
   const [, bump] = useState(0);
@@ -311,9 +343,13 @@ function SandboxGroupBridge({
       pack={pack}
       group={group}
       groupName={groupName}
+      playerId={playerId}
+      assignedRoleId={assignedRoleId}
+      wordCards={wordCards}
+      members={members}
       onUpdate={() => bump((n) => n + 1)}
-      sandboxCompleteTask={onCompleteTask}
-      sandboxCompleteActivity={onCompleteActivity}
+      sandboxPlace={onPlaceWord}
+      sandboxComplete={onCompleteActivity}
       contained
     />
   );

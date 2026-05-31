@@ -24,15 +24,11 @@ import { activityLayoutType } from "@/components/activity/activity-layout-typogr
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
-import { acquireItemForPlayer } from "@/lib/api/play";
-import { getItemById } from "@/lib/activity-pack/engine";
-import { acquireSuccessMessage, PLAYER_MESSAGES } from "@/lib/copy/player";
+import { acquireWordCardForPlayer } from "@/lib/api/play";
+import { getItemById, PLAYER_MESSAGES } from "@/lib/activity-pack/engine";
 import { formatAssignedSlots } from "@/lib/play/assignment-labels";
 import { buildItemCodenameMap, formatItemCodenames } from "@/lib/play/role-codenames";
-import { STUDENT_COPY } from "@/lib/copy/student";
 import type { ActivityPack } from "@/lib/activity-pack/types";
-
-const EXPERT = STUDENT_COPY.phaseExpert;
 import { scoreForClueLevel } from "@/lib/activity-pack/scoring";
 import { cn } from "@/lib/utils";
 
@@ -111,7 +107,7 @@ export function ExpertPhasePanel({
       if (sandboxAcquire) {
         sandboxAcquire(activeItemId, answer, clueLevelUsed);
       } else {
-        await acquireItemForPlayer({
+        await acquireWordCardForPlayer({
           playerId,
           groupId,
           pack,
@@ -123,7 +119,7 @@ export function ExpertPhasePanel({
       onAcquired();
       setAnswer("");
       setClueReveal(createClueRevealState());
-      setMessage(acquireSuccessMessage(scoreForClueLevel(clueLevelUsed)));
+      setMessage(`단어 카드 획득! +${scoreForClueLevel(clueLevelUsed)}점`);
     } catch (err) {
       setMessage(err instanceof Error ? err.message : PLAYER_MESSAGES.operationFailed);
     } finally {
@@ -138,13 +134,14 @@ export function ExpertPhasePanel({
       contained={contained}
       header={{
         phase: 2,
-        title: EXPERT.title,
-        description: EXPERT.description,
+        title: "전문가 집단",
+        description:
+          "같은 역할끼리 모여 단서를 열며 단어를 맞히세요. 획득한 단어 카드는 홈 집단 인벤토리에 들어갑니다.",
         rightSlot: (
           <PlayHeaderGroupPlace
             groupName={groupName}
             placeName={placeLabel}
-            placeLabel={EXPERT.placeLabel}
+            placeLabel="나의 역할"
             pending={pending}
             contained={contained}
           />
@@ -153,18 +150,20 @@ export function ExpertPhasePanel({
     >
       <PlayPhasePanel>
         {allAcquired ? (
-          <PlayPhaseCallout title={EXPERT.acquiredCallout} centered>
-            <p className={t.playPanelBody}>{EXPERT.acquiredReturn}</p>
+          <PlayPhaseCallout title="단어 카드를 획득했어요" centered>
+            <p className={t.playPanelBody}>
+              홈 집단으로 돌아가, 단어 카드의 의미를 모둠원에게 설명해 주세요.
+            </p>
             <PlayPhaseWaitFootnote className="mt-4" />
           </PlayPhaseCallout>
         ) : item && activeItemId ? (
           <>
             {assignedItemIds.length > 1 ? (
               <PlayPhaseSection
-                title={EXPERT.myItemsSection}
+                title="내 단어"
                 headerExtra={
                   <PlayPhaseSectionBadge>
-                    {EXPERT.acquiredBadge(acquiredItemIds.size, assignedItemIds.length)}
+                    {acquiredItemIds.size}/{assignedItemIds.length} 획득
                   </PlayPhaseSectionBadge>
                 }
               >
@@ -202,14 +201,14 @@ export function ExpertPhasePanel({
 
             <ExpertClueBoard item={item} reveal={clueReveal} onRevealChange={setClueReveal} />
 
-            <PlayPhaseSection title={EXPERT.submitSection} variant="active">
+            <PlayPhaseSection title="단어 제출" variant="active">
             <form id="expert-answer-form" className="space-y-3" onSubmit={handleSubmit}>
-              <FormField label={EXPERT.itemNameLabel} htmlFor="item-answer">
+              <FormField label="단어 (정답)" htmlFor="item-answer">
                 <Input
                   id="item-answer"
                   value={answer}
                   onChange={(e) => setAnswer(e.target.value)}
-                  placeholder={EXPERT.itemNamePlaceholder}
+                  placeholder="단서를 보고 단어를 입력하세요"
                   autoComplete="off"
                   required
                 />
@@ -222,10 +221,10 @@ export function ExpertPhasePanel({
                   {submitting ? (
                     <>
                       <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin @sm:h-4 @sm:w-4" aria-hidden />
-                      {EXPERT.submitting}
+                      확인 중…
                     </>
                   ) : (
-                    EXPERT.submitButton
+                    "제출하기"
                   )}
                 </Button>
               </div>

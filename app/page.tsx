@@ -10,12 +10,7 @@ import { TopNav } from "@/components/layout/top-nav";
 import { ButtonLink } from "@/components/ui/button";
 import { getCurrentSession } from "@/lib/api/auth";
 import { AUTH_SESSION_QUERY_KEY } from "@/lib/auth-session-query";
-import {
-  LANDING_EYEBROW,
-  LANDING_FEATURES,
-  LANDING_RESEARCH_TITLE,
-  LANDING_TAGLINE,
-} from "@/lib/copy/landing";
+import { TARGET_GRADE_LABEL, RESEARCH_REPORT_TITLE } from "@/lib/brand";
 import { ROUTES } from "@/lib/routes";
 import { hasSupabaseEnv } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
@@ -24,6 +19,24 @@ const FEATURE_ICONS = [Sparkles, Puzzle, ClipboardList] as const;
 
 const bulletClass =
   "group flex flex-col items-center gap-3.5 rounded-2xl border border-[color-mix(in_srgb,var(--primary)_14%,var(--border))] bg-[var(--surface)] px-5 py-6 text-center shadow-[var(--elevation-sm)] ring-1 ring-[color-mix(in_srgb,var(--primary)_8%,transparent)] transition duration-300 hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--primary)_28%,var(--border))] hover:shadow-[var(--elevation-md)] sm:items-start sm:gap-4 sm:px-5 sm:py-7 sm:text-left";
+
+const LANDING_EYEBROW = `${TARGET_GRADE_LABEL} · 온라인 협동학습 게임`;
+const LANDING_TAGLINE = "교실에서 참여·공유·협력을 이어 가는 협동학습";
+const LANDING_RESEARCH_TITLE = RESEARCH_REPORT_TITLE;
+const LANDING_FEATURES = [
+  {
+    title: "AI로 활동 생성",
+    body: "주제·모둠 규모에 맞춰 AI가 역할, 5단계 단서, 본문 핵심 단어, 공유 학습지 초안을 생성합니다.",
+  },
+  {
+    title: "직소·STAD 협동학습",
+    body: "전문가 집단에서 단서로 단어 카드를 획득·공유하고, 홈 집단에서 최종 요약문 학습지를 협력해 완성합니다.",
+  },
+  {
+    title: "실시간 동시 참여",
+    body: "참가 코드로 동시 입장하고, 단계·학습지 진행과 점수를 실시간으로 확인합니다.",
+  },
+] as const;
 
 export default function HomePage() {
   const router = useRouter();

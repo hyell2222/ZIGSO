@@ -1,8 +1,6 @@
 "use client";
 
 import { parseActivityPack, type ActivityRecord } from "@/lib/api/activities";
-import { ERROR_COPY } from "@/lib/copy/errors";
-import { COPY_DEFAULTS } from "@/lib/copy/defaults";
 import { assignGroupsAndRoles } from "@/lib/api/play";
 import type { ActivityPhase, SessionStatus } from "@/lib/types";
 import { supabase } from "@/lib/supabase";
@@ -49,11 +47,13 @@ export async function listHostSessions(hostId: string) {
 
 export async function startSession(activity: ActivityRecord, hostId?: string | null) {
   if (!hostId) {
-    throw new Error(ERROR_COPY.loginRequired);
+    throw new Error("수업을 시작하려면 로그인해 주세요.");
   }
   const pack = parseActivityPack(activity.activity_pack);
   if (!pack) {
-    throw new Error(ERROR_COPY.activityPackMissing);
+    throw new Error(
+      "이 활동에 콘텐츠가 없습니다. 활동 편집에서 역할·단어·공유 학습지를 설정해 주세요.",
+    );
   }
 
   const joinCode = generateJoinCode(6);
@@ -74,7 +74,7 @@ export async function startSession(activity: ActivityRecord, hostId?: string | n
   return {
     sessionId: session.id,
     joinCode: session.join_code,
-    sessionTitle: activity.title ?? COPY_DEFAULTS.untitledActivity,
+    sessionTitle: activity.title ?? "제목 없는 활동",
   } satisfies StartedSession;
 }
 
@@ -98,7 +98,7 @@ export async function beginHostingSession(sessionId: string) {
     .eq("id", sessionId)
     .single();
   if (se) throw se;
-  if (!sess?.activity_id) throw new Error(ERROR_COPY.sessionActivityMissing);
+  if (!sess?.activity_id) throw new Error("세션에 연결된 활동이 없습니다.");
 
   const { data: activity, error: le } = await supabase
     .from("activities")
@@ -107,7 +107,7 @@ export async function beginHostingSession(sessionId: string) {
     .single();
   if (le) throw le;
   const pack = parseActivityPack(activity?.activity_pack);
-  if (!pack) throw new Error(ERROR_COPY.packLoadFailed);
+  if (!pack) throw new Error("활동 콘텐츠를 불러올 수 없습니다.");
 
   await assignGroupsAndRoles(sessionId, pack);
   const { error } = await supabase
@@ -137,4 +137,10 @@ export async function advanceSessionPhase(sessionId: string, nextPhase: Activity
 export async function deleteSession(sessionId: string) {
   const { error } = await supabase.from("sessions").delete().eq("id", sessionId);
   if (error) throw error;
+}
+
+export function hostSessionNextPhaseLabel(phase: ActivityPhase): string {
+  const next = getNextPhase(phase);
+  if (!next) return "—";
+  return next === "results" ? "활동 결과" : "다음 단계";
 }

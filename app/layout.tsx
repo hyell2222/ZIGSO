@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import { TARGET_GRADE_LABEL } from "@/lib/brand";
-import { LANDING_TAGLINE } from "@/lib/copy/landing";
 import { QueryProvider } from "@/providers/query-provider";
 
 const dungGeunMo = localFont({
@@ -13,7 +12,7 @@ const dungGeunMo = localFont({
 
 export const metadata: Metadata = {
   title: "Jigsaw",
-  description: `${TARGET_GRADE_LABEL} — ${LANDING_TAGLINE}`,
+  description: `${TARGET_GRADE_LABEL} — 교실에서 참여·공유·협력을 이어 가는 협동학습`,
   icons: {
     icon: "/window.svg",
   },

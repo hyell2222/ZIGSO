@@ -49,14 +49,13 @@ create table public.sessions (
 );
 
 -- ---------------------------------------------------------------------
--- groups — cooperative task progress
+-- groups — cooperative worksheet progress
 -- ---------------------------------------------------------------------
 create table public.groups (
   id uuid primary key default gen_random_uuid(),
   session_id uuid not null references public.sessions(id) on delete cascade,
   name text not null,
-  acquired_items jsonb not null default '[]'::jsonb,
-  completed_tasks jsonb not null default '[]'::jsonb,
+  worksheet_placements jsonb not null default '[]'::jsonb,
   completed_at timestamptz
 );
 
@@ -70,6 +69,8 @@ create table public.players (
   nickname text not null,
   assigned_role_id text,
   assigned_item_ids jsonb not null default '[]'::jsonb,
+  /** 전문가 집단에서 획득한 단어 카드 (개인 인벤토리) */
+  word_cards jsonb not null default '[]'::jsonb,
   is_online boolean not null default true,
   created_at timestamptz not null default timezone('utc', now())
 );

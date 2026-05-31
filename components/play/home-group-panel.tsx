@@ -1,15 +1,13 @@
 "use client";
 
-import { CheckSquare, Loader2, Puzzle, Square } from "lucide-react";
-import { useMemo, useState, useEffect } from "react";
+import { Loader2 } from "lucide-react";
+import { useMemo, useState } from "react";
 
 import { PlayPhaseShell } from "@/components/play/play-phase-shell";
 import { PlayHeaderGroupPlace } from "@/components/play/play-header-group-place";
 import {
   PlayPhaseCallout,
-  PlayPhaseEmptyState,
   PlayPhaseMessage,
-  playPhaseListRowClass,
   PlayPhasePanel,
   PlayPhaseSection,
   PlayPhaseSectionBadge,
@@ -18,90 +16,124 @@ import {
 } from "@/components/play/play-phase-layout";
 import { activityLayoutType } from "@/components/activity/activity-layout-typography";
 import { Button } from "@/components/ui/button";
-import { completeActivityForGroup, completeTaskForGroup } from "@/lib/api/play";
-import { totalGroupScore } from "@/lib/activity-pack/engine";
-import { taskCompleteMessage, PLAYER_MESSAGES, PLAYER_COPY } from "@/lib/copy/player";
-import { STUDENT_COPY } from "@/lib/copy/student";
+import {
+  completeActivityForGroup,
+  listGroupMembers,
+  placeWordCardOnSlot,
+  type GroupRow,
+  type PlayerSelfRow,
+} from "@/lib/api/play";
+import {
+  availableWordCards,
+  isWorksheetComplete,
+  totalGroupScore,
+  worksheetProgress,
+  PLAYER_MESSAGES,
+} from "@/lib/activity-pack/engine";
+import { parsePassageSegments } from "@/lib/activity-pack/worksheet";
 import type { ActivityPack } from "@/lib/activity-pack/types";
-import type { GroupRow } from "@/lib/api/play";
 import { cn } from "@/lib/utils";
 
-const HOME = STUDENT_COPY.phaseHome;
+const t = activityLayoutType;
+
+export type GroupMember = Pick<
+  PlayerSelfRow,
+  "id" | "nickname" | "assigned_role_id" | "assigned_item_ids" | "word_cards"
+>;
 
 type Props = {
   pack: ActivityPack;
   group: GroupRow;
   groupName: string | null;
+  playerId: string;
+  assignedRoleId: string | null;
+  wordCards: PlayerSelfRow["word_cards"];
+  members: GroupMember[];
   onUpdate: () => void;
   pending?: boolean;
-  sandboxCompleteTask?: (taskId: string, itemIds: string[]) => void;
-  sandboxCompleteActivity?: () => void;
+  sandboxPlace?: (slotOwnerPlayerId: string, slotId: string, itemId: string) => void;
+  sandboxComplete?: () => void;
   contained?: boolean;
 };
 
-const t = activityLayoutType;
-
 function isSuccessMessage(message: string) {
-  return message.includes("미션 완료") || message.includes("마쳤");
+  return message.includes("넣었") || message.includes("완성") || message.includes("마쳤");
 }
 
 export function GroupPhasePanel({
   pack,
   group,
   groupName,
+  playerId,
+  assignedRoleId,
+  wordCards,
+  members,
   onUpdate,
   pending,
-  sandboxCompleteTask,
-  sandboxCompleteActivity,
+  sandboxPlace,
+  sandboxComplete,
   contained = false,
 }: Props) {
-  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(
-    pack.tasks[0]?.id ?? null,
-  );
-  const [selectedItemIds, setSelectedItemIds] = useState<string[]>([]);
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const task = pack.tasks.find((c) => c.id === selectedTaskId) ?? null;
-  const completedIds = new Set(group.completed_tasks.map((m) => m.taskId));
-  const activityCompleted = Boolean(group.completed_at);
-  const groupScore = totalGroupScore(group.acquired_items, group.completed_tasks);
-
+  const worksheet = pack.homeWorksheet;
+  const segments = useMemo(
+    () => parsePassageSegments(worksheet.summaryPassage),
+    [worksheet.summaryPassage],
+  );
+  const slotById = useMemo(
+    () => new Map(worksheet.slots.map((s) => [s.id, s])),
+    [worksheet.slots],
+  );
+  const placementBySlot = useMemo(
+    () => new Map(group.worksheet_placements.map((p) => [p.slotId, p])),
+    [group.worksheet_placements],
+  );
   const itemNameById = useMemo(() => {
     const map = new Map<string, string>();
     for (const item of pack.items) map.set(item.id, item.name);
     return map;
   }, [pack.items]);
 
-  useEffect(() => {
-    setSelectedItemIds([]);
-    setMessage(null);
-  }, [selectedTaskId]);
+  const ownerPlayerByRole = useMemo(() => {
+    const map = new Map<string, GroupMember>();
+    for (const m of members) {
+      if (m.assigned_role_id) map.set(m.assigned_role_id, m);
+    }
+    return map;
+  }, [members]);
 
-  const handleToggleItem = (itemId: string) => {
-    setSelectedItemIds((prev) =>
-      prev.includes(itemId) ? prev.filter((id) => id !== itemId) : [...prev, itemId],
-    );
-  };
+  const inventory = availableWordCards(wordCards);
+  const progress = worksheetProgress(pack, group.worksheet_placements);
+  const activityCompleted = Boolean(group.completed_at);
+  const canSubmitActivity =
+    !activityCompleted && isWorksheetComplete(pack, group.worksheet_placements);
 
-  const handleCompleteTask = async () => {
-    if (!selectedTaskId || !task || selectedItemIds.length === 0) return;
+  const allCards = [...wordCards, ...members.flatMap((m) => m.word_cards ?? [])];
+  const groupScore = totalGroupScore(allCards, group.worksheet_placements);
+
+  const handlePlace = async (slotOwnerPlayerId: string, slotId: string, itemId: string) => {
     setMessage(null);
     setBusy(true);
     try {
-      if (sandboxCompleteTask) {
-        sandboxCompleteTask(selectedTaskId, selectedItemIds);
+      if (sandboxPlace) {
+        sandboxPlace(slotOwnerPlayerId, slotId, itemId);
       } else {
-        await completeTaskForGroup({
+        await placeWordCardOnSlot({
+          actorPlayerId: playerId,
+          slotOwnerPlayerId,
           groupId: group.id,
           pack,
-          taskId: selectedTaskId,
-          submittedItemIds: selectedItemIds,
+          slotId,
+          itemId,
         });
       }
       onUpdate();
-      setMessage(taskCompleteMessage(task.title, selectedItemIds.length * 3));
-      setSelectedItemIds([]);
+      const name = itemNameById.get(itemId) ?? itemId;
+      setMessage(`「${name}」카드를 빈칸에 넣었어요!`);
+      setSelectedItemId(null);
     } catch (e) {
       setMessage(e instanceof Error ? e.message : PLAYER_MESSAGES.operationFailed);
     } finally {
@@ -113,13 +145,13 @@ export function GroupPhasePanel({
     setMessage(null);
     setBusy(true);
     try {
-      if (sandboxCompleteActivity) {
-        sandboxCompleteActivity();
+      if (sandboxComplete) {
+        sandboxComplete();
       } else {
         await completeActivityForGroup(group.id, pack);
       }
       onUpdate();
-      setMessage(PLAYER_COPY.activityComplete);
+      setMessage("공유 학습지를 완성했어요. 수고했어요!");
     } catch (e) {
       setMessage(e instanceof Error ? e.message : PLAYER_MESSAGES.operationFailed);
     } finally {
@@ -127,21 +159,94 @@ export function GroupPhasePanel({
     }
   };
 
-  const canSubmitActivity =
-    !activityCompleted && completedIds.size >= pack.tasks.length;
+  const renderSlot = (slotId: string) => {
+    const slot = slotById.get(slotId);
+    if (!slot) {
+      return (
+        <span key={slotId} className="text-[var(--danger)]">
+          ?
+        </span>
+      );
+    }
+
+    const placement = placementBySlot.get(slotId);
+    const owner = ownerPlayerByRole.get(slot.ownerRoleId);
+    const ownerPlayerId = owner?.id ?? "";
+    const isOwnSlot = ownerPlayerId === playerId || slot.ownerRoleId === assignedRoleId;
+    const filled = Boolean(placement);
+    const wordName = filled
+      ? (itemNameById.get(placement!.itemId) ?? placement!.itemId)
+      : (itemNameById.get(slot.itemId) ?? slot.itemId);
+    const ownerLabel = owner?.nickname ?? slot.ownerRoleId;
+
+    const canPlace =
+      !filled &&
+      !isOwnSlot &&
+      selectedItemId === slot.itemId &&
+      inventory.some((c) => c.itemId === slot.itemId);
+
+    if (filled) {
+      return (
+        <span
+          key={slotId}
+          className={cn(
+            "mx-0.5 inline-flex items-center rounded-md border border-[var(--primary)] bg-[var(--tint-accent-weak)] px-2 py-0.5 font-semibold text-[var(--primary)]",
+            t.playPanelChip,
+          )}
+        >
+          {wordName}
+        </span>
+      );
+    }
+
+    return (
+      <button
+        key={slotId}
+        type="button"
+        disabled={busy || isOwnSlot || !canPlace}
+        onClick={() => {
+          if (canPlace && ownerPlayerId) {
+            void handlePlace(ownerPlayerId, slotId, slot.itemId);
+          }
+        }}
+        title={
+          isOwnSlot
+            ? `${ownerLabel}의 빈칸 — 직접 넣을 수 없어요. 팀원이 도와주세요.`
+            : canPlace
+              ? `${ownerLabel}의 빈칸에 넣기`
+              : `${ownerLabel}의 빈칸 · 필요 단어: ${wordName}`
+        }
+        className={cn(
+          "mx-0.5 inline-flex min-w-[4.5rem] items-center justify-center rounded-md border border-dashed px-2 py-0.5 transition",
+          t.playPanelChip,
+          isOwnSlot &&
+            "cursor-not-allowed border-[var(--border)] bg-[var(--muted)]/30 text-[var(--muted-foreground)]",
+          !isOwnSlot &&
+            canPlace &&
+            "border-[var(--primary)] bg-[var(--tint-accent-strong)] text-[var(--primary)] ring-2 ring-[var(--primary)]/30",
+          !isOwnSlot &&
+            !canPlace &&
+            "border-[var(--border)] bg-[var(--background)] text-[var(--muted-foreground)]",
+        )}
+      >
+        {isOwnSlot ? "내 빈칸" : canPlace ? wordName : "___"}
+      </button>
+    );
+  };
 
   return (
     <PlayPhaseShell
       contained={contained}
       header={{
         phase: 3,
-        title: HOME.title,
-        description: HOME.description,
+        title: "홈 집단",
+        description:
+          "공유 학습지의 최종 요약문 빈칸을 채우세요. 내 단어 카드는 내 빈칸에 넣을 수 없고, 팀원 슬롯에만 넣을 수 있습니다.",
         rightSlot: (
           <PlayHeaderGroupPlace
             groupName={groupName}
             placeName={`${groupScore}점`}
-            placeLabel={HOME.scoreLabel}
+            placeLabel="모둠 점수"
             pending={pending}
             contained={contained}
           />
@@ -150,165 +255,140 @@ export function GroupPhasePanel({
     >
       <PlayPhasePanel>
         <PlayPhaseSection
-          title={HOME.pooledItemsSection}
-          headerExtra={
-            <PlayPhaseSectionBadge>{group.acquired_items.length}개</PlayPhaseSectionBadge>
-          }
-        >
-          {group.acquired_items.length === 0 ? (
-            <PlayPhaseEmptyState>
-              <p className={t.playPanelBody}>{HOME.emptyPool}</p>
-              <p className={cn("mt-1", t.caption)}>{HOME.emptyPoolHint}</p>
-            </PlayPhaseEmptyState>
-          ) : (
-            <ul className="flex flex-wrap gap-2">
-              {group.acquired_items.map((a) => (
-                <li
-                  key={a.itemId}
-                  className={cn(
-                    "rounded-full border border-[var(--border)] bg-[var(--tint-accent-weak)] px-3 py-1",
-                    t.playPanelChip,
-                  )}
-                >
-                  🔍 {itemNameById.get(a.itemId) ?? a.itemId} (+{a.score}점)
-                </li>
-              ))}
-            </ul>
-          )}
-        </PlayPhaseSection>
-
-        <PlayPhaseSection
-          title={HOME.missionsSection}
+          title="최종 요약문"
           headerExtra={
             <PlayPhaseSectionBadge>
-              {HOME.completionBadge(completedIds.size, pack.tasks.length)}
+              {progress.filled}/{progress.required} 빈칸
             </PlayPhaseSectionBadge>
           }
         >
+          <p className={cn("mb-4", t.playPanelHint)}>
+            카드를 선택한 뒤, 팀원의 활성 슬롯(또는 요약문의 팀원 빈칸)을 눌러 넣으세요. 내 빈칸은 회색으로 표시됩니다.
+          </p>
+          <div
+            className={cn(
+              "rounded-xl border border-[var(--border)] bg-[var(--card-bg)] p-4 @md:p-6",
+              t.playPanelBody,
+              "leading-relaxed",
+            )}
+          >
+            {segments.map((seg, i) =>
+              seg.type === "text" ? (
+                <span key={`t-${i}`}>{seg.value}</span>
+              ) : (
+                renderSlot(seg.slotId)
+              ),
+            )}
+          </div>
+        </PlayPhaseSection>
+
+        <PlayPhaseSection title="내 단어 카드">
+          {inventory.length === 0 ? (
+            <p className={t.playPanelBody}>
+              사용 가능한 단어 카드가 없어요. 전문가 집단에서 단어를 획득하세요.
+            </p>
+          ) : (
+            <>
+              <p className={cn("mb-2", t.playPanelHint)}>카드를 선택한 뒤 팀원 슬롯에 배치하세요.</p>
+              <ul className="flex flex-wrap gap-2">
+                {inventory.map((card) => {
+                  const name = itemNameById.get(card.itemId) ?? card.itemId;
+                  const selected = selectedItemId === card.itemId;
+                  return (
+                    <li key={card.itemId}>
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => setSelectedItemId(selected ? null : card.itemId)}
+                        className={cn(
+                          "rounded-full border px-3 py-1.5 transition",
+                          t.playPanelChip,
+                          selected
+                            ? "border-[var(--primary)] bg-[var(--tint-accent-strong)] text-[var(--primary)] ring-2 ring-[var(--primary)]/30"
+                            : "border-[var(--border)] bg-[var(--tint-accent-weak)] hover:border-[var(--accent)]",
+                        )}
+                      >
+                        🃏 {name}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </>
+          )}
+        </PlayPhaseSection>
+
+        <PlayPhaseSection title="팀원 활성 슬롯">
           <ul className="space-y-2">
-            {pack.tasks.map((ch) => {
-              const done = completedIds.has(ch.id);
-              return (
-                <li key={ch.id}>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedTaskId(ch.id)}
-                    className={cn(
-                      playPhaseListRowClass,
-                      selectedTaskId === ch.id
-                        ? "border-[var(--primary)] bg-[var(--tint-accent-weak)]"
-                        : "hover:bg-[var(--tint-mystery)]",
-                      done && "opacity-70",
-                    )}
+            {members
+              .filter((m) => m.id !== playerId)
+              .map((m) => {
+                const roleSlots = worksheet.slots.filter(
+                  (s) => s.ownerRoleId === m.assigned_role_id,
+                );
+                return (
+                  <li
+                    key={m.id}
+                    className="rounded-lg border border-[var(--border)] bg-[var(--background)] p-3"
                   >
-                    <Puzzle className="h-3.5 w-3.5 shrink-0 text-[var(--accent)] @md:h-4 @md:w-4" aria-hidden />
-                    <span className={cn("min-w-0 flex-1", t.playPanelRow)}>{ch.title}</span>
-                    <span className={cn("shrink-0", t.playPanelRowMeta)}>
-                      {done ? HOME.missionDone : HOME.missionChallenging}
-                    </span>
-                  </button>
-                </li>
-              );
-            })}
+                    <p className={cn("mb-2 font-medium", t.playPanelRow)}>
+                      {m.nickname ?? "팀원"} · 슬롯 소유
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {roleSlots.map((slot) => {
+                        const filled = placementBySlot.has(slot.id);
+                        const name = itemNameById.get(slot.itemId) ?? slot.itemId;
+                        const canPlace =
+                          !filled &&
+                          selectedItemId === slot.itemId &&
+                          inventory.some((c) => c.itemId === slot.itemId);
+                        return (
+                          <button
+                            key={slot.id}
+                            type="button"
+                            disabled={busy || filled || !canPlace}
+                            onClick={() => void handlePlace(m.id, slot.id, slot.itemId)}
+                            className={cn(
+                              "rounded-md border px-2 py-1 text-sm transition",
+                              filled
+                                ? "border-[var(--primary)] bg-[var(--tint-accent-weak)]"
+                                : canPlace
+                                  ? "border-[var(--primary)] bg-[var(--tint-accent-strong)] ring-2 ring-[var(--primary)]/30"
+                                  : "border-dashed border-[var(--border)]",
+                            )}
+                          >
+                            {filled ? name : canPlace ? `넣기: ${name}` : name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </li>
+                );
+              })}
           </ul>
         </PlayPhaseSection>
 
-        {task && !completedIds.has(task.id) ? (
-          <PlayPhaseSection
-            title={task.title}
-            variant="active"
-            headerExtra={<PlayPhaseSectionBadge>{HOME.missionInProgress}</PlayPhaseSectionBadge>}
-          >
-            <p className={t.playPanelBody}>{task.description}</p>
-
-            <div className="space-y-2">
-              <p className={t.playPanelHint}>
-                {HOME.selectItemsHint}
-              </p>
-
-              {group.acquired_items.length === 0 ? (
-                <p className={cn(t.caption, "text-[var(--danger)] italic")}>
-                  {HOME.noItemsToSubmit}
-                </p>
-              ) : (
-                <ul className="space-y-2 rounded-lg border border-[var(--border)] bg-[var(--background)] p-2">
-                  {group.acquired_items.map((a) => {
-                    const isSelected = selectedItemIds.includes(a.itemId);
-                    return (
-                      <li key={a.itemId}>
-                        <button
-                          type="button"
-                          onClick={() => handleToggleItem(a.itemId)}
-                          className={cn(
-                            playPhaseListRowClass,
-                            isSelected
-                              ? "border-[var(--primary)] bg-[color-mix(in_srgb,var(--primary)_8%,var(--card-bg))]"
-                              : "border-[var(--border)]/60 bg-[var(--card-bg)] hover:border-[var(--border)]",
-                          )}
-                        >
-                          {isSelected ? (
-                            <CheckSquare className="h-3.5 w-3.5 shrink-0 text-[var(--primary)] @md:h-4 @md:w-4" />
-                          ) : (
-                            <Square className="h-3.5 w-3.5 shrink-0 text-[var(--muted-foreground)] @md:h-4 @md:w-4" />
-                          )}
-                          <span
-                            className={cn(
-                              "flex-1",
-                              t.playPanelRow,
-                              !isSelected && "font-normal text-[var(--muted-foreground)]",
-                            )}
-                          >
-                            {itemNameById.get(a.itemId) ?? a.itemId}
-                          </span>
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-            </div>
-
+        {canSubmitActivity ? (
+          <PlayPhaseSection title="학습지 완성">
+            <p className={t.playPanelBody}>모든 빈칸을 채웠어요. 공유 학습지를 제출해 주세요.</p>
             <div className={playPhaseFormActions}>
-              <Button
-                type="button"
-                className="@sm:min-w-[10rem]"
-                onClick={handleCompleteTask}
-                disabled={busy || selectedItemIds.length === 0}
-              >
+              <Button type="button" onClick={() => void handleCompleteActivity()} disabled={busy}>
                 {busy ? (
                   <>
-                    <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin @sm:h-4 @sm:w-4" aria-hidden />
-                    {HOME.verifyingMission}
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
+                    제출 중…
                   </>
-                ) : selectedItemIds.length > 0 ? (
-                  HOME.submitMission(selectedItemIds.length)
                 ) : (
-                  HOME.selectItemsButton
+                  "학습지 제출"
                 )}
               </Button>
             </div>
           </PlayPhaseSection>
         ) : null}
 
-        {!activityCompleted && canSubmitActivity ? (
-          <PlayPhaseSection title={HOME.finalSection}>
-            <p className={t.playPanelBody}>{HOME.finalReady}</p>
-            <Button type="button" className="mt-3 w-full @sm:min-h-11" onClick={handleCompleteActivity} disabled={busy}>
-              {busy ? (
-                <>
-                  <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin @sm:h-4 @sm:w-4" aria-hidden />
-                  {HOME.finalSubmitting}
-                </>
-              ) : (
-                HOME.finalButton
-              )}
-            </Button>
-          </PlayPhaseSection>
-        ) : null}
-
         {activityCompleted ? (
-          <PlayPhaseCallout title={HOME.finalDone} centered>
-            <p className={t.playPanelCalloutBody}>{HOME.finalScore(groupScore)}</p>
+          <PlayPhaseCallout title="학습지 제출 완료" centered>
+            <p className={t.playPanelCalloutBody}>모둠 최종 점수: {groupScore}점</p>
             <PlayPhaseWaitFootnote className="mt-4" />
           </PlayPhaseCallout>
         ) : null}
@@ -319,4 +399,15 @@ export function GroupPhasePanel({
       </PlayPhasePanel>
     </PlayPhaseShell>
   );
+}
+
+export async function fetchGroupMembersForPlay(groupId: string): Promise<GroupMember[]> {
+  const rows = await listGroupMembers(groupId);
+  return rows.map((r) => ({
+    id: r.id,
+    nickname: r.nickname,
+    assigned_role_id: r.assigned_role_id,
+    assigned_item_ids: r.assigned_item_ids,
+    word_cards: r.word_cards,
+  }));
 }

@@ -2,23 +2,18 @@
  * 시뮬레이션 모드 — 교사 혼자서 활동 흐름을 시연·검수하기 위한 in-memory 모델.
  */
 
-import { ACTIVITY_PHASE_LABELS } from "@/lib/copy/phases";
-import { COPY_DEFAULTS } from "@/lib/copy/defaults";
+import { ACTIVITY_PHASE_LABELS } from "@/lib/activity-phases";
 import { MIN_ROLES_PER_GROUP } from "@/lib/activity-pack/sizing";
 import type { ActivityPhase, SessionStatus } from "@/lib/types";
 import { assignRolesToPlayers } from "@/lib/activity-pack/engine";
-import type { AcquiredItem, CompletedTask, ActivityPack } from "@/lib/activity-pack/types";
+import type { ActivityPack, WordCard, WorksheetPlacement } from "@/lib/activity-pack/types";
 import { pickSandboxLobbyBotNicknames, SANDBOX_LOBBY_BOT_COUNT } from "@/lib/sandbox/waiting-nicknames";
-import {
-  HOST_SESSION_START_LABEL,
-  hostSessionNextPhaseLabel,
-} from "@/lib/copy/teacher";
+import { getNextPhase } from "@/lib/api/sessions";
 
 export type SandboxGroup = {
   id: string;
   name: string;
-  acquired_items: AcquiredItem[];
-  completed_tasks: CompletedTask[];
+  worksheet_placements: WorksheetPlacement[];
   completed_at: string | null;
 };
 
@@ -27,9 +22,8 @@ export type SandboxPlayer = {
   nickname: string;
   groupId: string;
   roleId: string;
-  /** @deprecated — itemIds 사용 */
-  itemId: string;
   itemIds: string[];
+  word_cards: WordCard[];
   isReal?: boolean;
 };
 
@@ -60,7 +54,7 @@ export function buildSandboxWaitingRoster(
   const nicknames = pickSandboxLobbyBotNicknames(activityId.trim() || "_");
   const out: SandboxWaitingChip[] = Array.from({ length: botCount }, (_, i) => ({
     id: `sandbox-lobby-bot-${i}`,
-    nickname: nicknames[i % nicknames.length] ?? `${COPY_DEFAULTS.participant} ${i + 1}`,
+    nickname: nicknames[i % nicknames.length] ?? `참가자 ${i + 1}`,
   }));
 
   const realNick = realStudentNickname?.trim();
@@ -109,7 +103,6 @@ export function buildSandboxAssignments(
   if (pack.roles.length === 0) {
     return { groups: [], players: [] };
   }
-  const fallbackItemId = pack.items[0]?.id ?? "";
 
   const chips = buildSandboxWaitingRoster(activityId, realStudentNickname, pack.groupSize);
   shuffleArrayInPlace(chips);
@@ -120,8 +113,7 @@ export function buildSandboxAssignments(
   const groups: SandboxGroup[] = Array.from({ length: numGroups }, (_, i) => ({
     id: `sandbox-group-${i}`,
     name: groupLabel(i),
-    acquired_items: [],
-    completed_tasks: [],
+    worksheet_placements: [],
     completed_at: null,
   }));
 
@@ -145,11 +137,11 @@ export function buildSandboxAssignments(
       const itemIds = assigned?.itemIds ?? [];
       players.push({
         id: playerId,
-        nickname: chip.nickname.trim() || COPY_DEFAULTS.participant,
+        nickname: chip.nickname.trim() || "참가자",
         groupId: group.id,
         roleId: assigned?.roleId ?? pack.roles[0]?.id ?? "",
-        itemId: itemIds[0] ?? fallbackItemId,
         itemIds,
+        word_cards: [],
         isReal: chip.isReal ? true : undefined,
       });
     }
@@ -174,8 +166,10 @@ export function nextSandboxPhase(current: ActivityPhase): ActivityPhase | null {
 }
 
 export function getSandboxNextPhaseLabel(current: ActivityPhase): string {
-  if (current === "waiting") return HOST_SESSION_START_LABEL;
-  return hostSessionNextPhaseLabel(current);
+  if (current === "waiting") return "수업 시작";
+  const next = getNextPhase(current);
+  if (!next) return "—";
+  return next === "results" ? "활동 결과" : "다음 단계";
 }
 
 export const SANDBOX_PHASE_LABEL = ACTIVITY_PHASE_LABELS;

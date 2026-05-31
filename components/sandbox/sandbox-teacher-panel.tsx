@@ -29,13 +29,8 @@ import {
   type SandboxGroup,
 } from "@/lib/sandbox/state";
 import type { SessionStatus } from "@/lib/types";
-import { isSessionEnded } from "@/lib/activity-phases";
-import {
-  HOST_SESSION_START_LABEL,
-  hostSessionNextPhaseLabel,
-  isTimedPhase,
-  type TimedPhase,
-} from "@/lib/copy/teacher";
+import { isSessionEnded, isTimedPhase, type TimedPhase } from "@/lib/activity-phases";
+import { hostSessionNextPhaseLabel } from "@/lib/api/sessions";
 import { buildRoleCodenameMap } from "@/lib/play/role-codenames";
 import { formatAssignedRoleLabels } from "@/lib/activity-pack/roles";
 
@@ -113,19 +108,26 @@ export function SandboxTeacherPanel({
   }, [players, groups, pack, activityId, roleCodenameById]);
 
   const progressGroups = useMemo<GroupProgressGroup[]>(() => {
-    const counts = new Map<string, number>();
-    for (const p of players) counts.set(p.groupId, (counts.get(p.groupId) ?? 0) + 1);
-    return groups.map((group) => ({
-      group: {
-        id: group.id,
-        session_id: null,
-        name: group.name,
-        acquired_items: group.acquired_items,
-        completed_tasks: group.completed_tasks,
-        completed_at: group.completed_at,
-      },
-      memberCount: counts.get(group.id) ?? 0,
-    }));
+    const byGroup = new Map<string, SandboxPlayer[]>();
+    for (const p of players) {
+      const list = byGroup.get(p.groupId) ?? [];
+      list.push(p);
+      byGroup.set(p.groupId, list);
+    }
+    return groups.map((group) => {
+      const members = byGroup.get(group.id) ?? [];
+      return {
+        group: {
+          id: group.id,
+          session_id: null,
+          name: group.name,
+          worksheet_placements: group.worksheet_placements,
+          completed_at: group.completed_at,
+        },
+        memberCount: members.length,
+        memberWordCards: members.flatMap((m) => m.word_cards),
+      };
+    });
   }, [groups, players]);
 
   const resultsMembers = useMemo<SessionResultsMember[]>(
@@ -135,7 +137,8 @@ export function SandboxTeacherPanel({
         nickname: p.nickname,
         groupId: p.groupId,
         assignedRoleId: p.roleId,
-        assignedItemIds: p.itemIds?.length ? p.itemIds : p.itemId ? [p.itemId] : [],
+        assignedItemIds: p.itemIds,
+        word_cards: p.word_cards,
       })),
     [players],
   );
@@ -146,8 +149,7 @@ export function SandboxTeacherPanel({
         id: group.id,
         session_id: null as string | null,
         name: group.name,
-        acquired_items: group.acquired_items,
-        completed_tasks: group.completed_tasks,
+        worksheet_placements: group.worksheet_placements,
         completed_at: group.completed_at,
       })),
     [groups],
@@ -174,7 +176,7 @@ export function SandboxTeacherPanel({
 
   const startButton = !sessionStarted ? (
     <Button type="button" size="sm" onClick={onBegin}>
-      {HOST_SESSION_START_LABEL}
+      수업 시작
     </Button>
   ) : null;
 

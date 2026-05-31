@@ -2,14 +2,6 @@
 
 import type { CSSProperties, ReactNode } from "react";
 
-import {
-  activityFooterChrome,
-  activityLoaderRegion,
-  activityMainContent,
-  activityMainInner,
-  activityPhaseHeaderInner,
-  activityPhaseHeaderShell,
-} from "@/components/activity/activity-layout-chrome";
 import { cn } from "@/lib/utils";
 
 type PlayAtmosphereProps = {
@@ -43,27 +35,6 @@ export const playSurfacePanelHeader =
 
 export const playSurfaceWarmHeader =
   "border-b-2 border-[color-mix(in_srgb,var(--highlight)_25%,var(--border))] bg-[color-mix(in_srgb,var(--highlight)_10%,white)]";
-
-/** @deprecated `activityPhaseHeaderShell` 사용 */
-export const playPhaseHeaderChrome = activityPhaseHeaderShell;
-
-/** @deprecated `activityPhaseHeaderShell` 사용 */
-export const playPhaseHeaderChromeShell = cn("shrink-0", activityPhaseHeaderShell);
-
-/** @deprecated `activityPhaseHeaderInner` 사용 */
-export const playPhaseHeaderChromeInner = activityPhaseHeaderInner;
-
-/** @deprecated `activityLoaderRegion` */
-export const playLoaderRegion = activityLoaderRegion;
-
-/** @deprecated `activityMainInner` */
-export const playPhaseMainInner = activityMainInner;
-
-/** @deprecated `activityMainContent` */
-export const playPhaseMainContent = activityMainContent;
-
-/** @deprecated `activityFooterChrome` */
-export const playPhaseFooterChrome = activityFooterChrome;
 
 export function PlayAtmosphere({
   children,
@@ -100,11 +71,7 @@ export function PlayAtmosphere({
         className="pointer-events-none absolute -right-6 top-[20%] h-20 w-20 rounded-full bg-[color-mix(in_srgb,#c8ebe0_60%,transparent)] blur-2xl motion-safe:animate-[playFloat_6s_ease-in-out_infinite_0.6s]"
         aria-hidden
       />
-      <div
-        className="relative z-10 flex h-full min-h-0 flex-col overflow-hidden"
-      >
-        {children}
-      </div>
+      <div className="relative z-10 flex h-full min-h-0 flex-col overflow-hidden">{children}</div>
     </div>
   );
 }

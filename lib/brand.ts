@@ -10,4 +10,4 @@ export const RESEARCH_REPORT_TITLE =
 export const TARGET_GRADE_LABEL = "중·고등학교";
 
 /** AI 생성 기본 템플릿 예시 활동명(영문 식별자) */
-export const EXAMPLE_GAME_NAME = "Cooperative Inquiry Activity";
+export const EXAMPLE_GAME_NAME = "Textbook Reading Jigsaw";

@@ -1,4 +1,8 @@
-import type { AcquiredItem, CompletedTask, ActivityPack } from "@/lib/activity-pack/types";
+import type {
+  ActivityPack,
+  WordCard,
+  WorksheetPlacement,
+} from "@/lib/activity-pack/types";
 
 export type ActivityPhase =
   | "waiting"
@@ -13,8 +17,7 @@ export type GroupRecord = {
   id: string;
   session_id: string | null;
   name: string | null;
-  acquired_items: AcquiredItem[];
-  completed_tasks: CompletedTask[];
+  worksheet_placements: WorksheetPlacement[];
   completed_at: string | null;
 };
 
@@ -25,6 +28,7 @@ export type PlayerRecord = {
   group_id: string | null;
   assigned_role_id: string | null;
   assigned_item_ids?: string[] | null;
+  word_cards: WordCard[];
 };
 
 export type GameSession = {
@@ -39,4 +43,4 @@ export type GameSession = {
 
 export { isResultsPhase, isSessionEnded } from "@/lib/activity-phases";
 
-export type { ActivityPack, AcquiredItem, CompletedTask };
+export type { ActivityPack, WordCard, WorksheetPlacement };

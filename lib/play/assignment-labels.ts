@@ -1,7 +1,7 @@
 /** 학생 UI — 배정 아이템 표시 (정답 이름은 노출하지 않음) */
 
 export function itemSlotLabel(index: number): string {
-  return `아이템 ${index + 1}`;
+  return `단어 ${index + 1}`;
 }
 
 export function formatAssignedSlots(assignedCount: number): string | null {

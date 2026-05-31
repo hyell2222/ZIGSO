@@ -9,11 +9,16 @@ import {
   MIN_ROLES_PER_GROUP,
   normalizePackSizing,
 } from "@/lib/activity-pack/sizing";
-import type { ItemClues, Item, ActivityPack, Task, Role } from "@/lib/activity-pack/types";
+import {
+  buildDefaultHomeWorksheet,
+  buildDefaultWorksheetSlots,
+  extractSlotIdsFromPassage,
+  syncWorksheetSlotsFromPassage,
+} from "@/lib/activity-pack/worksheet";
+import type { HomeWorksheet, ItemClues, Item, ActivityPack, Role } from "@/lib/activity-pack/types";
 import { ACTIVITY_PACK_VERSION } from "@/lib/activity-pack/types";
 import { makeTempId } from "@/lib/temp-id";
 import { buildRoleCodenameMap } from "@/lib/play/role-codenames";
-import { TEACHER_EDITOR_COPY } from "@/lib/copy/teacher";
 
 export {
   derivedActivityScale,
@@ -43,19 +48,12 @@ export type EditorRole = {
   items: EditorItem[];
 };
 
-export type EditorTask = {
-  localId: string;
-  id: string;
-  title: string;
-  description: string;
-  acceptedItemIds: string[];
-};
-
 export type ActivityEditorDraft = {
   title: string;
   description: string;
   roles: EditorRole[];
-  tasks: EditorTask[];
+  /** 홈 집단 공유 학습지 — {{slot_id}} 로 빈칸 표시 */
+  summaryPassage: string;
 };
 
 export type FlatEditorItem = {
@@ -100,22 +98,12 @@ export function editorRoleCodenameMap(draft: ActivityEditorDraft): Map<string, s
   return buildRoleCodenameMap(scope, keys);
 }
 
-export function createEmptyTask(): EditorTask {
-  return {
-    localId: makeTempId(),
-    id: "",
-    title: "",
-    description: "",
-    acceptedItemIds: [],
-  };
-}
-
 export function editorRoleLabel(index: number): string {
   return `역할 ${index + 1}`;
 }
 
 export function editorItemLabel(index: number): string {
-  return `맞출 아이템 ${index + 1}`;
+  return `단어 ${index + 1}`;
 }
 
 export function flattenEditorItems(draft: ActivityEditorDraft): FlatEditorItem[] {
@@ -130,44 +118,48 @@ export function flattenEditorItems(draft: ActivityEditorDraft): FlatEditorItem[]
 }
 
 export function createDefaultActivityDraft(): ActivityEditorDraft {
-  const boothRole = createEmptyRole();
-  const booth = boothRole.items[0]!;
-  booth.name = "부스 운영 매뉴얼";
-  booth.clues = {
-    stage1: "축제 당일 체크리스트가 들어 있습니다.",
-    stage2: "개점 시간과 마감 절차가 적혀 있습니다.",
-    stage3: "매뉴얼 표지에 ‘부스 운영’이라고 쓰여 있습니다.",
-    stage4: "‘부스 운영 매뉴얼’이라는 제목입니다.",
-    stage5: "정답: 부스 운영 매뉴얼",
+  const environmentRole = createEmptyRole();
+  const environment = environmentRole.items[0]!;
+  environment.name = "environment";
+  environment.clues = {
+    stage1: "지구를 둘러싼 모든 자연과 생물을 가리킵니다.",
+    stage2: "We must protect our ___ to live safely.",
+    stage3: "본문 첫 문장에 ‘our environment’가 나옵니다.",
+    stage4: "영어 11글자, e로 시작합니다.",
+    stage5: "정답: environment",
   };
 
-  const ticketRole = createEmptyRole();
-  const ticket = ticketRole.items[0]!;
-  ticket.name = "입장권";
-  ticket.clues = {
-    stage1: "관람객이 손에 들고 다닙니다.",
-    stage2: "QR 코드가 인쇄되어 있습니다.",
-    stage3: "‘입장권’이라는 글자가 보입니다.",
-    stage4: "종이 티켓 형태입니다.",
-    stage5: "정답: 입장권",
+  const pollutionRole = createEmptyRole();
+  const pollution = pollutionRole.items[0]!;
+  pollution.name = "pollution";
+  pollution.clues = {
+    stage1: "공기·물·땅을 더럽히는 것입니다.",
+    stage2: "Factories cause a lot of ___.",
+    stage3: "본문에 ‘reduce pollution’이 나옵니다.",
+    stage4: "영어 10글자, p로 시작합니다.",
+    stage5: "정답: pollution",
   };
 
-  const roles = [boothRole, ticketRole];
-  const flat = flattenEditorItems({ title: "", description: "", roles, tasks: [] });
+  const recycleRole = createEmptyRole();
+  const recycle = recycleRole.items[0]!;
+  recycle.name = "recycle";
+  recycle.clues = {
+    stage1: "쓴 종이·플라스틱을 다시 사용하는 행동입니다.",
+    stage2: "We should ___ plastic bottles.",
+    stage3: "본문 마지막 문장에 등장합니다.",
+    stage4: "re-___-le 형태의 영어 단어입니다.",
+    stage5: "정답: recycle",
+  };
+
+  const roles = [environmentRole, pollutionRole, recycleRole];
+
   return {
-    title: "학교 축제 부스 운영",
+    title: "교과서 본문: Save Our Planet",
     description:
-      "내일은 학교 축제입니다.\n여러 미션을 해결하며 축제 부스를 성공적으로 운영하세요.",
+      "중2 영어 교과서 ‘Save Our Planet’ 지문을 바탕으로 합니다.\n전문가 집단에서 본문 핵심 단어의 단어 카드를 얻고, 홈 집단에서 지문 요약 학습지를 완성하세요.",
     roles,
-    tasks: [
-      {
-        localId: makeTempId(),
-        id: "",
-        title: "부스 개점 준비",
-        description: "개점 전에 필요한 자료와 절차를 정리하세요.",
-        acceptedItemIds: flat.map((f) => f.item.localId),
-      },
-    ],
+    summaryPassage:
+      "교과서 지문에 따르면, {{slot_environment}}을(를) 지키려면 {{slot_pollution}}을(를) 줄이고 {{slot_recycle}}을(를) 실천해야 합니다.",
   };
 }
 
@@ -179,6 +171,12 @@ function slugFromName(name: string, fallback: string): string {
     .replace(/^_|_$/g, "")
     .slice(0, 48);
   return slug || fallback;
+}
+
+/** 편집기에서 빈칸 토큰 미리보기 — 저장 시 slot id와 일치하도록 */
+export function editorSlotToken(item: EditorItem, roleIndex: number, itemIndex: number): string {
+  const itemId = item.id.trim() || slugFromName(item.name, `role_${roleIndex + 1}_item_${itemIndex + 1}`);
+  return `{{slot_${itemId}}}`;
 }
 
 export function packToEditorDraft(pack: ActivityPack): ActivityEditorDraft {
@@ -195,29 +193,11 @@ export function packToEditorDraft(pack: ActivityPack): ActivityEditorDraft {
     })),
   }));
 
-  const itemIds = new Set(flattenRoleItems(sourceRoles).map((i) => i.id));
-  const localByItemId = new Map<string, string>();
-  for (const role of roles) {
-    for (const item of role.items) {
-      if (item.id) localByItemId.set(item.id, item.localId);
-    }
-  }
-
-  const tasks: EditorTask[] = pack.tasks.map((task) => ({
-    localId: makeTempId(),
-    id: task.id,
-    title: task.title,
-    description: task.description,
-    acceptedItemIds: task.acceptedItemIds
-      .filter((id) => itemIds.has(id))
-      .map((id) => localByItemId.get(id) ?? id),
-  }));
-
   return {
     title: pack.title.replace(/^활동:\s*/, ""),
     description: pack.description,
     roles: roles.length > 0 ? roles : [createEmptyRole()],
-    tasks: tasks.length > 0 ? tasks : [createEmptyTask()],
+    summaryPassage: pack.homeWorksheet.summaryPassage,
   };
 }
 
@@ -274,19 +254,15 @@ export function editorDraftToPack(draft: ActivityEditorDraft): ActivityPack {
 
   const items = flattenRoleItems(roles);
 
-  const tasks: Task[] = draft.tasks.map((ch, idx) => {
-    const taskId = slugFromName(ch.title, `task_${idx + 1}`);
-    const acceptedItemIds = ch.acceptedItemIds
-      .map((ref) => idMap.get(ref) ?? ref)
-      .filter((id) => usedItemIds.has(id));
-
-    return {
-      id: ch.id.trim() || taskId,
-      title: ch.title.trim(),
-      description: ch.description.trim(),
-      acceptedItemIds,
-    };
-  });
+  let homeWorksheet: HomeWorksheet = {
+    summaryPassage: draft.summaryPassage.trim(),
+    slots: buildDefaultWorksheetSlots(roles),
+  };
+  if (!homeWorksheet.summaryPassage) {
+    homeWorksheet = buildDefaultHomeWorksheet(roles, items);
+  } else {
+    homeWorksheet = syncWorksheetSlotsFromPassage(homeWorksheet, roles);
+  }
 
   const title = draft.title.trim()
     ? draft.title.trim().startsWith("활동:")
@@ -302,14 +278,14 @@ export function editorDraftToPack(draft: ActivityEditorDraft): ActivityPack {
     itemsPerPlayer: 1,
     roles,
     items,
-    tasks,
+    homeWorksheet,
   });
 }
 
 export const EDITOR_STEPS = [
-  { id: "basics", ...TEACHER_EDITOR_COPY.steps.basics },
-  { id: "items", ...TEACHER_EDITOR_COPY.steps.items },
-  { id: "tasks", ...TEACHER_EDITOR_COPY.steps.tasks },
+  { id: "basics", title: "활동 안내", description: "제목·학습 상황 소개" },
+  { id: "items", title: "역할·단어", description: "역할별 본문 핵심 단어와 5단계 단서" },
+  { id: "worksheet", title: "공유 학습지", description: "홈 집단 최종 요약문과 빈칸" },
 ] as const;
 
 export type EditorStepId = (typeof EDITOR_STEPS)[number]["id"];
@@ -330,14 +306,14 @@ function validateRolesAndItems(draft: ActivityEditorDraft, errors: string[]) {
     const roleLabel = editorRoleLabel(ri);
     if (role.items.length < MIN_ITEMS_PER_ROLE || role.items.length > MAX_ITEMS_PER_ROLE) {
       errors.push(
-        `「${roleLabel}」아이템은 ${MIN_ITEMS_PER_ROLE}~${MAX_ITEMS_PER_ROLE}개입니다.`,
+        `「${roleLabel}」단어는 ${MIN_ITEMS_PER_ROLE}~${MAX_ITEMS_PER_ROLE}개입니다.`,
       );
     }
     for (const item of role.items) {
-      if (!item.name.trim()) errors.push("맞출 아이템 이름을 입력하세요.");
+      if (!item.name.trim()) errors.push("단어(정답)를 입력하세요.");
       for (const [key, label] of Object.entries(HINT_STAGE_LABELS) as [keyof ItemClues, string][]) {
         if (!item.clues[key].trim()) {
-          errors.push(`「${item.name || "맞출 아이템"}」 — ${label}을(를) 입력하세요.`);
+          errors.push(`「${item.name || "단어"}」 — ${label}을(를) 입력하세요.`);
         }
       }
     }
@@ -358,17 +334,15 @@ export function validateEditorDraftStep(draft: ActivityEditorDraft, step: Editor
     return errors;
   }
 
-  if (draft.tasks.length === 0) {
-    errors.push("모둠 미션을 한 가지 이상 추가하세요.");
-  }
-  for (const task of draft.tasks) {
-    if (!task.title.trim()) errors.push("모둠 미션 제목을 입력하세요.");
-    if (!task.description.trim()) errors.push(`「${task.title || "미션"}」설명을 입력하세요.`);
-    const refs = task.acceptedItemIds.length;
-    if (refs === 0) {
-      errors.push(`「${task.title || "미션"}」에 사용할 아이템을 한 가지 이상 선택하세요.`);
+  if (step === "worksheet") {
+    if (!draft.summaryPassage.trim()) {
+      errors.push("최종 요약문을 입력하세요.");
+    } else if (extractSlotIdsFromPassage(draft.summaryPassage).length === 0) {
+      errors.push("요약문에 {{slot_id}} 형식의 빈칸을 하나 이상 넣으세요.");
     }
+    return errors;
   }
+
   return errors;
 }
 
@@ -383,16 +357,10 @@ export function validateEditorDraft(draft: ActivityEditorDraft): string[] {
   }
   validateRolesAndItems(draft, errors);
 
-  if (draft.tasks.length === 0) {
-    errors.push("모둠 미션을 한 가지 이상 추가하세요.");
-  }
-  for (const task of draft.tasks) {
-    if (!task.title.trim()) errors.push("모둠 미션 제목을 입력하세요.");
-    if (!task.description.trim()) errors.push(`「${task.title || "미션"}」설명을 입력하세요.`);
-    const refs = task.acceptedItemIds.length;
-    if (refs === 0) {
-      errors.push(`「${task.title || "미션"}」에 사용할 아이템을 한 가지 이상 선택하세요.`);
-    }
+  if (!draft.summaryPassage.trim()) {
+    errors.push("최종 요약문을 입력하세요.");
+  } else if (extractSlotIdsFromPassage(draft.summaryPassage).length === 0) {
+    errors.push("요약문에 {{slot_id}} 형식의 빈칸을 하나 이상 넣으세요.");
   }
 
   return errors;

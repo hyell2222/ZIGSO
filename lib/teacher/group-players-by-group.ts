@@ -1,9 +1,14 @@
+import type { WordCard } from "@/lib/activity-pack/types";
 import type { SessionPlayerRow, GroupRow } from "@/lib/api/play";
 
 export type GroupGroup = {
   group: GroupRow;
   members: SessionPlayerRow[];
 };
+
+export function collectGroupWordCards(members: { word_cards?: WordCard[] }[]): WordCard[] {
+  return members.flatMap((m) => m.word_cards ?? []);
+}
 
 export function groupPlayersByGroup(players: SessionPlayerRow[], groups: GroupRow[]): GroupGroup[] {
   const playersByGroupId = new Map<string, SessionPlayerRow[]>();
