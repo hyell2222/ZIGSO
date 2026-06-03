@@ -11,8 +11,9 @@ import { LoadingState } from "@/components/ui/loading-state";
 import { getActivity, parseActivityPack } from "@/lib/api/activities";
 import type { ActivityPhase } from "@/lib/api/activities";
 import { useRequireTeacherSession } from "@/lib/auth/use-require-teacher-session";
-import { tryAcquireWordCard, tryPlaceWordCard, isWorksheetComplete } from "@/lib/activity-pack/engine";
-import type { WordCard } from "@/lib/activity-pack/types";
+import { getTestQuestions, isQuizComplete, PLAYER_MESSAGES } from "@/lib/activity-pack/engine";
+import type { PracticeQuestionResult } from "@/lib/activity-pack/types";
+import type { QuizAnswer } from "@/lib/activity-pack/types";
 import {
   buildSandboxAssignments,
   createInitialSandboxState,
@@ -70,80 +71,43 @@ function SandboxPageContent() {
     setState((prev) => ({ ...prev, realStudentNickname: null }));
   }, []);
 
-  const handleAcquire = useCallback(
-    (groupId: string, playerId: string, itemId: string, answer: string, clueLevelUsed: 1 | 2 | 3 | 4 | 5) => {
-      if (!pack) return;
-      const result = tryAcquireWordCard(pack, itemId, answer, clueLevelUsed);
-      if (!result.ok) throw new Error(result.reason);
+  const handleSubmitPractice = useCallback(
+    (playerId: string, results: PracticeQuestionResult[], baseScore: number) => {
       setState((prev) => ({
         ...prev,
-        players: prev.players.map((p) => {
-          if (p.id !== playerId) return p;
-          if (p.word_cards.some((c) => c.itemId === itemId && !c.placedAt)) return p;
-          return { ...p, word_cards: [...p.word_cards, result.record] };
-        }),
+        players: prev.players.map((p) =>
+          p.id === playerId
+            ? {
+                ...p,
+                base_score: baseScore,
+                practice_results: results,
+                practice_submitted_at: new Date().toISOString(),
+              }
+            : p,
+        ),
       }));
     },
-    [pack],
+    [],
   );
 
-  const handlePlaceWord = useCallback(
-    (groupId: string, actorPlayerId: string, slotOwnerPlayerId: string, slotId: string, itemId: string) => {
+  const handleSubmitIndividualQuiz = useCallback(
+    (playerId: string, answers: QuizAnswer[]) => {
       if (!pack) return;
-      setState((prev) => {
-        const group = prev.groups.find((t) => t.id === groupId);
-        const actor = prev.players.find((p) => p.id === actorPlayerId);
-        const owner = prev.players.find((p) => p.id === slotOwnerPlayerId);
-        if (!group || !actor || !owner) return prev;
-
-        const result = tryPlaceWordCard(pack, actor.word_cards, group.worksheet_placements, {
-          actorPlayerId,
-          slotOwnerPlayerId,
-          slotOwnerRoleId: owner.roleId,
-          slotId,
-          itemId,
-        });
-        if (!result.ok) throw new Error(result.reason);
-
-        return {
-          ...prev,
-          players: prev.players.map((p) =>
-            p.id === actorPlayerId
-              ? {
-                  ...p,
-                  word_cards: p.word_cards.map((c) =>
-                    c.itemId === itemId && !c.placedAt ? result.updatedCard : c,
-                  ),
-                }
-              : p,
-          ),
-          groups: prev.groups.map((t) =>
-            t.id === groupId
-              ? { ...t, worksheet_placements: [...t.worksheet_placements, result.record] }
-              : t,
-          ),
-        };
-      });
-    },
-    [pack],
-  );
-
-  const handleCompleteActivity = useCallback(
-    (groupId: string) => {
-      if (!pack) return;
-      setState((prev) => {
-        const group = prev.groups.find((t) => t.id === groupId);
-        if (!group || group.completed_at) return prev;
-        if (!isWorksheetComplete(pack, group.worksheet_placements)) {
-          throw new Error("아직 채우지 않은 학습지 빈칸이 있습니다.");
-        }
-        return {
-          ...prev,
-          groups: prev.groups.map((t) =>
-            t.id === groupId ? { ...t, completed_at: new Date().toISOString() } : t,
-          ),
-        };
-      });
+      if (!isQuizComplete(getTestQuestions(pack), answers)) {
+        throw new Error(PLAYER_MESSAGES.quizIncomplete);
+      }
+      setState((prev) => ({
+        ...prev,
+        players: prev.players.map((p) =>
+          p.id === playerId
+            ? {
+                ...p,
+                individual_quiz_answers: answers,
+                individual_quiz_submitted_at: new Date().toISOString(),
+              }
+            : p,
+        ),
+      }));
     },
     [pack],
   );
@@ -252,11 +216,9 @@ function SandboxPageContent() {
           realStudentNickname={state.realStudentNickname}
           onJoinAsStudent={joinAsStudent}
           onLeaveAsStudent={leaveAsStudent}
-          onAcquire={(groupId, itemId, answer, clueStage) =>
-            handleAcquire(groupId, SANDBOX_REAL_STUDENT_PLAYER_ID, itemId, answer, clueStage)
-          }
-          onPlaceWord={handlePlaceWord}
-          onCompleteActivity={handleCompleteActivity}
+          realStudentPlayerId={SANDBOX_REAL_STUDENT_PLAYER_ID}
+          onSubmitPractice={handleSubmitPractice}
+          onSubmitIndividualQuiz={handleSubmitIndividualQuiz}
         />
       </BrowserWindow>
     </main>

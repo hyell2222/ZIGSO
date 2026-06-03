@@ -1,8 +1,8 @@
 # Jigsaw
 
-**Jigsaw** is a teacher tool for running jigsaw cooperative group activities in the classroom. Teachers design activities, host live sessions with join codes, and track group progress through expert-group and home-group phases.
+**Jigsaw** is a teacher tool for running jigsaw cooperative group activities in the classroom. Teachers design activities, host live sessions with join codes, and track group progress through expert-group, home-group, and individual-quiz phases.
 
-The repository ships with one built-in game template example — **Textbook Reading: Save Our Planet** (vocabulary jigsaw from a textbook passage). The data model and editor target that template; additional game types can follow the same `activity_pack` structure.
+The repository ships with one built-in activity example — **Textbook Reading: Save Our Planet**. Experts master a passage segment, the home group solves a shared multiple-choice quiz, and each student takes an individual multiple-choice quiz. The data model and editor target that flow; additional topics follow the same `activity_pack` structure.
 
 ## Tech Stack
 
@@ -18,11 +18,18 @@ Apply the schema on a **clean** Supabase project (or after backing up existing d
 1. Open the Supabase SQL Editor.
 2. Run the full script in [`supabase/schema.sql`](supabase/schema.sql).
 
-**Existing projects (v2 → v3):** add new columns if missing:
+**Existing projects:** run migrations in order: [`001_quiz_restructure.sql`](supabase/migrations/001_quiz_restructure.sql) (if needed), [`002_stad.sql`](supabase/migrations/002_stad.sql), then [`003_multi_questions.sql`](supabase/migrations/003_multi_questions.sql):
 
 ```sql
-alter table players add column if not exists word_cards jsonb not null default '[]'::jsonb;
-alter table groups add column if not exists worksheet_placements jsonb not null default '[]'::jsonb;
+-- 002: STAD base score, drop group quiz
+alter table players add column if not exists base_score int;
+alter table players add column if not exists practice_submitted_at timestamptz;
+alter table groups drop column if exists group_quiz_answers;
+alter table groups drop column if exists completed_at;
+
+-- 003: multiple practice questions per role
+alter table players add column if not exists practice_results jsonb not null default '[]'::jsonb;
+alter table players drop column if exists practice_wrong_attempts;
 ```
 
 Core tables:
@@ -31,27 +38,27 @@ Core tables:
 |-------|---------|
 | `activities` | Teacher-authored activity (`activity_pack` JSON) |
 | `sessions` | Live play (`join_code`, `phase`, `status`) |
-| `groups` | Shared worksheet placements, activity completion |
-| `players` | Nickname, group, role, personal `word_cards` inventory |
+| `groups` | Home-group (STAD team) membership |
+| `players` | Nickname, group, role, `base_score` (practice average), `practice_results`, formative-test `individual_quiz_answers` |
 
-Session phases: `waiting` → `overview` → `expert_group` → `home_group` → `results`.
+Session phases: `waiting` → `overview` → `expert_group` → `home_group` → `individual_quiz` → `results`.
 
 Session `status`: `active` | `ended` (set to `ended` when the session reaches `results`).
 
-## Activity pack model (v3)
+## Activity pack model (v5)
 
-Gameplay content lives under [`lib/activity-pack/`](lib/activity-pack/). An `activity_pack` (`ActivityPack`, version 3) includes:
+Gameplay content lives under [`lib/activity-pack/`](lib/activity-pack/). An `activity_pack` (`ActivityPack`, version 5) includes:
 
-- **`roles` / `items`** — vocabulary answers and staged clues for expert groups
-- **`homeWorksheet`** — shared home-group worksheet:
-  - **`summaryPassage`** — full summary text with `{{slot_id}}` placeholders for blanks
-  - **`slots[]`** — each blank links an `itemId` to an `ownerRoleId` (that student's screen)
+- **`roles`** — each role has a **`segment`**, optional **`keyPoints`**, **`practiceQuestions[]`** (expert phase, with `hints[]` + `explanation`), and **`testQuestions[]`** (formative test, one attempt). Role count defines group size.
 
-### Play flow
+Each `QuizQuestion` is `{ id, prompt, choices[], correctIndex, hints?, explanation? }` — all questions are multiple-choice.
 
-1. **Expert group** — Students with the same role solve 5-stage clues and earn **word cards** into personal inventory.
-2. **Home group** — The team sees one **shared worksheet** (`summaryPassage`) in the center. Each student has blanks on their screen for their role's words, but **cannot place their own word into their own blank**. Teammates must place cards into each other's active slots (jigsaw teaching).
-3. **Submit** — When all blanks are filled, the group submits the completed worksheet.
+### Play flow (STAD)
+
+1. **Expert group** — Master the segment, then solve **all practice questions** for the role (each: up to 3 attempts, hints, reveal). Per-question score = `100 / 70 / 40 / 10` (−30 per wrong). **Base score** = rounded average of those scores.
+2. **Home group** — Explain to teammates; view **every member's segment, key points, and all practice questions** (with answers). Read-only, teacher-paced.
+3. **Individual formative test** — Answer **all test questions** from every role **once** (no retries). **Test score** = `round(correct ÷ total × 100)`.
+4. **Results (STAD)** — Improvement points from `diff = testScore − baseScore`. **Team score** = average of members' improvement points.
 
 ## Run Locally
 
@@ -96,9 +103,9 @@ The exported app is generated to `/out` with `out/index.html` as the entry file.
 
 | Route | Purpose |
 |-------|---------|
-| `POST /api/ai/generate-activity-pack` | AI draft for roles, clues, and shared worksheet (`homeWorksheet`) |
+| `POST /api/ai/generate-activity-pack` | AI draft for role segments and group/individual multiple-choice quizzes |
 
-Request body supports `contentLanguage` (`ko` | `en`) for title, description, clues, and summary passage.
+Request body supports `contentLanguage` (`ko` | `en`) for title, description, segments, and quiz text.
 
 ## Example activity pack
 

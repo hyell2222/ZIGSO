@@ -8,6 +8,3 @@ export const RESEARCH_REPORT_TITLE =
 
 /** 2025학년도부터 중·고에 적용되는 2022 개정 교육과정 대상 학교급 */
 export const TARGET_GRADE_LABEL = "중·고등학교";
-
-/** AI 생성 기본 템플릿 예시 활동명(영문 식별자) */
-export const EXAMPLE_GAME_NAME = "Textbook Reading Jigsaw";

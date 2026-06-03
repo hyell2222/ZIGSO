@@ -73,7 +73,8 @@ export function SandboxTeacherPanel({
     phase === "waiting" ||
       phase === "overview" ||
       phase === "expert_group" ||
-      phase === "home_group",
+      phase === "home_group" ||
+      phase === "individual_quiz",
   );
 
   const waitingOnlinePlayers = useMemo(
@@ -100,7 +101,7 @@ export function SandboxTeacherPanel({
         id: m.id,
         nickname: m.nickname,
         zoneName:
-          formatAssignedRoleLabels(pack, m.itemIds, `sandbox-${activityId}`) ??
+          formatAssignedRoleLabels(pack, [m.roleId], `sandbox-${activityId}`) ??
           roleCodenameById.get(m.roleId) ??
           null,
       })),
@@ -114,20 +115,15 @@ export function SandboxTeacherPanel({
       list.push(p);
       byGroup.set(p.groupId, list);
     }
-    return groups.map((group) => {
-      const members = byGroup.get(group.id) ?? [];
-      return {
-        group: {
-          id: group.id,
-          session_id: null,
-          name: group.name,
-          worksheet_placements: group.worksheet_placements,
-          completed_at: group.completed_at,
-        },
-        memberCount: members.length,
-        memberWordCards: members.flatMap((m) => m.word_cards),
-      };
-    });
+    return groups.map((group) => ({
+      group: { id: group.id, name: group.name },
+      members: (byGroup.get(group.id) ?? []).map((m) => ({
+        id: m.id,
+        nickname: m.nickname,
+        baseScore: m.base_score ?? null,
+        practiceSubmitted: Boolean(m.practice_submitted_at),
+      })),
+    }));
   }, [groups, players]);
 
   const resultsMembers = useMemo<SessionResultsMember[]>(
@@ -137,8 +133,9 @@ export function SandboxTeacherPanel({
         nickname: p.nickname,
         groupId: p.groupId,
         assignedRoleId: p.roleId,
-        assignedItemIds: p.itemIds,
-        word_cards: p.word_cards,
+        baseScore: p.base_score,
+        individual_quiz_answers: p.individual_quiz_answers,
+        individual_quiz_submitted_at: p.individual_quiz_submitted_at,
       })),
     [players],
   );
@@ -149,10 +146,13 @@ export function SandboxTeacherPanel({
         id: group.id,
         session_id: null as string | null,
         name: group.name,
-        worksheet_placements: group.worksheet_placements,
-        completed_at: group.completed_at,
       })),
     [groups],
+  );
+
+  const individualQuizSubmitted = useMemo(
+    () => players.filter((p) => p.individual_quiz_submitted_at).length,
+    [players],
   );
 
   const shouldShowTimer = isTimedPhase(phase);
@@ -213,13 +213,26 @@ export function SandboxTeacherPanel({
           />
         ) : null}
 
-        {phase === "home_group" ? (
+        {phase === "expert_group" || phase === "home_group" ? (
           <GroupProgressDashboard
             groups={progressGroups}
             loading={false}
-            pack={pack}
             contained
           />
+        ) : null}
+
+        {phase === "individual_quiz" ? (
+          <section className="rounded-xl border border-[var(--border)] bg-[var(--card-bg)] p-4">
+            <div className="flex items-baseline justify-between gap-2">
+              <h2 className="text-sm font-semibold text-[var(--foreground)]">개별 형성평가 진행</h2>
+              <span className="font-mono text-sm font-semibold tabular-nums text-[var(--primary)]">
+                제출 {individualQuizSubmitted}/{players.length}
+              </span>
+            </div>
+            <p className="mt-2 text-xs text-[var(--muted-foreground)]">
+              학생들이 전체 내용 실전 문제를 풉니다. 모두 제출하면 활동 결과로 넘어가세요.
+            </p>
+          </section>
         ) : null}
 
         {phase === "results" ? (

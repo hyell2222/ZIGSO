@@ -5,7 +5,9 @@ import { useMemo, useState } from "react";
 import { ExpertPhasePanel } from "@/components/play/expert-group-panel";
 import { ActivityIntroductionLayout } from "@/components/play/overview-layout";
 import { GroupPhasePanel, type GroupMember } from "@/components/play/home-group-panel";
+import { IndividualQuizPanel } from "@/components/play/individual-quiz-panel";
 import { PlayJoinModal } from "@/components/play/play-join-modal";
+import type { PracticeQuestionResult } from "@/lib/activity-pack/types";
 import { ResultsPhasePanel } from "@/components/play/results-phase-panel";
 import { buildSessionResults } from "@/lib/activity-pack/session-results";
 import { PlayAtmosphere } from "@/components/play/play-atmosphere";
@@ -14,8 +16,7 @@ import { PlayPhaseShell } from "@/components/play/play-phase-shell";
 import { PlayHeaderGroupPlace } from "@/components/play/play-header-group-place";
 import { WaitingLobbyBlock } from "@/components/play/waiting-lobby-block";
 import type { ActivityPhase } from "@/lib/api/activities";
-import type { ActivityPack } from "@/lib/activity-pack/types";
-import type { GroupRow } from "@/lib/api/play";
+import type { ActivityPack, QuizAnswer } from "@/lib/activity-pack/types";
 import {
   SANDBOX_JOIN_CODE,
   type SandboxPlayer,
@@ -34,22 +35,11 @@ type Props = {
   groups: SandboxGroup[];
   players: SandboxPlayer[];
   realStudentNickname: string | null;
+  realStudentPlayerId: string;
   onJoinAsStudent: (nickname: string) => void;
   onLeaveAsStudent: () => void;
-  onAcquire: (
-    groupId: string,
-    itemId: string,
-    answer: string,
-    clueStage: 1 | 2 | 3 | 4 | 5,
-  ) => void;
-  onPlaceWord: (
-    groupId: string,
-    actorPlayerId: string,
-    slotOwnerPlayerId: string,
-    slotId: string,
-    itemId: string,
-  ) => void;
-  onCompleteActivity: (groupId: string) => void;
+  onSubmitPractice: (playerId: string, results: PracticeQuestionResult[], baseScore: number) => void;
+  onSubmitIndividualQuiz: (playerId: string, answers: QuizAnswer[]) => void;
 };
 
 export function SandboxStudentPanel({
@@ -63,9 +53,8 @@ export function SandboxStudentPanel({
   realStudentNickname,
   onJoinAsStudent,
   onLeaveAsStudent,
-  onAcquire,
-  onPlaceWord,
-  onCompleteActivity,
+  onSubmitPractice,
+  onSubmitIndividualQuiz,
 }: Props) {
   void onLeaveAsStudent;
   const [nickname, setNickname] = useState("");
@@ -73,6 +62,7 @@ export function SandboxStudentPanel({
 
   const showJoinModal = !joined && !realStudentNickname;
   const activeNickname = realStudentNickname?.trim() || nickname.trim();
+  const scopeKey = `sandbox-${activityId}`;
 
   const primaryPlayer = useMemo(() => {
     if (!players.length || showJoinModal) return null;
@@ -92,30 +82,13 @@ export function SandboxStudentPanel({
         id: p.id,
         nickname: p.nickname,
         assigned_role_id: p.roleId,
-        assigned_item_ids: p.itemIds,
-        word_cards: p.word_cards,
         created_at: new Date(1_000 + index).toISOString(),
       }));
   }, [group, players]);
 
-  const groupRow: GroupRow | null = useMemo(() => {
-    if (!group) return null;
-    return {
-      id: group.id,
-      session_id: null,
-      name: group.name,
-      worksheet_placements: group.worksheet_placements,
-      completed_at: group.completed_at,
-    };
-  }, [group]);
-
-  const acquiredIds = useMemo(
-    () => new Set(primaryPlayer?.word_cards.map((c) => c.itemId) ?? []),
-    [primaryPlayer?.word_cards],
-  );
-
-  const assignedIds = primaryPlayer?.itemIds ?? [];
-  const roleLabel = formatAssignedRoleLabels(pack, assignedIds, `sandbox-${activityId}`);
+  const roleLabel = primaryPlayer
+    ? formatAssignedRoleLabels(pack, [primaryPlayer.roleId], scopeKey)
+    : null;
 
   const sessionResults = useMemo(() => {
     if (phase !== "results" || showJoinModal) return null;
@@ -124,8 +97,6 @@ export function SandboxStudentPanel({
       groups.map((g) => ({
         id: g.id,
         name: g.name,
-        worksheet_placements: g.worksheet_placements,
-        completed_at: g.completed_at,
       })),
       players
         .filter((p) => p.groupId)
@@ -134,12 +105,13 @@ export function SandboxStudentPanel({
           nickname: p.nickname,
           groupId: p.groupId,
           assignedRoleId: p.roleId,
-          assignedItemIds: p.itemIds,
-          word_cards: p.word_cards,
+          baseScore: p.base_score,
+          individual_quiz_answers: p.individual_quiz_answers,
+          individual_quiz_submitted_at: p.individual_quiz_submitted_at,
         })),
-      `sandbox-${activityId}`,
+      scopeKey,
     );
-  }, [phase, pack, groups, players, showJoinModal, activityId]);
+  }, [phase, pack, groups, players, showJoinModal, scopeKey]);
 
   if (showJoinModal) {
     return (
@@ -184,41 +156,47 @@ export function SandboxStudentPanel({
 
   if (phase === "expert_group" && primaryPlayer && group) {
     return (
-      <SandboxExpertBridge
+      <ExpertPhasePanel
+        key={primaryPlayer.id}
         pack={pack}
-        roleScopeKey={`sandbox-${activityId}`}
-        playerId={primaryPlayer.id}
-        groupId={group.id}
+        roleId={primaryPlayer.roleId}
         groupName={group.name}
-        assignedItemIds={assignedIds}
-        acquiredIds={acquiredIds}
-        onAcquire={(itemId, answer, clueStage) =>
-          onAcquire(group.id, itemId, answer, clueStage)
+        roleScopeKey={scopeKey}
+        onSubmitPractice={(results, baseScore) =>
+          onSubmitPractice(primaryPlayer.id, results, baseScore)
         }
+        practiceSubmitted={Boolean(primaryPlayer.practice_submitted_at)}
+        practiceResults={primaryPlayer.practice_results ?? []}
+        practiceBaseScore={primaryPlayer.base_score ?? null}
+        contained
       />
     );
   }
 
-  if (phase === "home_group" && group && groupRow && primaryPlayer) {
+  if (phase === "home_group" && group && primaryPlayer) {
     return (
-      <SandboxGroupBridge
+      <GroupPhasePanel
+        key={group.id}
         pack={pack}
-        group={groupRow}
         groupName={group.name}
         playerId={primaryPlayer.id}
-        assignedRoleId={primaryPlayer.roleId}
-        wordCards={primaryPlayer.word_cards}
         members={groupMembers}
-        onPlaceWord={(slotOwnerPlayerId, slotId, itemId) =>
-          onPlaceWord(
-            group.id,
-            primaryPlayer.id,
-            slotOwnerPlayerId,
-            slotId,
-            itemId,
-          )
-        }
-        onCompleteActivity={() => onCompleteActivity(group.id)}
+        roleScopeKey={scopeKey}
+        contained
+      />
+    );
+  }
+
+  if (phase === "individual_quiz" && primaryPlayer) {
+    return (
+      <IndividualQuizPanel
+        key={primaryPlayer.id}
+        pack={pack}
+        groupName={group?.name ?? null}
+        submittedAnswers={primaryPlayer.individual_quiz_answers}
+        submittedAt={primaryPlayer.individual_quiz_submitted_at ?? null}
+        onSubmit={(answers) => onSubmitIndividualQuiz(primaryPlayer.id, answers)}
+        contained
       />
     );
   }
@@ -231,7 +209,7 @@ export function SandboxStudentPanel({
           phase: 1,
           title: "활동 소개",
           description:
-            "모둠·역할·공유 학습지를 확인하세요. 전문가 집단에서는 5단계 단서로 단어 카드를 얻습니다.",
+            "모둠·역할·활동 흐름을 확인하세요. 전문가 집단(연습 문제) → 홈 집단(설명) → 개별 형성평가 순으로 진행됩니다.",
           rightSlot: (
             <PlayHeaderGroupPlace
               groupName={group?.name ?? null}
@@ -278,80 +256,5 @@ export function SandboxStudentPanel({
         선생님이 다음 단계로 넘길 때까지 기다려 주세요.
       </main>
     </PlayPhaseShell>
-  );
-}
-
-function SandboxExpertBridge({
-  pack,
-  roleScopeKey,
-  playerId,
-  groupId,
-  groupName,
-  assignedItemIds,
-  acquiredIds,
-  onAcquire,
-}: {
-  pack: ActivityPack;
-  roleScopeKey: string;
-  playerId: string;
-  groupId: string;
-  groupName: string;
-  assignedItemIds: string[];
-  acquiredIds: Set<string>;
-  onAcquire: (itemId: string, answer: string, clueStage: 1 | 2 | 3 | 4 | 5) => void;
-}) {
-  const [, bump] = useState(0);
-  return (
-    <ExpertPhasePanel
-      pack={pack}
-      roleScopeKey={roleScopeKey}
-      playerId={playerId}
-      groupId={groupId}
-      groupName={groupName}
-      assignedItemIds={assignedItemIds}
-      acquiredItemIds={acquiredIds}
-      onAcquired={() => bump((n) => n + 1)}
-      sandboxAcquire={onAcquire}
-      contained
-    />
-  );
-}
-
-function SandboxGroupBridge({
-  pack,
-  group,
-  groupName,
-  playerId,
-  assignedRoleId,
-  wordCards,
-  members,
-  onPlaceWord,
-  onCompleteActivity,
-}: {
-  pack: ActivityPack;
-  group: GroupRow;
-  groupName: string;
-  playerId: string;
-  assignedRoleId: string;
-  wordCards: SandboxPlayer["word_cards"];
-  members: GroupMember[];
-  onPlaceWord: (slotOwnerPlayerId: string, slotId: string, itemId: string) => void;
-  onCompleteActivity: () => void;
-}) {
-  const [, bump] = useState(0);
-  return (
-    <GroupPhasePanel
-      pack={pack}
-      group={group}
-      groupName={groupName}
-      playerId={playerId}
-      assignedRoleId={assignedRoleId}
-      wordCards={wordCards}
-      members={members}
-      onUpdate={() => bump((n) => n + 1)}
-      sandboxPlace={onPlaceWord}
-      sandboxComplete={onCompleteActivity}
-      contained
-    />
   );
 }

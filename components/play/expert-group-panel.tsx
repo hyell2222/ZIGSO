@@ -1,14 +1,7 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
-import {
-  ExpertClueBoard,
-  createClueRevealState,
-  clueLevelUsedFromReveal,
-  type ClueRevealState,
-} from "@/components/play/expert-clue-board";
 import { PlayPhaseShell } from "@/components/play/play-phase-shell";
 import { PlayHeaderGroupPlace } from "@/components/play/play-header-group-place";
 import {
@@ -16,33 +9,34 @@ import {
   PlayPhaseMessage,
   PlayPhasePanel,
   PlayPhaseSection,
-  PlayPhaseSectionBadge,
   PlayPhaseWaitFootnote,
-  playPhaseFormActions,
 } from "@/components/play/play-phase-layout";
+import {
+  PracticeQuestionCard,
+  type PracticeResult,
+} from "@/components/play/practice-question-card";
 import { activityLayoutType } from "@/components/activity/activity-layout-typography";
-import { Button } from "@/components/ui/button";
-import { FormField } from "@/components/ui/form-field";
-import { Input } from "@/components/ui/input";
-import { acquireWordCardForPlayer } from "@/lib/api/play";
-import { getItemById, PLAYER_MESSAGES } from "@/lib/activity-pack/engine";
-import { formatAssignedSlots } from "@/lib/play/assignment-labels";
-import { buildItemCodenameMap, formatItemCodenames } from "@/lib/play/role-codenames";
-import type { ActivityPack } from "@/lib/activity-pack/types";
-import { scoreForClueLevel } from "@/lib/activity-pack/scoring";
+import {
+  computeBaseScoreFromPracticeResults,
+  getPracticeQuestions,
+  getRoleById,
+  PLAYER_MESSAGES,
+  toPracticeQuestionResult,
+} from "@/lib/activity-pack/engine";
+import { codenameForRole } from "@/lib/play/role-codenames";
+import type { ActivityPack, PracticeQuestionResult } from "@/lib/activity-pack/types";
 import { cn } from "@/lib/utils";
 
 type Props = {
   pack: ActivityPack;
-  playerId: string;
-  groupId: string;
+  roleId: string | null;
   groupName: string | null;
   roleScopeKey: string;
-  assignedItemIds: string[];
-  acquiredItemIds: Set<string>;
-  onAcquired: () => void;
+  onSubmitPractice: (results: PracticeQuestionResult[], baseScore: number) => void | Promise<void>;
+  practiceSubmitted?: boolean;
+  practiceResults?: PracticeQuestionResult[];
+  practiceBaseScore?: number | null;
   pending?: boolean;
-  sandboxAcquire?: (itemId: string, answer: string, clueStage: 1 | 2 | 3 | 4 | 5) => void;
   contained?: boolean;
 };
 
@@ -50,84 +44,66 @@ const t = activityLayoutType;
 
 export function ExpertPhasePanel({
   pack,
-  playerId,
-  groupId,
+  roleId,
   groupName,
   roleScopeKey,
-  assignedItemIds,
-  acquiredItemIds,
-  onAcquired,
+  onSubmitPractice,
+  practiceSubmitted = false,
+  practiceResults: savedResults = [],
+  practiceBaseScore,
   pending,
-  sandboxAcquire,
   contained = false,
 }: Props) {
-  const itemsToAcquire = useMemo(
-    () => assignedItemIds.filter((id) => !acquiredItemIds.has(id)),
-    [assignedItemIds, acquiredItemIds],
-  );
-
-  const [activeItemId, setActiveItemId] = useState<string | null>(itemsToAcquire[0] ?? null);
-  const [clueReveal, setClueReveal] = useState<ClueRevealState>(createClueRevealState);
-  const [answer, setAnswer] = useState("");
+  const [completed, setCompleted] = useState<Record<string, PracticeQuestionResult>>(() => {
+    const map: Record<string, PracticeQuestionResult> = {};
+    for (const r of savedResults) map[r.questionId] = r;
+    return map;
+  });
   const [message, setMessage] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    if (!activeItemId || !itemsToAcquire.includes(activeItemId)) {
-      setActiveItemId(itemsToAcquire[0] ?? null);
-    }
-  }, [activeItemId, itemsToAcquire]);
-
-  useEffect(() => {
-    setClueReveal(createClueRevealState());
-    setAnswer("");
-    setMessage(null);
-  }, [activeItemId]);
-
-  const item = activeItemId ? getItemById(pack, activeItemId) : undefined;
-  const codenameByItemId = useMemo(
-    () => buildItemCodenameMap(roleScopeKey, pack.items.map((i) => i.id)),
-    [roleScopeKey, pack.items],
+  const role = roleId ? getRoleById(pack, roleId) : undefined;
+  const practiceQuestions = useMemo(
+    () => (roleId ? getPracticeQuestions(pack, roleId) : []),
+    [pack, roleId],
   );
 
-  const placeLabel = useMemo(() => {
-    if (activeItemId) {
-      return codenameByItemId.get(activeItemId) ?? formatAssignedSlots(assignedItemIds.length);
-    }
-    return formatItemCodenames(assignedItemIds, codenameByItemId) ?? formatAssignedSlots(assignedItemIds.length);
-  }, [activeItemId, assignedItemIds, codenameByItemId]);
+  const roleLabel = useMemo(() => {
+    if (!roleId) return "나의 역할";
+    return codenameForRole(roleScopeKey, roleId, pack.roles.map((r) => r.id));
+  }, [roleId, roleScopeKey, pack.roles]);
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!item || !activeItemId) return;
-    const clueLevelUsed = clueLevelUsedFromReveal(item, clueReveal);
+  const doneCount = practiceQuestions.filter((q) => completed[q.id]).length;
+  const allDone = practiceQuestions.length > 0 && doneCount >= practiceQuestions.length;
+  const done = allDone || practiceSubmitted;
+
+  const baseScore = useMemo(() => {
+    if (practiceSubmitted && practiceBaseScore != null) return practiceBaseScore;
+    const results = practiceQuestions.map((q) => completed[q.id]).filter(Boolean);
+    if (results.length !== practiceQuestions.length) return null;
+    return computeBaseScoreFromPracticeResults(results);
+  }, [practiceSubmitted, practiceBaseScore, practiceQuestions, completed]);
+
+  const handleQuestionComplete = async (questionId: string, result: PracticeResult) => {
+    const entry = toPracticeQuestionResult(questionId, result.wrongAttempts);
+    const next = { ...completed, [questionId]: entry };
+    setCompleted(next);
+
+    const resultsList = practiceQuestions.map((q) => next[q.id]).filter(Boolean);
+    if (resultsList.length < practiceQuestions.length) return;
+
     setMessage(null);
     setSubmitting(true);
     try {
-      if (sandboxAcquire) {
-        sandboxAcquire(activeItemId, answer, clueLevelUsed);
-      } else {
-        await acquireWordCardForPlayer({
-          playerId,
-          groupId,
-          pack,
-          itemId: activeItemId,
-          answer,
-          clueLevelUsed,
-        });
-      }
-      onAcquired();
-      setAnswer("");
-      setClueReveal(createClueRevealState());
-      setMessage(`단어 카드 획득! +${scoreForClueLevel(clueLevelUsed)}점`);
-    } catch (err) {
-      setMessage(err instanceof Error ? err.message : PLAYER_MESSAGES.operationFailed);
+      const score = computeBaseScoreFromPracticeResults(resultsList);
+      await onSubmitPractice(resultsList, score);
+    } catch (e) {
+      setMessage(e instanceof Error ? e.message : PLAYER_MESSAGES.operationFailed);
+      throw e;
     } finally {
       setSubmitting(false);
     }
   };
-
-  const allAcquired = itemsToAcquire.length === 0;
 
   return (
     <PlayPhaseShell
@@ -136,12 +112,24 @@ export function ExpertPhasePanel({
         phase: 2,
         title: "전문가 집단",
         description:
-          "같은 역할끼리 모여 단서를 열며 단어를 맞히세요. 획득한 단어 카드는 홈 집단 인벤토리에 들어갑니다.",
+          "같은 역할끼리 모여 내가 맡은 지문을 이해하고, 연습 문제를 모두 풉니다. 문항별 점수의 평균이 기준 점수가 됩니다.",
         rightSlot: (
           <PlayHeaderGroupPlace
             groupName={groupName}
-            placeName={placeLabel}
-            placeLabel="나의 역할"
+            placeName={
+              done && baseScore != null
+                ? `${baseScore}점`
+                : doneCount > 0
+                  ? `${doneCount}/${practiceQuestions.length || "—"}`
+                  : roleLabel
+            }
+            placeLabel={
+              done && baseScore != null
+                ? "기준 점수"
+                : doneCount > 0
+                  ? "연습 완료"
+                  : "나의 역할"
+            }
             pending={pending}
             contained={contained}
           />
@@ -149,90 +137,81 @@ export function ExpertPhasePanel({
       }}
     >
       <PlayPhasePanel>
-        {allAcquired ? (
-          <PlayPhaseCallout title="단어 카드를 획득했어요" centered>
-            <p className={t.playPanelBody}>
-              홈 집단으로 돌아가, 단어 카드의 의미를 모둠원에게 설명해 주세요.
-            </p>
-            <PlayPhaseWaitFootnote className="mt-4" />
-          </PlayPhaseCallout>
-        ) : item && activeItemId ? (
+        {!role ? (
+          <PlayPhaseMessage message={PLAYER_MESSAGES.unknownRole} />
+        ) : (
           <>
-            {assignedItemIds.length > 1 ? (
-              <PlayPhaseSection
-                title="내 단어"
-                headerExtra={
-                  <PlayPhaseSectionBadge>
-                    {acquiredItemIds.size}/{assignedItemIds.length} 획득
-                  </PlayPhaseSectionBadge>
-                }
+            <PlayPhaseSection title="내가 맡은 부분" variant="active">
+              <p
+                className={cn(
+                  "whitespace-pre-line rounded-xl border border-[var(--border)] bg-[var(--card-bg)] p-4 leading-relaxed @md:p-6",
+                  t.playPanelBody,
+                )}
               >
-                <ul className="flex flex-wrap gap-2">
-                  {assignedItemIds.map((id) => {
-                    const done = acquiredItemIds.has(id);
-                    const label = codenameByItemId.get(id) ?? id;
-                    return (
-                      <li key={id}>
-                        <button
-                          type="button"
-                          disabled={done}
-                          onClick={() => {
-                            if (!done) setActiveItemId(id);
-                          }}
-                          className={cn(
-                            "rounded-full border px-3 py-1 transition",
-                            t.playPanelChip,
-                            done
-                              ? "border-[var(--border)] opacity-50"
-                              : activeItemId === id
-                                ? "border-[var(--primary)] bg-[var(--tint-accent-strong)] text-[var(--primary)]"
-                                : "border-[var(--border)] hover:border-[var(--accent)]",
-                          )}
-                        >
-                          {label}
-                          {done ? " ✓" : ""}
-                        </button>
-                      </li>
-                    );
-                  })}
+                {role.segment}
+              </p>
+            </PlayPhaseSection>
+
+            {role.keyPoints && role.keyPoints.length > 0 ? (
+              <PlayPhaseSection title="설명할 핵심 포인트">
+                <ul className="space-y-2">
+                  {role.keyPoints.map((point, i) => (
+                    <li
+                      key={i}
+                      className={cn(
+                        "flex gap-2 rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2",
+                        t.playPanelBody,
+                      )}
+                    >
+                      <span className="font-semibold text-[var(--accent)]">{i + 1}.</span>
+                      <span>{point}</span>
+                    </li>
+                  ))}
                 </ul>
               </PlayPhaseSection>
             ) : null}
 
-            <ExpertClueBoard item={item} reveal={clueReveal} onRevealChange={setClueReveal} />
-
-            <PlayPhaseSection title="단어 제출" variant="active">
-            <form id="expert-answer-form" className="space-y-3" onSubmit={handleSubmit}>
-              <FormField label="단어 (정답)" htmlFor="item-answer">
-                <Input
-                  id="item-answer"
-                  value={answer}
-                  onChange={(e) => setAnswer(e.target.value)}
-                  placeholder="단서를 보고 단어를 입력하세요"
-                  autoComplete="off"
-                  required
-                />
-              </FormField>
-              {message ? (
-                <PlayPhaseMessage message={message} success={message.includes("획득")} />
-              ) : null}
-              <div className={playPhaseFormActions}>
-                <Button type="submit" className="@sm:min-w-[10rem]" disabled={submitting}>
-                  {submitting ? (
-                    <>
-                      <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin @sm:h-4 @sm:w-4" aria-hidden />
-                      확인 중…
-                    </>
-                  ) : (
-                    "제출하기"
-                  )}
-                </Button>
+            <PlayPhaseSection title="연습 문제">
+              <p className={cn("mb-3", t.playPanelHint)}>
+                문항마다 3번까지 풀 수 있어요. 틀릴 때마다 힌트가 나오고 점수가 깎입니다. 모두 풀면
+                평균 점수가 기준 점수가 됩니다.
+              </p>
+              <div className="space-y-4">
+                {practiceQuestions.map((q, qi) => {
+                  const stored = completed[q.id];
+                  const initialResult = stored
+                    ? { wrongAttempts: stored.wrongAttempts, baseScore: stored.score }
+                    : null;
+                  const locked = practiceSubmitted || Boolean(stored) || submitting;
+                  return (
+                    <div key={q.id}>
+                      <p className={cn("mb-2 font-medium", t.caption)}>
+                        연습 {qi + 1}/{practiceQuestions.length}
+                      </p>
+                      <PracticeQuestionCard
+                        question={q}
+                        onComplete={(r) => handleQuestionComplete(q.id, r)}
+                        initialResult={initialResult}
+                        disabled={locked && !stored}
+                      />
+                    </div>
+                  );
+                })}
               </div>
-            </form>
             </PlayPhaseSection>
+
+            {done && baseScore != null ? (
+              <PlayPhaseCallout title="전문가 완료!" centered>
+                <p className={t.playPanelCalloutBody}>
+                  기준 점수 {baseScore}점(연습 {practiceQuestions.length}문항 평균). 홈 집단에서
+                  모둠원에게 내 부분과 풀이 방식을 설명할 준비가 되었어요.
+                </p>
+                <PlayPhaseWaitFootnote className="mt-4" />
+              </PlayPhaseCallout>
+            ) : null}
+
+            {message ? <PlayPhaseMessage message={message} /> : null}
           </>
-        ) : (
-          <PlayPhaseMessage message={PLAYER_MESSAGES.unknownItem} />
         )}
       </PlayPhasePanel>
     </PlayPhaseShell>

@@ -4,7 +4,6 @@
 
 import { NextRequest, NextResponse } from "next/server";
 
-import { EXAMPLE_GAME_NAME } from "@/lib/brand";
 import { normalizeAiDifficulty } from "@/lib/activity-pack/ai-difficulty";
 import type { ContentLanguage } from "@/lib/activity-pack/content-language";
 import { DEFAULT_CONTENT_LANGUAGE } from "@/lib/activity-pack/content-language";
@@ -17,58 +16,57 @@ export const maxDuration = 60;
 
 const OPENAI_MODEL = process.env.OPENAI_MODEL?.trim() || "gpt-4o-mini";
 
-const PACK_ITEM_SCHEMA = {
+const PRACTICE_QUESTION_SCHEMA = {
   type: "object",
   additionalProperties: false,
-  required: ["id", "name", "clues"],
+  required: ["prompt", "choices", "correctIndex", "hints", "explanation"],
   properties: {
-    id: { type: "string" },
-    name: { type: "string" },
-    clues: {
-      type: "object",
-      additionalProperties: false,
-      required: ["stage1", "stage2", "stage3", "stage4", "stage5"],
-      properties: {
-        stage1: { type: "string" },
-        stage2: { type: "string" },
-        stage3: { type: "string" },
-        stage4: { type: "string" },
-        stage5: { type: "string" },
-      },
-    },
+    prompt: { type: "string" },
+    choices: { type: "array", items: { type: "string" } },
+    correctIndex: { type: "integer" },
+    hints: { type: "array", items: { type: "string" } },
+    explanation: { type: "string" },
+  },
+} as const;
+
+const TEST_QUESTION_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  required: ["prompt", "choices", "correctIndex"],
+  properties: {
+    prompt: { type: "string" },
+    choices: { type: "array", items: { type: "string" } },
+    correctIndex: { type: "integer" },
   },
 } as const;
 
 const ACTIVITY_PACK_SCHEMA = {
   type: "object",
   additionalProperties: false,
-  required: ["title", "description", "groupSize", "itemsPerPlayer", "roles", "homeWorksheet"],
+  required: ["title", "description", "groupSize", "roles"],
   properties: {
     title: { type: "string" },
     description: { type: "string" },
     groupSize: { type: "integer" },
-    itemsPerPlayer: { type: "integer" },
     roles: {
       type: "array",
       items: {
         type: "object",
         additionalProperties: false,
-        required: ["id", "items"],
+        required: ["id", "segment", "keyPoints", "practiceQuestions", "testQuestions"],
         properties: {
           id: { type: "string" },
-          items: {
+          segment: { type: "string" },
+          keyPoints: { type: "array", items: { type: "string" } },
+          practiceQuestions: {
             type: "array",
-            items: PACK_ITEM_SCHEMA,
+            items: PRACTICE_QUESTION_SCHEMA,
+          },
+          testQuestions: {
+            type: "array",
+            items: TEST_QUESTION_SCHEMA,
           },
         },
-      },
-    },
-    homeWorksheet: {
-      type: "object",
-      additionalProperties: false,
-      required: ["summaryPassage"],
-      properties: {
-        summaryPassage: { type: "string" },
       },
     },
   },
@@ -86,12 +84,12 @@ function buildSystemPrompt(contentLanguage: ContentLanguage): string {
 
   const contentLanguageRule =
     contentLanguage === "ko"
-      ? "- All gameplay content in Korean: item names (answers), clues stage1–stage5, summaryPassage."
-      : "- All gameplay content in English: item names (answers), clues stage1–stage5, summaryPassage.";
+      ? "- All learning content in Korean: role segments, keyPoints, question prompts, choices, hints, and explanations."
+      : "- All learning content in English: role segments, keyPoints, question prompts, choices, hints, and explanations.";
 
   return [
-    `You design jigsaw cooperative classroom activities for the 'Jigsaw' teacher platform.`,
-    `Default template: '${EXAMPLE_GAME_NAME}' — expert groups earn word cards from staged clues; home groups complete a shared worksheet with cross-placement (students cannot fill their own blanks).`,
+    `You design STAD-based jigsaw cooperative classroom activities for the 'Jigsaw' teacher platform.`,
+    `Flow: (1) Expert groups — each role masters one passage and solves multiple PRACTICE questions (3 tries each, hints); base score = average of per-question scores. (2) Home group — teach using everyone's segment and practice questions (no submission). (3) Individual formative test — all TEST questions across roles, one attempt only; test score = round(correct/total*100); STAD improvement points.`,
     "",
     "Output JSON only.",
     "",
@@ -99,14 +97,13 @@ function buildSystemPrompt(contentLanguage: ContentLanguage): string {
     introRule,
     contentLanguageRule,
     "- groupSize: must equal roles.length (2–12).",
-    "- itemsPerPlayer: max items in any single role (usually 1–2).",
-    "- roles: each has id (snake_case ASCII) and items[] (vocabulary targets). Role display names are auto-assigned codenames at play time.",
-    "- role items: id, name (correct answer), clues stage1–stage5 (stage1 hardest, stage5 easiest).",
-    "- homeWorksheet.summaryPassage: a coherent summary paragraph for the home group. Insert each role's primary vocabulary using {{slot_ITEM_ID}} placeholders (e.g. {{slot_rice}} where item id is rice). Include every role's main item exactly once.",
-    "- Slot tokens MUST use {{slot_<item_id>}} with exact item id strings from roles. Never use display names inside braces.",
-    "- Create 2–6 roles with 1–2 items each when the theme allows.",
+    "- roles: each has id (snake_case ASCII), segment (2–4 sentences), keyPoints (2–3 bullets), practiceQuestions (array, 1–3 items), testQuestions (array, 1–3 items). Role display names are auto-assigned at play time.",
+    "- Split the whole content so every role's segment is a distinct, complementary part; together they cover the full topic.",
+    "- practiceQuestions (expert): each MCQ about that role's segment, with `hints` (exactly 2 strings for wrong attempts 1 and 2) and `explanation` on reveal.",
+    "- testQuestions (formative): MCQs about that role's segment; pooled across all roles for the one-time test.",
+    "- Every question: prompt, choices (3–4 plausible options), correctIndex (0-based index of the correct choice). Exactly one correct choice.",
+    "- All questions are multiple-choice only. Do NOT use short-answer, ordering by typing, or matching formats.",
     "- No violence, culturally appropriate for Korean middle/high school.",
-    "- Clue scoring: stage1=5pts … stage5=1pt — write clues accordingly.",
   ].join("\n");
 }
 
@@ -117,14 +114,14 @@ function buildUserPrompt(opts: {
   contentLanguage: ContentLanguage;
 }): string {
   const lines = [
-    `Generate one complete '${EXAMPLE_GAME_NAME}'-style activity pack JSON following the schema.`,
-    `Create exactly ${opts.roleCount} roles (group size equals role count). Each role should have 1–2 items with full 5-stage clues.`,
-    `The homeWorksheet summaryPassage must include {{slot_<item_id>}} for each role's primary item (${opts.roleCount} blanks).`,
-    `Content language for title and description: ${opts.contentLanguage === "ko" ? "Korean" : "English"}.`,
+    `Generate one complete STAD jigsaw activity pack JSON following the schema.`,
+    `Create exactly ${opts.roleCount} roles. Each role: segment, 2–3 keyPoints, 1–2 practiceQuestions (each with 2 hints + explanation), 1–2 testQuestions.`,
+    `All questions multiple-choice with exactly one correct answer.`,
+    `Content language for everything: ${opts.contentLanguage === "ko" ? "Korean" : "English"}.`,
   ];
   if (opts.difficulty) {
     lines.push(
-      `Calibrate clue difficulty and summary complexity for ${opts.difficulty} level (do not output a difficulty field).`,
+      `Calibrate segment and question difficulty for ${opts.difficulty} level (do not output a difficulty field).`,
     );
   }
   if (opts.topic.trim()) {

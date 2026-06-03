@@ -42,21 +42,19 @@ create table public.sessions (
   host_id uuid references auth.users(id) on delete set null,
   join_code text not null unique,
   phase text not null default 'waiting'
-    check (phase in ('waiting', 'overview', 'expert_group', 'home_group', 'results')),
+    check (phase in ('waiting', 'overview', 'expert_group', 'home_group', 'individual_quiz', 'results')),
   status text not null default 'active'
     check (status in ('active', 'ended')),
   created_at timestamptz not null default timezone('utc', now())
 );
 
 -- ---------------------------------------------------------------------
--- groups — cooperative worksheet progress
+-- groups — home-group membership (STAD team)
 -- ---------------------------------------------------------------------
 create table public.groups (
   id uuid primary key default gen_random_uuid(),
   session_id uuid not null references public.sessions(id) on delete cascade,
-  name text not null,
-  worksheet_placements jsonb not null default '[]'::jsonb,
-  completed_at timestamptz
+  name text not null
 );
 
 -- ---------------------------------------------------------------------
@@ -68,9 +66,16 @@ create table public.players (
   group_id uuid references public.groups(id) on delete set null,
   nickname text not null,
   assigned_role_id text,
-  assigned_item_ids jsonb not null default '[]'::jsonb,
-  /** 전문가 집단에서 획득한 단어 카드 (개인 인벤토리) */
-  word_cards jsonb not null default '[]'::jsonb,
+  /** 전문가 연습 결과 — 기준 점수 (문항 점수 평균) */
+  base_score int,
+  /** 연습 문항별 결과 [{ questionId, wrongAttempts, score }] */
+  practice_results jsonb not null default '[]'::jsonb,
+  /** 연습 완료 시각 */
+  practice_submitted_at timestamptz,
+  /** 개별 형성평가(실전 문제) 응답 */
+  individual_quiz_answers jsonb not null default '[]'::jsonb,
+  /** 개별 형성평가 제출 시각 */
+  individual_quiz_submitted_at timestamptz,
   is_online boolean not null default true,
   created_at timestamptz not null default timezone('utc', now())
 );

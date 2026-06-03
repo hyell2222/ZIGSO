@@ -1,13 +1,11 @@
-import {
-  MAX_ITEMS_PER_ROLE,
-  MIN_ITEMS_PER_ROLE,
-} from "@/lib/activity-pack/roles";
 import { MAX_ROLES_PER_GROUP, MIN_ROLES_PER_GROUP } from "@/lib/activity-pack/sizing";
-import { extractSlotIdsFromPassage } from "@/lib/activity-pack/worksheet";
-import type { ActivityPack, HomeWorksheet, Item, WorksheetSlot } from "@/lib/activity-pack/types";
+import type { ActivityPack, QuizQuestion, Role } from "@/lib/activity-pack/types";
 import { ACTIVITY_PACK_VERSION } from "@/lib/activity-pack/types";
 
-const HINT_KEYS = ["stage1", "stage2", "stage3", "stage4", "stage5"] as const;
+export const MIN_CHOICES_PER_QUESTION = 2;
+export const MAX_CHOICES_PER_QUESTION = 6;
+/** 역할당 연습·실전 문제 최소 개수 */
+export const MIN_QUESTIONS_PER_ROLE = 1;
 
 export type PackValidationIssue = { path: string; message: string };
 
@@ -38,135 +36,124 @@ export function validateActivityPack(pack: ActivityPack): PackValidationIssue[] 
     });
   }
 
-  const maxPerRole = Math.max(1, ...pack.roles.map((r) => r.items.length));
-  if (pack.itemsPerPlayer !== maxPerRole) {
-    issues.push({
-      path: "itemsPerPlayer",
-      message: "itemsPerPlayer must equal max items per role",
-    });
-  }
-
   const roleIds = new Set<string>();
-  const itemIds = new Set<string>();
-
+  const questionIds = new Set<string>();
   for (let ri = 0; ri < pack.roles.length; ri++) {
-    const role = pack.roles[ri]!;
-    const rolePath = `roles[${ri}]`;
-    if (typeof role.id !== "string" || !role.id.trim()) {
-      issues.push({ path: `${rolePath}.id`, message: "id required" });
-    } else if (roleIds.has(role.id)) {
-      issues.push({ path: `${rolePath}.id`, message: "duplicate role id" });
-    } else {
-      roleIds.add(role.id);
-    }
-    if (typeof role.name !== "string") {
-      issues.push({ path: `${rolePath}.name`, message: "name must be a string" });
-    }
-    if (role.items.length < MIN_ITEMS_PER_ROLE || role.items.length > MAX_ITEMS_PER_ROLE) {
-      issues.push({
-        path: `${rolePath}.items`,
-        message: `each role must have ${MIN_ITEMS_PER_ROLE}–${MAX_ITEMS_PER_ROLE} items`,
-      });
-    }
-    for (let ii = 0; ii < role.items.length; ii++) {
-      issues.push(...validateItem(role.items[ii], `${rolePath}.items[${ii}]`, itemIds));
-    }
+    issues.push(...validateRole(pack.roles[ri], `roles[${ri}]`, roleIds, questionIds));
   }
-
-  if (pack.items.length !== itemIds.size) {
-    issues.push({ path: "items", message: "flattened items must match role items" });
-  }
-
-  issues.push(...validateHomeWorksheet(pack.homeWorksheet, itemIds, roleIds));
 
   return issues;
 }
 
-function validateHomeWorksheet(
-  worksheet: HomeWorksheet,
-  itemIds: Set<string>,
-  roleIds: Set<string>,
+function validateRole(
+  raw: unknown,
+  path: string,
+  seenIds: Set<string>,
+  questionIds: Set<string>,
 ): PackValidationIssue[] {
-  const issues: PackValidationIssue[] = [];
-  if (!worksheet || typeof worksheet !== "object") {
-    return [{ path: "homeWorksheet", message: "homeWorksheet required" }];
-  }
-  if (typeof worksheet.summaryPassage !== "string" || !worksheet.summaryPassage.trim()) {
-    issues.push({ path: "homeWorksheet.summaryPassage", message: "summaryPassage required" });
-  }
-  if (!Array.isArray(worksheet.slots) || worksheet.slots.length < 1) {
-    issues.push({ path: "homeWorksheet.slots", message: "at least one slot required" });
-  }
-
-  const tokenIds = extractSlotIdsFromPassage(worksheet.summaryPassage ?? "");
-  const slotIds = new Set<string>();
-  for (let i = 0; i < (worksheet.slots?.length ?? 0); i++) {
-    const slot = worksheet.slots[i] as WorksheetSlot;
-    const path = `homeWorksheet.slots[${i}]`;
-    if (typeof slot.id !== "string" || !slot.id.trim()) {
-      issues.push({ path: `${path}.id`, message: "slot id required" });
-    } else if (slotIds.has(slot.id)) {
-      issues.push({ path: `${path}.id`, message: "duplicate slot id" });
-    } else {
-      slotIds.add(slot.id);
-    }
-    if (typeof slot.itemId !== "string" || !itemIds.has(slot.itemId)) {
-      issues.push({ path: `${path}.itemId`, message: `unknown item: ${slot.itemId}` });
-    }
-    if (typeof slot.ownerRoleId !== "string" || !roleIds.has(slot.ownerRoleId)) {
-      issues.push({ path: `${path}.ownerRoleId`, message: `unknown role: ${slot.ownerRoleId}` });
-    }
-  }
-
-  for (const tokenId of tokenIds) {
-    if (!slotIds.has(tokenId)) {
-      issues.push({
-        path: "homeWorksheet.summaryPassage",
-        message: `passage references unknown slot: ${tokenId}`,
-      });
-    }
-  }
-
-  return issues;
-}
-
-function validateItem(raw: unknown, path: string, seenIds: Set<string>): PackValidationIssue[] {
   const issues: PackValidationIssue[] = [];
   if (!raw || typeof raw !== "object") {
     return [{ path, message: "must be an object" }];
   }
-  const item = raw as Item;
-  if (typeof item.id !== "string" || !item.id.trim()) {
+  const role = raw as Role;
+  if (typeof role.id !== "string" || !role.id.trim()) {
     issues.push({ path: `${path}.id`, message: "id required" });
-  } else if (seenIds.has(item.id)) {
-    issues.push({ path: `${path}.id`, message: "duplicate item id" });
+  } else if (seenIds.has(role.id)) {
+    issues.push({ path: `${path}.id`, message: "duplicate role id" });
   } else {
-    seenIds.add(item.id);
+    seenIds.add(role.id);
   }
-  if (typeof item.name !== "string" || !item.name.trim()) {
-    issues.push({ path: `${path}.name`, message: "name required" });
+  if (typeof role.name !== "string") {
+    issues.push({ path: `${path}.name`, message: "name must be a string" });
   }
-  const clues = item.clues;
-  if (!clues || typeof clues !== "object") {
-    issues.push({ path: `${path}.clues`, message: "clues object required" });
+  if (typeof role.segment !== "string" || !role.segment.trim()) {
+    issues.push({ path: `${path}.segment`, message: "segment required" });
+  }
+  if (role.keyPoints !== undefined && !Array.isArray(role.keyPoints)) {
+    issues.push({ path: `${path}.keyPoints`, message: "keyPoints must be an array" });
+  }
+  issues.push(
+    ...validateQuestionList(role.practiceQuestions, `${path}.practiceQuestions`, questionIds),
+  );
+  issues.push(...validateQuestionList(role.testQuestions, `${path}.testQuestions`, questionIds));
+  return issues;
+}
+
+function validateQuestionList(
+  questions: QuizQuestion[],
+  path: string,
+  seenIds: Set<string>,
+): PackValidationIssue[] {
+  const issues: PackValidationIssue[] = [];
+  if (!Array.isArray(questions)) {
+    return [{ path, message: "must be an array" }];
+  }
+  if (questions.length < MIN_QUESTIONS_PER_ROLE) {
+    issues.push({
+      path,
+      message: `must have at least ${MIN_QUESTIONS_PER_ROLE} question(s)`,
+    });
+    return issues;
+  }
+  questions.forEach((q, qi) => {
+    issues.push(...validateQuestion(q, `${path}[${qi}]`, seenIds));
+  });
+  return issues;
+}
+
+function validateQuestion(
+  raw: unknown,
+  path: string,
+  seenIds: Set<string>,
+): PackValidationIssue[] {
+  const issues: PackValidationIssue[] = [];
+  if (!raw || typeof raw !== "object") {
+    return [{ path, message: "must be an object" }];
+  }
+  const q = raw as QuizQuestion;
+  if (typeof q.id !== "string" || !q.id.trim()) {
+    issues.push({ path: `${path}.id`, message: "id required" });
+  } else if (seenIds.has(q.id)) {
+    issues.push({ path: `${path}.id`, message: "duplicate question id" });
   } else {
-    for (const key of HINT_KEYS) {
-      if (typeof clues[key] !== "string" || !clues[key].trim()) {
-        issues.push({ path: `${path}.clues.${key}`, message: "clue text required" });
-      }
+    seenIds.add(q.id);
+  }
+  if (typeof q.prompt !== "string" || !q.prompt.trim()) {
+    issues.push({ path: `${path}.prompt`, message: "prompt required" });
+  }
+  if (!Array.isArray(q.choices)) {
+    issues.push({ path: `${path}.choices`, message: "choices array required" });
+  } else {
+    if (q.choices.length < MIN_CHOICES_PER_QUESTION || q.choices.length > MAX_CHOICES_PER_QUESTION) {
+      issues.push({
+        path: `${path}.choices`,
+        message: `choices must be ${MIN_CHOICES_PER_QUESTION}–${MAX_CHOICES_PER_QUESTION}`,
+      });
     }
+    q.choices.forEach((c, ci) => {
+      if (typeof c !== "string" || !c.trim()) {
+        issues.push({ path: `${path}.choices[${ci}]`, message: "choice text required" });
+      }
+    });
+    if (
+      typeof q.correctIndex !== "number" ||
+      !Number.isInteger(q.correctIndex) ||
+      q.correctIndex < 0 ||
+      q.correctIndex >= q.choices.length
+    ) {
+      issues.push({ path: `${path}.correctIndex`, message: "correctIndex out of range" });
+    }
+  }
+  if (q.hints !== undefined && !Array.isArray(q.hints)) {
+    issues.push({ path: `${path}.hints`, message: "hints must be an array" });
+  }
+  if (q.explanation !== undefined && typeof q.explanation !== "string") {
+    issues.push({ path: `${path}.explanation`, message: "explanation must be a string" });
   }
   return issues;
 }
 
-export function normalizeItemAnswer(answer: string): string {
-  return answer.trim().toLowerCase().replace(/\s+/g, " ");
-}
-
-export function isItemAnswerCorrect(item: Item, answer: string): boolean {
-  const normalized = normalizeItemAnswer(answer);
-  const candidates = [item.name, item.id.replace(/_/g, " "), ...(item.aliases ?? [])].map(
-    normalizeItemAnswer,
-  );
-  return candidates.some((c) => c === normalized);
+/** 객관식 채점 — 선택 보기가 정답인지 */
+export function isChoiceCorrect(question: QuizQuestion, choiceIndex: number): boolean {
+  return question.correctIndex === choiceIndex;
 }

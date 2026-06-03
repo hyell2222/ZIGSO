@@ -1,150 +1,110 @@
 import type {
   ActivityPack,
-  Item,
-  WordCard,
-  WorksheetPlacement,
-  WorksheetSlot,
+  PracticeQuestionResult,
+  QuizAnswer,
+  QuizQuestion,
+  Role,
 } from "@/lib/activity-pack/types";
-import { scoreForClueLevel } from "@/lib/activity-pack/scoring";
-import { isItemAnswerCorrect } from "@/lib/activity-pack/validate";
+import { averagePracticeBaseScore, practiceBaseScore } from "@/lib/activity-pack/scoring";
+import { isChoiceCorrect } from "@/lib/activity-pack/validate";
 
-/** activity-pack 엔진·API 공통 검증 메시지 */
+/** activity-pack 엔진·API 공통 메시지 */
 export const PLAYER_MESSAGES = {
   defaultPackTitle: "새 활동",
-  unknownItem: "단어 정보를 찾을 수 없어요.",
-  unknownSlot: "빈칸 정보를 찾을 수 없어요.",
-  incorrectAnswer: "아직 맞는 단어가 아니에요. 단서를 다시 보고 추리해 보세요.",
-  cannotPlaceOnOwnSlot: "내 빈칸에는 내 단어 카드를 직접 넣을 수 없어요. 팀원에게 도움을 요청하세요.",
-  slotOwnerMismatch: "이 빈칸은 해당 팀원의 슬롯이 아니에요.",
-  slotWordMismatch: "이 빈칸에 들어갈 단어와 카드가 일치하지 않아요.",
-  slotAlreadyFilled: "이미 채워진 빈칸이에요.",
-  wordCardNotAvailable: "사용할 수 있는 단어 카드가 없어요.",
-  worksheetIncomplete: "아직 채우지 않은 빈칸이 있어요.",
-  submissionAlreadySent: "이미 최종 제출을 마쳤어요.",
+  unknownRole: "역할 정보를 찾을 수 없어요.",
+  quizIncomplete: "아직 답하지 않은 문항이 있어요.",
+  practiceAlreadyDone: "이미 연습 문제를 마쳤어요.",
+  practiceIncomplete: "아직 풀지 않은 연습 문제가 있어요.",
+  individualQuizAlreadySubmitted: "이미 개별 형성평가를 제출했어요.",
   operationFailed: "요청을 처리하지 못했어요. 잠시 후 다시 시도해 주세요.",
 } as const;
 
-export function getItemById(pack: ActivityPack, itemId: string): Item | undefined {
-  return pack.items.find((i) => i.id === itemId);
+export function getRoleById(pack: ActivityPack, roleId: string): Role | undefined {
+  return pack.roles.find((r) => r.id === roleId);
 }
 
-export function getWorksheetSlot(pack: ActivityPack, slotId: string): WorksheetSlot | undefined {
-  return pack.homeWorksheet.slots.find((s) => s.id === slotId);
-}
-
-export function clueTextForLevel(item: Item, level: 1 | 2 | 3 | 4 | 5): string {
-  return item.clues[`stage${level}` as keyof typeof item.clues];
-}
-
-export function tryAcquireWordCard(
+/** 역할의 연습 문제 목록 */
+export function getPracticeQuestions(
   pack: ActivityPack,
-  itemId: string,
-  answer: string,
-  clueLevelUsed: 1 | 2 | 3 | 4 | 5,
-): { ok: true; record: WordCard } | { ok: false; reason: string } {
-  const item = getItemById(pack, itemId);
-  if (!item) return { ok: false, reason: PLAYER_MESSAGES.unknownItem };
-  if (!isItemAnswerCorrect(item, answer)) {
-    return { ok: false, reason: PLAYER_MESSAGES.incorrectAnswer };
-  }
-  return {
-    ok: true,
-    record: {
-      itemId,
-      clueLevelUsed,
-      score: scoreForClueLevel(clueLevelUsed),
-      acquiredAt: new Date().toISOString(),
-    },
-  };
+  roleId: string | null,
+): QuizQuestion[] {
+  if (!roleId) return [];
+  return getRoleById(pack, roleId)?.practiceQuestions ?? [];
 }
 
-export function availableWordCards(cards: WordCard[]): WordCard[] {
-  return cards.filter((c) => !c.placedAt);
+/** 개별 형성평가 문항 = 모든 역할의 실전 문제 (역할 순서대로) */
+export function getTestQuestions(pack: ActivityPack): QuizQuestion[] {
+  return pack.roles.flatMap((r) => r.testQuestions);
 }
 
-export function hasWordCard(cards: WordCard[], itemId: string): boolean {
-  return availableWordCards(cards).some((c) => c.itemId === itemId);
+/** 연습 문항별 결과 → 기준 점수(평균) */
+export function computeBaseScoreFromPracticeResults(results: PracticeQuestionResult[]): number {
+  return averagePracticeBaseScore(results.map((r) => r.score));
 }
 
-export type WorksheetPlacementInput = {
-  actorPlayerId: string;
-  slotOwnerPlayerId: string;
-  slotOwnerRoleId: string;
-  slotId: string;
-  itemId: string;
+/** 연습 완료 여부 — 역할 연습 문항 수와 결과 수가 일치 */
+export function isPracticeCompleteForRole(
+  questions: QuizQuestion[],
+  results: PracticeQuestionResult[],
+): boolean {
+  if (questions.length === 0) return false;
+  const doneIds = new Set(results.map((r) => r.questionId));
+  return questions.every((q) => doneIds.has(q.id));
+}
+
+export type QuizGrade = {
+  required: number;
+  answered: number;
+  correctCount: number;
+  complete: boolean;
 };
 
-/** 단어 카드를 팀원 슬롯에 배치 — 본인 슬롯에는 불가 */
-export function tryPlaceWordCard(
-  pack: ActivityPack,
-  actorCards: WordCard[],
-  placements: WorksheetPlacement[],
-  input: WorksheetPlacementInput,
-): { ok: true; record: WorksheetPlacement; updatedCard: WordCard } | { ok: false; reason: string } {
-  const slot = getWorksheetSlot(pack, input.slotId);
-  if (!slot) return { ok: false, reason: PLAYER_MESSAGES.unknownSlot };
-
-  if (input.actorPlayerId === input.slotOwnerPlayerId) {
-    return { ok: false, reason: PLAYER_MESSAGES.cannotPlaceOnOwnSlot };
+/** 객관식 채점 (맞힌 개수·응답 수) */
+export function gradeQuiz(questions: QuizQuestion[], answers: QuizAnswer[]): QuizGrade {
+  const byId = new Map(answers.map((a) => [a.questionId, a.choiceIndex]));
+  let correctCount = 0;
+  let answered = 0;
+  for (const q of questions) {
+    const choice = byId.get(q.id);
+    if (choice === undefined) continue;
+    answered += 1;
+    if (isChoiceCorrect(q, choice)) correctCount += 1;
   }
-
-  if (slot.ownerRoleId !== input.slotOwnerRoleId) {
-    return { ok: false, reason: PLAYER_MESSAGES.slotOwnerMismatch };
-  }
-
-  if (slot.itemId !== input.itemId) {
-    return { ok: false, reason: PLAYER_MESSAGES.slotWordMismatch };
-  }
-
-  if (placements.some((p) => p.slotId === input.slotId)) {
-    return { ok: false, reason: PLAYER_MESSAGES.slotAlreadyFilled };
-  }
-
-  const card = availableWordCards(actorCards).find((c) => c.itemId === input.itemId);
-  if (!card) {
-    return { ok: false, reason: PLAYER_MESSAGES.wordCardNotAvailable };
-  }
-
-  const placedAt = new Date().toISOString();
   return {
-    ok: true,
-    record: {
-      slotId: input.slotId,
-      itemId: input.itemId,
-      placedByPlayerId: input.actorPlayerId,
-      placedAt,
-    },
-    updatedCard: { ...card, placedAt },
+    required: questions.length,
+    answered,
+    correctCount,
+    complete: questions.length > 0 && answered >= questions.length,
   };
 }
 
-export function worksheetProgress(
-  pack: ActivityPack,
-  placements: WorksheetPlacement[],
-): { required: number; filled: number; complete: boolean } {
-  const required = pack.homeWorksheet.slots.length;
-  const filled = placements.length;
+/** 개별 형성평가 채점 */
+export function gradeTest(pack: ActivityPack, answers: QuizAnswer[]): QuizGrade {
+  return gradeQuiz(getTestQuestions(pack), answers);
+}
+
+export function isQuizComplete(questions: QuizQuestion[], answers: QuizAnswer[]): boolean {
+  return gradeQuiz(questions, answers).complete;
+}
+
+/** PracticeResult from UI → stored result + score */
+export function toPracticeQuestionResult(
+  questionId: string,
+  wrongAttempts: number,
+): PracticeQuestionResult {
   return {
-    required,
-    filled,
-    complete: required > 0 && filled >= required,
+    questionId,
+    wrongAttempts,
+    score: practiceBaseScore(wrongAttempts),
   };
 }
 
-export function isWorksheetComplete(pack: ActivityPack, placements: WorksheetPlacement[]): boolean {
-  const slotIds = new Set(pack.homeWorksheet.slots.map((s) => s.id));
-  const placedIds = new Set(placements.map((p) => p.slotId));
-  for (const id of slotIds) {
-    if (!placedIds.has(id)) return false;
-  }
-  return slotIds.size > 0;
-}
+// =====================================================================
+// 모둠·역할 배정
+// =====================================================================
 
 export type RoleAssignment = {
   roleId: string;
-  itemIds: string[];
-  /** 학습지 빈칸 소유자 — 같은 역할 2명일 때 첫 번째만 true */
-  isSlotOwner: boolean;
 };
 
 export type AssignableMember = {
@@ -153,37 +113,12 @@ export type AssignableMember = {
   created_at?: string | null;
 };
 
-/** 세션·샌드박스 공통 — 모둠 수 (인원이 역할 수보다 많으면 모둠을 키워 2인 1역할 배정 가능) */
+/** 세션·샌드박스 공통 — 모둠 수 */
 export function computeSessionGroupCount(playerCount: number, rolesPerGroup: number): number {
   const roleCount = Math.max(2, rolesPerGroup);
   if (playerCount <= 0) return 0;
   if (playerCount <= roleCount) return 1;
   return Math.max(1, Math.floor(playerCount / roleCount));
-}
-
-/** 역할별 학습지 빈칸 소유 학생 (같은 역할 2명이면 먼저 배정된 1명) */
-export function slotOwnerForRole(
-  members: AssignableMember[],
-  roleId: string,
-): AssignableMember | undefined {
-  const candidates = members.filter((m) => m.assigned_role_id === roleId);
-  candidates.sort((a, b) => {
-    const ta = Date.parse(a.created_at ?? "");
-    const tb = Date.parse(b.created_at ?? "");
-    const na = Number.isNaN(ta) ? 0 : ta;
-    const nb = Number.isNaN(tb) ? 0 : tb;
-    if (na !== nb) return na - nb;
-    return a.id.localeCompare(b.id);
-  });
-  return candidates[0];
-}
-
-export function isSlotOwnerForRole(
-  playerId: string,
-  members: AssignableMember[],
-  roleId: string,
-): boolean {
-  return slotOwnerForRole(members, roleId)?.id === playerId;
 }
 
 export function assignRolesToPlayers(
@@ -202,16 +137,9 @@ export function assignRolesToPlayers(
     let playerIndex = 0;
     for (let ri = 0; ri < roleCount && playerIndex < playerCount; ri++) {
       const role = roles[ri]!;
-      const primaryItem = role.items[0];
-      const itemIds = primaryItem ? [primaryItem.id] : [];
       const playersForThisRole = ri < pairedRoleCount ? 2 : 1;
-
       for (let j = 0; j < playersForThisRole && playerIndex < playerCount; j++) {
-        assignment.set(playerIds[playerIndex]!, {
-          roleId: role.id,
-          itemIds,
-          isSlotOwner: j === 0,
-        });
+        assignment.set(playerIds[playerIndex]!, { roleId: role.id });
         playerIndex++;
       }
     }
@@ -223,25 +151,11 @@ export function assignRolesToPlayers(
     const remainingPlayers = playerCount - playerIndex;
     const remainingRoles = roleCount - ri;
     const playersForThisRole = Math.ceil(remainingPlayers / remainingRoles);
-
     for (let j = 0; j < playersForThisRole && playerIndex < playerCount; j++) {
-      const playerId = playerIds[playerIndex]!;
-      const role = roles[ri]!;
-      const primaryItem = role.items[0];
-      assignment.set(playerId, {
-        roleId: role.id,
-        itemIds: primaryItem ? [primaryItem.id] : [],
-        isSlotOwner: j === 0,
-      });
+      assignment.set(playerIds[playerIndex]!, { roleId: roles[ri]!.id });
       playerIndex++;
     }
   }
 
   return assignment;
-}
-
-export function totalGroupScore(wordCards: WordCard[], placements: WorksheetPlacement[]): number {
-  const acquisitionScore = wordCards.reduce((sum, c) => sum + c.score, 0);
-  const placementScore = placements.length * 3;
-  return acquisitionScore + placementScore;
 }

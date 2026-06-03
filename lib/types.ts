@@ -1,14 +1,11 @@
-import type {
-  ActivityPack,
-  WordCard,
-  WorksheetPlacement,
-} from "@/lib/activity-pack/types";
+import type { ActivityPack, PracticeQuestionResult, QuizAnswer } from "@/lib/activity-pack/types";
 
 export type ActivityPhase =
   | "waiting"
   | "overview"
   | "expert_group"
   | "home_group"
+  | "individual_quiz"
   | "results";
 
 export type SessionStatus = "active" | "ended";
@@ -17,8 +14,6 @@ export type GroupRecord = {
   id: string;
   session_id: string | null;
   name: string | null;
-  worksheet_placements: WorksheetPlacement[];
-  completed_at: string | null;
 };
 
 export type PlayerRecord = {
@@ -27,8 +22,16 @@ export type PlayerRecord = {
   session_id: string | null;
   group_id: string | null;
   assigned_role_id: string | null;
-  assigned_item_ids?: string[] | null;
-  word_cards: WordCard[];
+  /** 전문가 연습 결과 — 기준 점수 (문항 점수 평균) */
+  base_score?: number | null;
+  /** 연습 문항별 결과 */
+  practice_results?: PracticeQuestionResult[];
+  /** 연습 완료 시각 */
+  practice_submitted_at?: string | null;
+  /** 개별 형성평가(실전 문제) 응답 */
+  individual_quiz_answers: QuizAnswer[];
+  /** 개별 형성평가 제출 시각 */
+  individual_quiz_submitted_at?: string | null;
 };
 
 export type GameSession = {
@@ -43,4 +46,4 @@ export type GameSession = {
 
 export { isResultsPhase, isSessionEnded } from "@/lib/activity-phases";
 
-export type { ActivityPack, WordCard, WorksheetPlacement };
+export type { ActivityPack, QuizAnswer };

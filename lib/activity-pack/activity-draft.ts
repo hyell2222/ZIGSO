@@ -1,81 +1,59 @@
 import {
-  MAX_ITEMS_PER_ROLE,
-  MIN_ITEMS_PER_ROLE,
-  flattenRoleItems,
-  itemsToRoles,
-} from "@/lib/activity-pack/roles";
-import {
   MAX_ROLES_PER_GROUP,
   MIN_ROLES_PER_GROUP,
   normalizePackSizing,
 } from "@/lib/activity-pack/sizing";
 import {
-  buildDefaultHomeWorksheet,
-  buildDefaultWorksheetSlots,
-  extractSlotIdsFromPassage,
-  syncWorksheetSlotsFromPassage,
-} from "@/lib/activity-pack/worksheet";
-import type { HomeWorksheet, ItemClues, Item, ActivityPack, Role } from "@/lib/activity-pack/types";
+  MIN_CHOICES_PER_QUESTION,
+  MIN_QUESTIONS_PER_ROLE,
+} from "@/lib/activity-pack/validate";
+import type { ActivityPack, QuizQuestion, Role } from "@/lib/activity-pack/types";
 import { ACTIVITY_PACK_VERSION } from "@/lib/activity-pack/types";
 import { makeTempId } from "@/lib/temp-id";
-import { buildRoleCodenameMap } from "@/lib/play/role-codenames";
 
+export { MAX_ROLES_PER_GROUP, MIN_ROLES_PER_GROUP } from "@/lib/activity-pack/sizing";
 export {
-  derivedActivityScale,
-  MAX_ROLES_PER_GROUP,
-  MIN_ROLES_PER_GROUP,
-} from "@/lib/activity-pack/sizing";
-export { MAX_ITEMS_PER_ROLE, MIN_ITEMS_PER_ROLE } from "@/lib/activity-pack/roles";
+  MAX_CHOICES_PER_QUESTION,
+  MIN_CHOICES_PER_QUESTION,
+  MIN_QUESTIONS_PER_ROLE,
+} from "@/lib/activity-pack/validate";
 
-export const HINT_STAGE_LABELS: Record<keyof ItemClues, string> = {
-  stage1: "1단계 단서 (5점 · 가장 어려움)",
-  stage2: "2단계 단서 (4점)",
-  stage3: "3단계 단서 (3점)",
-  stage4: "4단계 단서 (2점)",
-  stage5: "5단계 단서 (1점 · 가장 쉬움)",
-};
+export const DEFAULT_CHOICE_COUNT = 4;
 
-export type EditorItem = {
+export type EditorQuestion = {
   localId: string;
   id: string;
-  name: string;
-  clues: ItemClues;
+  prompt: string;
+  choices: string[];
+  correctIndex: number;
+  hints: string;
+  explanation: string;
 };
 
 export type EditorRole = {
   localId: string;
   id: string;
-  items: EditorItem[];
+  segment: string;
+  keyPoints: string;
+  practiceQuestions: EditorQuestion[];
+  testQuestions: EditorQuestion[];
 };
 
 export type ActivityEditorDraft = {
   title: string;
   description: string;
   roles: EditorRole[];
-  /** 홈 집단 공유 학습지 — {{slot_id}} 로 빈칸 표시 */
-  summaryPassage: string;
 };
 
-export type FlatEditorItem = {
-  item: EditorItem;
-  roleLocalId: string;
-  roleLabel: string;
-};
-
-const EMPTY_HINTS = (): ItemClues => ({
-  stage1: "",
-  stage2: "",
-  stage3: "",
-  stage4: "",
-  stage5: "",
-});
-
-export function createEmptyItem(): EditorItem {
+export function createEmptyQuestion(choiceCount = DEFAULT_CHOICE_COUNT): EditorQuestion {
   return {
     localId: makeTempId(),
     id: "",
-    name: "",
-    clues: EMPTY_HINTS(),
+    prompt: "",
+    choices: Array.from({ length: choiceCount }, () => ""),
+    correctIndex: 0,
+    hints: "",
+    explanation: "",
   };
 }
 
@@ -83,186 +61,241 @@ export function createEmptyRole(): EditorRole {
   return {
     localId: makeTempId(),
     id: "",
-    items: [createEmptyItem()],
+    segment: "",
+    keyPoints: "",
+    practiceQuestions: [createEmptyQuestion()],
+    testQuestions: [createEmptyQuestion()],
   };
-}
-
-/** 편집기에서 역할 코드명 미리보기용 키 */
-export function editorRoleKey(role: EditorRole, index: number): string {
-  return role.id.trim() || role.localId || `role_${index + 1}`;
-}
-
-export function editorRoleCodenameMap(draft: ActivityEditorDraft): Map<string, string> {
-  const keys = draft.roles.map((role, index) => editorRoleKey(role, index));
-  const scope = draft.title.trim() || "activity-editor";
-  return buildRoleCodenameMap(scope, keys);
 }
 
 export function editorRoleLabel(index: number): string {
   return `역할 ${index + 1}`;
 }
 
-export function editorItemLabel(index: number): string {
-  return `단어 ${index + 1}`;
+export function editorQuestionLabel(index: number): string {
+  return `${index + 1}번 문항`;
 }
 
-export function flattenEditorItems(draft: ActivityEditorDraft): FlatEditorItem[] {
-  return draft.roles.flatMap((role, ri) => {
-    const roleLabel = editorRoleLabel(ri);
-    return role.items.map((item) => ({
-      item,
-      roleLocalId: role.localId,
-      roleLabel,
-    }));
-  });
+function keyPointsToLines(keyPoints: string): string[] {
+  return keyPoints
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+function questionToEditor(q: QuizQuestion): EditorQuestion {
+  return {
+    localId: makeTempId(),
+    id: q.id,
+    prompt: q.prompt,
+    choices: [...q.choices],
+    correctIndex: q.correctIndex,
+    hints: (q.hints ?? []).join("\n"),
+    explanation: q.explanation ?? "",
+  };
+}
+
+function questionsToEditor(questions: QuizQuestion[]): EditorQuestion[] {
+  return questions.length > 0 ? questions.map(questionToEditor) : [createEmptyQuestion()];
 }
 
 export function createDefaultActivityDraft(): ActivityEditorDraft {
-  const environmentRole = createEmptyRole();
-  const environment = environmentRole.items[0]!;
-  environment.name = "environment";
-  environment.clues = {
-    stage1: "지구를 둘러싼 모든 자연과 생물을 가리킵니다.",
-    stage2: "We must protect our ___ to live safely.",
-    stage3: "본문 첫 문장에 ‘our environment’가 나옵니다.",
-    stage4: "영어 11글자, e로 시작합니다.",
-    stage5: "정답: environment",
-  };
+  const mkPractice = (
+    prompt: string,
+    choices: string[],
+    correctIndex: number,
+    hints: string,
+    explanation: string,
+  ): EditorQuestion => ({
+    localId: makeTempId(),
+    id: "",
+    prompt,
+    choices,
+    correctIndex,
+    hints,
+    explanation,
+  });
 
-  const pollutionRole = createEmptyRole();
-  const pollution = pollutionRole.items[0]!;
-  pollution.name = "pollution";
-  pollution.clues = {
-    stage1: "공기·물·땅을 더럽히는 것입니다.",
-    stage2: "Factories cause a lot of ___.",
-    stage3: "본문에 ‘reduce pollution’이 나옵니다.",
-    stage4: "영어 10글자, p로 시작합니다.",
-    stage5: "정답: pollution",
-  };
-
-  const recycleRole = createEmptyRole();
-  const recycle = recycleRole.items[0]!;
-  recycle.name = "recycle";
-  recycle.clues = {
-    stage1: "쓴 종이·플라스틱을 다시 사용하는 행동입니다.",
-    stage2: "We should ___ plastic bottles.",
-    stage3: "본문 마지막 문장에 등장합니다.",
-    stage4: "re-___-le 형태의 영어 단어입니다.",
-    stage5: "정답: recycle",
-  };
-
-  const roles = [environmentRole, pollutionRole, recycleRole];
+  const mkTest = (prompt: string, choices: string[], correctIndex: number): EditorQuestion => ({
+    localId: makeTempId(),
+    id: "",
+    prompt,
+    choices,
+    correctIndex,
+    hints: "",
+    explanation: "",
+  });
 
   return {
-    title: "교과서 본문: Save Our Planet",
+    title: "Textbook Reading: Save Our Planet",
     description:
-      "중2 영어 교과서 ‘Save Our Planet’ 지문을 바탕으로 합니다.\n전문가 집단에서 본문 핵심 단어의 단어 카드를 얻고, 홈 집단에서 지문 요약 학습지를 완성하세요.",
-    roles,
-    summaryPassage:
-      "교과서 지문에 따르면, {{slot_environment}}을(를) 지키려면 {{slot_pollution}}을(를) 줄이고 {{slot_recycle}}을(를) 실천해야 합니다.",
+      "Based on a middle-school English textbook passage. In expert groups, each student masters one part and solves practice questions (3 tries, hints); the average sets their base score. Back in the home group, members teach each other. Finally, every student takes a one-time formative test over all test questions, scored by STAD improvement points.",
+    roles: [
+      {
+        localId: makeTempId(),
+        id: "intro_part",
+        segment:
+          "Part 1 — Introduction: Our environment is everything around us: the air, the water, the land, and all living things. We depend on a healthy environment to live safely, but human activity is putting it in danger.",
+        keyPoints:
+          "The environment = air, water, land, and living things.\nA healthy environment keeps us safe.\nHuman activity puts the environment in danger.",
+        practiceQuestions: [
+          mkPractice(
+            "According to the Introduction, what does our 'environment' include?",
+            [
+              "Only the air we breathe",
+              "Air, water, land, and all living things",
+              "Only forests and oceans",
+              "Only the things humans build",
+            ],
+            1,
+            "Look at the list in the first sentence.\nIt names four things, including all living things.",
+            "The Introduction defines the environment as the air, the water, the land, and all living things.",
+          ),
+        ],
+        testQuestions: [
+          mkTest(
+            "What does the word 'environment' refer to in the passage?",
+            ["Only the air", "Air, water, land, and living things", "Only factories and cars", "Only recycling programs"],
+            1,
+          ),
+        ],
+      },
+      {
+        localId: makeTempId(),
+        id: "problem_part",
+        segment:
+          "Part 2 — The Problem: Factories and cars release harmful gases, and people throw away too much waste. This pollution makes the air, water, and land dirty and harms both people and animals.",
+        keyPoints:
+          "Factories and cars release harmful gases.\nToo much waste is thrown away.\nPollution harms people and animals.",
+        practiceQuestions: [
+          mkPractice(
+            "According to the Problem part, what are the main causes of pollution?",
+            [
+              "Trees and rivers",
+              "Recycling and saving energy",
+              "Harmful gases from factories/cars and too much waste",
+              "Healthy air and clean water",
+            ],
+            2,
+            "Think about what factories and cars release.\nThere are two causes: harmful gases and too much waste.",
+            "Pollution comes from harmful gases (factories and cars) and from throwing away too much waste.",
+          ),
+        ],
+        testQuestions: [
+          mkTest(
+            "What causes pollution according to the passage?",
+            ["Trees and rivers", "Saving energy", "Harmful gases and too much waste", "Recycling plastic"],
+            2,
+          ),
+        ],
+      },
+      {
+        localId: makeTempId(),
+        id: "solution_part",
+        segment:
+          "Part 3 — The Solution: We can protect the planet by reducing waste, saving energy, and recycling paper and plastic. Small daily actions by everyone add up to a big difference.",
+        keyPoints:
+          "Reduce waste and save energy.\nRecycle paper and plastic.\nSmall daily actions add up.",
+        practiceQuestions: [
+          mkPractice(
+            "Which action does the Solution part suggest to protect the planet?",
+            [
+              "Throwing away more waste",
+              "Using more energy",
+              "Recycling paper and plastic",
+              "Releasing more harmful gases",
+            ],
+            2,
+            "The Solution part lists positive actions.\nIt mentions reducing waste, saving energy, and recycling.",
+            "The Solution part suggests reducing waste, saving energy, and recycling paper and plastic.",
+          ),
+        ],
+        testQuestions: [
+          mkTest(
+            "Which is NOT mentioned as a way to protect the planet?",
+            ["Reducing waste", "Saving energy", "Recycling", "Buying more cars"],
+            3,
+          ),
+        ],
+      },
+    ],
   };
-}
-
-function slugFromName(name: string, fallback: string): string {
-  const slug = name
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9가-힣]+/g, "_")
-    .replace(/^_|_$/g, "")
-    .slice(0, 48);
-  return slug || fallback;
-}
-
-/** 편집기에서 빈칸 토큰 미리보기 — 저장 시 slot id와 일치하도록 */
-export function editorSlotToken(item: EditorItem, roleIndex: number, itemIndex: number): string {
-  const itemId = item.id.trim() || slugFromName(item.name, `role_${roleIndex + 1}_item_${itemIndex + 1}`);
-  return `{{slot_${itemId}}}`;
 }
 
 export function packToEditorDraft(pack: ActivityPack): ActivityEditorDraft {
-  const sourceRoles = pack.roles.length > 0 ? pack.roles : itemsToRoles(pack.items);
-
-  const roles: EditorRole[] = sourceRoles.map((role) => ({
+  const roles: EditorRole[] = pack.roles.map((role) => ({
     localId: makeTempId(),
     id: role.id,
-    items: role.items.map((item) => ({
-      localId: makeTempId(),
-      id: item.id,
-      name: item.name,
-      clues: { ...item.clues },
-    })),
+    segment: role.segment,
+    keyPoints: (role.keyPoints ?? []).join("\n"),
+    practiceQuestions: questionsToEditor(role.practiceQuestions),
+    testQuestions: questionsToEditor(role.testQuestions),
   }));
 
   return {
     title: pack.title.replace(/^활동:\s*/, ""),
     description: pack.description,
-    roles: roles.length > 0 ? roles : [createEmptyRole()],
-    summaryPassage: pack.homeWorksheet.summaryPassage,
+    roles: roles.length > 0 ? roles : [createEmptyRole(), createEmptyRole()],
   };
 }
 
 export function editorDraftToPack(draft: ActivityEditorDraft): ActivityPack {
-  const usedRoleIds = new Set<string>();
-  const usedItemIds = new Set<string>();
-  const roles: Role[] = [];
-  const idMap = new Map<string, string>();
+  const usedQuestionIds = new Set<string>();
+  const toQuestion = (
+    raw: EditorQuestion,
+    fallbackId: string,
+    includeScaffold: boolean,
+  ): QuizQuestion => {
+    const base = raw.id.trim() || fallbackId;
+    let id = base;
+    let suffix = 2;
+    while (usedQuestionIds.has(id)) {
+      id = `${base}_${suffix}`;
+      suffix += 1;
+    }
+    usedQuestionIds.add(id);
+    const choices = raw.choices.map((c) => c.trim()).filter(Boolean);
+    const correctIndex =
+      raw.correctIndex >= 0 && raw.correctIndex < choices.length ? raw.correctIndex : 0;
+    const hints = includeScaffold ? keyPointsToLines(raw.hints) : [];
+    const explanation = includeScaffold ? raw.explanation.trim() : "";
+    return {
+      id,
+      prompt: raw.prompt.trim(),
+      choices,
+      correctIndex,
+      hints: hints.length > 0 ? hints : undefined,
+      explanation: explanation || undefined,
+    };
+  };
 
-  for (let ri = 0; ri < draft.roles.length; ri++) {
-    const rawRole = draft.roles[ri]!;
-    const roleBaseId = `role_${ri + 1}`;
-    let roleId = rawRole.id.trim() || roleBaseId;
-    let rn = 2;
+  const toQuestions = (
+    list: EditorQuestion[],
+    prefix: string,
+    includeScaffold: boolean,
+  ): QuizQuestion[] =>
+    list.map((q, i) => toQuestion(q, `${prefix}_${i + 1}`, includeScaffold));
+
+  const usedRoleIds = new Set<string>();
+  const roles: Role[] = draft.roles.map((rawRole, ri) => {
+    const base = `role_${ri + 1}`;
+    let roleId = rawRole.id.trim() || base;
+    let suffix = 2;
     while (usedRoleIds.has(roleId)) {
-      roleId = `${roleBaseId}_${rn}`;
-      rn++;
+      roleId = `${base}_${suffix}`;
+      suffix += 1;
     }
     usedRoleIds.add(roleId);
-
-    const roleItems: Item[] = [];
-    for (let ii = 0; ii < rawRole.items.length; ii++) {
-      const rawItem = rawRole.items[ii]!;
-      const itemBaseId = slugFromName(rawItem.name, `${roleId}_item_${ii + 1}`);
-      let itemId = rawItem.id.trim() || itemBaseId;
-      let suffix = 2;
-      while (usedItemIds.has(itemId)) {
-        itemId = `${itemBaseId}_${suffix}`;
-        suffix++;
-      }
-      usedItemIds.add(itemId);
-      idMap.set(rawItem.localId, itemId);
-      if (rawItem.id.trim()) idMap.set(rawItem.id, itemId);
-
-      roleItems.push({
-        id: itemId,
-        name: rawItem.name.trim(),
-        clues: {
-          stage1: rawItem.clues.stage1.trim(),
-          stage2: rawItem.clues.stage2.trim(),
-          stage3: rawItem.clues.stage3.trim(),
-          stage4: rawItem.clues.stage4.trim(),
-          stage5: rawItem.clues.stage5.trim(),
-        },
-      });
-    }
-
-    roles.push({
+    const keyPoints = keyPointsToLines(rawRole.keyPoints);
+    return {
       id: roleId,
       name: "",
-      items: roleItems,
-    });
-  }
-
-  const items = flattenRoleItems(roles);
-
-  let homeWorksheet: HomeWorksheet = {
-    summaryPassage: draft.summaryPassage.trim(),
-    slots: buildDefaultWorksheetSlots(roles),
-  };
-  if (!homeWorksheet.summaryPassage) {
-    homeWorksheet = buildDefaultHomeWorksheet(roles, items);
-  } else {
-    homeWorksheet = syncWorksheetSlotsFromPassage(homeWorksheet, roles);
-  }
+      segment: rawRole.segment.trim(),
+      keyPoints: keyPoints.length > 0 ? keyPoints : undefined,
+      practiceQuestions: toQuestions(rawRole.practiceQuestions, `${roleId}_practice`, true),
+      testQuestions: toQuestions(rawRole.testQuestions, `${roleId}_test`, false),
+    };
+  });
 
   const title = draft.title.trim()
     ? draft.title.trim().startsWith("활동:")
@@ -275,93 +308,78 @@ export function editorDraftToPack(draft: ActivityEditorDraft): ActivityPack {
     title,
     description: draft.description.trim(),
     groupSize: roles.length,
-    itemsPerPlayer: 1,
     roles,
-    items,
-    homeWorksheet,
   });
 }
 
 export const EDITOR_STEPS = [
   { id: "basics", title: "활동 안내", description: "제목·학습 상황 소개" },
-  { id: "items", title: "역할·단어", description: "역할별 본문 핵심 단어와 5단계 단서" },
-  { id: "worksheet", title: "공유 학습지", description: "홈 집단 최종 요약문과 빈칸" },
+  {
+    id: "roles",
+    title: "역할·문제",
+    description: "역할별 지문 + 연습 문제(여러 개) + 실전 문제(여러 개)",
+  },
 ] as const;
 
 export type EditorStepId = (typeof EDITOR_STEPS)[number]["id"];
 
-function validateRolesAndItems(draft: ActivityEditorDraft, errors: string[]) {
-  if (draft.roles.length === 0) {
-    errors.push("모둠원 역할을 한 가지 이상 추가하세요.");
-  } else if (
-    draft.roles.length < MIN_ROLES_PER_GROUP ||
-    draft.roles.length > MAX_ROLES_PER_GROUP
-  ) {
-    errors.push(
-      `역할은 ${MIN_ROLES_PER_GROUP}~${MAX_ROLES_PER_GROUP}개입니다. (모둠 인원과 같습니다)`,
-    );
+function validateQuestion(q: EditorQuestion, label: string, errors: string[]) {
+  if (!q.prompt.trim()) errors.push(`${label} 문제를 입력하세요.`);
+  const filled = q.choices.map((c) => c.trim()).filter(Boolean);
+  if (filled.length < MIN_CHOICES_PER_QUESTION) {
+    errors.push(`${label} 보기를 ${MIN_CHOICES_PER_QUESTION}개 이상 입력하세요.`);
+  }
+  if (!q.choices[q.correctIndex]?.trim()) {
+    errors.push(`${label} 정답 보기를 선택하세요.`);
+  }
+}
+
+function validateQuestionList(
+  questions: EditorQuestion[],
+  label: string,
+  errors: string[],
+) {
+  if (questions.length < MIN_QUESTIONS_PER_ROLE) {
+    errors.push(`${label} 문항을 ${MIN_QUESTIONS_PER_ROLE}개 이상 추가하세요.`);
+    return;
+  }
+  questions.forEach((q, qi) => {
+    validateQuestion(q, `${label} ${editorQuestionLabel(qi)}`, errors);
+  });
+}
+
+function validateRoles(draft: ActivityEditorDraft, errors: string[]) {
+  if (draft.roles.length < MIN_ROLES_PER_GROUP || draft.roles.length > MAX_ROLES_PER_GROUP) {
+    errors.push(`역할은 ${MIN_ROLES_PER_GROUP}~${MAX_ROLES_PER_GROUP}개입니다. (모둠 인원과 같습니다)`);
   }
   for (let ri = 0; ri < draft.roles.length; ri++) {
     const role = draft.roles[ri]!;
     const roleLabel = editorRoleLabel(ri);
-    if (role.items.length < MIN_ITEMS_PER_ROLE || role.items.length > MAX_ITEMS_PER_ROLE) {
-      errors.push(
-        `「${roleLabel}」단어는 ${MIN_ITEMS_PER_ROLE}~${MAX_ITEMS_PER_ROLE}개입니다.`,
-      );
+    if (!role.segment.trim()) {
+      errors.push(`「${roleLabel}」지문 조각·풀이 방식을 입력하세요.`);
     }
-    for (const item of role.items) {
-      if (!item.name.trim()) errors.push("단어(정답)를 입력하세요.");
-      for (const [key, label] of Object.entries(HINT_STAGE_LABELS) as [keyof ItemClues, string][]) {
-        if (!item.clues[key].trim()) {
-          errors.push(`「${item.name || "단어"}」 — ${label}을(를) 입력하세요.`);
-        }
-      }
-    }
+    validateQuestionList(role.practiceQuestions, `「${roleLabel}」연습`, errors);
+    validateQuestionList(role.testQuestions, `「${roleLabel}」실전`, errors);
   }
 }
 
 export function validateEditorDraftStep(draft: ActivityEditorDraft, step: EditorStepId): string[] {
   const errors: string[] = [];
-
   if (step === "basics") {
     if (!draft.title.trim()) errors.push("수업·활동 제목을 입력하세요.");
     if (!draft.description.trim()) errors.push("활동 안내(학습 상황)를 입력하세요.");
     return errors;
   }
-
-  if (step === "items") {
-    validateRolesAndItems(draft, errors);
-    return errors;
+  if (step === "roles") {
+    validateRoles(draft, errors);
   }
-
-  if (step === "worksheet") {
-    if (!draft.summaryPassage.trim()) {
-      errors.push("최종 요약문을 입력하세요.");
-    } else if (extractSlotIdsFromPassage(draft.summaryPassage).length === 0) {
-      errors.push("요약문에 {{slot_id}} 형식의 빈칸을 하나 이상 넣으세요.");
-    }
-    return errors;
-  }
-
   return errors;
 }
 
 export function validateEditorDraft(draft: ActivityEditorDraft): string[] {
   const errors: string[] = [];
-
-  if (!draft.title.trim()) {
-    errors.push("수업·활동 제목을 입력하세요.");
-  }
-  if (!draft.description.trim()) {
-    errors.push("활동 안내(학습 상황)를 입력하세요.");
-  }
-  validateRolesAndItems(draft, errors);
-
-  if (!draft.summaryPassage.trim()) {
-    errors.push("최종 요약문을 입력하세요.");
-  } else if (extractSlotIdsFromPassage(draft.summaryPassage).length === 0) {
-    errors.push("요약문에 {{slot_id}} 형식의 빈칸을 하나 이상 넣으세요.");
-  }
-
+  if (!draft.title.trim()) errors.push("수업·활동 제목을 입력하세요.");
+  if (!draft.description.trim()) errors.push("활동 안내(학습 상황)를 입력하세요.");
+  validateRoles(draft, errors);
   return errors;
 }

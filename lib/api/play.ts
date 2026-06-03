@@ -2,18 +2,16 @@
 
 import { parseActivityPack } from "@/lib/api/activities";
 import {
-  tryAcquireWordCard,
-  tryPlaceWordCard,
-  isWorksheetComplete,
-  totalGroupScore,
   PLAYER_MESSAGES,
+  assignRolesToPlayers,
+  computeSessionGroupCount,
+  computeBaseScoreFromPracticeResults,
+  getPracticeQuestions,
+  getTestQuestions,
+  isPracticeCompleteForRole,
+  isQuizComplete,
 } from "@/lib/activity-pack/engine";
-import { assignRolesToPlayers, computeSessionGroupCount } from "@/lib/activity-pack/engine";
-import type {
-  ActivityPack,
-  WordCard,
-  WorksheetPlacement,
-} from "@/lib/activity-pack/types";
+import type { ActivityPack, PracticeQuestionResult, QuizAnswer } from "@/lib/activity-pack/types";
 import { supabase } from "@/lib/supabase";
 
 // =====================================================================
@@ -78,34 +76,31 @@ export type PlayerSelfRow = {
   session_id: string | null;
   group_id: string | null;
   assigned_role_id: string | null;
-  assigned_item_ids: string[] | null;
-  word_cards: WordCard[];
+  base_score: number | null;
+  practice_results: PracticeQuestionResult[];
+  practice_submitted_at: string | null;
+  individual_quiz_answers: QuizAnswer[];
+  individual_quiz_submitted_at: string | null;
   is_online: boolean | null;
   created_at: string;
 };
 
 const PLAYER_SELECT =
-  "id,nickname,session_id,group_id,assigned_role_id,assigned_item_ids,word_cards,is_online,created_at";
+  "id,nickname,session_id,group_id,assigned_role_id,base_score,practice_results,practice_submitted_at,individual_quiz_answers,individual_quiz_submitted_at,is_online,created_at";
 
-export function parseAssignedItemIds(player: {
-  assigned_item_ids?: unknown;
+/** 배정 역할 → 단일 역할 id 배열 (역할 라벨 표시 공통 헬퍼) */
+export function parseAssignedRoleIds(player: {
   assigned_role_id?: string | null;
 }): string[] {
-  if (Array.isArray(player.assigned_item_ids)) {
-    return player.assigned_item_ids.filter((id): id is string => typeof id === "string" && id.length > 0);
-  }
-  if (player.assigned_role_id) return [player.assigned_role_id];
-  return [];
+  return player.assigned_role_id ? [player.assigned_role_id] : [];
 }
 
-const PLAYER_SELECT_WITH_GROUP = `${PLAYER_SELECT},groups(id,name,worksheet_placements,completed_at)`;
+const PLAYER_SELECT_WITH_GROUP = `${PLAYER_SELECT},groups(id,name)`;
 
 export type SessionPlayerRow = PlayerSelfRow & {
   groups: {
     id: string;
     name: string | null;
-    worksheet_placements: WorksheetPlacement[] | null;
-    completed_at: string | null;
   } | null;
 };
 
@@ -116,10 +111,7 @@ export async function getPlayerById(playerId: string) {
     .eq("id", playerId)
     .single();
   if (error) throw error;
-  return {
-    ...(data as PlayerSelfRow),
-    word_cards: parseWordCards(data?.word_cards),
-  };
+  return normalizePlayerRow(data as PlayerSelfRow);
 }
 
 export async function listSessionPlayers(sessionId: string) {
@@ -130,7 +122,7 @@ export async function listSessionPlayers(sessionId: string) {
     .order("created_at", { ascending: false })
     .order("nickname", { ascending: true });
   if (error) throw error;
-  return (data ?? []) as unknown as SessionPlayerRow[];
+  return (data ?? []).map((row) => normalizePlayerRow(row as PlayerSelfRow)) as SessionPlayerRow[];
 }
 
 export async function joinPlayerSession(input: { session_id: string; nickname: string }) {
@@ -171,9 +163,7 @@ export async function assignOrphanPlayersForOngoingSession(sessionId: string) {
     .select("id,group_id,assigned_role_id")
     .eq("session_id", sessionId);
   if (pe) throw pe;
-  const orphans = (playerRows ?? []).filter(
-    (p) => !p.group_id || parseAssignedItemIds(p).length === 0,
-  );
+  const orphans = (playerRows ?? []).filter((p) => !p.group_id || !p.assigned_role_id);
   if (orphans.length === 0) return;
 
   await assignGroupsAndRoles(sessionId, pack);
@@ -198,39 +188,43 @@ export type GroupRow = {
   id: string;
   session_id: string | null;
   name: string | null;
-  worksheet_placements: WorksheetPlacement[];
-  completed_at: string | null;
 };
 
-const GROUP_SELECT = "id,session_id,name,worksheet_placements,completed_at";
+const GROUP_SELECT = "id,session_id,name";
 
-function parseWordCards(raw: unknown): WordCard[] {
+export function parseQuizAnswers(raw: unknown): QuizAnswer[] {
   if (!Array.isArray(raw)) return [];
-  return raw.map((row) => {
-    const r = row as Record<string, unknown>;
-    return {
-      itemId: String(r.itemId ?? ""),
-      clueLevelUsed: (typeof r.clueLevelUsed === "number"
-        ? Math.min(5, Math.max(1, Math.floor(r.clueLevelUsed)))
-        : 5) as 1 | 2 | 3 | 4 | 5,
-      score: typeof r.score === "number" ? r.score : 0,
-      acquiredAt: String(r.acquiredAt ?? new Date().toISOString()),
-      placedAt: typeof r.placedAt === "string" ? r.placedAt : undefined,
-    };
-  });
+  return raw
+    .map((row) => {
+      const r = row as Record<string, unknown>;
+      const questionId = String(r.questionId ?? "");
+      const choiceIndex =
+        typeof r.choiceIndex === "number" ? Math.floor(r.choiceIndex) : -1;
+      return { questionId, choiceIndex };
+    })
+    .filter((a) => a.questionId.length > 0 && a.choiceIndex >= 0);
 }
 
-function parsePlacements(raw: unknown): WorksheetPlacement[] {
+export function parsePracticeResults(raw: unknown): PracticeQuestionResult[] {
   if (!Array.isArray(raw)) return [];
-  return raw.map((row) => {
-    const r = row as Record<string, unknown>;
-    return {
-      slotId: String(r.slotId ?? ""),
-      itemId: String(r.itemId ?? ""),
-      placedByPlayerId: String(r.placedByPlayerId ?? ""),
-      placedAt: String(r.placedAt ?? new Date().toISOString()),
-    };
-  });
+  return raw
+    .map((row) => {
+      const r = row as Record<string, unknown>;
+      const questionId = String(r.questionId ?? "").trim();
+      const wrongAttempts =
+        typeof r.wrongAttempts === "number" ? Math.max(0, Math.floor(r.wrongAttempts)) : 0;
+      const score = typeof r.score === "number" ? Math.max(0, Math.round(r.score)) : 0;
+      return { questionId, wrongAttempts, score };
+    })
+    .filter((r) => r.questionId.length > 0);
+}
+
+function normalizePlayerRow(row: PlayerSelfRow & { practice_results?: unknown }): PlayerSelfRow {
+  return {
+    ...row,
+    practice_results: parsePracticeResults(row.practice_results),
+    individual_quiz_answers: parseQuizAnswers(row.individual_quiz_answers),
+  };
 }
 
 export async function listSessionGroups(sessionId: string) {
@@ -240,19 +234,13 @@ export async function listSessionGroups(sessionId: string) {
     .eq("session_id", sessionId)
     .order("name", { ascending: true });
   if (error) throw error;
-  return (data ?? []).map((row) => ({
-    ...row,
-    worksheet_placements: parsePlacements(row.worksheet_placements),
-  })) as GroupRow[];
+  return (data ?? []) as GroupRow[];
 }
 
 export async function getGroupById(groupId: string) {
   const { data, error } = await supabase.from("groups").select(GROUP_SELECT).eq("id", groupId).single();
   if (error) throw error;
-  return {
-    ...data,
-    worksheet_placements: parsePlacements(data.worksheet_placements),
-  } as GroupRow;
+  return data as GroupRow;
 }
 
 export async function listGroupMembers(groupId: string): Promise<PlayerSelfRow[]> {
@@ -262,10 +250,7 @@ export async function listGroupMembers(groupId: string): Promise<PlayerSelfRow[]
     .eq("group_id", groupId)
     .order("created_at", { ascending: true });
   if (error) throw error;
-  return (data ?? []).map((row) => ({
-    ...(row as PlayerSelfRow),
-    word_cards: parseWordCards(row.word_cards),
-  }));
+  return (data ?? []).map((row) => normalizePlayerRow(row as PlayerSelfRow));
 }
 
 // =====================================================================
@@ -273,11 +258,7 @@ export async function listGroupMembers(groupId: string): Promise<PlayerSelfRow[]
 // =====================================================================
 
 function groupLabel(index: number) {
-  const A = "A".charCodeAt(0);
-  if (index < 26) return String.fromCharCode(A + index);
-  const first = Math.floor(index / 26) - 1;
-  const second = index % 26;
-  return `${String.fromCharCode(A + first)}${String.fromCharCode(A + second)}`;
+  return String(index + 1);
 }
 
 export async function assignGroupsAndRoles(sessionId: string, pack: ActivityPack) {
@@ -293,9 +274,7 @@ export async function assignGroupsAndRoles(sessionId: string, pack: ActivityPack
   const players = allPlayers ?? [];
   if (players.length === 0) return;
 
-  const needsAssign = players.filter(
-    (p) => !p.group_id || parseAssignedItemIds(p).length === 0,
-  );
+  const needsAssign = players.filter((p) => !p.group_id || !p.assigned_role_id);
   if (needsAssign.length === 0) return;
 
   const { data: existingGroups, error: tErr } = await supabase
@@ -338,12 +317,10 @@ export async function assignGroupsAndRoles(sessionId: string, pack: ActivityPack
     const roleAssignment = assignRolesToPlayers(pack, memberIds);
     for (const playerId of memberIds) {
       const assigned = roleAssignment.get(playerId);
-      const assignedIds = assigned?.itemIds ?? [];
       const { error: upErr } = await supabase
         .from("players")
         .update({
           group_id: groupId,
-          assigned_item_ids: assignedIds,
           assigned_role_id: assigned?.roleId ?? null,
         })
         .eq("id", playerId);
@@ -353,105 +330,59 @@ export async function assignGroupsAndRoles(sessionId: string, pack: ActivityPack
 }
 
 // =====================================================================
-// gameplay
+// gameplay — practice (expert) + formative test
 // =====================================================================
 
-export async function acquireWordCardForPlayer(args: {
+/** 전문가 연습 결과 제출 (역할 연습 문항 전부 완료 시, 기준 점수 = 문항 점수 평균) */
+export async function submitPracticeResult(args: {
   playerId: string;
-  groupId: string;
   pack: ActivityPack;
-  itemId: string;
-  answer: string;
-  clueLevelUsed: 1 | 2 | 3 | 4 | 5;
+  roleId: string;
+  results: PracticeQuestionResult[];
 }) {
-  const result = tryAcquireWordCard(
-    args.pack,
-    args.itemId,
-    args.answer,
-    args.clueLevelUsed,
-  );
-  if (!result.ok) throw new Error(result.reason);
-
-  const { data: player, error: pe } = await supabase
-    .from("players")
-    .select("word_cards")
-    .eq("id", args.playerId)
-    .single();
-  if (pe) throw pe;
-
-  const existing = parseWordCards(player?.word_cards);
-  if (existing.some((c) => c.itemId === args.itemId && !c.placedAt)) {
-    return result.record;
+  const player = await getPlayerById(args.playerId);
+  if (player.practice_submitted_at) {
+    throw new Error(PLAYER_MESSAGES.practiceAlreadyDone);
   }
+
+  const questions = getPracticeQuestions(args.pack, args.roleId);
+  if (!isPracticeCompleteForRole(questions, args.results)) {
+    throw new Error(PLAYER_MESSAGES.practiceIncomplete);
+  }
+
+  const baseScore = computeBaseScoreFromPracticeResults(args.results);
 
   const { error } = await supabase
     .from("players")
-    .update({ word_cards: [...existing, result.record] })
+    .update({
+      base_score: baseScore,
+      practice_results: args.results,
+      practice_submitted_at: new Date().toISOString(),
+    })
     .eq("id", args.playerId);
   if (error) throw error;
-
-  return result.record;
 }
 
-export async function placeWordCardOnSlot(args: {
-  actorPlayerId: string;
-  slotOwnerPlayerId: string;
-  groupId: string;
+/** 개별 형성평가 제출 (실전 문제, 개인 1회) */
+export async function submitIndividualQuiz(args: {
+  playerId: string;
   pack: ActivityPack;
-  slotId: string;
-  itemId: string;
+  answers: QuizAnswer[];
 }) {
-  const [group, actorRow, ownerRow] = await Promise.all([
-    getGroupById(args.groupId),
-    getPlayerById(args.actorPlayerId),
-    getPlayerById(args.slotOwnerPlayerId),
-  ]);
-
-  const actorCards = actorRow.word_cards ?? [];
-  const placements = group.worksheet_placements;
-
-  const result = tryPlaceWordCard(args.pack, actorCards, placements, {
-    actorPlayerId: args.actorPlayerId,
-    slotOwnerPlayerId: args.slotOwnerPlayerId,
-    slotOwnerRoleId: ownerRow.assigned_role_id ?? "",
-    slotId: args.slotId,
-    itemId: args.itemId,
-  });
-  if (!result.ok) throw new Error(result.reason);
-
-  const updatedCards = actorCards.map((c) =>
-    c.itemId === args.itemId && !c.placedAt ? result.updatedCard : c,
-  );
-
-  const { error: actorErr } = await supabase
-    .from("players")
-    .update({ word_cards: updatedCards })
-    .eq("id", args.actorPlayerId);
-  if (actorErr) throw actorErr;
-
-  const { error: groupErr } = await supabase
-    .from("groups")
-    .update({ worksheet_placements: [...placements, result.record] })
-    .eq("id", args.groupId);
-  if (groupErr) throw groupErr;
-
-  return result.record;
-}
-
-export async function completeActivityForGroup(groupId: string, pack: ActivityPack) {
-  const group = await getGroupById(groupId);
-  if (group.completed_at) {
-    throw new Error("이미 활동을 완료했습니다.");
+  const player = await getPlayerById(args.playerId);
+  if (player.individual_quiz_submitted_at) {
+    throw new Error(PLAYER_MESSAGES.individualQuizAlreadySubmitted);
   }
-  if (!isWorksheetComplete(pack, group.worksheet_placements)) {
-    throw new Error(PLAYER_MESSAGES.worksheetIncomplete);
+  if (!isQuizComplete(getTestQuestions(args.pack), args.answers)) {
+    throw new Error(PLAYER_MESSAGES.quizIncomplete);
   }
 
   const { error } = await supabase
-    .from("groups")
-    .update({ completed_at: new Date().toISOString() })
-    .eq("id", groupId);
+    .from("players")
+    .update({
+      individual_quiz_answers: args.answers,
+      individual_quiz_submitted_at: new Date().toISOString(),
+    })
+    .eq("id", args.playerId);
   if (error) throw error;
 }
-
-export { totalGroupScore };

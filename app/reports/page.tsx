@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useMemo } from "react";
 
-import { deleteSession, listHostSessions, parseActivityPack, type HostSessionListRow } from "@/lib/api/activities";
+import { deleteSession, listHostSessions, type HostSessionListRow } from "@/lib/api/activities";
 import {
   getHostSessionDetails,
   listSessionPlayers,
@@ -18,7 +18,7 @@ import { KebabMenu } from "@/components/ui/kebab-menu";
 import { PageHeader } from "@/components/layout/page-header";
 import { TopNav } from "@/components/layout/top-nav";
 import { LoadingState } from "@/components/ui/loading-state";
-import { groupPlayersByGroup, collectGroupWordCards } from "@/lib/teacher/group-players-by-group";
+import { groupPlayersByGroup } from "@/lib/teacher/group-players-by-group";
 import { ACTIVITY_PHASE_LABELS } from "@/lib/activity-phases";
 import type { ActivityPhase } from "@/lib/types";
 import { ROUTES } from "@/lib/routes";
@@ -127,18 +127,17 @@ function ReportsSessionDetailPanel({ sessionId, teacherUserId }: { sessionId: st
     enabled: Boolean(sessionId),
   });
 
-  const pack = useMemo(
-    () => parseActivityPack(sessionQuery.data?.activities?.activity_pack),
-    [sessionQuery.data?.activities?.activity_pack],
-  );
-
   const progressGroups = useMemo<GroupProgressGroup[]>(() => {
     const groups = groupsQuery.data ?? [];
     const grouped = groupPlayersByGroup(playersQuery.data ?? [], groups);
     return grouped.map((g) => ({
-      group: g.group,
-      memberCount: g.members.length,
-      memberWordCards: collectGroupWordCards(g.members),
+      group: { id: g.group.id, name: g.group.name },
+      members: g.members.map((m) => ({
+        id: m.id,
+        nickname: m.nickname,
+        baseScore: m.base_score,
+        practiceSubmitted: Boolean(m.practice_submitted_at),
+      })),
     }));
   }, [playersQuery.data, groupsQuery.data]);
 
@@ -175,7 +174,6 @@ function ReportsSessionDetailPanel({ sessionId, teacherUserId }: { sessionId: st
       <GroupProgressDashboard
         groups={progressGroups}
         loading={playersQuery.isLoading || groupsQuery.isLoading}
-        pack={pack}
       />
     </div>
   );
@@ -201,8 +199,8 @@ function ReportsPageInner() {
           title="수업 기록"
           description={
             sessionId
-              ? "이 수업의 공유 학습지 진행과 점수를 확인합니다."
-              : "진행한 수업별 공유 학습지·점수를 확인합니다."
+              ? "이 수업의 모둠 퀴즈 진행과 점수를 확인합니다."
+              : "진행한 수업별 모둠 퀴즈·점수를 확인합니다."
           }
         />
         {sessionId ? (

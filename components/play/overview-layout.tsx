@@ -1,6 +1,6 @@
 "use client";
 
-import { BookOpen } from "lucide-react";
+import { ListChecks } from "lucide-react";
 
 import { activityLayoutType } from "@/components/activity/activity-layout-typography";
 import {
@@ -9,8 +9,8 @@ import {
   playPhaseTwoColumnGrid,
 } from "@/components/play/play-phase-layout";
 import { LoadingState } from "@/components/ui/loading-state";
+import { getTestQuestions } from "@/lib/activity-pack/engine";
 import type { ActivityPack } from "@/lib/activity-pack/types";
-import { parsePassageSegments } from "@/lib/activity-pack/worksheet";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -36,9 +36,25 @@ export function ActivityIntroductionLayout({
     );
   }
 
-  const worksheet = activityPack?.homeWorksheet;
-  const segments = worksheet ? parsePassageSegments(worksheet.summaryPassage) : [];
-  const slotCount = worksheet?.slots.length ?? 0;
+  const testCount = activityPack ? getTestQuestions(activityPack).length : 0;
+
+  const steps = [
+    {
+      step: 1,
+      title: "전문가 집단",
+      body: "같은 역할끼리 모여 내 지문을 이해하고, 연습 문제를 모두 풉니다(문항마다 3번·힌트). 문항 점수 평균이 기준 점수입니다.",
+    },
+    {
+      step: 2,
+      title: "홈 집단",
+      body: "모둠으로 돌아와 모든 모둠원의 지문과 연습 문제를 보며 서로 설명합니다.",
+    },
+    {
+      step: 3,
+      title: "개별 형성평가",
+      body: `전체 실전 문제(${testCount}문항)를 한 번만 풉니다. 기준 점수 대비 향상도로 개인·집단 점수(STAD)를 받습니다.`,
+    },
+  ];
 
   return (
     <PlayPhasePanel>
@@ -52,40 +68,30 @@ export function ActivityIntroductionLayout({
               t.caption,
             )}
           >
-            홈 집단에서 공유 학습지 빈칸을 모두 채우고 제출하세요. 내 단어는 팀원이 넣어 줍니다.
+            전문가 집단 역할별 지문·연습으로 기준 점수를 정한 뒤, STAD 향상 점수로 개인·집단 점수를 받습니다.
           </p>
         </PlayPhaseSectionCard>
 
         <PlayPhaseSectionCard
-          title="공유 학습지"
-          icon={<BookOpen className="h-4 w-4 shrink-0 text-[var(--accent)]" aria-hidden />}
+          title="활동 흐름"
+          icon={<ListChecks className="h-4 w-4 shrink-0 text-[var(--accent)]" aria-hidden />}
         >
-          {!worksheet?.summaryPassage ? (
-            <p className={t.playPanelBody}>학습지 정보가 없습니다.</p>
-          ) : (
-            <>
-              <p className={cn("mb-2", t.playPanelRowMeta)}>
-                빈칸 {slotCount}개
-              </p>
-              <p className={cn("rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2", t.playPanelBody)}>
-                {segments.map((seg, i) =>
-                  seg.type === "text" ? (
-                    <span key={i}>{seg.value}</span>
-                  ) : (
-                    <span
-                      key={i}
-                      className="mx-0.5 inline-flex rounded border border-dashed border-[var(--primary)] px-1.5 py-0.5 font-semibold text-[var(--primary)]"
-                    >
-                      ▢
-                    </span>
-                  ),
+          <ol className="space-y-2">
+            {steps.map((s) => (
+              <li
+                key={s.step}
+                className={cn(
+                  "flex gap-2 rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2",
+                  t.playPanelBody,
                 )}
-              </p>
-              <p className={cn("mt-2", t.caption)}>
-                내 단어는 내 빈칸에 넣을 수 없습니다. 팀원이 도와줍니다.
-              </p>
-            </>
-          )}
+              >
+                <span className="font-semibold text-[var(--accent)]">{s.step}.</span>
+                <span>
+                  <span className="font-medium">{s.title}</span> — {s.body}
+                </span>
+              </li>
+            ))}
+          </ol>
         </PlayPhaseSectionCard>
       </div>
     </PlayPhasePanel>

@@ -118,11 +118,12 @@ export function ResultsPhasePanel({
           </p>
           <RankCard
             label="모둠 순위"
-            rank={snapshot.groupRank}
+            rank={snapshot.teamRank}
             total={snapshot.totalTeams}
             totalUnit="개 모둠"
-            score={snapshot.groupScore}
-            scoreLabel={`${snapshot.groupName} · 모둠 점수`}
+            score={snapshot.teamScore}
+            scoreLabel={`${snapshot.groupName} · 집단 점수 (모둠 평균 향상)`}
+            detail="모둠원 개인 점수(향상 점수)의 평균"
             accent
           />
           <RankCard
@@ -130,9 +131,9 @@ export function ResultsPhasePanel({
             rank={snapshot.personalRank}
             total={snapshot.totalPlayers}
             totalUnit="명"
-            score={snapshot.personalScore}
-            scoreLabel="나의 점수"
-            detail={`${snapshot.roleLabel} · 전문가 ${snapshot.expertScore}점 · 팀 기여 ${snapshot.teamShareScore}점`}
+            score={snapshot.improvementPoints}
+            scoreLabel="개인 점수 (STAD 향상 점수)"
+            detail={`${snapshot.roleLabel} · 기준 ${snapshot.baseScore}점 → 실전 ${snapshot.testScore}점 (${snapshot.testCorrect}/${snapshot.testTotal} 정답)`}
           />
         </div>
       )}

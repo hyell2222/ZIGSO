@@ -21,10 +21,10 @@ import {
   validateEditorDraftStep,
   type EditorStepId,
 } from "@/lib/activity-pack/activity-draft";
+import { getTestQuestions } from "@/lib/activity-pack/engine";
 import type { ActivityPack } from "@/lib/activity-pack/types";
 import { useRequireTeacherSession } from "@/lib/auth/use-require-teacher-session";
 import { ROUTES } from "@/lib/routes";
-import { cn } from "@/lib/utils";
 
 type Props =
   | { mode: "create"; pageTitle?: string }
@@ -102,7 +102,7 @@ export function ActivitySteps(props: Props) {
         title: activityPack.title,
         description: activityPack.description,
         activity_pack: activityPack,
-        task_count: activityPack.homeWorksheet.slots.length,
+        task_count: getTestQuestions(activityPack).length,
         group_size: activityPack.groupSize,
       };
 
@@ -143,7 +143,7 @@ export function ActivitySteps(props: Props) {
               props.pageTitle ??
               (props.mode === "edit" ? "활동 수정" : "활동 만들기")
             }
-            description="활동 안내 → 역할·단어·단서 → 공유 학습지 순으로 설계합니다."
+            description="활동 안내 → 역할별 지문·연습 문제·실전 문제 순으로 설계합니다."
             actions={
               <Button type="button" variant="outline" onClick={() => setAiOpen(true)}>
                 <Sparkles className="mr-1.5 h-4 w-4 text-[var(--primary)]" />

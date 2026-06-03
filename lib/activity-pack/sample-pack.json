@@ -1,115 +1,119 @@
 {
-  "version": 3,
+  "version": 5,
   "title": "Textbook Reading: Save Our Planet",
-  "description": "Based on a middle-school English textbook passage. Expert groups deduce key vocabulary from clues and earn word cards. Home groups complete a shared summary worksheet — you cannot place your own word in your own blank.",
+  "description": "Based on a middle-school English textbook passage. In expert groups, each student masters one part of the reading and solves a practice question (3 tries, with scaffolding hints) that sets their base score. Back in the home group, members teach each other using everyone's segment and practice question. Finally, every student takes an individual formative test over the whole passage, scored by STAD improvement points (individual + team average).",
   "groupSize": 3,
-  "itemsPerPlayer": 1,
   "roles": [
     {
-      "id": "environment_expert",
-      "name": "Environment",
-      "items": [
-        {
-          "id": "environment",
-          "name": "environment",
-          "clues": {
-            "stage1": "It means all the natural world around us.",
-            "stage2": "We must protect our ___ to live safely.",
-            "stage3": "The first sentence of the passage says 'our environment'.",
-            "stage4": "An 11-letter English word starting with e.",
-            "stage5": "Answer: environment"
-          }
-        }
-      ]
+      "id": "intro_part",
+      "name": "Introduction",
+      "segment": "Part 1 — Introduction: Our environment is everything around us: the air, the water, the land, and all living things. We depend on a healthy environment to live safely, but human activity is putting it in danger.",
+      "keyPoints": [
+        "The environment = air, water, land, and living things.",
+        "A healthy environment keeps us safe.",
+        "Human activity puts the environment in danger."
+      ],
+      "practiceQuestions": [{
+        "id": "intro_practice",
+        "prompt": "According to the Introduction, what does our 'environment' include?",
+        "choices": [
+          "Only the air we breathe",
+          "Air, water, land, and all living things",
+          "Only forests and oceans",
+          "Only the things humans build"
+        ],
+        "correctIndex": 1,
+        "hints": [
+          "Look at the list in the first sentence.",
+          "It names four things, including all living things."
+        ],
+        "explanation": "The Introduction defines the environment as the air, the water, the land, and all living things."
+      }],
+      "testQuestions": [{
+        "id": "intro_test",
+        "prompt": "What does the word 'environment' refer to in the passage?",
+        "choices": [
+          "Only the air",
+          "Air, water, land, and living things",
+          "Only factories and cars",
+          "Only recycling programs"
+        ],
+        "correctIndex": 1
+      }]
     },
     {
-      "id": "pollution_expert",
-      "name": "Pollution",
-      "items": [
-        {
-          "id": "pollution",
-          "name": "pollution",
-          "clues": {
-            "stage1": "It makes air, water, or land dirty.",
-            "stage2": "Factories cause a lot of ___.",
-            "stage3": "The passage says 'reduce pollution'.",
-            "stage4": "A 10-letter English word starting with p.",
-            "stage5": "Answer: pollution"
-          }
-        }
-      ]
+      "id": "problem_part",
+      "name": "Problem",
+      "segment": "Part 2 — The Problem: Factories and cars release harmful gases, and people throw away too much waste. This pollution makes the air, water, and land dirty and harms both people and animals.",
+      "keyPoints": [
+        "Factories and cars release harmful gases.",
+        "Too much waste is thrown away.",
+        "Pollution harms people and animals."
+      ],
+      "practiceQuestions": [{
+        "id": "problem_practice",
+        "prompt": "According to the Problem part, what are the main causes of pollution?",
+        "choices": [
+          "Trees and rivers",
+          "Recycling and saving energy",
+          "Harmful gases from factories/cars and too much waste",
+          "Healthy air and clean water"
+        ],
+        "correctIndex": 2,
+        "hints": [
+          "Think about what factories and cars release.",
+          "There are two causes: harmful gases and too much waste."
+        ],
+        "explanation": "Pollution comes from harmful gases (factories and cars) and from throwing away too much waste."
+      }],
+      "testQuestions": [{
+        "id": "problem_test",
+        "prompt": "What causes pollution according to the passage?",
+        "choices": [
+          "Trees and rivers",
+          "Saving energy",
+          "Harmful gases and too much waste",
+          "Recycling plastic"
+        ],
+        "correctIndex": 2
+      }]
     },
     {
-      "id": "recycle_expert",
-      "name": "Recycle",
-      "items": [
-        {
-          "id": "recycle",
-          "name": "recycle",
-          "clues": {
-            "stage1": "Using paper or plastic again instead of throwing it away.",
-            "stage2": "We should ___ plastic bottles.",
-            "stage3": "It appears in the last sentence of the passage.",
-            "stage4": "An English word spelled re-___-le.",
-            "stage5": "Answer: recycle"
-          }
-        }
-      ]
+      "id": "solution_part",
+      "name": "Solution",
+      "segment": "Part 3 — The Solution: We can protect the planet by reducing waste, saving energy, and recycling paper and plastic. Small daily actions by everyone add up to a big difference.",
+      "keyPoints": [
+        "Reduce waste and save energy.",
+        "Recycle paper and plastic.",
+        "Small daily actions add up."
+      ],
+      "practiceQuestions": [{
+        "id": "solution_practice",
+        "prompt": "Which action does the Solution part suggest to protect the planet?",
+        "choices": [
+          "Throwing away more waste",
+          "Using more energy",
+          "Recycling paper and plastic",
+          "Releasing more harmful gases"
+        ],
+        "correctIndex": 2,
+        "hints": [
+          "The Solution part lists positive actions.",
+          "It mentions reducing waste, saving energy, and recycling."
+        ],
+        "explanation": "The Solution part suggests reducing waste, saving energy, and recycling paper and plastic."
+      }],
+      "testQuestions": [{
+        "id": "solution_test",
+        "prompt": "Which is NOT mentioned as a way to protect the planet?",
+        "choices": [
+          "Reducing waste",
+          "Saving energy",
+          "Recycling",
+          "Buying more cars"
+        ],
+        "correctIndex": 3
+      }]
     }
-  ],
-  "items": [
-    {
-      "id": "environment",
-      "name": "environment",
-      "clues": {
-        "stage1": "It means all the natural world around us.",
-        "stage2": "We must protect our ___ to live safely.",
-        "stage3": "The first sentence of the passage says 'our environment'.",
-        "stage4": "An 11-letter English word starting with e.",
-        "stage5": "Answer: environment"
-      }
-    },
-    {
-      "id": "pollution",
-      "name": "pollution",
-      "clues": {
-        "stage1": "It makes air, water, or land dirty.",
-        "stage2": "Factories cause a lot of ___.",
-        "stage3": "The passage says 'reduce pollution'.",
-        "stage4": "A 10-letter English word starting with p.",
-        "stage5": "Answer: pollution"
-      }
-    },
-    {
-      "id": "recycle",
-      "name": "recycle",
-      "clues": {
-        "stage1": "Using paper or plastic again instead of throwing it away.",
-        "stage2": "We should ___ plastic bottles.",
-        "stage3": "It appears in the last sentence of the passage.",
-        "stage4": "An English word spelled re-___-le.",
-        "stage5": "Answer: recycle"
-      }
-    }
-  ],
-  "homeWorksheet": {
-    "summaryPassage": "According to the reading passage, we should protect our {{slot_environment}}, reduce {{slot_pollution}}, and {{slot_recycle}} more often.",
-    "slots": [
-      {
-        "id": "slot_environment",
-        "itemId": "environment",
-        "ownerRoleId": "environment_expert"
-      },
-      {
-        "id": "slot_pollution",
-        "itemId": "pollution",
-        "ownerRoleId": "pollution_expert"
-      },
-      {
-        "id": "slot_recycle",
-        "itemId": "recycle",
-        "ownerRoleId": "recycle_expert"
-      }
-    ]
-  }
+  ]
 }

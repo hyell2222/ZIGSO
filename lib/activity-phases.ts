@@ -6,10 +6,16 @@ export const ACTIVITY_PHASE_LABELS: Record<ActivityPhase, string> = {
   overview: "활동 소개",
   expert_group: "전문가 집단",
   home_group: "홈 집단",
+  individual_quiz: "개별 퀴즈",
   results: "활동 결과",
 };
 
-export const TIMED_PHASE_ORDER = ["overview", "expert_group", "home_group"] as const;
+export const TIMED_PHASE_ORDER = [
+  "overview",
+  "expert_group",
+  "home_group",
+  "individual_quiz",
+] as const;
 export type TimedPhaseKey = (typeof TIMED_PHASE_ORDER)[number];
 export type TimedPhase = TimedPhaseKey;
 
@@ -34,17 +40,22 @@ export const TEACHER_RESULTS_STEP = {
 export const TEACHER_PHASE_GUIDES: Record<TimedPhaseKey, PhaseGuide> = {
   overview: {
     title: ACTIVITY_PHASE_LABELS.overview,
-    summary: "모둠·역할·공유 학습지를 확인하고 활동을 시작합니다.",
+    summary: "모둠·역할·활동 흐름을 확인하고 활동을 시작합니다.",
   },
   expert_group: {
     title: ACTIVITY_PHASE_LABELS.expert_group,
     summary:
-      "같은 역할끼리 5단계 단서로 단어를 맞히고, 획득한 단어 카드를 홈 집단에서 모둠원에게 설명합니다.",
+      "같은 역할끼리 모여 자신이 맡은 지문 조각·풀이 방식을 마스터합니다.",
   },
   home_group: {
     title: ACTIVITY_PHASE_LABELS.home_group,
     summary:
-      "공유 학습지의 최종 요약문 빈칸을 채웁니다. 내 단어는 내 빈칸에 넣을 수 없고, 팀원 슬롯에만 배치할 수 있습니다.",
+      "홈 집단으로 돌아가 각자 맡은 부분을 설명하고, 모둠이 함께 집단 퀴즈를 풉니다. (집단 점수)",
+  },
+  individual_quiz: {
+    title: ACTIVITY_PHASE_LABELS.individual_quiz,
+    summary:
+      "각자 전체 내용에 대한 개별 퀴즈를 풉니다. (개별 점수)",
   },
 };
 
@@ -58,6 +69,7 @@ export const TEACHER_PHASE_MINUTES: Record<TimedPhaseKey, number> = {
   overview: 8,
   expert_group: 15,
   home_group: 12,
+  individual_quiz: 10,
 };
 
 export function isTimedPhase(phase: ActivityPhase): phase is TimedPhaseKey {
@@ -72,7 +84,8 @@ export const ACTIVITY_PHASE_NUMBER: Record<
   overview: 1,
   expert_group: 2,
   home_group: 3,
-  results: 4,
+  individual_quiz: 4,
+  results: 5,
 };
 
 export function getActivityPhaseNumber(

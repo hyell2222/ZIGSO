@@ -21,8 +21,8 @@ import {
 } from "@/lib/api/activities";
 import { useRequireTeacherSession } from "@/lib/auth/use-require-teacher-session";
 import { formatAssignedRoleLabels } from "@/lib/activity-pack/roles";
-import { parseAssignedItemIds } from "@/lib/api/play";
-import { groupPlayersByGroup, collectGroupWordCards } from "@/lib/teacher/group-players-by-group";
+import { parseAssignedRoleIds } from "@/lib/api/play";
+import { groupPlayersByGroup } from "@/lib/teacher/group-players-by-group";
 import { SessionHostLayout } from "@/components/teacher/session-host-layout";
 import { SessionHostWaitingRoster } from "@/components/teacher/session-host-waiting-roster";
 import { PhaseTimerContent } from "@/components/teacher/phase-timer-content";
@@ -50,7 +50,6 @@ import {
 import { hasSupabaseEnv, supabase } from "@/lib/supabase";
 import { isSessionEnded, isTimedPhase, type TimedPhase } from "@/lib/activity-phases";
 import { hostSessionNextPhaseLabel } from "@/lib/api/sessions";
-import { cn } from "@/lib/utils";
 
 function SessionHostContent() {
   const router = useRouter();
@@ -315,7 +314,7 @@ function SessionHostContent() {
         zoneName: activityPack
           ? formatAssignedRoleLabels(
               activityPack,
-              parseAssignedItemIds(m),
+              parseAssignedRoleIds(m),
               sessionId ?? "",
             )
           : null,
@@ -326,9 +325,13 @@ function SessionHostContent() {
   const progressGroups = useMemo<GroupProgressGroup[]>(() => {
     const grouped = groupPlayersByGroup(onlinePlayers, groupRows);
     return grouped.map((g) => ({
-      group: g.group,
-      memberCount: g.members.length,
-      memberWordCards: collectGroupWordCards(g.members),
+      group: { id: g.group.id, name: g.group.name },
+      members: g.members.map((m) => ({
+        id: m.id,
+        nickname: m.nickname,
+        baseScore: m.base_score,
+        practiceSubmitted: Boolean(m.practice_submitted_at),
+      })),
     }));
   }, [onlinePlayers, groupRows]);
 
@@ -341,9 +344,22 @@ function SessionHostContent() {
           nickname: p.nickname,
           groupId: p.group_id as string,
           assignedRoleId: p.assigned_role_id,
-          assignedItemIds: parseAssignedItemIds(p),
-          word_cards: p.word_cards ?? [],
+          baseScore: p.base_score,
+          individual_quiz_answers: p.individual_quiz_answers ?? [],
+          individual_quiz_submitted_at: p.individual_quiz_submitted_at,
         })),
+    [playersQuery.data],
+  );
+
+  const individualQuizSubmitted = useMemo(
+    () =>
+      (playersQuery.data ?? []).filter(
+        (p) => p.group_id && p.individual_quiz_submitted_at,
+      ).length,
+    [playersQuery.data],
+  );
+  const individualQuizTotal = useMemo(
+    () => (playersQuery.data ?? []).filter((p) => p.group_id).length,
     [playersQuery.data],
   );
 
@@ -503,12 +519,25 @@ function SessionHostContent() {
           />
         ) : null}
 
-        {phase === "home_group" ? (
+        {phase === "expert_group" || phase === "home_group" ? (
           <GroupProgressDashboard
             groups={progressGroups}
             loading={playersQuery.isLoading || groupsQuery.isLoading}
-            pack={activityPack}
           />
+        ) : null}
+
+        {phase === "individual_quiz" ? (
+          <section className="rounded-xl border border-[var(--border)] bg-[var(--card-bg)] p-4 @md:p-6">
+            <div className="flex items-baseline justify-between gap-2">
+              <h2 className="text-base font-semibold text-[var(--foreground)]">개별 형성평가 진행</h2>
+              <span className="font-mono text-sm font-semibold tabular-nums text-[var(--primary)]">
+                제출 {individualQuizSubmitted}/{individualQuizTotal}
+              </span>
+            </div>
+            <p className="mt-2 text-sm text-[var(--muted-foreground)]">
+              학생들이 전체 내용 실전 문제를 풉니다. 모두 제출하면 활동 결과로 넘어가세요.
+            </p>
+          </section>
         ) : null}
 
         {phase === "results" ? (

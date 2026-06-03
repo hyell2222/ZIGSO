@@ -1,4 +1,3 @@
-import { ensurePackRoles, maxItemsPerRole } from "@/lib/activity-pack/roles";
 import type { ActivityPack } from "@/lib/activity-pack/types";
 import { codenameForRole } from "@/lib/play/role-codenames";
 
@@ -8,33 +7,20 @@ export const MAX_ROLES_PER_GROUP = 12;
 
 /**
  * 모둠 인원 = 역할 수.
- * itemsPerPlayer = 역할당 아이템 수(최댓값).
+ * 역할 표시명은 코드명으로 고정(정답 노출 방지).
  */
 export function normalizePackSizing(pack: ActivityPack): ActivityPack {
-  const withRoles = ensurePackRoles(pack);
-  const roleCount = withRoles.roles.length;
+  const roleCount = pack.roles.length;
   const groupSize = Math.min(MAX_ROLES_PER_GROUP, Math.max(MIN_ROLES_PER_GROUP, roleCount));
-  const itemsPerPlayer = maxItemsPerRole(withRoles.roles);
-  const scopeKey = withRoles.title.trim() || "activity";
-  const roleIds = withRoles.roles.map((r) => r.id);
-  const roles = withRoles.roles.map((role) => ({
+  const scopeKey = pack.title.trim() || "activity";
+  const roleIds = pack.roles.map((r) => r.id);
+  const roles = pack.roles.map((role) => ({
     ...role,
     name: codenameForRole(scopeKey, role.id, roleIds),
   }));
   return {
-    ...withRoles,
+    ...pack,
     roles,
     groupSize,
-    itemsPerPlayer,
-  };
-}
-
-export function derivedActivityScale(roleCount: number, itemsPerRole: number) {
-  const groupSize = Math.min(MAX_ROLES_PER_GROUP, Math.max(MIN_ROLES_PER_GROUP, roleCount));
-  return {
-    roleCount,
-    groupSize,
-    itemsPerRole,
-    itemsPerPlayer: itemsPerRole,
   };
 }

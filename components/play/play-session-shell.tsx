@@ -1,13 +1,13 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { activityPageShell, activityLoaderRegion } from "@/components/activity/activity-layout-chrome";
 import { ExpertPhasePanel } from "@/components/play/expert-group-panel";
 import { ActivityIntroductionLayout } from "@/components/play/overview-layout";
 import { GroupPhasePanel, type GroupMember } from "@/components/play/home-group-panel";
+import { IndividualQuizPanel } from "@/components/play/individual-quiz-panel";
 import { ResultsPhasePanel } from "@/components/play/results-phase-panel";
 import { PlayPhaseShell } from "@/components/play/play-phase-shell";
 import { PlayAtmosphere, playSurfaceCool } from "@/components/play/play-atmosphere";
@@ -22,7 +22,6 @@ import { parseActivityPack } from "@/lib/api/activities";
 import type { ActivityPhase } from "@/lib/api/activities";
 import {
   assignOrphanPlayersForOngoingSession,
-  parseAssignedItemIds,
   getPlayerById,
   getPlaySessionDetails,
   getSessionByJoinCode,
@@ -30,8 +29,10 @@ import {
   joinPlayerSession,
   listSessionGroups,
   listSessionPlayers,
+  submitPracticeResult,
   setPlayerOnline,
   listGroupMembers,
+  submitIndividualQuiz,
 } from "@/lib/api/play";
 import { buildSessionResults } from "@/lib/activity-pack/session-results";
 import {
@@ -41,10 +42,8 @@ import {
   type ResumeRecord,
 } from "@/lib/play-resume";
 import { getSessionRoomChannelName } from "@/lib/realtime/session-presence";
-import { ROUTES } from "@/lib/routes";
 import { hasSupabaseEnv, supabase } from "@/lib/supabase";
 import { formatAssignedRoleLabels } from "@/lib/activity-pack/roles";
-import { formatAssignedSlots } from "@/lib/play/assignment-labels";
 import { cn } from "@/lib/utils";
 
 export function PlaySessionShell({
@@ -54,7 +53,6 @@ export function PlaySessionShell({
   joinCode: string;
   initialNickname?: string;
 }) {
-  const router = useRouter();
   const queryClient = useQueryClient();
   const [nickname, setNickname] = useState(initialNickname);
   const autoJoinAttempted = useRef(false);
@@ -73,10 +71,7 @@ export function PlaySessionShell({
     refetchIntervalInBackground: true,
   });
 
-  const assignedItemIds = useMemo(
-    () => (playerQuery.data ? parseAssignedItemIds(playerQuery.data) : []),
-    [playerQuery.data],
-  );
+  const assignedRoleId = playerQuery.data?.assigned_role_id ?? null;
   const groupId = playerQuery.data?.group_id ?? null;
 
   const groupQuery = useQuery({
@@ -107,14 +102,10 @@ export function PlaySessionShell({
   );
 
   const assignedRoleLabel = useMemo(() => {
-    if (!sessionId || !activityPack || assignedItemIds.length === 0) {
-      return formatAssignedSlots(assignedItemIds.length);
-    }
-    return (
-      formatAssignedRoleLabels(activityPack, assignedItemIds, sessionId) ??
-      formatAssignedSlots(assignedItemIds.length)
-    );
-  }, [sessionId, activityPack, assignedItemIds]);
+    if (!assignedRoleId) return null;
+    if (!sessionId || !activityPack) return "배정됨";
+    return formatAssignedRoleLabels(activityPack, [assignedRoleId], sessionId) ?? "배정됨";
+  }, [sessionId, activityPack, assignedRoleId]);
 
   const resumeQuery = useQuery({
     queryKey: ["play-resume", joinCode],
@@ -291,14 +282,7 @@ export function PlaySessionShell({
   }, [initialNickname, playerId, sessionId, resumeQuery.isLoading, resumeQuery.data, resumeDecided]);
 
   const hasJoinedSession = Boolean(playerId && sessionId);
-  const hasAssignment = Boolean(assignedItemIds.length > 0 && groupId);
-
-  const groupAcquiredIds = useMemo(
-    () => new Set((playerQuery.data?.word_cards ?? []).map((c) => c.itemId)),
-    [playerQuery.data?.word_cards],
-  );
-
-  const wordCards = playerQuery.data?.word_cards ?? [];
+  const hasAssignment = Boolean(assignedRoleId && groupId);
 
   const isWaitingLobby =
     hasJoinedSession &&
@@ -308,6 +292,7 @@ export function PlaySessionShell({
       (sessionPhase !== "overview" &&
         sessionPhase !== "expert_group" &&
         sessionPhase !== "home_group" &&
+        sessionPhase !== "individual_quiz" &&
         sessionPhase !== "results" &&
         !hasAssignment));
 
@@ -319,6 +304,7 @@ export function PlaySessionShell({
   const isActivityIntroduction = hasJoinedSession && sessionPhase === "overview";
   const isExpertPhase = hasJoinedSession && hasAssignment && sessionPhase === "expert_group";
   const isGroupPhase = hasJoinedSession && sessionPhase === "home_group";
+  const isIndividualQuizPhase = hasJoinedSession && sessionPhase === "individual_quiz";
   const isResultsPhase = hasJoinedSession && sessionPhase === "results";
 
   const groupMembersQuery = useQuery({
@@ -335,8 +321,6 @@ export function PlaySessionShell({
         id: m.id,
         nickname: m.nickname,
         assigned_role_id: m.assigned_role_id,
-        assigned_item_ids: m.assigned_item_ids,
-        word_cards: m.word_cards,
         created_at: m.created_at,
       })),
     [groupMembersQuery.data],
@@ -363,8 +347,6 @@ export function PlaySessionShell({
       resultsQuery.data.groups.map((g) => ({
         id: g.id,
         name: g.name,
-        worksheet_placements: g.worksheet_placements,
-        completed_at: g.completed_at,
       })),
       resultsQuery.data.players
         .filter((p) => p.group_id)
@@ -373,8 +355,9 @@ export function PlaySessionShell({
           nickname: p.nickname,
           groupId: p.group_id as string,
           assignedRoleId: p.assigned_role_id,
-          assignedItemIds: parseAssignedItemIds(p),
-          word_cards: p.word_cards ?? [],
+          baseScore: p.base_score,
+          individual_quiz_answers: p.individual_quiz_answers ?? [],
+          individual_quiz_submitted_at: p.individual_quiz_submitted_at,
         })),
       sessionId ?? undefined,
     );
@@ -401,20 +384,26 @@ export function PlaySessionShell({
     activityPack &&
     playerId &&
     groupId &&
-    assignedItemIds.length > 0
+    assignedRoleId
   ) {
     return (
       <ExpertPhasePanel
         pack={activityPack}
-        playerId={playerId}
-        groupId={groupId}
+        roleId={assignedRoleId}
         groupName={groupName}
         roleScopeKey={sessionId ?? ""}
-        assignedItemIds={assignedItemIds}
-        acquiredItemIds={groupAcquiredIds}
-        onAcquired={() => {
+        onSubmitPractice={async (results) => {
+          await submitPracticeResult({
+            playerId,
+            pack: activityPack,
+            roleId: assignedRoleId,
+            results,
+          });
           void queryClient.invalidateQueries({ queryKey: ["play-player", playerId] });
         }}
+        practiceSubmitted={Boolean(playerQuery.data?.practice_submitted_at)}
+        practiceResults={playerQuery.data?.practice_results ?? []}
+        practiceBaseScore={playerQuery.data?.base_score ?? null}
         pending={playerQuery.isLoading}
       />
     );
@@ -424,18 +413,29 @@ export function PlaySessionShell({
     return (
       <GroupPhasePanel
         pack={activityPack}
-        group={groupQuery.data}
         groupName={groupName}
         playerId={playerId}
-        assignedRoleId={playerQuery.data?.assigned_role_id ?? null}
-        wordCards={wordCards}
         members={groupMembers}
+        roleScopeKey={sessionId ?? ""}
+        pending={groupQuery.isLoading || groupMembersQuery.isLoading}
+      />
+    );
+  }
+
+  if (hasSupabaseEnv && isIndividualQuizPhase && activityPack && playerId) {
+    return (
+      <IndividualQuizPanel
+        pack={activityPack}
+        groupName={groupName}
+        submittedAnswers={playerQuery.data?.individual_quiz_answers ?? undefined}
+        submittedAt={playerQuery.data?.individual_quiz_submitted_at ?? null}
+        onSubmit={(answers) =>
+          submitIndividualQuiz({ playerId, pack: activityPack, answers })
+        }
         onUpdate={() => {
-          void queryClient.invalidateQueries({ queryKey: ["play-group", groupId] });
-          void queryClient.invalidateQueries({ queryKey: ["play-group-members", groupId] });
           void queryClient.invalidateQueries({ queryKey: ["play-player", playerId] });
         }}
-        pending={groupQuery.isLoading || groupMembersQuery.isLoading}
+        pending={playerQuery.isLoading}
       />
     );
   }
@@ -448,7 +448,7 @@ export function PlaySessionShell({
           phase: 1,
           title: "활동 소개",
           description:
-            "모둠·역할·공유 학습지를 확인하세요. 전문가 집단에서는 5단계 단서로 단어 카드를 얻습니다.",
+            "모둠·역할·활동 흐름을 확인하세요. 전문가 집단(연습 문제) → 홈 집단(설명) → 개별 형성평가 순으로 진행됩니다.",
           rightSlot: (
             <PlayHeaderGroupPlace
               groupName={groupName}

@@ -5,16 +5,23 @@
 import { ACTIVITY_PHASE_LABELS } from "@/lib/activity-phases";
 import { MIN_ROLES_PER_GROUP } from "@/lib/activity-pack/sizing";
 import type { ActivityPhase, SessionStatus } from "@/lib/types";
-import { assignRolesToPlayers, computeSessionGroupCount } from "@/lib/activity-pack/engine";
-import type { ActivityPack, WordCard, WorksheetPlacement } from "@/lib/activity-pack/types";
+import {
+  assignRolesToPlayers,
+  computeSessionGroupCount,
+  getTestQuestions,
+} from "@/lib/activity-pack/engine";
+import {
+  averagePracticeBaseScore,
+  practiceBaseScore,
+  PRACTICE_MAX_ATTEMPTS,
+} from "@/lib/activity-pack/scoring";
+import type { ActivityPack, PracticeQuestionResult, QuizAnswer, QuizQuestion } from "@/lib/activity-pack/types";
 import { pickSandboxLobbyBotNicknames, SANDBOX_LOBBY_BOT_COUNT } from "@/lib/sandbox/waiting-nicknames";
 import { getNextPhase } from "@/lib/api/sessions";
 
 export type SandboxGroup = {
   id: string;
   name: string;
-  worksheet_placements: WorksheetPlacement[];
-  completed_at: string | null;
 };
 
 export type SandboxPlayer = {
@@ -22,8 +29,11 @@ export type SandboxPlayer = {
   nickname: string;
   groupId: string;
   roleId: string;
-  itemIds: string[];
-  word_cards: WordCard[];
+  base_score?: number | null;
+  practice_results?: PracticeQuestionResult[];
+  practice_submitted_at?: string | null;
+  individual_quiz_answers: QuizAnswer[];
+  individual_quiz_submitted_at?: string | null;
   isReal?: boolean;
 };
 
@@ -69,11 +79,7 @@ export function buildSandboxWaitingRoster(
 }
 
 export function groupLabel(index: number) {
-  const A = "A".charCodeAt(0);
-  if (index < 26) return String.fromCharCode(A + index);
-  const first = Math.floor(index / 26) - 1;
-  const second = index % 26;
-  return `${String.fromCharCode(A + first)}${String.fromCharCode(A + second)}`;
+  return String(index + 1);
 }
 
 function shuffleArrayInPlace<T>(arr: T[]) {
@@ -83,6 +89,55 @@ function shuffleArrayInPlace<T>(arr: T[]) {
     arr[i] = arr[j]!;
     arr[j] = t;
   }
+}
+
+/** 가상 응답 생성 — correctRatio 비율만큼 정답, 나머지는 임의 오답을 고른다. */
+function fakeQuizAnswers(questions: QuizQuestion[], correctRatio: number): QuizAnswer[] {
+  return questions.map((q) => {
+    const pickCorrect = Math.random() < correctRatio || q.choices.length <= 1;
+    if (pickCorrect) {
+      return { questionId: q.id, choiceIndex: q.correctIndex };
+    }
+    const wrongChoices: number[] = [];
+    for (let i = 0; i < q.choices.length; i++) {
+      if (i !== q.correctIndex) wrongChoices.push(i);
+    }
+    const choiceIndex = wrongChoices[Math.floor(Math.random() * wrongChoices.length)] ?? 0;
+    return { questionId: q.id, choiceIndex };
+  });
+}
+
+/** 0.4 ~ 1.0 사이의 무작위 정답 비율 — 가상 플레이어의 점수를 다양하게 만든다. */
+function randomCorrectRatio(): number {
+  return 0.4 + Math.random() * 0.6;
+}
+
+function recentTimestamp(): string {
+  return new Date(Date.now() - Math.floor(Math.random() * 5 * 60 * 1000)).toISOString();
+}
+
+function randomWrongAttempts(): number {
+  const roll = Math.random();
+  return roll < 0.45 ? 0 : roll < 0.75 ? 1 : roll < 0.92 ? 2 : PRACTICE_MAX_ATTEMPTS;
+}
+
+/** 가상 연습 결과 — 역할 연습 문항마다 점수를 뽑고 평균을 기준 점수로 한다. */
+function randomPracticeResults(questions: QuizQuestion[]): {
+  results: PracticeQuestionResult[];
+  baseScore: number;
+} {
+  const results = questions.map((q) => {
+    const wrongAttempts = randomWrongAttempts();
+    return {
+      questionId: q.id,
+      wrongAttempts,
+      score: practiceBaseScore(wrongAttempts),
+    };
+  });
+  return {
+    results,
+    baseScore: averagePracticeBaseScore(results.map((r) => r.score)),
+  };
 }
 
 export function createInitialSandboxState(): SandboxState {
@@ -113,8 +168,6 @@ export function buildSandboxAssignments(
   const groups: SandboxGroup[] = Array.from({ length: numGroups }, (_, i) => ({
     id: `sandbox-group-${i}`,
     name: groupLabel(i),
-    worksheet_placements: [],
-    completed_at: null,
   }));
 
   const byGroup: SandboxWaitingChip[][] = groups.map(() => []);
@@ -122,6 +175,7 @@ export function buildSandboxAssignments(
     byGroup[idx % numGroups]!.push(chip);
   });
 
+  const testQuestions = getTestQuestions(pack);
   const players: SandboxPlayer[] = [];
 
   for (let gi = 0; gi < groups.length; gi++) {
@@ -134,14 +188,25 @@ export function buildSandboxAssignments(
     for (const chip of groupChips) {
       const playerId = chip.isReal ? SANDBOX_REAL_STUDENT_PLAYER_ID : `sandbox-player-${chip.id}`;
       const assigned = roleAssignment.get(playerId);
-      const itemIds = assigned?.itemIds ?? [];
+      // 가상 플레이어는 연습·형성평가를 미리 마친 상태로, 실제 학생은 비워 둔다.
+      const prefilled = !chip.isReal;
+      const roleId = assigned?.roleId ?? pack.roles[0]?.id ?? "";
+      const role = pack.roles.find((r) => r.id === roleId);
+      const practice =
+        prefilled && role ? randomPracticeResults(role.practiceQuestions) : null;
       players.push({
         id: playerId,
         nickname: chip.nickname.trim() || "참가자",
         groupId: group.id,
-        roleId: assigned?.roleId ?? pack.roles[0]?.id ?? "",
-        itemIds,
-        word_cards: [],
+        roleId,
+        base_score: practice?.baseScore ?? null,
+        practice_results: practice?.results ?? [],
+        practice_submitted_at: prefilled ? recentTimestamp() : null,
+        individual_quiz_answers:
+          prefilled && testQuestions.length > 0
+            ? fakeQuizAnswers(testQuestions, randomCorrectRatio())
+            : [],
+        individual_quiz_submitted_at: prefilled ? recentTimestamp() : null,
         isReal: chip.isReal ? true : undefined,
       });
     }
@@ -159,6 +224,8 @@ export function nextSandboxPhase(current: ActivityPhase): ActivityPhase | null {
     case "expert_group":
       return "home_group";
     case "home_group":
+      return "individual_quiz";
+    case "individual_quiz":
       return "results";
     default:
       return null;

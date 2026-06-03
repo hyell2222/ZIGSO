@@ -79,8 +79,8 @@ export async function startSession(activity: ActivityRecord, hostId?: string | n
 }
 
 const HOST_PHASE_PROGRESSION: Array<
-  "overview" | "expert_group" | "home_group"
-> = ["overview", "expert_group", "home_group"];
+  "overview" | "expert_group" | "home_group" | "individual_quiz"
+> = ["overview", "expert_group", "home_group", "individual_quiz"];
 
 export function getNextPhase(current: string | null): ActivityPhase | null {
   const c = (current as ActivityPhase) ?? "waiting";

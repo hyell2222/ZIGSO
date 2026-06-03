@@ -20,8 +20,9 @@ export type SessionResultsMember = {
   nickname: string | null;
   groupId: string;
   assignedRoleId: string | null;
-  assignedItemIds?: string[];
-  word_cards?: import("@/lib/activity-pack/types").WordCard[];
+  baseScore?: number | null;
+  individual_quiz_answers?: import("@/lib/activity-pack/types").QuizAnswer[];
+  individual_quiz_submitted_at?: string | null;
 };
 
 type Props = {
@@ -50,16 +51,15 @@ export function SessionResultsDashboard({
       groups.map((g) => ({
         id: g.id,
         name: g.name,
-        worksheet_placements: g.worksheet_placements,
-        completed_at: g.completed_at,
       })),
       members.map((m) => ({
         id: m.id,
         nickname: m.nickname,
         groupId: m.groupId,
         assignedRoleId: m.assignedRoleId,
-        assignedItemIds: m.assignedItemIds,
-        word_cards: m.word_cards,
+        baseScore: m.baseScore,
+        individual_quiz_answers: m.individual_quiz_answers,
+        individual_quiz_submitted_at: m.individual_quiz_submitted_at,
       })),
       roleScopeKey,
     );
@@ -75,10 +75,10 @@ export function SessionResultsDashboard({
 
   return (
     <PhaseSection
-      title="모둠 순위"
+      title="모둠 순위 (STAD)"
       heading="section"
       as="h2"
-      subtitle="모둠별 총점과 MVP. 개인 순위는 학생 화면에서 확인합니다."
+      subtitle="모둠별 집단 점수(평균 향상 점수)와 MVP. 개인 순위는 학생 화면에서 확인합니다."
       headerExtra={
         <PhaseSectionBadge>{results.rankedTeams.length}개 모둠</PhaseSectionBadge>
       }
@@ -89,11 +89,10 @@ export function SessionResultsDashboard({
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <p className={activityLayoutType.nestedCardLead}>{team.rank}위</p>
               <p className={activityLayoutType.nestedCardTitle}>{team.groupName}</p>
-              <p className={cn(activityLayoutType.nestedCardScore, "ml-auto")}>{team.totalScore}점</p>
+              <p className={cn(activityLayoutType.nestedCardScore, "ml-auto")}>{team.teamScore}점</p>
             </div>
             <p className={activityLayoutType.nestedCardMeta}>
-              단어 카드 {team.wordCardsAcquired} · 빈칸 {team.slotsFilled}
-              {team.activityCompleted ? " · 최종 제출" : ""}
+              집단 점수 = 모둠원 향상 점수 평균 · {team.memberCount}명
             </p>
             <div className={cn(activityCallout, "mt-2 px-3 py-2")}>
               <p className={activityLayoutType.nestedCardFootnote}>
@@ -103,7 +102,7 @@ export function SessionResultsDashboard({
                   {team.mvp.nickname}
                 </span>
                 {" · "}
-                {team.mvp.roleLabel} · {team.mvp.totalScore}점
+                {team.mvp.roleLabel} · 향상 {team.mvp.improvementPoints}점 (실전 {team.mvp.testScore}점)
               </p>
             </div>
           </li>
