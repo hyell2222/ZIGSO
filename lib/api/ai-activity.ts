@@ -9,7 +9,7 @@ import type { ActivityPack } from "@/lib/activity-pack/types";
 export type AIActivityRequest = {
   topic?: string;
   difficulty?: AiDifficultyLevel;
-  /** 본문 핵심 단어(역할) 수 — 모둠 인원과 동일하게 적용됩니다 */
+  /** 역할(모둠 인원) 수 */
   roleCount?: number;
   taskCount?: number;
   /** 제목·활동 안내·단서·수행 문장 언어 */

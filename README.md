@@ -18,19 +18,7 @@ Apply the schema on a **clean** Supabase project (or after backing up existing d
 1. Open the Supabase SQL Editor.
 2. Run the full script in [`supabase/schema.sql`](supabase/schema.sql).
 
-**Existing projects:** run migrations in order: [`001_quiz_restructure.sql`](supabase/migrations/001_quiz_restructure.sql) (if needed), [`002_stad.sql`](supabase/migrations/002_stad.sql), then [`003_multi_questions.sql`](supabase/migrations/003_multi_questions.sql):
-
-```sql
--- 002: STAD base score, drop group quiz
-alter table players add column if not exists base_score int;
-alter table players add column if not exists practice_submitted_at timestamptz;
-alter table groups drop column if exists group_quiz_answers;
-alter table groups drop column if exists completed_at;
-
--- 003: multiple practice questions per role
-alter table players add column if not exists practice_results jsonb not null default '[]'::jsonb;
-alter table players drop column if exists practice_wrong_attempts;
-```
+**Existing projects:** run the single upgrade script [`supabase/migrations/001_jigsaw_stad_upgrade.sql`](supabase/migrations/001_jigsaw_stad_upgrade.sql) in the Supabase SQL Editor (idempotent, safe to re-run).
 
 Core tables:
 
@@ -109,7 +97,7 @@ Request body supports `contentLanguage` (`ko` | `en`) for title, description, se
 
 ## Example activity pack
 
-See [`lib/activity-pack/sample-pack.json`](lib/activity-pack/sample-pack.json) for the **Textbook Reading: Save Our Planet** sample `activity_pack` (v3).
+See [`lib/activity-pack/sample-pack.json`](lib/activity-pack/sample-pack.json) for the **직소 예시 — 세 가지 이야기** sample `activity_pack` (v5, 역할별 무관한 주제·긴 지문).
 
 ## Submission Folder Support
 

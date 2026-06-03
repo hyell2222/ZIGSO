@@ -52,7 +52,7 @@ export function ActivityIntroductionLayout({
     {
       step: 3,
       title: "개별 형성평가",
-      body: `전체 실전 문제(${testCount}문항)를 한 번만 풉니다. 기준 점수 대비 향상도로 개인·집단 점수(STAD)를 받습니다.`,
+      body: `모든 역할의 실전 문제 ${testCount}문항을 한 번만 풉니다. 기준 점수 대비 향상도로 개인·집단 점수를 받습니다.`,
     },
   ];
 
@@ -68,7 +68,7 @@ export function ActivityIntroductionLayout({
               t.caption,
             )}
           >
-            전문가 집단 역할별 지문·연습으로 기준 점수를 정한 뒤, STAD 향상 점수로 개인·집단 점수를 받습니다.
+            지문을 나눠 연습으로 기준 점수를 정하고, 실전 문제로 향상 점수(개인·집단)를 산출합니다.
           </p>
         </PlayPhaseSectionCard>
 

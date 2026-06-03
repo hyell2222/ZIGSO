@@ -18,7 +18,7 @@ export function SessionHostWaitingRoster({ players }: Props) {
       title="입장 대기"
       heading="section"
       as="h2"
-      subtitle="참가 코드로 들어왔고, 수업 시작을 기다리는 학생입니다."
+      subtitle="참가 코드로 들어왔고, 시작을 기다리는 학생입니다."
       headerExtra={<PhaseSectionBadge>{players.length}명</PhaseSectionBadge>}
     >
       {players.length === 0 ? (

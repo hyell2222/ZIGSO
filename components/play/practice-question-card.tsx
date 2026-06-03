@@ -100,7 +100,7 @@ export function PracticeQuestionCard({ question, onComplete, initialResult, disa
       <div className="mb-3 flex items-center justify-between gap-2">
         <p className={cn("font-medium", t.playPanelBody)}>{question.prompt}</p>
         <span className="shrink-0 rounded-full bg-[var(--tint-accent-weak)] px-2.5 py-1 font-mono text-xs font-semibold tabular-nums text-[var(--primary)]">
-          {done ? `${currentScore}점` : `남은 기회 ${attemptsLeft}`}
+          {done ? `이 문항 ${currentScore}점` : `남은 기회 ${attemptsLeft}`}
         </span>
       </div>
 
@@ -189,7 +189,7 @@ export function PracticeQuestionCard({ question, onComplete, initialResult, disa
               t.playPanelBody,
             )}
           >
-            {correct ? `정답! 기준 점수 ${currentScore}점` : `정답 확인 완료 · 기준 점수 ${currentScore}점`}
+            {correct ? `정답! 이 문항 ${currentScore}점` : `정답 확인 · 이 문항 ${currentScore}점`}
           </p>
           {question.explanation ? (
             <p className={cn("rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2", t.caption)}>

@@ -1,6 +1,7 @@
 "use client";
 
-import { Plus, Trash2, Folder, CheckCircle2, Circle } from "lucide-react";
+import { useEffect, useState, type ReactNode } from "react";
+import { ChevronDown, Plus, Trash2, CheckCircle2, Circle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
@@ -29,43 +30,67 @@ type Props = {
   step: EditorStepId;
 };
 
-const inputBaseClass = "h-10 text-sm w-full";
+const inputBaseClass = "h-9 text-sm w-full";
 const CHOICE_LABELS = ["A", "B", "C", "D", "E", "F"];
 
-export function ActivityEditorForm({ draft, onChange, step }: Props) {
-  if (step === "basics") {
-    return (
-      <div className="max-w-2xl mx-auto w-full space-y-4">
-        <p className="text-xs text-center sm:text-left sm:text-sm leading-relaxed text-[var(--muted-foreground)]">
-          수업 주제와 활동 안내를 정합니다. 학생이 처음 보는 화면과 전체 학습 흐름의 기준이 됩니다.
-        </p>
-        <div className="rounded-2xl border border-[var(--border)] bg-[var(--card-bg)] p-5 shadow-xs space-y-4">
-          <FormField label="활동 제목" htmlFor="activity-title">
-            <Input
-              id="activity-title"
-              value={draft.title}
-              onChange={(e) => onChange({ ...draft, title: e.target.value })}
-              placeholder="예: 교과서 본문: Save Our Planet"
-              className={inputBaseClass}
-            />
-          </FormField>
-          <FormField label="활동 안내" htmlFor="activity-desc">
-            <Textarea
-              id="activity-desc"
-              rows={6}
-              value={draft.description}
-              onChange={(e) => onChange({ ...draft, description: e.target.value })}
-              placeholder="학습 목표와 활동 상황을 간단히 적어 주세요."
-              className="text-sm"
-            />
-          </FormField>
+function CollapsibleBlock({
+  title,
+  subtitle,
+  defaultOpen = true,
+  optional = false,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  defaultOpen?: boolean;
+  optional?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <details
+      open={defaultOpen}
+      className="group rounded-lg border border-[var(--border)] bg-[var(--card-bg)]"
+    >
+      <summary className="flex cursor-pointer list-none items-center gap-2 px-3 py-2.5 [&::-webkit-details-marker]:hidden">
+        <ChevronDown className="h-4 w-4 shrink-0 text-[var(--muted-foreground)] transition-transform group-open:rotate-180" />
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold text-[var(--foreground)]">
+            {title}
+            {optional ? (
+              <span className="ml-1.5 text-xs font-normal text-[var(--muted-foreground)]">
+                (선택)
+              </span>
+            ) : null}
+          </p>
+          {subtitle ? (
+            <p className="text-[11px] leading-snug text-[var(--muted-foreground)]">{subtitle}</p>
+          ) : null}
         </div>
-      </div>
-    );
-  }
+      </summary>
+      <div className="space-y-3 border-t border-[var(--border)] px-3 py-3">{children}</div>
+    </details>
+  );
+}
+
+function RolesStepEditor({
+  draft,
+  onChange,
+}: {
+  draft: ActivityEditorDraft;
+  onChange: (draft: ActivityEditorDraft) => void;
+}) {
+  const [activeRoleId, setActiveRoleId] = useState(draft.roles[0]?.localId ?? "");
+
+  useEffect(() => {
+    if (!draft.roles.some((r) => r.localId === activeRoleId)) {
+      setActiveRoleId(draft.roles[0]?.localId ?? "");
+    }
+  }, [draft.roles, activeRoleId]);
 
   const canAddRole = draft.roles.length < MAX_ROLES_PER_GROUP;
   const canRemoveRole = draft.roles.length > MIN_ROLES_PER_GROUP;
+  const activeRole = draft.roles.find((r) => r.localId === activeRoleId) ?? draft.roles[0];
+  const activeIndex = draft.roles.findIndex((r) => r.localId === activeRole?.localId);
 
   const updateRole = (localId: string, updater: (role: EditorRole) => EditorRole) => {
     onChange({
@@ -74,121 +99,190 @@ export function ActivityEditorForm({ draft, onChange, step }: Props) {
     });
   };
 
+  if (!activeRole || activeIndex < 0) {
+    return (
+      <p className="text-sm text-[var(--muted-foreground)]">역할을 추가해 주세요.</p>
+    );
+  }
+
   return (
-    <div className="max-w-2xl mx-auto w-full space-y-4">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <p className="text-xs sm:text-sm text-[var(--muted-foreground)]">
-          역할마다 지문, 연습 문제(여러 개·3회 기회), 실전 문제(여러 개·1회 응시)를 작성합니다.
+    <div className="mx-auto w-full max-w-5xl space-y-3">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-xs text-[var(--muted-foreground)] sm:text-sm">
+          역할을 선택해 지문·문항을 편집합니다. 모둠 인원({draft.roles.length}명)과 역할 수가 같습니다.
         </p>
-        {canAddRole && (
+        {canAddRole ? (
           <Button
             size="sm"
-            onClick={() => onChange({ ...draft, roles: [...draft.roles, createEmptyRole()] })}
-            className="gap-1 font-semibold text-xs shrink-0"
+            variant="outline"
+            onClick={() => {
+              const role = createEmptyRole();
+              onChange({ ...draft, roles: [...draft.roles, role] });
+              setActiveRoleId(role.localId);
+            }}
+            className="shrink-0 gap-1 text-xs"
           >
             <Plus className="h-3.5 w-3.5" /> 역할 추가
           </Button>
-        )}
+        ) : null}
       </div>
 
-      <div className="space-y-4">
-        {draft.roles.map((role, rIdx) => (
-          <div
-            key={role.localId}
-            className="rounded-2xl border-2 border-[color-mix(in_srgb,var(--border)_70%,transparent)] bg-[color-mix(in_srgb,var(--background)_30%,var(--card-bg))] p-4 space-y-4 shadow-xs"
-          >
-            <div className="flex items-center justify-between pb-1">
-              <div className="flex items-center gap-2">
-                <div className="flex h-7 w-7 items-center justify-center rounded-md bg-[color-mix(in_srgb,var(--primary)_10%,transparent)] text-[var(--primary)]">
-                  <Folder className="h-4 w-4" />
-                </div>
-                <span className="text-sm font-bold text-[var(--foreground)]">
-                  {editorRoleLabel(rIdx)}
-                </span>
-              </div>
-              {canRemoveRole && (
-                <button
-                  type="button"
-                  onClick={() =>
-                    onChange({
-                      ...draft,
-                      roles: draft.roles.filter((r) => r.localId !== role.localId),
-                    })
-                  }
-                  className="flex h-8 w-8 items-center justify-center rounded-md text-[var(--muted-foreground)] hover:text-[var(--danger)] hover:bg-[color-mix(in_srgb,var(--danger)_8%,transparent)]"
-                  title="역할 삭제"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              )}
-            </div>
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-start">
+        <nav
+          className="flex gap-1.5 overflow-x-auto pb-0.5 lg:w-36 lg:shrink-0 lg:flex-col lg:overflow-visible"
+          aria-label="역할 선택"
+        >
+          {draft.roles.map((role, rIdx) => {
+            const isActive = role.localId === activeRole.localId;
+            return (
+              <button
+                key={role.localId}
+                type="button"
+                onClick={() => setActiveRoleId(role.localId)}
+                className={cn(
+                  "shrink-0 rounded-lg border px-3 py-2 text-left text-sm font-semibold transition-colors lg:w-full",
+                  isActive
+                    ? "border-[var(--primary)] bg-[var(--tint-accent-strong)] text-[var(--primary)]"
+                    : "border-[var(--border)] bg-[var(--card-bg)] text-[var(--muted-foreground)] hover:border-[color-mix(in_srgb,var(--primary)_30%,var(--border))]",
+                )}
+              >
+                {editorRoleLabel(rIdx)}
+              </button>
+            );
+          })}
+        </nav>
 
-            <FormField
-              label="지문 조각 · 풀이 방식"
-              htmlFor={`role-segment-${role.localId}`}
-              help="전문가 집단에서 이 역할 학생이 공부하고, 홈 집단에서 설명할 내용입니다."
-            >
+        <div className="min-w-0 flex-1 space-y-2.5 rounded-xl border border-[var(--border)] bg-[color-mix(in_srgb,var(--background)_40%,var(--card-bg))] p-3 shadow-xs sm:p-4">
+          <div className="flex items-center justify-between gap-2 border-b border-[var(--border)] pb-2">
+            <h3 className="text-sm font-bold text-[var(--foreground)]">
+              {editorRoleLabel(activeIndex)}
+            </h3>
+            {canRemoveRole ? (
+              <button
+                type="button"
+                onClick={() => {
+                  const nextRoles = draft.roles.filter((r) => r.localId !== activeRole.localId);
+                  onChange({ ...draft, roles: nextRoles });
+                  setActiveRoleId(nextRoles[0]?.localId ?? "");
+                }}
+                className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-[var(--muted-foreground)] hover:bg-[color-mix(in_srgb,var(--danger)_8%,transparent)] hover:text-[var(--danger)]"
+              >
+                <Trash2 className="h-3.5 w-3.5" /> 삭제
+              </button>
+            ) : null}
+          </div>
+
+          <CollapsibleBlock
+            title="지문"
+            subtitle="전문가·홈 집단에서 다룰 내용"
+            defaultOpen
+          >
+            <FormField label="지문 조각" htmlFor={`role-segment-${activeRole.localId}`}>
               <Textarea
-                id={`role-segment-${role.localId}`}
-                rows={4}
-                value={role.segment}
+                id={`role-segment-${activeRole.localId}`}
+                rows={5}
+                value={activeRole.segment}
                 onChange={(e) =>
-                  updateRole(role.localId, (r) => ({ ...r, segment: e.target.value }))
+                  updateRole(activeRole.localId, (r) => ({ ...r, segment: e.target.value }))
                 }
-                placeholder="예: Part 1 — 도입: 환경은 우리를 둘러싼 모든 것…"
-                className="text-sm"
+                className="max-h-48 min-h-[7rem] resize-y text-sm"
               />
             </FormField>
-
             <FormField
               label="핵심 포인트 (선택)"
-              htmlFor={`role-keypoints-${role.localId}`}
+              htmlFor={`role-keypoints-${activeRole.localId}`}
               help="한 줄에 하나씩 입력하세요."
             >
               <Textarea
-                id={`role-keypoints-${role.localId}`}
+                id={`role-keypoints-${activeRole.localId}`}
                 rows={3}
-                value={role.keyPoints}
+                value={activeRole.keyPoints}
                 onChange={(e) =>
-                  updateRole(role.localId, (r) => ({ ...r, keyPoints: e.target.value }))
+                  updateRole(activeRole.localId, (r) => ({ ...r, keyPoints: e.target.value }))
                 }
-                placeholder={"환경 = 공기·물·땅·생물\n건강한 환경이 우리를 안전하게 함"}
-                className="text-sm"
+                className="max-h-32 resize-y text-sm"
               />
             </FormField>
+          </CollapsibleBlock>
 
+          <CollapsibleBlock
+            title="연습 문제"
+            subtitle="3회 기회·힌트 · 평균이 기준 점수"
+            defaultOpen
+          >
             <QuestionListEditor
-              title="연습 문제 (전문가 집단)"
-              hint="문항마다 3회 기회·힌트. 문항 점수의 평균이 기준 점수가 됩니다."
-              questions={role.practiceQuestions}
+              questions={activeRole.practiceQuestions}
               withScaffold
               onChange={(next) =>
-                updateRole(role.localId, (r) => ({ ...r, practiceQuestions: next }))
+                updateRole(activeRole.localId, (r) => ({ ...r, practiceQuestions: next }))
               }
             />
+          </CollapsibleBlock>
 
+          <CollapsibleBlock
+            title="실전 문제"
+            subtitle="1회 응시 · 형성평가에 포함"
+            defaultOpen={false}
+          >
             <QuestionListEditor
-              title="실전 문제 (개별 형성평가)"
-              hint="1회만 응시. 모든 역할의 실전 문항이 형성평가에 포함됩니다."
-              questions={role.testQuestions}
-              onChange={(next) => updateRole(role.localId, (r) => ({ ...r, testQuestions: next }))}
+              questions={activeRole.testQuestions}
+              onChange={(next) =>
+                updateRole(activeRole.localId, (r) => ({ ...r, testQuestions: next }))
+              }
             />
-          </div>
-        ))}
+          </CollapsibleBlock>
+        </div>
       </div>
     </div>
   );
 }
 
+export function ActivityEditorForm({ draft, onChange, step }: Props) {
+  if (step === "basics") {
+    return (
+      <div className="mx-auto w-full max-w-2xl space-y-4">
+        <p className="text-xs leading-relaxed text-[var(--muted-foreground)] sm:text-sm">
+          수업 주제와 활동 안내를 정합니다. 학생이 처음 보는 화면과 전체 학습 흐름의 기준이 됩니다.
+        </p>
+        <div className="space-y-4 rounded-2xl border border-[var(--border)] bg-[var(--card-bg)] p-5 shadow-xs">
+          <FormField label="활동 제목" htmlFor="activity-title">
+            <Input
+              id="activity-title"
+              value={draft.title}
+              onChange={(e) => onChange({ ...draft, title: e.target.value })}
+              placeholder="예: 직소 예시 — 세 가지 이야기"
+              className={inputBaseClass}
+            />
+          </FormField>
+          <FormField label="활동 안내" htmlFor="activity-desc">
+            <Textarea
+              id="activity-desc"
+              rows={5}
+              value={draft.description}
+              onChange={(e) => onChange({ ...draft, description: e.target.value })}
+              placeholder="학습 목표와 활동 상황을 간단히 적어 주세요."
+              className="max-h-40 resize-y text-sm"
+            />
+          </FormField>
+        </div>
+      </div>
+    );
+  }
+
+  return <RolesStepEditor draft={draft} onChange={onChange} />;
+}
+
+function questionSummary(prompt: string): string {
+  const t = prompt.trim();
+  if (!t) return "문항 내용 없음";
+  return t.length > 36 ? `${t.slice(0, 36)}…` : t;
+}
+
 function QuestionListEditor({
-  title,
-  hint,
   questions,
   withScaffold = false,
   onChange,
 }: {
-  title: string;
-  hint: string;
   questions: EditorQuestion[];
   withScaffold?: boolean;
   onChange: (next: EditorQuestion[]) => void;
@@ -200,47 +294,50 @@ function QuestionListEditor({
   };
 
   return (
-    <div className="space-y-3 rounded-xl border border-[var(--border)] bg-[var(--card-bg)] p-3">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-        <div>
-          <p className="text-xs font-bold text-[var(--foreground)]">{title}</p>
-          <p className="text-[11px] text-[var(--muted-foreground)]">{hint}</p>
-        </div>
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          className="gap-1 text-xs shrink-0"
-          onClick={() => onChange([...questions, createEmptyQuestion()])}
-        >
-          <Plus className="h-3.5 w-3.5" /> 문항 추가
-        </Button>
-      </div>
+    <div className="space-y-2">
+      <Button
+        type="button"
+        size="sm"
+        variant="outline"
+        className="h-8 gap-1 text-xs"
+        onClick={() => onChange([...questions, createEmptyQuestion()])}
+      >
+        <Plus className="h-3.5 w-3.5" /> 문항 추가
+      </Button>
 
       {questions.map((q, qIdx) => (
-        <div
+        <details
           key={q.localId}
-          className="rounded-lg border border-[var(--border)] bg-[var(--background)] p-3 space-y-3"
+          open={qIdx === 0}
+          className="group rounded-md border border-[var(--border)] bg-[var(--background)]"
         >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold">{editorQuestionLabel(qIdx)}</span>
-            {canRemove && (
+          <summary className="flex cursor-pointer list-none items-center gap-2 px-2.5 py-2 [&::-webkit-details-marker]:hidden">
+            <ChevronDown className="h-3.5 w-3.5 shrink-0 text-[var(--muted-foreground)] transition-transform group-open:rotate-180" />
+            <span className="min-w-0 flex-1 truncate text-xs font-semibold text-[var(--foreground)]">
+              {editorQuestionLabel(qIdx)} · {questionSummary(q.prompt)}
+            </span>
+            {canRemove ? (
               <button
                 type="button"
-                onClick={() => onChange(questions.filter((item) => item.localId !== q.localId))}
-                className="text-[var(--muted-foreground)] hover:text-[var(--danger)]"
+                onClick={(e) => {
+                  e.preventDefault();
+                  onChange(questions.filter((item) => item.localId !== q.localId));
+                }}
+                className="shrink-0 rounded p-1 text-[var(--muted-foreground)] hover:text-[var(--danger)]"
                 title="문항 삭제"
               >
-                <Trash2 className="h-4 w-4" />
+                <Trash2 className="h-3.5 w-3.5" />
               </button>
-            )}
+            ) : null}
+          </summary>
+          <div className="space-y-2.5 border-t border-[var(--border)] px-2.5 py-2.5">
+            <SingleQuestionEditor
+              question={q}
+              withScaffold={withScaffold}
+              onUpdate={(updater) => updateQuestion(q.localId, updater)}
+            />
           </div>
-          <SingleQuestionEditor
-            question={q}
-            withScaffold={withScaffold}
-            onUpdate={(updater) => updateQuestion(q.localId, updater)}
-          />
-        </div>
+        </details>
       ))}
     </div>
   );
@@ -266,29 +363,33 @@ function SingleQuestionEditor({
           rows={2}
           value={q.prompt}
           onChange={(e) => onUpdate((cur) => ({ ...cur, prompt: e.target.value }))}
-          className="text-sm"
+          className="min-h-[3rem] resize-y text-sm"
         />
       </FormField>
-      <div className="space-y-2">
-        <p className="text-xs font-bold">보기 (정답 클릭)</p>
+      <div className="space-y-1.5">
+        <p className="text-xs font-semibold text-[var(--foreground)]">보기 · 정답 선택</p>
         {q.choices.map((choice, ci) => {
           const isCorrect = q.correctIndex === ci;
           return (
-            <div key={ci} className="flex items-center gap-2">
+            <div key={ci} className="flex items-center gap-1.5">
               <button
                 type="button"
                 aria-pressed={isCorrect}
                 onClick={() => onUpdate((cur) => ({ ...cur, correctIndex: ci }))}
                 className={cn(
-                  "flex h-9 w-9 shrink-0 items-center justify-center rounded-md border",
+                  "flex h-8 w-8 shrink-0 items-center justify-center rounded-md border",
                   isCorrect
                     ? "border-[var(--primary)] bg-[var(--tint-accent-strong)] text-[var(--primary)]"
                     : "border-[var(--border)] text-[var(--muted-foreground)]",
                 )}
               >
-                {isCorrect ? <CheckCircle2 className="h-4 w-4" /> : <Circle className="h-4 w-4" />}
+                {isCorrect ? (
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                ) : (
+                  <Circle className="h-3.5 w-3.5" />
+                )}
               </button>
-              <span className="w-5 text-center text-xs font-semibold text-[var(--muted-foreground)]">
+              <span className="w-4 text-center text-[11px] font-semibold text-[var(--muted-foreground)]">
                 {CHOICE_LABELS[ci] ?? ci + 1}
               </span>
               <Input
@@ -302,7 +403,7 @@ function SingleQuestionEditor({
                 }}
                 className={inputBaseClass}
               />
-              {canRemoveChoice && (
+              {canRemoveChoice ? (
                 <button
                   type="button"
                   onClick={() =>
@@ -314,43 +415,48 @@ function SingleQuestionEditor({
                       return { ...cur, choices, correctIndex };
                     })
                   }
-                  className="text-[var(--muted-foreground)] hover:text-[var(--danger)]"
+                  className="shrink-0 p-1 text-[var(--muted-foreground)] hover:text-[var(--danger)]"
                 >
-                  <Trash2 className="h-3.5 w-3.5" />
+                  <Trash2 className="h-3 w-3" />
                 </button>
-              )}
+              ) : null}
             </div>
           );
         })}
-        {canAddChoice && (
+        {canAddChoice ? (
           <button
             type="button"
             onClick={() => onUpdate((cur) => ({ ...cur, choices: [...cur.choices, ""] }))}
-            className="text-xs font-bold text-[var(--primary)]"
+            className="text-xs font-semibold text-[var(--primary)]"
           >
-            + 보기 추가
+            + 보기
           </button>
-        )}
+        ) : null}
       </div>
       {withScaffold ? (
-        <>
-          <FormField label="오답 힌트 (선택)" help="한 줄에 하나. 1·2번째 오답 시 순서대로 표시.">
-            <Textarea
-              rows={2}
-              value={q.hints}
-              onChange={(e) => onUpdate((cur) => ({ ...cur, hints: e.target.value }))}
-              className="text-sm"
-            />
-          </FormField>
-          <FormField label="해설 (선택)">
-            <Textarea
-              rows={2}
-              value={q.explanation}
-              onChange={(e) => onUpdate((cur) => ({ ...cur, explanation: e.target.value }))}
-              className="text-sm"
-            />
-          </FormField>
-        </>
+        <details className="rounded-md border border-dashed border-[var(--border)] px-2.5 py-1">
+          <summary className="cursor-pointer py-1.5 text-xs font-semibold text-[var(--muted-foreground)]">
+            힌트·해설 (선택)
+          </summary>
+          <div className="space-y-2 pb-2">
+            <FormField label="오답 힌트" help="한 줄에 하나">
+              <Textarea
+                rows={2}
+                value={q.hints}
+                onChange={(e) => onUpdate((cur) => ({ ...cur, hints: e.target.value }))}
+                className="resize-y text-sm"
+              />
+            </FormField>
+            <FormField label="해설">
+              <Textarea
+                rows={2}
+                value={q.explanation}
+                onChange={(e) => onUpdate((cur) => ({ ...cur, explanation: e.target.value }))}
+                className="resize-y text-sm"
+              />
+            </FormField>
+          </div>
+        </details>
       ) : null}
     </>
   );

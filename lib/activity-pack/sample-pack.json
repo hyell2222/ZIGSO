@@ -1,119 +1,134 @@
 {
   "version": 5,
-  "title": "Textbook Reading: Save Our Planet",
-  "description": "Based on a middle-school English textbook passage. In expert groups, each student masters one part of the reading and solves a practice question (3 tries, with scaffolding hints) that sets their base score. Back in the home group, members teach each other using everyone's segment and practice question. Finally, every student takes an individual formative test over the whole passage, scored by STAD improvement points (individual + team average).",
+  "title": "활동: 직소 예시 — 세 가지 이야기",
+  "description": "역할마다 서로 다른 주제의 긴 지문을 익힌 뒤, 전문가 집단에서 연습 문제를 풀고 홈 집단에서 서로 가르칩니다. 마지막에는 모든 역할의 실전 문제로 개별 형성평가를 진행합니다. (STAD 직소 활동 예시)",
   "groupSize": 3,
   "roles": [
     {
-      "id": "intro_part",
-      "name": "Introduction",
-      "segment": "Part 1 — Introduction: Our environment is everything around us: the air, the water, the land, and all living things. We depend on a healthy environment to live safely, but human activity is putting it in danger.",
+      "id": "role_stars",
+      "name": "별과 우주",
+      "segment": "밤하늘을 올려다보면 수많은 별이 반짝이는 것을 볼 수 있다. 별은 스스로 빛을 내는 천체이며, 태양 역시 가까운 거리에 있는 별이다. 별의 밝기는 표면 온도와 크기에 따라 달라진다. 온도가 높은 별은 푸르게, 상대적으로 낮은 별은 붉게 보이는 경우가 많다. 별들은 주로 수소와 헬륨으로 이루어져 있으며, 핵융합 반응으로 에너지를 낸다. 우리가 보는 별빛은 수년, 때로는 수억 년 전에 출발한 빛일 수 있다. 가까운 별은 밤하늘에서 위치가 천천히 바뀌는 것처럼 보이기도 한다. 별무리는 중력으로 서로 묶인 별들의 집단으로, 은하수도 수많은 별이 모인 구조다. 천문학자들은 망원경과 관측 위성으로 별의 거리와 운동을 측정한다. 별의 생명 주기를 연구하면 우주의 역사를 이해하는 데 도움이 된다. 초신성 폭발은 무거운 별이 수명을 다할 때 일어나는 드라마틱한 현상이다. 별 연구는 지구 밖 우주의 기본 원리를 탐구하는 중요한 학문 분야다.",
       "keyPoints": [
-        "The environment = air, water, land, and living things.",
-        "A healthy environment keeps us safe.",
-        "Human activity puts the environment in danger."
+        "별은 스스로 빛을 내며, 태양도 별이다.",
+        "별빛은 오래 전에 출발한 빛일 수 있다.",
+        "별무리와 은하수는 많은 별이 모인 구조다.",
+        "천문학은 망원경·위성으로 별을 관측한다."
       ],
-      "practiceQuestions": [{
-        "id": "intro_practice",
-        "prompt": "According to the Introduction, what does our 'environment' include?",
-        "choices": [
-          "Only the air we breathe",
-          "Air, water, land, and all living things",
-          "Only forests and oceans",
-          "Only the things humans build"
-        ],
-        "correctIndex": 1,
-        "hints": [
-          "Look at the list in the first sentence.",
-          "It names four things, including all living things."
-        ],
-        "explanation": "The Introduction defines the environment as the air, the water, the land, and all living things."
-      }],
-      "testQuestions": [{
-        "id": "intro_test",
-        "prompt": "What does the word 'environment' refer to in the passage?",
-        "choices": [
-          "Only the air",
-          "Air, water, land, and living things",
-          "Only factories and cars",
-          "Only recycling programs"
-        ],
-        "correctIndex": 1
-      }]
+      "practiceQuestions": [
+        {
+          "id": "stars_practice_1",
+          "prompt": "이 지문에 따르면 별이 빛과 에너지를 내는 주된 이유는 무엇인가요?",
+          "choices": [
+            "지구의 대기가 별을 반사하기 때문",
+            "핵융합 반응으로 에너지를 내기 때문",
+            "달이 별빛을 모아 주기 때문",
+            "구름이 별을 밝게 보이게 하기 때문"
+          ],
+          "correctIndex": 1,
+          "hints": [
+            "별을 이루는 가스와 관련된 반응을 찾아보세요.",
+            "수소·헬륨과 함께 언급된 과정을 떠올려 보세요."
+          ],
+          "explanation": "지문에 따르면 별은 수소·헬륨으로 이루어져 있으며 핵융합 반응으로 에너지를 냅니다."
+        }
+      ],
+      "testQuestions": [
+        {
+          "id": "stars_test_1",
+          "prompt": "「별과 우주」 지문에서 별무리에 대한 설명으로 맞는 것은?",
+          "choices": [
+            "별들이 중력으로 묶인 집단이다",
+            "별들이 모두 같은 온도를 가진다",
+            "별무리는 지구 대기 안에만 있다",
+            "별무리는 인공 위성으로만 볼 수 있다"
+          ],
+          "correctIndex": 0
+        }
+      ]
     },
     {
-      "id": "problem_part",
-      "name": "Problem",
-      "segment": "Part 2 — The Problem: Factories and cars release harmful gases, and people throw away too much waste. This pollution makes the air, water, and land dirty and harms both people and animals.",
+      "id": "role_market",
+      "name": "전통 시장",
+      "segment": "전통 시장은 지역 주민이 오래 이용해 온 생활 공간이다. 시장 골목에는 계절 채소와 과일이 산더미처럼 놓인다. 손맛이 좋은 반찬 가게에서는 하루 종일 손님이 끊이지 않는다. 국밥이나 칼국수 같은 따뜻한 음식은 시장 안 식당의 인기 메뉴다. 상인들은 새벽에 도매 시장에서 재료를 들여와 신선함을 유지한다. 시장 음식은 값이 비교적 저렴하고 양이 푸짐한 편이다. 손님과 상인이 대화를 나누며 친근한 분위기를 만든다. 명절이나 잔치 때에는 시장이 더욱 붐비고 준비물이 빨리 소진된다. 전통 떡과 한과는 선물용으로 많이 찾는 대표 상품이다. 시장 문화는 지역 역사와 먹거리 습관이 함께 담긴 생활 유산이다. 최근에는 관광객도 전통 시장을 체험 공간으로 찾는다. 시장을 보존하려는 노력은 지역 경제와 문화를 지키는 일이기도 하다.",
       "keyPoints": [
-        "Factories and cars release harmful gases.",
-        "Too much waste is thrown away.",
-        "Pollution harms people and animals."
+        "전통 시장은 지역 생활과 먹거리가 모인 공간이다.",
+        "상인들은 새벽에 재료를 들여와 신선함을 유지한다.",
+        "시장 음식은 비교적 저렴하고 양이 푸짐하다.",
+        "시장 보존은 지역 경제·문화와 연결된다."
       ],
-      "practiceQuestions": [{
-        "id": "problem_practice",
-        "prompt": "According to the Problem part, what are the main causes of pollution?",
-        "choices": [
-          "Trees and rivers",
-          "Recycling and saving energy",
-          "Harmful gases from factories/cars and too much waste",
-          "Healthy air and clean water"
-        ],
-        "correctIndex": 2,
-        "hints": [
-          "Think about what factories and cars release.",
-          "There are two causes: harmful gases and too much waste."
-        ],
-        "explanation": "Pollution comes from harmful gases (factories and cars) and from throwing away too much waste."
-      }],
-      "testQuestions": [{
-        "id": "problem_test",
-        "prompt": "What causes pollution according to the passage?",
-        "choices": [
-          "Trees and rivers",
-          "Saving energy",
-          "Harmful gases and too much waste",
-          "Recycling plastic"
-        ],
-        "correctIndex": 2
-      }]
+      "practiceQuestions": [
+        {
+          "id": "market_practice_1",
+          "prompt": "이 지문에서 전통 시장 음식의 특징으로 언급된 것은?",
+          "choices": [
+            "값이 비싸고 양이 적다",
+            "비교적 저렴하고 양이 푸짐하다",
+            "모두 해외에서 수입된다",
+            "명절에만 판매된다"
+          ],
+          "correctIndex": 1,
+          "hints": [
+            "가격과 양에 대한 표현을 찾아보세요.",
+            "손님과 상인의 관계와는 다른 문장을 보세요."
+          ],
+          "explanation": "지문에는 시장 음식이 값이 비교적 저렴하고 양이 푸짐한 편이라고 나옵니다."
+        }
+      ],
+      "testQuestions": [
+        {
+          "id": "market_test_1",
+          "prompt": "「전통 시장」 지문에 따르면 상인들이 재료 신선함을 유지하는 방법은?",
+          "choices": [
+            "밤늦게 도매 시장에서 재료를 구한다",
+            "새벽에 도매 시장에서 재료를 들여온다",
+            "냉동 식품만 사용한다",
+            "관광객에게 재료를 받는다"
+          ],
+          "correctIndex": 1
+        }
+      ]
     },
     {
-      "id": "solution_part",
-      "name": "Solution",
-      "segment": "Part 3 — The Solution: We can protect the planet by reducing waste, saving energy, and recycling paper and plastic. Small daily actions by everyone add up to a big difference.",
+      "id": "role_security",
+      "name": "인터넷 안전",
+      "segment": "인터넷은 정보를 빠르게 공유하지만 잘못 쓰면 위험도 커진다. 강한 비밀번호는 계정을 지키는 가장 기본적인 방법이다. 같은 비밀번호를 여러 사이트에 쓰면 한 번의 유출로 여러 계정이 위험해진다. 출처가 분명하지 않은 링크는 누르기 전에 주소를 꼭 확인해야 한다. 공용 와이파이에서는 금융 거래나 중요한 로그인을 피하는 것이 좋다. 소프트웨어 업데이트는 보안 구멍을 막는 데 꼭 필요하다. 개인정보를 요구하는 메시지는 친구인 척해도 의심해 볼 필요가 있다. 사진과 연락처에도 민감한 정보가 포함될 수 있으므로 공유 범위를 조절해야 한다. 의심스러운 일은 부모나 교사처럼 믿을 수 있는 어른에게 바로 알리는 것이 좋다. 디지털 예절은 자신과 친구를 모두 지키는 생활 습관이다. 게임이나 커뮤니티에서도 타인을 존중하는 말을 사용하는 것이 중요하다. 안전한 인터넷 사용 습관은 오늘 배우면 평생 도움이 된다.",
       "keyPoints": [
-        "Reduce waste and save energy.",
-        "Recycle paper and plastic.",
-        "Small daily actions add up."
+        "강한·서로 다른 비밀번호가 기본이다.",
+        "출처 불명 링크와 공용 와이파이를 조심한다.",
+        "업데이트는 보안을 위해 필요하다.",
+        "의심스러우면 믿을 수 있는 어른에게 알린다."
       ],
-      "practiceQuestions": [{
-        "id": "solution_practice",
-        "prompt": "Which action does the Solution part suggest to protect the planet?",
-        "choices": [
-          "Throwing away more waste",
-          "Using more energy",
-          "Recycling paper and plastic",
-          "Releasing more harmful gases"
-        ],
-        "correctIndex": 2,
-        "hints": [
-          "The Solution part lists positive actions.",
-          "It mentions reducing waste, saving energy, and recycling."
-        ],
-        "explanation": "The Solution part suggests reducing waste, saving energy, and recycling paper and plastic."
-      }],
-      "testQuestions": [{
-        "id": "solution_test",
-        "prompt": "Which is NOT mentioned as a way to protect the planet?",
-        "choices": [
-          "Reducing waste",
-          "Saving energy",
-          "Recycling",
-          "Buying more cars"
-        ],
-        "correctIndex": 3
-      }]
+      "practiceQuestions": [
+        {
+          "id": "security_practice_1",
+          "prompt": "이 지문에서 계정을 더 안전하게 지키는 방법으로 맞는 것은?",
+          "choices": [
+            "모든 사이트에 같은 비밀번호를 쓴다",
+            "사이트마다 다른 강한 비밀번호를 쓴다",
+            "비밀번호를 친구와 공유한다",
+            "비밀번호를 적지 않고 외운다"
+          ],
+          "correctIndex": 1,
+          "hints": [
+            "여러 사이트에 같은 비밀번호를 쓸 때의 위험을 읽어 보세요.",
+            "‘강한 비밀번호’와 함께 나온 조언을 찾아보세요."
+          ],
+          "explanation": "지문은 강한 비밀번호가 기본이며, 같은 비밀번호를 여러 사이트에 쓰면 위험하다고 말합니다."
+        }
+      ],
+      "testQuestions": [
+        {
+          "id": "security_test_1",
+          "prompt": "「인터넷 안전」 지문에서 공용 와이파이 사용 시 권장되는 행동은?",
+          "choices": [
+            "금융 거래나 중요한 로그인을 피한다",
+            "비밀번호를 더 짧게 만든다",
+            "모르는 링크를 바로 누른다",
+            "업데이트를 하지 않는다"
+          ],
+          "correctIndex": 0
+        }
+      ]
     }
   ]
 }

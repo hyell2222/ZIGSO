@@ -59,6 +59,9 @@ export type RankedTeamResult = {
 
 export type SessionResultsSummary = {
   rankedTeams: RankedTeamResult[];
+  rankedMembers: RankedMemberResult[];
+  totalTeams: number;
+  totalPlayers: number;
 };
 
 export type RankedMemberResult = MemberResult & { rank: number };
@@ -128,7 +131,7 @@ export function getStudentResultsSnapshot(
     groupName: myTeam.groupName,
     teamScore: myTeam.teamScore,
     teamRank: myTeam.rank,
-    totalTeams: summary.rankedTeams.length,
+    totalTeams: summary.totalTeams,
     baseScore: myMember.baseScore,
     testScore: myMember.testScore,
     testCorrect: myMember.testCorrect,
@@ -136,7 +139,7 @@ export function getStudentResultsSnapshot(
     improvementPoints: myMember.improvementPoints,
     submitted: myMember.submitted,
     personalRank: myRank,
-    totalPlayers: allPlayers.length,
+    totalPlayers: summary.totalPlayers,
     roleLabel: myMember.roleLabel,
   };
 }
@@ -252,5 +255,14 @@ export function buildSessionResults(
     };
   });
 
-  return { rankedTeams: assignRanks(teams) };
+  const rankedTeams = assignRanks(teams);
+  const allMembers = rankedTeams.flatMap((t) => t.members);
+  const rankedMembers = assignMemberRanks(allMembers);
+
+  return {
+    rankedTeams,
+    rankedMembers,
+    totalTeams: rankedTeams.length,
+    totalPlayers: allMembers.length,
+  };
 }

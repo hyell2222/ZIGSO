@@ -68,7 +68,7 @@ export function GroupPhasePanel({
         phase: 3,
         title: "홈 집단",
         description:
-          "모둠으로 돌아와 각자 맡은 부분과 연습 문제 풀이 방식을 설명하세요. 모든 모둠원의 지문과 연습 문제를 볼 수 있어요.",
+          "모둠원의 지문과 연습 문제(정답·해설 포함)를 보며 서로 설명하세요. 이 단계에서는 제출하지 않습니다.",
         rightSlot: (
           <PlayHeaderGroupPlace
             groupName={groupName}

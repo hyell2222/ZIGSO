@@ -23,7 +23,7 @@ export function ActivityEditorStepper({
   const activeStep = EDITOR_STEPS.find((s) => s.id === currentStep);
 
   return (
-    <nav className="w-full py-3.5 bg-[var(--background)]">
+    <nav className="w-full py-3.5">
       <ol className="flex w-full min-w-0 items-center justify-start overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {EDITOR_STEPS.map((step, index) => {
           const isActive = step.id === currentStep;

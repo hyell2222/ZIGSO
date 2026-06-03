@@ -15,7 +15,7 @@ const WAITING_LOBBY: Record<
   },
   waiting: {
     title: "곧 활동이 시작됩니다",
-    body1: "시작하면 모둠·역할·단어가 배정됩니다.",
+    body1: "시작하면 모둠과 역할이 배정됩니다.",
     body2: "배정이 끝나면 같은 모둠끼리 모여 주세요.",
     emoji: "🧩",
   },

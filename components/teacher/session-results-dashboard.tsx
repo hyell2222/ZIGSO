@@ -3,17 +3,16 @@
 import { useMemo } from "react";
 
 import {
-  activityCallout,
-  activityNestedCard,
-  activityStackTight,
-} from "@/components/activity/activity-layout-chrome";
+  RankLeaderboard,
+  RankLeaderboardItem,
+  RankListRow,
+} from "@/components/activity/rank-display";
 import { activityLayoutType } from "@/components/activity/activity-layout-typography";
-import { PhaseSection, PhaseSectionBadge } from "@/components/activity/phase-section-layout";
+import { PhaseSection } from "@/components/activity/phase-section-layout";
 import { LoadingState } from "@/components/ui/loading-state";
 import { buildSessionResults } from "@/lib/activity-pack/session-results";
 import type { ActivityPack } from "@/lib/activity-pack/types";
 import type { GroupRow } from "@/lib/api/play";
-import { cn } from "@/lib/utils";
 
 export type SessionResultsMember = {
   id: string;
@@ -66,48 +65,38 @@ export function SessionResultsDashboard({
   }, [pack, groups, members, roleScopeKey]);
 
   if (loading) {
-    return <LoadingState variant="section" label="결과 집계 중…" />;
+    return <LoadingState variant="section" label="순위 집계 중…" />;
   }
 
   if (!results?.rankedTeams.length) {
-    return <p className={activityLayoutType.bodyMuted}>집계할 모둠 결과가 없습니다.</p>;
+    return <p className={activityLayoutType.bodyMuted}>집계할 순위가 없습니다.</p>;
   }
 
   return (
-    <PhaseSection
-      title="모둠 순위 (STAD)"
-      heading="section"
-      as="h2"
-      subtitle="모둠별 집단 점수(평균 향상 점수)와 MVP. 개인 순위는 학생 화면에서 확인합니다."
-      headerExtra={
-        <PhaseSectionBadge>{results.rankedTeams.length}개 모둠</PhaseSectionBadge>
-      }
-    >
-      <ol className={activityStackTight}>
-        {results.rankedTeams.map((team) => (
-          <li key={team.groupId} className={activityNestedCard}>
-            <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <p className={activityLayoutType.nestedCardLead}>{team.rank}위</p>
-              <p className={activityLayoutType.nestedCardTitle}>{team.groupName}</p>
-              <p className={cn(activityLayoutType.nestedCardScore, "ml-auto")}>{team.teamScore}점</p>
-            </div>
-            <p className={activityLayoutType.nestedCardMeta}>
-              집단 점수 = 모둠원 향상 점수 평균 · {team.memberCount}명
-            </p>
-            <div className={cn(activityCallout, "mt-2 px-3 py-2")}>
-              <p className={activityLayoutType.nestedCardFootnote}>
-                <span className={activityLayoutType.nestedCardFootnoteLabel}>MVP</span>
-                <span className={activityLayoutType.nestedCardFootnoteStrong}>
-                  {" "}
-                  {team.mvp.nickname}
-                </span>
-                {" · "}
-                {team.mvp.roleLabel} · 향상 {team.mvp.improvementPoints}점 (실전 {team.mvp.testScore}점)
-              </p>
-            </div>
-          </li>
-        ))}
-      </ol>
-    </PhaseSection>
+    <div className="space-y-5">
+      <PhaseSection title="모둠 순위" heading="section" as="h2">
+        <RankLeaderboard bordered>
+          {results.rankedTeams.map((team) => (
+            <RankLeaderboardItem key={team.groupId}>
+              <RankListRow title={team.groupName} rank={team.rank} />
+            </RankLeaderboardItem>
+          ))}
+        </RankLeaderboard>
+      </PhaseSection>
+
+      <PhaseSection title="개인 순위" heading="section" as="h2">
+        {results.rankedMembers.length === 0 ? (
+          <p className={activityLayoutType.bodyMuted}>집계할 개인 순위가 없습니다.</p>
+        ) : (
+          <RankLeaderboard bordered>
+            {results.rankedMembers.map((member) => (
+              <RankLeaderboardItem key={member.playerId}>
+                <RankListRow title={member.nickname} rank={member.rank} />
+              </RankLeaderboardItem>
+            ))}
+          </RankLeaderboard>
+        )}
+      </PhaseSection>
+    </div>
   );
 }

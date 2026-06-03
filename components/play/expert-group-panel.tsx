@@ -173,8 +173,7 @@ export function ExpertPhasePanel({
 
             <PlayPhaseSection title="연습 문제">
               <p className={cn("mb-3", t.playPanelHint)}>
-                문항마다 3번까지 풀 수 있어요. 틀릴 때마다 힌트가 나오고 점수가 깎입니다. 모두 풀면
-                평균 점수가 기준 점수가 됩니다.
+                문항마다 최대 3번, 틀릴 때마다 힌트와 감점이 적용됩니다.
               </p>
               <div className="space-y-4">
                 {practiceQuestions.map((q, qi) => {
@@ -203,8 +202,8 @@ export function ExpertPhasePanel({
             {done && baseScore != null ? (
               <PlayPhaseCallout title="전문가 완료!" centered>
                 <p className={t.playPanelCalloutBody}>
-                  기준 점수 {baseScore}점(연습 {practiceQuestions.length}문항 평균). 홈 집단에서
-                  모둠원에게 내 부분과 풀이 방식을 설명할 준비가 되었어요.
+                  기준 점수 {baseScore}점 — 연습 {practiceQuestions.length}문항 평균. 홈 집단에서
+                  모둠원에게 지문과 풀이 방식을 설명할 준비가 되었어요.
                 </p>
                 <PlayPhaseWaitFootnote className="mt-4" />
               </PlayPhaseCallout>

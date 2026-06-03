@@ -154,7 +154,7 @@ export default function ActivitiesPage() {
                         </div>
                       </div>
                       <p className="text-xs text-[var(--muted-foreground)] pb-2">
-                        모둠 {row.group_size ?? "—"}명 · 학습지 빈칸 {row.task_count ?? "—"}개
+                        모둠 {row.group_size ?? "—"}명 · 역할 {row.task_count ?? "—"}개
                       </p>
                       <div className="flex flex-col gap-2">
                         <Button
@@ -169,10 +169,10 @@ export default function ActivitiesPage() {
                           {startGameMutation.isPending ? (
                             <>
                               <Loader2 className="mr-2 h-4 w-4 shrink-0 animate-spin text-[var(--primary)]" aria-hidden />
-                              수업 시작하는 중…
+                              시작하는 중…
                             </>
                           ) : (
-                            "수업 시작"
+                            "시작하기"
                           )}
                         </Button>
                         <Button

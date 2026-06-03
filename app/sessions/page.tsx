@@ -467,7 +467,7 @@ function SessionHostContent() {
           <Loader2 className="h-4 w-4 shrink-0 animate-spin text-[var(--primary)]" aria-hidden />
         </>
       ) : (
-        <>수업 시작</>
+        <>시작하기</>
       )}
     </Button>
   ) : null;
@@ -535,7 +535,7 @@ function SessionHostContent() {
               </span>
             </div>
             <p className="mt-2 text-sm text-[var(--muted-foreground)]">
-              학생들이 전체 내용 실전 문제를 풉니다. 모두 제출하면 활동 결과로 넘어가세요.
+              학생들이 모든 역할의 실전 문제를 한 번씩 풉니다. 모두 제출하면 최종 순위로 넘어가세요.
             </p>
           </section>
         ) : null}

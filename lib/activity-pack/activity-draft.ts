@@ -7,6 +7,8 @@ import {
   MIN_CHOICES_PER_QUESTION,
   MIN_QUESTIONS_PER_ROLE,
 } from "@/lib/activity-pack/validate";
+import { parseActivityPack } from "@/lib/activity-pack/parse";
+import samplePack from "@/lib/activity-pack/sample-pack.json";
 import type { ActivityPack, QuizQuestion, Role } from "@/lib/activity-pack/types";
 import { ACTIVITY_PACK_VERSION } from "@/lib/activity-pack/types";
 import { makeTempId } from "@/lib/temp-id";
@@ -100,126 +102,11 @@ function questionsToEditor(questions: QuizQuestion[]): EditorQuestion[] {
 }
 
 export function createDefaultActivityDraft(): ActivityEditorDraft {
-  const mkPractice = (
-    prompt: string,
-    choices: string[],
-    correctIndex: number,
-    hints: string,
-    explanation: string,
-  ): EditorQuestion => ({
-    localId: makeTempId(),
-    id: "",
-    prompt,
-    choices,
-    correctIndex,
-    hints,
-    explanation,
-  });
-
-  const mkTest = (prompt: string, choices: string[], correctIndex: number): EditorQuestion => ({
-    localId: makeTempId(),
-    id: "",
-    prompt,
-    choices,
-    correctIndex,
-    hints: "",
-    explanation: "",
-  });
-
-  return {
-    title: "Textbook Reading: Save Our Planet",
-    description:
-      "Based on a middle-school English textbook passage. In expert groups, each student masters one part and solves practice questions (3 tries, hints); the average sets their base score. Back in the home group, members teach each other. Finally, every student takes a one-time formative test over all test questions, scored by STAD improvement points.",
-    roles: [
-      {
-        localId: makeTempId(),
-        id: "intro_part",
-        segment:
-          "Part 1 — Introduction: Our environment is everything around us: the air, the water, the land, and all living things. We depend on a healthy environment to live safely, but human activity is putting it in danger.",
-        keyPoints:
-          "The environment = air, water, land, and living things.\nA healthy environment keeps us safe.\nHuman activity puts the environment in danger.",
-        practiceQuestions: [
-          mkPractice(
-            "According to the Introduction, what does our 'environment' include?",
-            [
-              "Only the air we breathe",
-              "Air, water, land, and all living things",
-              "Only forests and oceans",
-              "Only the things humans build",
-            ],
-            1,
-            "Look at the list in the first sentence.\nIt names four things, including all living things.",
-            "The Introduction defines the environment as the air, the water, the land, and all living things.",
-          ),
-        ],
-        testQuestions: [
-          mkTest(
-            "What does the word 'environment' refer to in the passage?",
-            ["Only the air", "Air, water, land, and living things", "Only factories and cars", "Only recycling programs"],
-            1,
-          ),
-        ],
-      },
-      {
-        localId: makeTempId(),
-        id: "problem_part",
-        segment:
-          "Part 2 — The Problem: Factories and cars release harmful gases, and people throw away too much waste. This pollution makes the air, water, and land dirty and harms both people and animals.",
-        keyPoints:
-          "Factories and cars release harmful gases.\nToo much waste is thrown away.\nPollution harms people and animals.",
-        practiceQuestions: [
-          mkPractice(
-            "According to the Problem part, what are the main causes of pollution?",
-            [
-              "Trees and rivers",
-              "Recycling and saving energy",
-              "Harmful gases from factories/cars and too much waste",
-              "Healthy air and clean water",
-            ],
-            2,
-            "Think about what factories and cars release.\nThere are two causes: harmful gases and too much waste.",
-            "Pollution comes from harmful gases (factories and cars) and from throwing away too much waste.",
-          ),
-        ],
-        testQuestions: [
-          mkTest(
-            "What causes pollution according to the passage?",
-            ["Trees and rivers", "Saving energy", "Harmful gases and too much waste", "Recycling plastic"],
-            2,
-          ),
-        ],
-      },
-      {
-        localId: makeTempId(),
-        id: "solution_part",
-        segment:
-          "Part 3 — The Solution: We can protect the planet by reducing waste, saving energy, and recycling paper and plastic. Small daily actions by everyone add up to a big difference.",
-        keyPoints:
-          "Reduce waste and save energy.\nRecycle paper and plastic.\nSmall daily actions add up.",
-        practiceQuestions: [
-          mkPractice(
-            "Which action does the Solution part suggest to protect the planet?",
-            [
-              "Throwing away more waste",
-              "Using more energy",
-              "Recycling paper and plastic",
-              "Releasing more harmful gases",
-            ],
-            2,
-            "The Solution part lists positive actions.\nIt mentions reducing waste, saving energy, and recycling.",
-            "The Solution part suggests reducing waste, saving energy, and recycling paper and plastic.",
-          ),
-        ],
-        testQuestions: [
-          mkTest(
-            "Which is NOT mentioned as a way to protect the planet?",
-            ["Reducing waste", "Saving energy", "Recycling", "Buying more cars"],
-            3,
-          ),
-        ],
-      },
-    ],
-  };
+  const pack = parseActivityPack(samplePack);
+  if (!pack) {
+    throw new Error("sample-pack.json이 유효한 ActivityPack(v5) 형식이 아닙니다.");
+  }
+  return packToEditorDraft(pack);
 }
 
 export function packToEditorDraft(pack: ActivityPack): ActivityEditorDraft {

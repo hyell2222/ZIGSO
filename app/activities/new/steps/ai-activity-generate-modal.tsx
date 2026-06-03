@@ -68,7 +68,7 @@ export function AIActivityGenerateModal({ open, onClose, onApply }: Props) {
       <div className="space-y-4">
         <FormField
           label="수업 주제"
-          help="단원·차시 주제를 적으면 역할·단서·공유 학습지에 반영됩니다."
+          help="단원·차시 주제를 적으면 역할·지문·연습·실전 문제·단서에 반영됩니다."
           htmlFor="ai-activity-topic"
         >
           <Textarea
@@ -80,7 +80,7 @@ export function AIActivityGenerateModal({ open, onClose, onApply }: Props) {
           />
         </FormField>
 
-        <FormField label="난이도" help="저장되지 않습니다. 단서·공유 학습지 난이도 조절에만 사용합니다.">
+        <FormField label="난이도" help="저장되지 않습니다. 단서·문항 난이도 조절에만 사용합니다.">
           <div className="flex flex-wrap gap-2">
             {AI_DIFFICULTY_UI_OPTIONS.map((opt) => (
               <button
@@ -124,7 +124,7 @@ export function AIActivityGenerateModal({ open, onClose, onApply }: Props) {
         </FormField>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <FormField label="역할 수" help="모둠 인원과 같습니다. 역할당 단어 1개">
+          <FormField label="역할 수" help="모둠 인원과 같습니다. 역할마다 지문·연습·실전 문항이 붙습니다">
             <div className="flex items-center gap-2">
               <Button
                 type="button"
@@ -148,11 +148,11 @@ export function AIActivityGenerateModal({ open, onClose, onApply }: Props) {
             </div>
           </FormField>
           <FormField
-            label="학습지 빈칸 수"
-            help="최종 요약문에 넣을 빈칸(역할별 단어) 수 — 보통 역할 수와 같습니다"
+            label="문항 구성"
+            help="역할 수에 맞춰 연습·실전 문항이 자동으로 맞춰집니다"
           >
             <p className="text-sm text-[var(--muted-foreground)]">
-              역할 수({roleCount})와 같게 생성됩니다 — 역할마다 학습지 빈칸 1개
+              역할 {roleCount}개 — 역할마다 연습·실전 문제 세트 생성
             </p>
           </FormField>
         </div>

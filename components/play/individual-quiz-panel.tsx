@@ -102,9 +102,9 @@ export function IndividualQuizPanel({
     >
       <PlayPhasePanel>
         {submitted ? (
-          <PlayPhaseCallout title="개별 형성평가 제출 완료" centered>
+          <PlayPhaseCallout title="제출 완료" centered>
             <p className={t.playPanelCalloutBody}>
-              {grade.correctCount}/{questions.length} 정답. 결과는 활동 결과 화면에서 확인할 수 있어요.
+              실전 {grade.correctCount}/{questions.length} 정답. 순위는 최종 순위 단계에서 확인할 수 있어요.
             </p>
             <PlayPhaseWaitFootnote className="mt-4" />
           </PlayPhaseCallout>

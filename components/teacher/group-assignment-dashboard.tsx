@@ -83,18 +83,18 @@ export function GroupAssignmentDashboard({
 
   const badgeLabel = isItemView
     ? isEmpty
-      ? "0개 단어"
-      : `${itemBuckets.length}개 단어`
+      ? "0개 역할"
+      : `${itemBuckets.length}개 역할`
     : isEmpty
       ? "0개 모둠"
       : `${groups.length}개 모둠`;
 
   return (
     <PhaseSection
-      title="역할·단어 배정"
+      title="역할 배정"
       heading="section"
       as="h2"
-      subtitle={isItemView ? "학생별 단어" : "모둠별 구성"}
+      subtitle={isItemView ? "학생별 역할" : "모둠별 구성"}
       headerExtra={
         !loading && !isEmpty ? (
           <PhaseSectionBadge>
@@ -107,7 +107,7 @@ export function GroupAssignmentDashboard({
         <LoadingState variant="section" label="불러오는 중…" />
       ) : isEmpty ? (
         <p className={activityLayoutType.bodyMuted}>
-          {isItemView ? "배정된 단어가 없습니다." : "배정된 모둠이 없습니다."}
+          {isItemView ? "배정된 역할이 없습니다." : "배정된 모둠이 없습니다."}
         </p>
       ) : isItemView ? (
         <div className={activityCardGrid}>

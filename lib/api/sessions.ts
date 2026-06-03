@@ -52,7 +52,7 @@ export async function startSession(activity: ActivityRecord, hostId?: string | n
   const pack = parseActivityPack(activity.activity_pack);
   if (!pack) {
     throw new Error(
-      "이 활동에 콘텐츠가 없습니다. 활동 편집에서 역할·단어·공유 학습지를 설정해 주세요.",
+      "이 활동에 콘텐츠가 없습니다. 활동 편집에서 역할·연습·실전 문제를 설정해 주세요.",
     );
   }
 
@@ -139,8 +139,9 @@ export async function deleteSession(sessionId: string) {
   if (error) throw error;
 }
 
+/** 호스트·샌드박스 — 단계 진행 버튼 문구 */
+export const HOST_SESSION_NEXT_BUTTON_LABEL = "다음";
+
 export function hostSessionNextPhaseLabel(phase: ActivityPhase): string {
-  const next = getNextPhase(phase);
-  if (!next) return "—";
-  return next === "results" ? "활동 결과" : "다음 단계";
+  return getNextPhase(phase) ? HOST_SESSION_NEXT_BUTTON_LABEL : "—";
 }

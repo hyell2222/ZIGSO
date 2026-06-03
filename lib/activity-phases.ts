@@ -6,8 +6,8 @@ export const ACTIVITY_PHASE_LABELS: Record<ActivityPhase, string> = {
   overview: "활동 소개",
   expert_group: "전문가 집단",
   home_group: "홈 집단",
-  individual_quiz: "개별 퀴즈",
-  results: "활동 결과",
+  individual_quiz: "개별 형성평가",
+  results: "최종 순위",
 };
 
 export const TIMED_PHASE_ORDER = [
@@ -40,29 +40,28 @@ export const TEACHER_RESULTS_STEP = {
 export const TEACHER_PHASE_GUIDES: Record<TimedPhaseKey, PhaseGuide> = {
   overview: {
     title: ACTIVITY_PHASE_LABELS.overview,
-    summary: "모둠·역할·활동 흐름을 확인하고 활동을 시작합니다.",
+    summary: "모둠·역할·활동 흐름을 확인합니다.",
   },
   expert_group: {
     title: ACTIVITY_PHASE_LABELS.expert_group,
     summary:
-      "같은 역할끼리 모여 자신이 맡은 지문 조각·풀이 방식을 마스터합니다.",
+      "같은 역할끼리 모여 지문을 익히고, 역할별 연습 문제를 모두 풉니다. 문항 점수의 평균이 각자의 기준 점수가 됩니다.",
   },
   home_group: {
     title: ACTIVITY_PHASE_LABELS.home_group,
     summary:
-      "홈 집단으로 돌아가 각자 맡은 부분을 설명하고, 모둠이 함께 집단 퀴즈를 풉니다. (집단 점수)",
+      "홈 집단으로 돌아가 모둠원의 지문·연습 문제를 보며 서로 설명합니다. 제출 없이 교사가 다음 단계로 넘깁니다.",
   },
   individual_quiz: {
     title: ACTIVITY_PHASE_LABELS.individual_quiz,
     summary:
-      "각자 전체 내용에 대한 개별 퀴즈를 풉니다. (개별 점수)",
+      "모든 역할의 실전 문제를 한 번만 풉니다. 기준 점수 대비 향상도(STAD)로 개인·집단 점수를 산출합니다.",
   },
 };
 
 export const TEACHER_RESULTS_GUIDE = {
   title: ACTIVITY_PHASE_LABELS.results,
-  summary:
-    "모둠 순위와 MVP를 확인합니다. 수업 마무리 후 진행하세요. 화면을 닫으면 세션이 종료됩니다.",
+  summary: "모둠 순위와 점수를 확인합니다.",
 };
 
 export const TEACHER_PHASE_MINUTES: Record<TimedPhaseKey, number> = {

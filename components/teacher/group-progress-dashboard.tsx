@@ -42,7 +42,7 @@ export function GroupProgressDashboard({
       title="전문가 연습 진행"
       heading="section"
       as="h2"
-      subtitle="모둠별 연습 문제 완료·기준 점수 현황"
+      subtitle="모둠별 연습 완료 인원·평균 기준 점수"
       headerExtra={
         !loading && totalMembers > 0 ? (
           <PhaseSectionBadge>

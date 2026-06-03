@@ -199,8 +199,8 @@ function ReportsPageInner() {
           title="수업 기록"
           description={
             sessionId
-              ? "이 수업의 모둠 퀴즈 진행과 점수를 확인합니다."
-              : "진행한 수업별 모둠 퀴즈·점수를 확인합니다."
+              ? "이 수업의 연습·형성평가 진행과 STAD 결과를 확인합니다."
+              : "진행한 수업별 연습·형성평가·STAD 결과를 확인합니다."
           }
         />
         {sessionId ? (

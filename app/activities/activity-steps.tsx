@@ -25,6 +25,7 @@ import { getTestQuestions } from "@/lib/activity-pack/engine";
 import type { ActivityPack } from "@/lib/activity-pack/types";
 import { useRequireTeacherSession } from "@/lib/auth/use-require-teacher-session";
 import { ROUTES } from "@/lib/routes";
+import { cn } from "@/lib/utils";
 
 type Props =
   | { mode: "create"; pageTitle?: string }
@@ -136,14 +137,19 @@ export function ActivitySteps(props: Props) {
     <>
       <TopNav />
 
-      <main className="mx-auto w-full min-w-0 max-w-5xl overflow-x-hidden px-4 py-6 pb-10 sm:px-6 sm:py-8">
+      <main
+        className={cn(
+          "mx-auto w-full min-w-0 overflow-x-hidden px-4 py-6 pb-10 sm:px-6 sm:py-8",
+          step === "roles" ? "max-w-6xl" : "max-w-5xl",
+        )}
+      >
         <div className="mb-6">
           <PageHeader
             title={
               props.pageTitle ??
               (props.mode === "edit" ? "활동 수정" : "활동 만들기")
             }
-            description="활동 안내 → 역할별 지문·연습 문제·실전 문제 순으로 설계합니다."
+            description="활동 안내 → 역할별 지문·연습·실전 문제(각 여러 문항) 순으로 설계합니다."
             actions={
               <Button type="button" variant="outline" onClick={() => setAiOpen(true)}>
                 <Sparkles className="mr-1.5 h-4 w-4 text-[var(--primary)]" />

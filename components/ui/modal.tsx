@@ -167,6 +167,7 @@ export function Modal({
         "pb-[max(1.5rem,env(safe-area-inset-bottom,0px))] pt-[max(1.5rem,env(safe-area-inset-top,0px))]",
         sheetOnNarrow ? "items-end justify-center sm:items-center" : "items-center justify-center",
         overlayClassName ?? "bg-[var(--overlay-scrim)]/85",
+        dismissOnBackdrop && "cursor-pointer",
         zIndexClassName,
       )}
       role="presentation"
@@ -174,7 +175,7 @@ export function Modal({
         if (event.target === event.currentTarget && dismissOnBackdrop) onClose?.();
       }}
     >
-      <div className="w-full motion-safe:animate-[playModalRise_0.4s_cubic-bezier(0.22,1,0.36,1)_both]">
+      <div className="w-full cursor-default motion-safe:animate-[playModalRise_0.4s_cubic-bezier(0.22,1,0.36,1)_both]">
         {panel}
       </div>
     </div>

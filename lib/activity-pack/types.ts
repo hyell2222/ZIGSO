@@ -58,7 +58,7 @@ export type ActivityPack = {
   roles: Role[];
 };
 
-/** 퀴즈 응답 — 문항 id별 선택한 보기 인덱스 */
+/** 형성평가 응답 — 문항 id별 선택한 보기 인덱스 */
 export type QuizAnswer = {
   questionId: string;
   choiceIndex: number;

@@ -233,10 +233,10 @@ export function nextSandboxPhase(current: ActivityPhase): ActivityPhase | null {
 }
 
 export function getSandboxNextPhaseLabel(current: ActivityPhase): string {
-  if (current === "waiting") return "수업 시작";
+  if (current === "waiting") return "시작하기";
   const next = getNextPhase(current);
   if (!next) return "—";
-  return next === "results" ? "활동 결과" : "다음 단계";
+  return "다음";
 }
 
 export const SANDBOX_PHASE_LABEL = ACTIVITY_PHASE_LABELS;
