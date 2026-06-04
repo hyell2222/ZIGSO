@@ -109,7 +109,6 @@ export default function ActivitiesPage() {
           <div className="space-y-6">
             <PageHeader
               title="내 활동"
-              description="활동을 설계한 뒤 수업을 시작하면, 학생이 참가 코드로 입장해 직소·STAD 단계를 진행합니다."
               actions={
                 (activitiesQuery.data?.length ?? 0) > 0 ? (
                   <Button

@@ -197,11 +197,6 @@ function ReportsPageInner() {
       <main className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8">
         <PageHeader
           title="수업 기록"
-          description={
-            sessionId
-              ? "이 수업의 연습·형성평가 진행과 STAD 결과를 확인합니다."
-              : "진행한 수업별 연습·형성평가·STAD 결과를 확인합니다."
-          }
         />
         {sessionId ? (
           <ReportsSessionDetailPanel sessionId={sessionId} teacherUserId={teacherUserId} />

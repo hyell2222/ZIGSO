@@ -149,7 +149,6 @@ export function ActivitySteps(props: Props) {
               props.pageTitle ??
               (props.mode === "edit" ? "활동 수정" : "활동 만들기")
             }
-            description="활동 안내 → 역할별 지문·연습·실전 문제(각 여러 문항) 순으로 설계합니다."
             actions={
               <Button type="button" variant="outline" onClick={() => setAiOpen(true)}>
                 <Sparkles className="mr-1.5 h-4 w-4 text-[var(--primary)]" />
