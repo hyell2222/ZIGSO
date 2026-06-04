@@ -152,25 +152,6 @@ export function ExpertPhasePanel({
               </p>
             </PlayPhaseSection>
 
-            {role.keyPoints && role.keyPoints.length > 0 ? (
-              <PlayPhaseSection title="설명할 핵심 포인트">
-                <ul className="space-y-2">
-                  {role.keyPoints.map((point, i) => (
-                    <li
-                      key={i}
-                      className={cn(
-                        "flex gap-2 rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2",
-                        t.playPanelBody,
-                      )}
-                    >
-                      <span className="font-semibold text-[var(--accent)]">{i + 1}.</span>
-                      <span>{point}</span>
-                    </li>
-                  ))}
-                </ul>
-              </PlayPhaseSection>
-            ) : null}
-
             <PlayPhaseSection title="연습 문제">
               <p className={cn("mb-3", t.playPanelHint)}>
                 문항마다 최대 3번, 틀릴 때마다 힌트와 감점이 적용됩니다.

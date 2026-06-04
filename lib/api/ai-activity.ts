@@ -1,27 +1,24 @@
-import type { AiDifficultyLevel } from "@/lib/activity-pack/ai-difficulty";
 import type { ContentLanguage } from "@/lib/activity-pack/content-language";
-import type { ActivityPack } from "@/lib/activity-pack/types";
+import type { QuizQuestion } from "@/lib/activity-pack/types";
 
-/**
- * POST /api/ai/generate-activity-pack — Jigsaw 활동 팩 생성
- */
+/** POST /api/ai/generate-role-questions — 학습 내용 기반 문항 생성 */
 
-export type AIActivityRequest = {
-  topic?: string;
-  difficulty?: AiDifficultyLevel;
-  /** 역할(모둠 인원) 수 */
-  roleCount?: number;
-  taskCount?: number;
-  /** 제목·활동 안내·단서·수행 문장 언어 */
+export type AIRoleQuestionsRequest = {
+  segment: string;
+  activityTitle?: string;
+  kind: "practice" | "test";
+  questionCount?: number;
   contentLanguage?: ContentLanguage;
 };
 
-export type AIActivityResponse = ActivityPack;
+export type AIRoleQuestionsResponse = {
+  questions: QuizQuestion[];
+};
 
-export async function generateActivityPackWithAI(
-  body: AIActivityRequest,
-): Promise<AIActivityResponse> {
-  const res = await fetch("/api/ai/generate-activity-pack/", {
+export async function generateRoleQuestionsWithAI(
+  body: AIRoleQuestionsRequest,
+): Promise<AIRoleQuestionsResponse> {
+  const res = await fetch("/api/ai/generate-role-questions/", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -36,5 +33,5 @@ export async function generateActivityPackWithAI(
     }
     throw new Error(detail || `AI 호출 실패 (HTTP ${res.status})`);
   }
-  return (await res.json()) as AIActivityResponse;
+  return (await res.json()) as AIRoleQuestionsResponse;
 }

@@ -36,14 +36,12 @@ export type EditorRole = {
   localId: string;
   id: string;
   segment: string;
-  keyPoints: string;
   practiceQuestions: EditorQuestion[];
   testQuestions: EditorQuestion[];
 };
 
 export type ActivityEditorDraft = {
   title: string;
-  description: string;
   roles: EditorRole[];
 };
 
@@ -64,22 +62,21 @@ export function createEmptyRole(): EditorRole {
     localId: makeTempId(),
     id: "",
     segment: "",
-    keyPoints: "",
     practiceQuestions: [createEmptyQuestion()],
     testQuestions: [createEmptyQuestion()],
   };
 }
 
 export function editorRoleLabel(index: number): string {
-  return `역할 ${index + 1}`;
+  return `학습 내용 ${index + 1}`;
 }
 
 export function editorQuestionLabel(index: number): string {
   return `${index + 1}번 문항`;
 }
 
-function keyPointsToLines(keyPoints: string): string[] {
-  return keyPoints
+function multilineToLines(text: string): string[] {
+  return text
     .split("\n")
     .map((line) => line.trim())
     .filter(Boolean);
@@ -97,7 +94,7 @@ function questionToEditor(q: QuizQuestion): EditorQuestion {
   };
 }
 
-function questionsToEditor(questions: QuizQuestion[]): EditorQuestion[] {
+export function questionsToEditor(questions: QuizQuestion[]): EditorQuestion[] {
   return questions.length > 0 ? questions.map(questionToEditor) : [createEmptyQuestion()];
 }
 
@@ -114,14 +111,12 @@ export function packToEditorDraft(pack: ActivityPack): ActivityEditorDraft {
     localId: makeTempId(),
     id: role.id,
     segment: role.segment,
-    keyPoints: (role.keyPoints ?? []).join("\n"),
     practiceQuestions: questionsToEditor(role.practiceQuestions),
     testQuestions: questionsToEditor(role.testQuestions),
   }));
 
   return {
     title: pack.title.replace(/^활동:\s*/, ""),
-    description: pack.description,
     roles: roles.length > 0 ? roles : [createEmptyRole(), createEmptyRole()],
   };
 }
@@ -144,7 +139,7 @@ export function editorDraftToPack(draft: ActivityEditorDraft): ActivityPack {
     const choices = raw.choices.map((c) => c.trim()).filter(Boolean);
     const correctIndex =
       raw.correctIndex >= 0 && raw.correctIndex < choices.length ? raw.correctIndex : 0;
-    const hints = includeScaffold ? keyPointsToLines(raw.hints) : [];
+    const hints = includeScaffold ? multilineToLines(raw.hints) : [];
     const explanation = includeScaffold ? raw.explanation.trim() : "";
     return {
       id,
@@ -173,12 +168,10 @@ export function editorDraftToPack(draft: ActivityEditorDraft): ActivityPack {
       suffix += 1;
     }
     usedRoleIds.add(roleId);
-    const keyPoints = keyPointsToLines(rawRole.keyPoints);
     return {
       id: roleId,
       name: "",
       segment: rawRole.segment.trim(),
-      keyPoints: keyPoints.length > 0 ? keyPoints : undefined,
       practiceQuestions: toQuestions(rawRole.practiceQuestions, `${roleId}_practice`, true),
       testQuestions: toQuestions(rawRole.testQuestions, `${roleId}_test`, false),
     };
@@ -193,22 +186,13 @@ export function editorDraftToPack(draft: ActivityEditorDraft): ActivityPack {
   return normalizePackSizing({
     version: ACTIVITY_PACK_VERSION,
     title,
-    description: draft.description.trim(),
+    description: draft.title.trim()
+      ? `${draft.title.trim()} — 직소 협동 학습`
+      : "직소 협동 학습 활동",
     groupSize: roles.length,
     roles,
   });
 }
-
-export const EDITOR_STEPS = [
-  { id: "basics", title: "활동 안내", description: "제목·학습 상황 소개" },
-  {
-    id: "roles",
-    title: "역할·문제",
-    description: "역할별 지문 + 연습 문제(여러 개) + 실전 문제(여러 개)",
-  },
-] as const;
-
-export type EditorStepId = (typeof EDITOR_STEPS)[number]["id"];
 
 function validateQuestion(q: EditorQuestion, label: string, errors: string[]) {
   if (!q.prompt.trim()) errors.push(`${label} 문제를 입력하세요.`);
@@ -237,36 +221,24 @@ function validateQuestionList(
 
 function validateRoles(draft: ActivityEditorDraft, errors: string[]) {
   if (draft.roles.length < MIN_ROLES_PER_GROUP || draft.roles.length > MAX_ROLES_PER_GROUP) {
-    errors.push(`역할은 ${MIN_ROLES_PER_GROUP}~${MAX_ROLES_PER_GROUP}개입니다. (모둠 인원과 같습니다)`);
+    errors.push(
+      `학습 내용은 ${MIN_ROLES_PER_GROUP}~${MAX_ROLES_PER_GROUP}개입니다. (모둠 인원과 같습니다)`,
+    );
   }
   for (let ri = 0; ri < draft.roles.length; ri++) {
     const role = draft.roles[ri]!;
     const roleLabel = editorRoleLabel(ri);
     if (!role.segment.trim()) {
-      errors.push(`「${roleLabel}」지문 조각·풀이 방식을 입력하세요.`);
+      errors.push(`「${roleLabel}」을 입력하세요.`);
     }
     validateQuestionList(role.practiceQuestions, `「${roleLabel}」연습`, errors);
     validateQuestionList(role.testQuestions, `「${roleLabel}」실전`, errors);
   }
 }
 
-export function validateEditorDraftStep(draft: ActivityEditorDraft, step: EditorStepId): string[] {
-  const errors: string[] = [];
-  if (step === "basics") {
-    if (!draft.title.trim()) errors.push("수업·활동 제목을 입력하세요.");
-    if (!draft.description.trim()) errors.push("활동 안내(학습 상황)를 입력하세요.");
-    return errors;
-  }
-  if (step === "roles") {
-    validateRoles(draft, errors);
-  }
-  return errors;
-}
-
 export function validateEditorDraft(draft: ActivityEditorDraft): string[] {
   const errors: string[] = [];
-  if (!draft.title.trim()) errors.push("수업·활동 제목을 입력하세요.");
-  if (!draft.description.trim()) errors.push("활동 안내(학습 상황)를 입력하세요.");
+  if (!draft.title.trim()) errors.push("활동 제목을 입력하세요.");
   validateRoles(draft, errors);
   return errors;
 }

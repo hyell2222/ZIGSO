@@ -105,22 +105,6 @@ export function GroupPhasePanel({
                     >
                       {role.segment}
                     </p>
-                    {role.keyPoints && role.keyPoints.length > 0 ? (
-                      <ul className="space-y-2">
-                        {role.keyPoints.map((point, i) => (
-                          <li
-                            key={i}
-                            className={cn(
-                              "flex gap-2 rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2",
-                              t.playPanelBody,
-                            )}
-                          >
-                            <span className="font-semibold text-[var(--accent)]">{i + 1}.</span>
-                            <span>{point}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : null}
                     <div>
                       <p className={cn("mb-2", t.caption)}>연습 문제 · 정답과 해설</p>
                       <div className="space-y-3">

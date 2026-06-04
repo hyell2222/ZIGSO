@@ -63,10 +63,6 @@ function readRole(
   }
   seenRoleIds.add(roleId);
 
-  const keyPoints = Array.isArray(r.keyPoints)
-    ? r.keyPoints.map((k) => String(k).trim()).filter(Boolean)
-    : undefined;
-
   const practiceQuestions = readQuestionList(
     r.practiceQuestions ?? r.practiceQuestion,
     `${roleId}_practice`,
@@ -82,7 +78,6 @@ function readRole(
     id: roleId,
     name: String(r.name ?? "").trim(),
     segment: String(r.segment ?? "").trim(),
-    keyPoints: keyPoints && keyPoints.length > 0 ? keyPoints : undefined,
     practiceQuestions,
     testQuestions,
   };

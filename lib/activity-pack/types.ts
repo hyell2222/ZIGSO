@@ -41,8 +41,6 @@ export type Role = {
   name: string;
   /** 전문가가 맡아 마스터하는 지문 조각 */
   segment: string;
-  /** 모둠원에게 설명할 핵심 포인트(선택) */
-  keyPoints?: string[];
   /** 전문가 집단 연습 문제 (3회 기회·힌트) → 기준 점수는 문항 점수 평균 */
   practiceQuestions: QuizQuestion[];
   /** 개별 형성평가 실전 문제 (1회만 응시) */

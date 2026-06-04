@@ -69,9 +69,6 @@ function validateRole(
   if (typeof role.segment !== "string" || !role.segment.trim()) {
     issues.push({ path: `${path}.segment`, message: "segment required" });
   }
-  if (role.keyPoints !== undefined && !Array.isArray(role.keyPoints)) {
-    issues.push({ path: `${path}.keyPoints`, message: "keyPoints must be an array" });
-  }
   issues.push(
     ...validateQuestionList(role.practiceQuestions, `${path}.practiceQuestions`, questionIds),
   );
