@@ -4,9 +4,10 @@ import {
   ACTIVITY_PHASE_LABELS,
   TEACHER_PHASE_STEPS,
   TEACHER_RESULTS_STEP,
+  type TimedPhaseKey,
 } from "@/lib/activity-phases";
 
-/** 단계 번호·오버라인 — 교사·학생 헤더 공통 */
+/** 단계 번호·오버라인 — 교사 호스트 헤더 */
 export function getActivityPhaseStep(phase: ActivityPhase): {
   stepNumber: number | null;
   stepLabel: string;
@@ -17,15 +18,11 @@ export function getActivityPhaseStep(phase: ActivityPhase): {
   if (phase === "results") {
     return {
       stepNumber: TEACHER_RESULTS_STEP.number,
-      stepLabel: `${TEACHER_RESULTS_STEP.number}단계`,
+      stepLabel: `${TEACHER_RESULTS_STEP.number}단계 · ${TEACHER_RESULTS_STEP.label}`,
     };
   }
   const step = TEACHER_PHASE_STEPS.find((s) => s.key === phase);
   const n = step?.number ?? 1;
-  return { stepNumber: n, stepLabel: `${n}단계` };
-}
-
-/** 학생 play 패널 `phase: 1 | 2 | 3 | 4` → 단계 번호 */
-export function playPanelPhaseToStepNumber(phase: 1 | 2 | 3 | 4): number {
-  return phase;
+  const name = step?.label ?? ACTIVITY_PHASE_LABELS[phase as TimedPhaseKey];
+  return { stepNumber: n, stepLabel: `${n}단계 · ${name}` };
 }

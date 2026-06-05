@@ -5,13 +5,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { activityPageShell, activityLoaderRegion } from "@/components/activity/activity-layout-chrome";
 import { ExpertPhasePanel } from "@/components/play/expert-group-panel";
-import { ActivityIntroductionLayout } from "@/components/play/overview-layout";
+import { PlayPhasePanel, PlayPhaseWaitFootnote } from "@/components/play/play-phase-layout";
 import { GroupPhasePanel, type GroupMember } from "@/components/play/home-group-panel";
 import { IndividualQuizPanel } from "@/components/play/individual-quiz-panel";
 import { ResultsPhasePanel } from "@/components/play/results-phase-panel";
 import { PlayPhaseShell } from "@/components/play/play-phase-shell";
 import { PlayAtmosphere, playSurfaceCool } from "@/components/play/play-atmosphere";
-import { PlayHeaderGroupPlace } from "@/components/play/play-header-group-place";
+import { PlayStudentTopBanner } from "@/components/play/play-phase-layout";
 import { WaitingLobbyBlock } from "@/components/play/waiting-lobby-block";
 import { LoadingState } from "@/components/ui/loading-state";
 import { PlayJoinModal } from "@/components/play/play-join-modal";
@@ -33,6 +33,8 @@ import {
   setPlayerOnline,
   listGroupMembers,
   submitIndividualQuiz,
+  completePeerPracticeQuestion,
+  ensureHomeGroupComplete,
 } from "@/lib/api/play";
 import { buildSessionResults } from "@/lib/activity-pack/session-results";
 import {
@@ -415,8 +417,32 @@ export function PlaySessionShell({
         pack={activityPack}
         groupName={groupName}
         playerId={playerId}
+        ownRoleId={assignedRoleId}
         members={groupMembers}
         roleScopeKey={sessionId ?? ""}
+        peerPracticeCompleted={playerQuery.data?.peer_practice_completed ?? []}
+        homeGroupCompletedAt={playerQuery.data?.home_group_completed_at ?? null}
+        onPeerQuestionComplete={(questionId) =>
+          completePeerPracticeQuestion({
+            playerId: playerId!,
+            pack: activityPack,
+            memberRoleIds: groupMembers.map((m) => m.assigned_role_id),
+            ownRoleId: assignedRoleId,
+            questionId,
+          }).then(() => {
+            void queryClient.invalidateQueries({ queryKey: ["play-player", playerId] });
+          })
+        }
+        onEnsureHomeGroupComplete={() =>
+          ensureHomeGroupComplete({
+            playerId: playerId!,
+            pack: activityPack,
+            memberRoleIds: groupMembers.map((m) => m.assigned_role_id),
+            ownRoleId: assignedRoleId,
+          }).then(() => {
+            void queryClient.invalidateQueries({ queryKey: ["play-player", playerId] });
+          })
+        }
         pending={groupQuery.isLoading || groupMembersQuery.isLoading}
       />
     );
@@ -444,30 +470,24 @@ export function PlaySessionShell({
     const roleLabel = assignedRoleLabel;
     return (
       <PlayPhaseShell
-        header={{
-          phase: 1,
-          title: "활동 소개",
-          description:
-            "모둠·역할·활동 흐름을 확인하세요. 전문가 집단(연습 문제) → 홈 집단(설명) → 개별 형성평가 순으로 진행됩니다.",
-          rightSlot: (
-            <PlayHeaderGroupPlace
-              groupName={groupName}
-              placeName={roleLabel}
-              placeLabel="나의 역할"
-              pending={playerQuery.isLoading || !hasAssignment}
-            />
-          ),
-        }}
+        topBanner={
+          <PlayStudentTopBanner
+            phase="overview"
+            groupName={groupName}
+            placeName={roleLabel}
+            placeLabel="나의 역할"
+            pending={playerQuery.isLoading || !hasAssignment}
+          />
+        }
       >
         {playerQuery.isLoading && !hasAssignment ? (
-          <LoadingState variant="section" tone="play" className="min-h-[min(16rem,40dvh)] py-8" />
+          <LoadingState variant="section" tone="play" className="min-h-[min(12rem,32dvh)] py-8" />
+        ) : sessionQuery.isLoading ? (
+          <LoadingState variant="section" tone="play" className="min-h-[min(12rem,32dvh)] py-8" />
         ) : (
-          <ActivityIntroductionLayout
-            loading={sessionQuery.isLoading}
-            title={sessionQuery.data?.activities?.title ?? null}
-            description={sessionQuery.data?.activities?.description ?? null}
-            activityPack={activityPack}
-          />
+          <PlayPhasePanel>
+            <PlayPhaseWaitFootnote />
+          </PlayPhasePanel>
         )}
       </PlayPhaseShell>
     );

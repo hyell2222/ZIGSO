@@ -32,6 +32,8 @@ export type SandboxPlayer = {
   base_score?: number | null;
   practice_results?: PracticeQuestionResult[];
   practice_submitted_at?: string | null;
+  peer_practice_completed?: string[];
+  home_group_completed_at?: string | null;
   individual_quiz_answers: QuizAnswer[];
   individual_quiz_submitted_at?: string | null;
   isReal?: boolean;

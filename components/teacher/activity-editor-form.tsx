@@ -31,6 +31,7 @@ import {
   type ActivityEditorDraft,
 } from "@/lib/activity-pack/activity-draft";
 import { DEFAULT_CONTENT_LANGUAGE } from "@/lib/activity-pack/content-language";
+import { ACTIVITY_FLOW_STEPS, EDITOR_QUESTION_HINTS } from "@/lib/activity-phases";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -435,7 +436,7 @@ function LearningContentBlock({
           <QuestionListEditor
             variant="practice"
             label="연습 문제"
-            hint="전문가 집단 · 3회 시도, 오답 시 힌트"
+            hint={EDITOR_QUESTION_HINTS.practice}
             questions={role.practiceQuestions}
             withScaffold
             segment={role.segment}
@@ -447,7 +448,7 @@ function LearningContentBlock({
           <QuestionListEditor
             variant="test"
             label="실전 문제"
-            hint="개인 형성평가 · 1회만 응시"
+            hint={EDITOR_QUESTION_HINTS.test}
             questions={role.testQuestions}
             segment={role.segment}
             activityTitle={activityTitle}
@@ -518,7 +519,11 @@ export function ActivityEditorForm({ draft, onChange }: Props) {
           <div>
             <h2 className="text-sm font-semibold text-[var(--foreground)]">학습 내용</h2>
             <p className="mt-1 text-xs text-[var(--muted-foreground)]">
-              모둠 {draft.roles.length}명 · 항목을 골라 내용과 문제를 작성하세요.
+              모둠 {draft.roles.length}명 · 역할마다 학습 내용·연습 문제(2단계)·실전 문제(4단계)를
+              작성하세요.
+            </p>
+            <p className="mt-1 text-xs text-[var(--muted-foreground)]">
+              {ACTIVITY_FLOW_STEPS.map((s) => `${s.step}. ${s.title}`).join(" → ")}
             </p>
           </div>
           {canAddRole ? (

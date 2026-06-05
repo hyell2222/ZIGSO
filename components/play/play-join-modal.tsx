@@ -15,7 +15,6 @@ export function PlayJoinModal({
   open,
   modalVariant = "viewport",
   title = "활동 참가",
-  description = "선생님이 알려준 참가 코드와 닉네임을 입력하세요.",
   titleId = "play-join-modal",
   submitLabel = "참가하기",
   pendingLabel = "확인 중…",
@@ -32,14 +31,10 @@ export function PlayJoinModal({
       closeOnEscape={false}
       hideCloseButton
     >
-      {description ? (
-        <p className="text-xs text-[var(--foreground)]">{description}</p>
-      ) : null}
       <PlayJoinForm
         titleId={titleId}
         submitLabel={submitLabel}
         pendingLabel={pendingLabel}
-        className={description ? "pt-3" : undefined}
         {...formProps}
       />
     </Modal>

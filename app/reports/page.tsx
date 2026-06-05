@@ -13,12 +13,19 @@ import {
   listSessionGroups,
 } from "@/lib/api/play";
 import { useRequireTeacherSession } from "@/lib/auth/use-require-teacher-session";
-import { GroupProgressDashboard, type GroupProgressGroup } from "@/components/teacher/group-progress-dashboard";
+import {
+  GroupAssignmentDashboard,
+  type GroupAssignmentGroup,
+} from "@/components/teacher/group-assignment-dashboard";
+import { parseActivityPack } from "@/lib/api/activities";
+import { formatAssignedRoleLabels } from "@/lib/activity-pack/roles";
+import { parseAssignedRoleIds } from "@/lib/api/play";
 import { KebabMenu } from "@/components/ui/kebab-menu";
 import { PageHeader } from "@/components/layout/page-header";
 import { TopNav } from "@/components/layout/top-nav";
 import { LoadingState } from "@/components/ui/loading-state";
 import { groupPlayersByGroup } from "@/lib/teacher/group-players-by-group";
+import { isPlayerPhaseComplete } from "@/lib/teacher/phase-completion";
 import { ACTIVITY_PHASE_LABELS } from "@/lib/activity-phases";
 import type { ActivityPhase } from "@/lib/types";
 import { ROUTES } from "@/lib/routes";
@@ -127,19 +134,35 @@ function ReportsSessionDetailPanel({ sessionId, teacherUserId }: { sessionId: st
     enabled: Boolean(sessionId),
   });
 
-  const progressGroups = useMemo<GroupProgressGroup[]>(() => {
+  const activityPack = useMemo(
+    () => parseActivityPack(sessionQuery.data?.activities?.activity_pack),
+    [sessionQuery.data?.activities?.activity_pack],
+  );
+
+  const reportPhase =
+    (sessionQuery.data?.phase as ActivityPhase | undefined) ?? "waiting";
+
+  const assignmentGroups = useMemo<GroupAssignmentGroup[]>(() => {
     const groups = groupsQuery.data ?? [];
     const grouped = groupPlayersByGroup(playersQuery.data ?? [], groups);
-    return grouped.map((g) => ({
-      group: { id: g.group.id, name: g.group.name },
-      members: g.members.map((m) => ({
-        id: m.id,
-        nickname: m.nickname,
-        baseScore: m.base_score,
-        practiceSubmitted: Boolean(m.practice_submitted_at),
-      })),
-    }));
-  }, [playersQuery.data, groupsQuery.data]);
+    return grouped.map((g) => {
+      const memberRoleIds = g.members.map((m) => m.assigned_role_id);
+      return {
+        group: { id: g.group.id, name: g.group.name },
+        members: g.members.map((m) => ({
+          id: m.id,
+          nickname: m.nickname,
+          zoneName: activityPack
+            ? formatAssignedRoleLabels(activityPack, parseAssignedRoleIds(m), sessionId)
+            : null,
+          phaseComplete: isPlayerPhaseComplete(reportPhase, m, {
+            pack: activityPack,
+            memberRoleIds,
+          }),
+        })),
+      };
+    });
+  }, [playersQuery.data, groupsQuery.data, activityPack, sessionId, reportPhase]);
 
   if (sessionQuery.isLoading) {
     return <LoadingState variant="section" label="불러오는 중…" />;
@@ -171,9 +194,10 @@ function ReportsSessionDetailPanel({ sessionId, teacherUserId }: { sessionId: st
             sessionQuery.data.phase}
         </p>
       </div>
-      <GroupProgressDashboard
-        groups={progressGroups}
+      <GroupAssignmentDashboard
+        groups={assignmentGroups}
         loading={playersQuery.isLoading || groupsQuery.isLoading}
+        phase={reportPhase}
       />
     </div>
   );

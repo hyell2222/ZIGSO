@@ -6,8 +6,10 @@ import {
   assignRolesToPlayers,
   computeSessionGroupCount,
   computeBaseScoreFromPracticeResults,
+  getPeerPracticeQuestions,
   getPracticeQuestions,
   getTestQuestions,
+  isPeerPracticeComplete,
   isPracticeCompleteForRole,
   isQuizComplete,
 } from "@/lib/activity-pack/engine";
@@ -79,6 +81,8 @@ export type PlayerSelfRow = {
   base_score: number | null;
   practice_results: PracticeQuestionResult[];
   practice_submitted_at: string | null;
+  peer_practice_completed: string[];
+  home_group_completed_at: string | null;
   individual_quiz_answers: QuizAnswer[];
   individual_quiz_submitted_at: string | null;
   is_online: boolean | null;
@@ -86,7 +90,7 @@ export type PlayerSelfRow = {
 };
 
 const PLAYER_SELECT =
-  "id,nickname,session_id,group_id,assigned_role_id,base_score,practice_results,practice_submitted_at,individual_quiz_answers,individual_quiz_submitted_at,is_online,created_at";
+  "id,nickname,session_id,group_id,assigned_role_id,base_score,practice_results,practice_submitted_at,peer_practice_completed,home_group_completed_at,individual_quiz_answers,individual_quiz_submitted_at,is_online,created_at";
 
 /** 배정 역할 → 단일 역할 id 배열 (역할 라벨 표시 공통 헬퍼) */
 export function parseAssignedRoleIds(player: {
@@ -219,10 +223,20 @@ export function parsePracticeResults(raw: unknown): PracticeQuestionResult[] {
     .filter((r) => r.questionId.length > 0);
 }
 
-function normalizePlayerRow(row: PlayerSelfRow & { practice_results?: unknown }): PlayerSelfRow {
+function parsePeerPracticeCompleted(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((id) => (typeof id === "string" ? id.trim() : ""))
+    .filter((id) => id.length > 0);
+}
+
+function normalizePlayerRow(
+  row: PlayerSelfRow & { practice_results?: unknown; peer_practice_completed?: unknown },
+): PlayerSelfRow {
   return {
     ...row,
     practice_results: parsePracticeResults(row.practice_results),
+    peer_practice_completed: parsePeerPracticeCompleted(row.peer_practice_completed),
     individual_quiz_answers: parseQuizAnswers(row.individual_quiz_answers),
   };
 }
@@ -358,6 +372,66 @@ export async function submitPracticeResult(args: {
       base_score: baseScore,
       practice_results: args.results,
       practice_submitted_at: new Date().toISOString(),
+    })
+    .eq("id", args.playerId);
+  if (error) throw error;
+}
+
+/** 서로 알려주기 — 풀 문항이 없거나 이미 모두 완료된 경우 단계 완료 처리 */
+export async function ensureHomeGroupComplete(args: {
+  playerId: string;
+  pack: ActivityPack;
+  memberRoleIds: Array<string | null | undefined>;
+  ownRoleId: string | null;
+}) {
+  const player = await getPlayerById(args.playerId);
+  if (player.home_group_completed_at) return;
+
+  const peerQuestions = getPeerPracticeQuestions(
+    args.pack,
+    args.memberRoleIds,
+    args.ownRoleId,
+  );
+  if (!isPeerPracticeComplete(peerQuestions, player.peer_practice_completed)) return;
+
+  const { error } = await supabase
+    .from("players")
+    .update({ home_group_completed_at: new Date().toISOString() })
+    .eq("id", args.playerId);
+  if (error) throw error;
+}
+
+/** 서로 알려주기 — 모둠원 파트 연습 문항 완료 (점수 없음) */
+export async function completePeerPracticeQuestion(args: {
+  playerId: string;
+  pack: ActivityPack;
+  memberRoleIds: Array<string | null | undefined>;
+  ownRoleId: string | null;
+  questionId: string;
+}) {
+  const player = await getPlayerById(args.playerId);
+  if (player.home_group_completed_at) {
+    throw new Error(PLAYER_MESSAGES.homeGroupAlreadyDone);
+  }
+
+  const peerQuestions = getPeerPracticeQuestions(
+    args.pack,
+    args.memberRoleIds,
+    args.ownRoleId,
+  );
+  const validIds = new Set(peerQuestions.map((q) => q.id));
+  if (!validIds.has(args.questionId)) {
+    throw new Error(PLAYER_MESSAGES.operationFailed);
+  }
+
+  const completed = [...new Set([...player.peer_practice_completed, args.questionId])];
+  const allDone = isPeerPracticeComplete(peerQuestions, completed);
+
+  const { error } = await supabase
+    .from("players")
+    .update({
+      peer_practice_completed: completed,
+      home_group_completed_at: allDone ? new Date().toISOString() : null,
     })
     .eq("id", args.playerId);
   if (error) throw error;

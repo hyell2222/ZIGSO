@@ -11,19 +11,19 @@ type Props = {
 
 export function SessionHostJoinCard({ joinCode, sessionEnded = false, contained = false }: Props) {
   return (
-    <div className="ml-auto w-fit max-w-full shrink-0 self-end @sm:self-auto">
+    <div className="w-fit max-w-full shrink-0">
       <div
         className={cn(
-          "flex w-fit min-w-0 items-center justify-start gap-2 rounded-lg border border-[var(--border)] bg-[var(--card-bg)] px-2.5 py-2 shadow-[var(--elevation-sm)]",
-          "@md:px-3 @md:py-2.5",
-          sessionEnded && "mx-auto justify-center",
+          "flex w-fit min-w-0 items-center justify-start gap-2 rounded-xl border border-[color-mix(in_srgb,var(--primary)_12%,var(--border))]",
+          "bg-[var(--surface-overlay)] px-2.5 py-2 shadow-[var(--elevation-sm)]",
+          "@md:gap-2.5 @md:px-3 @md:py-2.5",
         )}
       >
         {sessionEnded ? (
-          <div className="py-0.5 text-center @sm:text-left">
+          <div className="py-0.5">
             <p
               className={cn(
-                "mt-0.5 font-mono font-medium tracking-wide text-[var(--muted-foreground)]",
+                "font-mono font-medium tracking-wide text-[var(--muted-foreground)]",
                 contained ? "text-xs" : "text-sm @md:text-base",
               )}
             >
@@ -32,6 +32,8 @@ export function SessionHostJoinCard({ joinCode, sessionEnded = false, contained 
           </div>
         ) : (
           <>
+            <PlayJoinQr joinCode={joinCode} />
+            <span className="h-7 w-px bg-[var(--border)] @md:h-9" aria-hidden />
             <div className="leading-tight">
               <p
                 className={cn(
@@ -43,15 +45,13 @@ export function SessionHostJoinCard({ joinCode, sessionEnded = false, contained 
               </p>
               <p
                 className={cn(
-                  "font-mono font-semibold tracking-[0.12em] text-[var(--accent)] tabular-nums",
-                  contained ? "text-sm" : "text-base @md:text-lg @md:tracking-[0.15em] @lg:text-xl @xl:text-2xl",
+                  "font-mono font-bold tracking-[0.12em] text-[var(--primary)] tabular-nums",
+                  contained ? "text-sm" : "text-base @md:text-lg @md:tracking-[0.15em] @lg:text-xl",
                 )}
               >
                 {joinCode}
               </p>
             </div>
-            <span className="h-7 w-px bg-[var(--border)] @md:h-9" aria-hidden />
-            <PlayJoinQr joinCode={joinCode} />
           </>
         )}
       </div>

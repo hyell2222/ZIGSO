@@ -2,45 +2,32 @@
 
 import type { ReactNode } from "react";
 
-import { ActivityPhaseHeader } from "@/components/activity/activity-phase-header";
+import { PhaseStepGuideCard } from "@/components/activity/phase-step-guide-card";
 import type { ActivityPhase } from "@/lib/api/activities";
-import { getActivityPhaseStep } from "@/lib/activity/phase-steps";
-import { TEACHER_PHASE_GUIDES, isTimedPhase } from "@/lib/activity-phases";
+import { isTimedPhase } from "@/lib/activity-phases";
 
-/**
- * 호스트 화면 단계 안내 — `ActivityPhaseHeader` 래퍼.
- */
+/** 호스트 화면 — stepper + 단계 안내 카드 */
 export function PhaseGuideCard({
   phase,
-  meta,
   contained = false,
   rightSlot,
+  className,
 }: {
   phase: ActivityPhase;
-  meta?: ReactNode;
   contained?: boolean;
   rightSlot?: ReactNode;
+  className?: string;
 }) {
-  if (phase === "waiting") {
-    return null;
-  }
-
-  const { stepNumber, stepLabel } = getActivityPhaseStep(phase);
-
   if (!isTimedPhase(phase)) return null;
 
-  const guide = TEACHER_PHASE_GUIDES[phase];
-
   return (
-    <ActivityPhaseHeader
-      stepNumber={stepNumber}
-      stepLabel={stepLabel}
-      title={guide.title}
-      description={guide.summary}
+    <PhaseStepGuideCard
+      phase={phase}
       contained={contained}
-      as="h2"
-      meta={meta}
+      audience="teacher"
+      surface="band"
       rightSlot={rightSlot}
+      className={className}
     />
   );
 }

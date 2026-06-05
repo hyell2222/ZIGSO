@@ -11,7 +11,13 @@ import { LoadingState } from "@/components/ui/loading-state";
 import { getActivity, parseActivityPack } from "@/lib/api/activities";
 import type { ActivityPhase } from "@/lib/api/activities";
 import { useRequireTeacherSession } from "@/lib/auth/use-require-teacher-session";
-import { getTestQuestions, isQuizComplete, PLAYER_MESSAGES } from "@/lib/activity-pack/engine";
+import {
+  getPeerPracticeQuestions,
+  getTestQuestions,
+  isPeerPracticeComplete,
+  isQuizComplete,
+  PLAYER_MESSAGES,
+} from "@/lib/activity-pack/engine";
 import type { PracticeQuestionResult } from "@/lib/activity-pack/types";
 import type { QuizAnswer } from "@/lib/activity-pack/types";
 import {
@@ -88,6 +94,53 @@ function SandboxPageContent() {
       }));
     },
     [],
+  );
+
+  const applyHomeGroupProgress = useCallback(
+    (playerId: string, questionId?: string) => {
+      if (!pack) return;
+      setState((prev) => {
+        const player = prev.players.find((p) => p.id === playerId);
+        if (!player) return prev;
+        const groupPlayers = prev.players.filter((p) => p.groupId === player.groupId);
+        const memberRoleIds = groupPlayers.map((p) => p.roleId);
+        const peerQuestions = getPeerPracticeQuestions(pack, memberRoleIds, player.roleId);
+        const completed = questionId
+          ? [...new Set([...(player.peer_practice_completed ?? []), questionId])]
+          : (player.peer_practice_completed ?? []);
+        const allDone = isPeerPracticeComplete(peerQuestions, completed);
+        return {
+          ...prev,
+          players: prev.players.map((p) =>
+            p.id === playerId
+              ? {
+                  ...p,
+                  peer_practice_completed: completed,
+                  home_group_completed_at:
+                    allDone && !p.home_group_completed_at
+                      ? new Date().toISOString()
+                      : p.home_group_completed_at,
+                }
+              : p,
+          ),
+        };
+      });
+    },
+    [pack],
+  );
+
+  const handlePeerQuestionComplete = useCallback(
+    (playerId: string, questionId: string) => {
+      applyHomeGroupProgress(playerId, questionId);
+    },
+    [applyHomeGroupProgress],
+  );
+
+  const handleEnsureHomeGroupComplete = useCallback(
+    (playerId: string) => {
+      applyHomeGroupProgress(playerId);
+    },
+    [applyHomeGroupProgress],
   );
 
   const handleSubmitIndividualQuiz = useCallback(
@@ -208,7 +261,6 @@ function SandboxPageContent() {
         <SandboxStudentPanel
           activityId={activityId}
           activityTitle={activity.title}
-          description={activity.description}
           pack={pack}
           phase={phase}
           groups={state.groups}
@@ -219,6 +271,8 @@ function SandboxPageContent() {
           realStudentPlayerId={SANDBOX_REAL_STUDENT_PLAYER_ID}
           onSubmitPractice={handleSubmitPractice}
           onSubmitIndividualQuiz={handleSubmitIndividualQuiz}
+          onPeerQuestionComplete={handlePeerQuestionComplete}
+          onEnsureHomeGroupComplete={handleEnsureHomeGroupComplete}
         />
       </BrowserWindow>
     </main>

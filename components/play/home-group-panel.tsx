@@ -1,19 +1,25 @@
 "use client";
 
-import { useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { PlayPhaseShell } from "@/components/play/play-phase-shell";
-import { PlayHeaderGroupPlace } from "@/components/play/play-header-group-place";
 import {
   PlayPhaseMessage,
   PlayPhasePanel,
   PlayPhaseSection,
   PlayPhaseWaitFootnote,
+  PlayStudentTopBanner,
 } from "@/components/play/play-phase-layout";
+import { PracticeQuestionCard } from "@/components/play/practice-question-card";
 import { QuizQuestionList } from "@/components/play/quiz-question-list";
 import { activityLayoutType } from "@/components/activity/activity-layout-typography";
 import { listGroupMembers, type PlayerSelfRow } from "@/lib/api/play";
-import { getRoleById } from "@/lib/activity-pack/engine";
+import {
+  getPeerPracticeQuestions,
+  getRoleById,
+  isPeerPracticeComplete,
+  PLAYER_MESSAGES,
+} from "@/lib/activity-pack/engine";
 import { codenameForRole } from "@/lib/play/role-codenames";
 import type { ActivityPack } from "@/lib/activity-pack/types";
 import { cn } from "@/lib/utils";
@@ -29,8 +35,13 @@ type Props = {
   pack: ActivityPack;
   groupName: string | null;
   playerId: string | null;
+  ownRoleId: string | null;
   members: GroupMember[];
   roleScopeKey: string;
+  peerPracticeCompleted?: string[];
+  homeGroupCompletedAt?: string | null;
+  onPeerQuestionComplete?: (questionId: string) => void | Promise<void>;
+  onEnsureHomeGroupComplete?: () => void | Promise<void>;
   pending?: boolean;
   contained?: boolean;
 };
@@ -39,16 +50,68 @@ export function GroupPhasePanel({
   pack,
   groupName,
   playerId,
+  ownRoleId,
   members,
   roleScopeKey,
+  peerPracticeCompleted = [],
+  homeGroupCompletedAt,
+  onPeerQuestionComplete,
+  onEnsureHomeGroupComplete,
   pending,
   contained = false,
 }: Props) {
+  const [completed, setCompleted] = useState<Record<string, true>>(() => {
+    const map: Record<string, true> = {};
+    for (const id of peerPracticeCompleted) map[id] = true;
+    return map;
+  });
+  const [message, setMessage] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
+
   const roleLabelFor = useMemo(() => {
     const roleIds = pack.roles.map((r) => r.id);
     return (roleId: string | null) =>
       roleId ? codenameForRole(roleScopeKey, roleId, roleIds) : "—";
   }, [pack.roles, roleScopeKey]);
+
+  const memberRoleIds = useMemo(
+    () => members.map((m) => m.assigned_role_id),
+    [members],
+  );
+
+  const peerQuestions = useMemo(
+    () => getPeerPracticeQuestions(pack, memberRoleIds, ownRoleId),
+    [pack, memberRoleIds, ownRoleId],
+  );
+
+  const peerDoneCount = peerQuestions.filter((q) => completed[q.id]).length;
+  const allPeerDone =
+    isPeerPracticeComplete(peerQuestions, Object.keys(completed)) ||
+    Boolean(homeGroupCompletedAt);
+
+  const handlePeerComplete = useCallback(
+    async (questionId: string) => {
+      if (completed[questionId] || homeGroupCompletedAt) return;
+      setMessage(null);
+      setBusyId(questionId);
+      try {
+        await onPeerQuestionComplete?.(questionId);
+        setCompleted((prev) => ({ ...prev, [questionId]: true }));
+      } catch (e) {
+        setMessage(e instanceof Error ? e.message : PLAYER_MESSAGES.operationFailed);
+        throw e;
+      } finally {
+        setBusyId(null);
+      }
+    },
+    [completed, homeGroupCompletedAt, onPeerQuestionComplete],
+  );
+
+  useEffect(() => {
+    if (allPeerDone && !homeGroupCompletedAt && peerQuestions.length === 0) {
+      void onEnsureHomeGroupComplete?.();
+    }
+  }, [allPeerDone, homeGroupCompletedAt, peerQuestions.length, onEnsureHomeGroupComplete]);
 
   const cards = useMemo(
     () =>
@@ -64,21 +127,28 @@ export function GroupPhasePanel({
   return (
     <PlayPhaseShell
       contained={contained}
-      header={{
-        phase: 3,
-        title: "홈 집단",
-        description:
-          "모둠원의 지문과 연습 문제(정답·해설 포함)를 보며 서로 설명하세요. 이 단계에서는 제출하지 않습니다.",
-        rightSlot: (
-          <PlayHeaderGroupPlace
-            groupName={groupName}
-            placeName={`${members.length}명`}
-            placeLabel="모둠원"
-            pending={pending}
-            contained={contained}
-          />
-        ),
-      }}
+      topBanner={
+        <PlayStudentTopBanner
+          phase="home_group"
+          groupName={groupName}
+          placeName={
+            peerQuestions.length > 0
+              ? `${peerDoneCount}/${peerQuestions.length}`
+              : `${members.length}명`
+          }
+          placeLabel={peerQuestions.length > 0 ? "모둠원 연습" : "모둠원"}
+          pending={pending}
+          contained={contained}
+          completeTitle={
+            allPeerDone && peerQuestions.length > 0 ? "3단계 완료!" : undefined
+          }
+          completeMessage={
+            allPeerDone && peerQuestions.length > 0
+              ? "모둠원 파트 연습을 모두 마쳤어요. 모둠원과 서로 설명하며 내용을 정리해 보세요."
+              : undefined
+          }
+        />
+      }
     >
       <PlayPhasePanel>
         {cards.length === 0 ? (
@@ -106,28 +176,54 @@ export function GroupPhasePanel({
                       {role.segment}
                     </p>
                     <div>
-                      <p className={cn("mb-2", t.caption)}>연습 문제 · 정답과 해설</p>
+                      <p className={cn("mb-2", t.caption)}>
+                        {card.isMe ? "연습 문제 · 내 답 확인" : "연습 문제 · 직접 풀기"}
+                      </p>
                       <div className="space-y-3">
-                        {role.practiceQuestions.map((pq, pqi) => (
-                          <div key={pq.id}>
-                            {role.practiceQuestions.length > 1 ? (
-                              <p className={cn("mb-1 text-xs font-medium", t.caption)}>
-                                연습 {pqi + 1}
-                              </p>
-                            ) : null}
-                            <QuizQuestionList questions={[pq]} selected={{}} reveal />
-                            {pq.explanation ? (
-                              <p
-                                className={cn(
-                                  "mt-2 rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2",
-                                  t.caption,
-                                )}
-                              >
-                                {pq.explanation}
-                              </p>
-                            ) : null}
-                          </div>
-                        ))}
+                        {role.practiceQuestions.map((pq, pqi) => {
+                          const label =
+                            role.practiceQuestions.length > 1 ? `연습 ${pqi + 1}` : null;
+                          if (card.isMe) {
+                            return (
+                              <div key={pq.id}>
+                                {label ? (
+                                  <p className={cn("mb-1 text-xs font-medium", t.caption)}>
+                                    {label}
+                                  </p>
+                                ) : null}
+                                <QuizQuestionList questions={[pq]} selected={{}} reveal />
+                                {pq.explanation ? (
+                                  <p
+                                    className={cn(
+                                      "mt-2 rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2",
+                                      t.caption,
+                                    )}
+                                  >
+                                    {pq.explanation}
+                                  </p>
+                                ) : null}
+                              </div>
+                            );
+                          }
+
+                          const done = Boolean(completed[pq.id] || homeGroupCompletedAt);
+                          return (
+                            <div key={pq.id}>
+                              {label ? (
+                                <p className={cn("mb-1 text-xs font-medium", t.caption)}>
+                                  {label}
+                                </p>
+                              ) : null}
+                              <PracticeQuestionCard
+                                question={pq}
+                                scored={false}
+                                initialResult={done ? { wrongAttempts: 0, baseScore: 0 } : null}
+                                disabled={done || busyId === pq.id}
+                                onComplete={() => handlePeerComplete(pq.id)}
+                              />
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   </div>
@@ -136,7 +232,10 @@ export function GroupPhasePanel({
             );
           })
         )}
+
         <PlayPhaseWaitFootnote className="mt-2" />
+
+        {message ? <PlayPhaseMessage message={message} /> : null}
       </PlayPhasePanel>
     </PlayPhaseShell>
   );

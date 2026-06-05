@@ -1,18 +1,15 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, type ReactNode } from "react";
 
 import {
   activityCardGrid,
-  activityListRow,
-  activityNestedCard,
+  activityTeacherGroupCard,
+  activityTeacherMemberRow,
 } from "@/components/activity/activity-layout-chrome";
 import { activityLayoutType } from "@/components/activity/activity-layout-typography";
-import {
-  PhaseSection,
-  PhaseSectionBadge,
-} from "@/components/activity/phase-section-layout";
 import { LoadingState } from "@/components/ui/loading-state";
+import type { ActivityPhase } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 export type GroupAssignmentMember = {
@@ -20,6 +17,7 @@ export type GroupAssignmentMember = {
   nickname: string | null;
   zoneName: string | null;
   groupName?: string | null;
+  phaseComplete?: boolean;
 };
 
 export type GroupAssignmentGroup = {
@@ -53,14 +51,42 @@ function buildItemBuckets(groups: GroupAssignmentGroup[]): ItemAssignmentBucket[
   });
 }
 
+function AssignmentMemberRow({
+  member,
+  secondary,
+}: {
+  member: GroupAssignmentMember;
+  secondary: ReactNode;
+}) {
+  return (
+    <li className={activityTeacherMemberRow}>
+      <span className={cn(activityLayoutType.listRowPrimary, "flex min-w-0 flex-1 items-center gap-1.5")}>
+        <span className="min-w-0 truncate">{member.nickname ?? "참가자"}</span>
+        {member.phaseComplete ? (
+          <span
+            className={cn(
+              "shrink-0 rounded-full bg-[var(--primary)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--on-primary)] @md:text-xs",
+            )}
+          >
+            완료
+          </span>
+        ) : null}
+      </span>
+      <span className={activityLayoutType.listRowSecondary}>{secondary}</span>
+    </li>
+  );
+}
+
 export function GroupAssignmentDashboard({
   groups,
   loading,
+  phase,
   groupBy = "group",
   contained = false,
 }: {
   groups: GroupAssignmentGroup[];
   loading: boolean;
+  phase: ActivityPhase;
   groupBy?: "group" | "item";
   contained?: boolean;
 }) {
@@ -74,35 +100,10 @@ export function GroupAssignmentDashboard({
   const isItemView = groupBy === "item";
   const isEmpty = isItemView ? itemBuckets.length === 0 : groups.length === 0;
 
-  const memberCount = useMemo(() => {
-    if (isItemView) {
-      return itemBuckets.reduce((sum, b) => sum + b.members.length, 0);
-    }
-    return groups.reduce((sum, g) => sum + g.members.length, 0);
-  }, [isItemView, itemBuckets, groups]);
-
-  const badgeLabel = isItemView
-    ? isEmpty
-      ? "0개 역할"
-      : `${itemBuckets.length}개 역할`
-    : isEmpty
-      ? "0개 모둠"
-      : `${groups.length}개 모둠`;
+  void phase;
 
   return (
-    <PhaseSection
-      title="역할 배정"
-      heading="section"
-      as="h2"
-      subtitle={isItemView ? "학생별 역할" : "모둠별 구성"}
-      headerExtra={
-        !loading && !isEmpty ? (
-          <PhaseSectionBadge>
-            {badgeLabel} · {memberCount}명
-          </PhaseSectionBadge>
-        ) : null
-      }
-    >
+    <div>
       {loading ? (
         <LoadingState variant="section" label="불러오는 중…" />
       ) : isEmpty ? (
@@ -112,21 +113,23 @@ export function GroupAssignmentDashboard({
       ) : isItemView ? (
         <div className={activityCardGrid}>
           {itemBuckets.map((item) => (
-            <div key={item.itemKey} className={activityNestedCard}>
-              <div className="flex items-baseline justify-between gap-2">
-                <p className={activityLayoutType.nestedCardHeader}>{item.itemName}</p>
-                <span className={activityLayoutType.nestedCardBadge}>{item.members.length}명</span>
+            <div key={item.itemKey} className={activityTeacherGroupCard}>
+              <div className="flex items-baseline justify-between gap-2 border-b border-[color-mix(in_srgb,var(--primary)_8%,var(--border))] pb-2.5">
+                <p className={cn(activityLayoutType.panelSectionTitle, "text-[var(--foreground)]")}>
+                  {item.itemName}
+                </p>
+                <span
+                  className={cn(
+                    activityLayoutType.caption,
+                    "rounded-full bg-[var(--tint-primary-weak)] px-2 py-0.5 font-medium text-[var(--primary-muted)]",
+                  )}
+                >
+                  {item.members.length}명
+                </span>
               </div>
-              <ul className="mt-2 space-y-2">
+              <ul className="mt-2.5 space-y-1.5">
                 {item.members.map((m) => (
-                  <li key={m.id} className={activityListRow}>
-                    <span className={cn(activityLayoutType.listRowPrimary, "min-w-0 flex-1")}>
-                      {m.nickname ?? "참가자"}
-                    </span>
-                    <span className={activityLayoutType.listRowSecondary}>
-                      {m.groupName ?? "—"}
-                    </span>
-                  </li>
+                  <AssignmentMemberRow key={m.id} member={m} secondary={m.groupName ?? "—"} />
                 ))}
               </ul>
             </div>
@@ -135,31 +138,34 @@ export function GroupAssignmentDashboard({
       ) : (
         <div className={activityCardGrid}>
           {groups.map((g) => (
-            <div key={g.group.id} className={activityNestedCard}>
-              <div className="flex items-baseline justify-between gap-2">
-                <p className={activityLayoutType.nestedCardHeader}>{g.group.name ?? "—"}</p>
-                <span className={activityLayoutType.nestedCardBadge}>{g.members.length}명</span>
+            <div key={g.group.id} className={activityTeacherGroupCard}>
+              <div className="flex items-baseline justify-between gap-2 border-b border-[color-mix(in_srgb,var(--primary)_8%,var(--border))] pb-2.5">
+                <p className={cn(activityLayoutType.panelSectionTitle, "font-mono text-[var(--primary)]")}>
+                  {g.group.name ?? "—"}
+                </p>
+                <span
+                  className={cn(
+                    activityLayoutType.caption,
+                    "rounded-full bg-[var(--tint-primary-weak)] px-2 py-0.5 font-medium text-[var(--primary-muted)]",
+                  )}
+                >
+                  {g.members.length}명
+                </span>
               </div>
-              <ul className="mt-2 space-y-2">
+              <ul className="mt-2.5 space-y-1.5">
                 {g.members.length === 0 ? (
                   <li className="rounded-md border border-dashed border-[var(--border)] px-3 py-2 text-sm text-[var(--muted-foreground)]">
                     아직 배정된 학생 없음
                   </li>
                 ) : (
                   g.members.map((m) => (
-                    <li key={m.id} className={activityListRow}>
-                      <span className={cn(activityLayoutType.listRowPrimary, "min-w-0 flex-1")}>
-                        {m.nickname ?? "참가자"}
-                      </span>
-                      <span
-                        className={cn(
-                          activityLayoutType.listRowSecondary,
-                          "text-[var(--accent)]",
-                        )}
-                      >
-                        {m.zoneName ?? "—"}
-                      </span>
-                    </li>
+                    <AssignmentMemberRow
+                      key={m.id}
+                      member={m}
+                      secondary={
+                        <span className="font-medium text-[var(--primary-muted)]">{m.zoneName ?? "—"}</span>
+                      }
+                    />
                   ))
                 )}
               </ul>
@@ -167,6 +173,6 @@ export function GroupAssignmentDashboard({
           ))}
         </div>
       )}
-    </PhaseSection>
+    </div>
   );
 }

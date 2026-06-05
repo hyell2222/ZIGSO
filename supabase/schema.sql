@@ -72,6 +72,10 @@ create table public.players (
   practice_results jsonb not null default '[]'::jsonb,
   /** 연습 완료 시각 */
   practice_submitted_at timestamptz,
+  /** 서로 알려주기 — 모둠원 파트 연습 완료 문항 id 목록 (점수 없음) */
+  peer_practice_completed jsonb not null default '[]'::jsonb,
+  /** 서로 알려주기 단계 완료 시각 */
+  home_group_completed_at timestamptz,
   /** 개별 형성평가(실전 문제) 응답 */
   individual_quiz_answers jsonb not null default '[]'::jsonb,
   /** 개별 형성평가 제출 시각 */
