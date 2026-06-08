@@ -315,7 +315,7 @@ function BrowserWindow({
         </div>
         <span
           className={cn(
-            "shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider sm:px-2 sm:text-[10px]",
+            "shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider sm:px-2 sm:text-xs",
             tone === "primary"
               ? "bg-[var(--primary)] text-[var(--on-primary)]"
               : "bg-[var(--accent)] text-[var(--background)]",

@@ -25,35 +25,35 @@
   border-radius: 9999px;
   border: 2px solid color-mix(in srgb, var(--highlight) 45%, white);
   background: color-mix(in srgb, var(--highlight) 14%, white);
-  font-size: 1.75rem;
+  font-size: 2rem;
   line-height: 1;
 }
 
 .iconCompact {
   width: 2.75rem;
   height: 2.75rem;
-  font-size: 1.35rem;
+  font-size: 1.5rem;
 }
 
 .title {
-  font-size: 1.15rem;
-  font-weight: 800;
+  font-size: 1.25rem;
+  font-weight: 800; /* KERISBAEUM EB */
   letter-spacing: -0.02em;
   color: var(--entry-parchment);
 }
 
 .titleCompact {
-  font-size: 1rem;
+  font-size: 1.125rem;
 }
 
 .sessionTitle {
-  font-size: 0.9rem;
-  font-weight: 600;
+  font-size: 1rem;
+  font-weight: 700; /* KERISBAEUM B */
   color: color-mix(in srgb, var(--primary) 88%, var(--ink));
 }
 
 .sessionTitleCompact {
-  font-size: 0.8rem;
+  font-size: 0.875rem;
 }
 
 .rankCard {
@@ -73,8 +73,8 @@
 }
 
 .rankLabel {
-  font-size: 0.72rem;
-  font-weight: 700;
+  font-size: 0.875rem;
+  font-weight: 700; /* KERISBAEUM B */
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--accent);
@@ -82,36 +82,38 @@
 
 .rankValue {
   margin-top: 0.15rem;
-  font-family: var(--font-dunggeunmo), monospace;
-  font-size: 2.75rem;
-  font-weight: 800;
+  font-family: var(--font-kerisbaeum), ui-monospace, monospace;
+  font-size: 3rem;
+  font-weight: 800; /* KERISBAEUM EB */
   line-height: 1;
   letter-spacing: -0.03em;
   color: var(--primary);
 }
 
 .rankValueCompact {
-  font-size: 2.25rem;
+  font-size: 2.5rem;
 }
 
 .rankMeta {
   margin-top: 0.35rem;
-  font-size: 0.78rem;
+  font-size: 0.875rem;
+  font-weight: 300; /* KERISBAEUM L */
   color: var(--entry-parchment-muted);
 }
 
 .scoreValue {
   margin-top: 0.65rem;
-  font-family: var(--font-dunggeunmo), monospace;
-  font-size: 1.65rem;
-  font-weight: 800;
+  font-family: var(--font-kerisbaeum), ui-monospace, monospace;
+  font-size: 1.875rem;
+  font-weight: 800; /* KERISBAEUM EB */
   line-height: 1;
   color: var(--foreground);
 }
 
 .scoreDetail {
   margin-top: 0.35rem;
-  font-size: 0.72rem;
+  font-size: 0.875rem;
+  font-weight: 300; /* KERISBAEUM L */
   line-height: 1.45;
   color: var(--entry-parchment-muted);
 }

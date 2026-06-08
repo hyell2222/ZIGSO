@@ -10,6 +10,38 @@
   --container-lg: 64rem; /* 1024px */
   --container-xl: 80rem; /* 1280px */
   --container-2xl: 96rem; /* 1536px */
+
+  /* KERISBAEUM 4종: L(300) · R(400) · B(700) · EB(800) */
+  --font-sans: var(--font-kerisbaeum), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-kerisbaeum), ui-monospace, monospace;
+  --font-weight-light: 300;
+  --font-weight-normal: 400;
+  --font-weight-medium: 400;
+  --font-weight-semibold: 700;
+  --font-weight-bold: 700;
+  --font-weight-extrabold: 800;
+
+  /* Tailwind 기본 대비 한 단계 상향 */
+  --text-xs: 0.875rem;
+  --text-xs--line-height: 1.25rem;
+  --text-sm: 1rem;
+  --text-sm--line-height: 1.5rem;
+  --text-base: 1.125rem;
+  --text-base--line-height: 1.75rem;
+  --text-lg: 1.25rem;
+  --text-lg--line-height: 1.75rem;
+  --text-xl: 1.5rem;
+  --text-xl--line-height: 2rem;
+  --text-2xl: 1.875rem;
+  --text-2xl--line-height: 2.25rem;
+  --text-3xl: 2.25rem;
+  --text-3xl--line-height: 2.5rem;
+  --text-4xl: 2.75rem;
+  --text-4xl--line-height: 2.75rem;
+  --text-5xl: 3.5rem;
+  --text-5xl--line-height: 1;
+  --text-6xl: 4rem;
+  --text-6xl--line-height: 1;
 }
 
 /** 애니메이션은 동작 감소 설정이 꺼져 있을 때만 적용 (motion-safe: 접두사) */
@@ -121,10 +153,28 @@
 }
 
 html {
-  font-size: 18px;
+  font-size: 20px;
 }
 
 body {
+  position: relative;
+  isolation: isolate;
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-kerisbaeum), ui-sans-serif, system-ui, sans-serif;
+  font-weight: 400;
+}
+
+/**
+ * 긴 스크롤 페이지(활동 에디터 등)에서 body 높이에 맞춰 그라데이션이 늘어나 끊기는 현상 방지.
+ * 뷰포트에 고정된 배경 레이어로 전 페이지에 동일한 톤을 유지한다.
+ */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
   background-color: var(--background);
   background-image:
     radial-gradient(
@@ -145,15 +195,16 @@ body {
     linear-gradient(
       180deg,
       color-mix(in srgb, var(--surface) 35%, var(--background)) 0%,
-      var(--background) 22%
+      color-mix(in srgb, var(--surface) 12%, var(--background)) 28%,
+      var(--background) 52%,
+      var(--background) 100%
     );
-  color: var(--foreground);
-  font-family: var(--font-dunggeunmo);
 }
 
-.font-sans,
-.font-mono {
-  font-family: var(--font-dunggeunmo);
+.app-page {
+  display: flex;
+  min-height: 100dvh;
+  flex-direction: column;
 }
 
 @layer base {

@@ -65,7 +65,7 @@ function AssignmentMemberRow({
         {member.phaseComplete ? (
           <span
             className={cn(
-              "shrink-0 rounded-full bg-[var(--primary)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--on-primary)] @md:text-xs",
+              "shrink-0 rounded-full bg-[var(--primary)] px-1.5 py-0.5 text-xs font-semibold text-[var(--on-primary)] @md:text-sm",
             )}
           >
             완료

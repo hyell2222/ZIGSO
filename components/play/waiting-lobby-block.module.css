@@ -26,7 +26,7 @@
   border-radius: 9999px;
   border: 2px solid color-mix(in srgb, var(--highlight) 40%, white);
   background: color-mix(in srgb, var(--highlight) 12%, white);
-  font-size: 1.25rem;
+  font-size: 1.5rem;
   line-height: 1;
   animation: playActivityBounce 2.4s ease-in-out infinite;
 }
@@ -35,49 +35,50 @@
   .activityIcon {
     width: 3.25rem;
     height: 3.25rem;
-    font-size: 1.65rem;
+    font-size: 1.875rem;
   }
 }
 
 .title {
-  font-size: 0.9rem;
-  font-weight: 800;
+  font-size: 1rem;
+  font-weight: 800; /* KERISBAEUM EB */
   letter-spacing: -0.02em;
   color: var(--entry-parchment);
 }
 
 @container (min-width: 640px) {
   .title {
-    font-size: 1rem;
+    font-size: 1.125rem;
   }
 }
 
 .sessionTitle {
-  font-size: 0.8rem;
-  font-weight: 600;
+  font-size: 0.875rem;
+  font-weight: 700; /* KERISBAEUM B */
   color: color-mix(in srgb, var(--primary) 88%, var(--ink));
 }
 
 @container (min-width: 640px) {
   .sessionTitle {
-    font-size: 0.9rem;
+    font-size: 1rem;
   }
 }
 
 .meta {
-  font-size: 0.7rem;
+  font-size: 0.875rem;
+  font-weight: 300; /* KERISBAEUM L */
   color: var(--entry-parchment-muted);
 }
 
 @container (min-width: 640px) {
   .meta {
-    font-size: 0.78rem;
+    font-size: 0.875rem;
   }
 }
 
 .code {
-  font-family: var(--font-dunggeunmo), monospace;
-  font-weight: 700;
+  font-family: var(--font-kerisbaeum), ui-monospace, monospace;
+  font-weight: 800; /* KERISBAEUM EB */
   letter-spacing: 0.1em;
   color: var(--primary);
 }
@@ -88,14 +89,15 @@
 }
 
 .body {
-  font-size: 0.72rem;
+  font-size: 0.875rem;
+  font-weight: 400; /* KERISBAEUM R */
   line-height: 1.55;
   color: var(--entry-parchment-muted);
 }
 
 @container (min-width: 640px) {
   .body {
-    font-size: 0.8rem;
+    font-size: 1rem;
   }
 }
 

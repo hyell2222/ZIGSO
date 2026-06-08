@@ -53,7 +53,7 @@ export function PlayHeaderGroupPlace({
         <div
           className={cn(
             "flex items-center gap-1.5 font-medium text-[var(--muted-foreground)]",
-            isBanner || contained ? "text-[10px] @sm:text-xs" : "text-sm @sm:text-base",
+            isBanner || contained ? "text-xs @sm:text-sm" : "text-base @sm:text-lg",
           )}
         >
           <Loader2
@@ -76,7 +76,7 @@ export function PlayHeaderGroupPlace({
                   : "max-w-[7rem] @sm:max-w-[8.5rem] @md:max-w-[9.5rem]",
             )}
           >
-            <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--muted-foreground)] @sm:text-xs">
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--muted-foreground)] @sm:text-sm">
               모둠
             </p>
             <p
@@ -103,7 +103,7 @@ export function PlayHeaderGroupPlace({
                 : "max-w-[min(100%,14rem)] @sm:max-w-[min(100%,18rem)] @md:max-w-[20rem]",
             )}
           >
-            <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--muted-foreground)] @sm:text-xs">
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--muted-foreground)] @sm:text-sm">
               {placeLabel}
             </p>
             <p

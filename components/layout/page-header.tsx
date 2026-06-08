@@ -27,20 +27,20 @@ export function PageHeader({
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
         <div className="min-w-0 flex-1 space-y-1">
           {eyebrow ? (
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--muted-foreground)]">
+            <p className="text-xs font-light uppercase tracking-[0.14em] text-[var(--muted-foreground)]">
               {eyebrow}
             </p>
           ) : null}
           <Heading
             className={cn(
-              "text-2xl font-semibold tracking-tight text-[var(--foreground)] sm:text-[1.65rem]",
+              "text-2xl font-extrabold tracking-tight text-[var(--foreground)] sm:text-3xl",
               titleClassName,
             )}
           >
             {title}
           </Heading>
           {description ? (
-            <div className="pt-0.5 text-sm leading-relaxed text-[var(--muted-foreground)]">{description}</div>
+            <div className="pt-0.5 text-base font-normal leading-relaxed text-[var(--muted-foreground)]">{description}</div>
           ) : null}
         </div>
         {actions ? (

@@ -38,7 +38,7 @@ export function SessionHostJoinCard({ joinCode, sessionEnded = false, contained 
               <p
                 className={cn(
                   "font-semibold uppercase tracking-[0.14em] text-[var(--muted-foreground)]",
-                  contained ? "text-[10px]" : "text-[10px] @md:text-xs @md:tracking-wider",
+                  contained ? "text-xs" : "text-xs @md:text-sm @md:tracking-wider",
                 )}
               >
                 참가 코드

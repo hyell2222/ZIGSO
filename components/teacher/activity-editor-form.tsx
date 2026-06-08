@@ -320,7 +320,7 @@ function QuestionListEditor({
       <div className="space-y-1 border-b border-[var(--border)]/80 pb-3">
         <span
           className={cn(
-            "inline-block rounded-md px-2 py-0.5 text-[10px] font-bold tracking-wide",
+            "inline-block rounded-md px-2 py-0.5 text-xs font-bold tracking-wide",
             section.badge,
           )}
         >
@@ -519,11 +519,11 @@ export function ActivityEditorForm({ draft, onChange }: Props) {
           <div>
             <h2 className="text-sm font-semibold text-[var(--foreground)]">학습 내용</h2>
             <p className="mt-1 text-xs text-[var(--muted-foreground)]">
-              모둠 {draft.roles.length}명 · 역할마다 학습 내용·연습 문제(2단계)·실전 문제(4단계)를
-              작성하세요.
-            </p>
-            <p className="mt-1 text-xs text-[var(--muted-foreground)]">
-              {ACTIVITY_FLOW_STEPS.map((s) => `${s.step}. ${s.title}`).join(" → ")}
+              다음의 순서로 활동이 진행됩니다:
+              <br />
+              1. 역할 맡기 → 2. 깊게 파고들기 (전문가 집단 활동) → 3. 서로 알려주기 (홈 집단 활동) → 4. 실력 확인하기 (개별 활동) → 5. 점수 및 순위 공개
+              <br />
+              각 전문가 집단이 학습할 내용 및 연습할 문제, 마지막으로 개별적으로 풀 실전 문제를 작성하세요.
             </p>
           </div>
           {canAddRole ? (

@@ -3,9 +3,30 @@ import localFont from "next/font/local";
 import "./globals.css";
 import { QueryProvider } from "@/providers/query-provider";
 
-const dungGeunMo = localFont({
-  src: "../public/assets/DungGeunMo.otf",
-  variable: "--font-dunggeunmo",
+const kerisBaeum = localFont({
+  src: [
+    {
+      path: "../public/assets/KERISBAEUM_L.otf",
+      weight: "300",
+      style: "normal",
+    },
+    {
+      path: "../public/assets/KERISBAEUM_R.otf",
+      weight: "400",
+      style: "normal",
+    },
+    {
+      path: "../public/assets/KERISBAEUM_B.otf",
+      weight: "700",
+      style: "normal",
+    },
+    {
+      path: "../public/assets/KERISBAEUM_EB.otf",
+      weight: "800",
+      style: "normal",
+    },
+  ],
+  variable: "--font-kerisbaeum",
   display: "swap",
 });
 
@@ -25,9 +46,9 @@ export default function RootLayout({
   return (
     <html
       lang="ko"
-      className={`${dungGeunMo.variable} h-full antialiased`}
+      className={`${kerisBaeum.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-[var(--background)] text-[var(--foreground)]">
+      <body className="min-h-full flex flex-col text-[var(--foreground)]">
         <QueryProvider>{children}</QueryProvider>
       </body>
     </html>

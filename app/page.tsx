@@ -86,7 +86,7 @@ export default function HomePage() {
             <header className="flex flex-col items-center">
               <div className="flex items-center gap-2.5 text-[var(--accent)] sm:gap-3.5">
                 <span className="h-px w-8 max-sm:w-5 bg-[color-mix(in_srgb,var(--accent)_45%,transparent)]" aria-hidden />
-                <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[color-mix(in_srgb,var(--accent)_92%,var(--mystery))]">
+                <p className="text-xs font-bold uppercase tracking-[0.22em] text-[color-mix(in_srgb,var(--accent)_92%,var(--mystery))]">
                   {LANDING_EYEBROW}
                 </p>
                 <span className="h-px w-8 max-sm:w-5 bg-[color-mix(in_srgb,var(--accent)_45%,transparent)]" aria-hidden />
@@ -100,7 +100,7 @@ export default function HomePage() {
                 {LANDING_TAGLINE}
               </p>
 
-              <p className="mx-auto mt-3 max-w-lg text-balance text-xs leading-relaxed text-[color-mix(in_srgb,var(--muted-foreground)_92%,var(--mystery))] sm:text-[13px]">
+              <p className="mx-auto mt-3 max-w-lg text-balance text-sm leading-relaxed text-[color-mix(in_srgb,var(--muted-foreground)_92%,var(--mystery))] sm:text-base">
                 {LANDING_RESEARCH_TITLE}
               </p>
             </header>

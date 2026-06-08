@@ -42,7 +42,7 @@ export function TeacherSubNav() {
               key={tab.href}
               href={tab.href}
               className={cn(
-                "group relative -mb-px flex items-center gap-2 px-4 py-4 text-sm font-medium transition-colors",
+                "group relative -mb-px flex items-center gap-2 px-4 py-4 text-base font-medium transition-colors",
                 active
                   ? "text-[var(--primary)]"
                   : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"

@@ -73,8 +73,8 @@ export const ACTIVITY_FLOW_STEPS = PHASE_STEP_DEFS.map((s) => ({
 
 /** 활동 에디터 — 문항 유형 힌트 */
 export const EDITOR_QUESTION_HINTS = {
-  practice: "2단계 · 깊게 파고들기 — 3회 시도, 오답 시 힌트",
-  test: "4단계 · 실력 확인하기 — 1회만 응시",
+  practice: "2. 깊게 파고들기 (전문가 집단 활동) 단계에서 풀 연습 문제입니다. 최대 3회까지 정답을 제출할 수 있으며, 틀릴 경우 힌트가 제공됩니다. 오답 제출 시마다 20점씩 감점(100점 만점 기준)되며, 여기서 얻은 평균 점수는 STAD 향상 점수의 '기준 점수'가 됩니다.",
+  test: "4. 실력 확인하기 (개별 활동) 단계에서 풀 실전 문제입니다. 단 1회만 응시할 수 있습니다. 문항별 배점은 동일하며(100점 만점 기준), 여기서 얻은 평균 점수는 STAD 향상 점수의 '비교 점수'가 됩니다."
 } as const;
 
 export type PhaseGuide = { title: string; summary: string };
