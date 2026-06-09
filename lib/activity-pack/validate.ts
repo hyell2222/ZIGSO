@@ -4,6 +4,8 @@ import { ACTIVITY_PACK_VERSION } from "@/lib/activity-pack/types";
 
 export const MIN_CHOICES_PER_QUESTION = 2;
 export const MAX_CHOICES_PER_QUESTION = 6;
+/** 보기 표시 라벨 (A~F) — 객관식 보기 공통 */
+export const CHOICE_LABELS = ["A", "B", "C", "D", "E", "F"] as const;
 /** 역할당 연습·실전 문제 최소 개수 */
 export const MIN_QUESTIONS_PER_ROLE = 1;
 
@@ -27,12 +29,6 @@ export function validateActivityPack(pack: ActivityPack): PackValidationIssue[] 
     issues.push({
       path: "roles",
       message: `roles count must be ${MIN_ROLES_PER_GROUP}–${MAX_ROLES_PER_GROUP} (defines group size)`,
-    });
-  }
-  if (pack.groupSize !== roleCount) {
-    issues.push({
-      path: "groupSize",
-      message: "groupSize must equal roles.length",
     });
   }
 

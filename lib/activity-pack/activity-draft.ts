@@ -7,14 +7,13 @@ import {
   MIN_CHOICES_PER_QUESTION,
   MIN_QUESTIONS_PER_ROLE,
 } from "@/lib/activity-pack/validate";
-import { parseActivityPack } from "@/lib/activity-pack/parse";
-import samplePack from "@/lib/activity-pack/sample-pack.json";
 import type { ActivityPack, QuizQuestion, Role } from "@/lib/activity-pack/types";
 import { ACTIVITY_PACK_VERSION } from "@/lib/activity-pack/types";
 import { makeTempId } from "@/lib/temp-id";
 
 export { MAX_ROLES_PER_GROUP, MIN_ROLES_PER_GROUP } from "@/lib/activity-pack/sizing";
 export {
+  CHOICE_LABELS,
   MAX_CHOICES_PER_QUESTION,
   MIN_CHOICES_PER_QUESTION,
   MIN_QUESTIONS_PER_ROLE,
@@ -99,11 +98,10 @@ export function questionsToEditor(questions: QuizQuestion[]): EditorQuestion[] {
 }
 
 export function createDefaultActivityDraft(): ActivityEditorDraft {
-  const pack = parseActivityPack(samplePack);
-  if (!pack) {
-    throw new Error("sample-pack.json이 유효한 ActivityPack(v5) 형식이 아닙니다.");
-  }
-  return packToEditorDraft(pack);
+  return {
+    title: "",
+    roles: Array.from({ length: MIN_ROLES_PER_GROUP }, () => createEmptyRole()),
+  };
 }
 
 export function packToEditorDraft(pack: ActivityPack): ActivityEditorDraft {
@@ -189,7 +187,6 @@ export function editorDraftToPack(draft: ActivityEditorDraft): ActivityPack {
     description: draft.title.trim()
       ? `${draft.title.trim()} — 직소 협동 학습`
       : "직소 협동 학습 활동",
-    groupSize: roles.length,
     roles,
   });
 }

@@ -1,4 +1,4 @@
-import type { ActivityPhase, SessionStatus } from "@/lib/types";
+import type { ActivityPhase } from "@/lib/types";
 
 /** 활동 진행 단계 — 교사·학생·리포트·샌드박스 공통 */
 export const ACTIVITY_PHASE_LABELS: Record<ActivityPhase, string> = {
@@ -19,12 +19,7 @@ export const TIMED_PHASE_ORDER = [
 export type TimedPhaseKey = (typeof TIMED_PHASE_ORDER)[number];
 export type TimedPhase = TimedPhaseKey;
 
-export function isTimedPhaseKey(phase: ActivityPhase): phase is TimedPhaseKey {
-  return (TIMED_PHASE_ORDER as readonly string[]).includes(phase);
-}
-
 export type PhaseGuide = { title: string; summary: string };
-export type StepDef = (typeof TEACHER_PHASE_STEPS)[number];
 
 export const TEACHER_PHASE_STEPS = TIMED_PHASE_ORDER.map((key, index) => ({
   key,
@@ -59,11 +54,6 @@ export const TEACHER_PHASE_GUIDES: Record<TimedPhaseKey, PhaseGuide> = {
   },
 };
 
-export const TEACHER_RESULTS_GUIDE = {
-  title: ACTIVITY_PHASE_LABELS.results,
-  summary: "모둠 순위와 점수를 확인합니다.",
-};
-
 export const TEACHER_PHASE_MINUTES: Record<TimedPhaseKey, number> = {
   overview: 8,
   expert_group: 15,
@@ -75,36 +65,6 @@ export function isTimedPhase(phase: ActivityPhase): phase is TimedPhaseKey {
   return phase !== "waiting" && phase !== "results";
 }
 
-/** 진행 단계 번호 (대기·종료 상태 제외). */
-export const ACTIVITY_PHASE_NUMBER: Record<
-  Exclude<ActivityPhase, "waiting">,
-  number
-> = {
-  overview: 1,
-  expert_group: 2,
-  home_group: 3,
-  individual_quiz: 4,
-  results: 5,
-};
-
-export function getActivityPhaseNumber(
-  phase: ActivityPhase | string | null | undefined,
-): number | null {
-  if (!phase || phase === "waiting") return null;
-  if (phase in ACTIVITY_PHASE_NUMBER) {
-    return ACTIVITY_PHASE_NUMBER[phase as keyof typeof ACTIVITY_PHASE_NUMBER];
-  }
-  return null;
-}
-
-export function isResultsPhase(phase: string | null | undefined): boolean {
-  return phase === "results";
-}
-
 export function isSessionEnded(status: string | null | undefined): boolean {
   return status === "ended";
-}
-
-export function isSessionActive(status: SessionStatus | string | null | undefined): boolean {
-  return status !== "ended";
 }

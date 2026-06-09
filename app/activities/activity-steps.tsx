@@ -16,7 +16,6 @@ import {
   packToEditorDraft,
   validateEditorDraft,
 } from "@/lib/activity-pack/activity-draft";
-import { getTestQuestions } from "@/lib/activity-pack/engine";
 import type { ActivityPack } from "@/lib/activity-pack/types";
 import { useRequireTeacherSession } from "@/lib/auth/use-require-teacher-session";
 import { ROUTES } from "@/lib/routes";
@@ -55,8 +54,6 @@ export function ActivitySteps(props: Props) {
         title: activityPack.title,
         description: activityPack.description,
         activity_pack: activityPack,
-        task_count: getTestQuestions(activityPack).length,
-        group_size: activityPack.groupSize,
       };
 
       if (props.mode === "create") {

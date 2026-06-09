@@ -21,13 +21,13 @@ drop table if exists public.game_sessions cascade;
 -- ---------------------------------------------------------------------
 -- activities — teacher-authored activity (ActivityPack JSON)
 -- ---------------------------------------------------------------------
+-- 모둠 인원(= 역할 수)과 실전 문항 수는 activity_pack JSON에서 항상 파생되므로
+-- 별도 컬럼으로 중복 저장하지 않는다.
 create table public.activities (
   id uuid primary key default gen_random_uuid(),
   title text not null,
   description text not null default '',
   activity_pack jsonb not null,
-  group_size int not null default 4 check (group_size >= 2 and group_size <= 12),
-  task_count int not null default 0 check (task_count >= 0),
   creator_id uuid references auth.users(id) on delete set null,
   created_at timestamptz not null default timezone('utc', now()),
   updated_at timestamptz not null default timezone('utc', now())
@@ -68,7 +68,7 @@ create table public.players (
   assigned_role_id text,
   /** 전문가 연습 결과 — 기준 점수 (문항 점수 평균) */
   base_score int,
-  /** 연습 문항별 결과 [{ questionId, wrongAttempts, score }] */
+  /** 연습 문항별 결과 [{ questionId, wrongAttempts }] (점수는 wrongAttempts에서 파생) */
   practice_results jsonb not null default '[]'::jsonb,
   /** 연습 완료 시각 */
   practice_submitted_at timestamptz,

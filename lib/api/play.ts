@@ -8,9 +8,11 @@ import {
   computeBaseScoreFromPracticeResults,
   getPracticeQuestions,
   getTestQuestions,
+  groupLabel,
   isPracticeCompleteForRole,
   isQuizComplete,
 } from "@/lib/activity-pack/engine";
+import { MIN_ROLES_PER_GROUP } from "@/lib/activity-pack/sizing";
 import type { ActivityPack, PracticeQuestionResult, QuizAnswer } from "@/lib/activity-pack/types";
 import { supabase } from "@/lib/supabase";
 
@@ -213,8 +215,7 @@ export function parsePracticeResults(raw: unknown): PracticeQuestionResult[] {
       const questionId = String(r.questionId ?? "").trim();
       const wrongAttempts =
         typeof r.wrongAttempts === "number" ? Math.max(0, Math.floor(r.wrongAttempts)) : 0;
-      const score = typeof r.score === "number" ? Math.max(0, Math.round(r.score)) : 0;
-      return { questionId, wrongAttempts, score };
+      return { questionId, wrongAttempts };
     })
     .filter((r) => r.questionId.length > 0);
 }
@@ -257,10 +258,6 @@ export async function listGroupMembers(groupId: string): Promise<PlayerSelfRow[]
 // group assignment
 // =====================================================================
 
-function groupLabel(index: number) {
-  return String(index + 1);
-}
-
 export async function assignGroupsAndRoles(sessionId: string, pack: ActivityPack) {
   if (pack.roles.length === 0) {
     throw new Error("활동에 역할이 없습니다.");
@@ -283,7 +280,7 @@ export async function assignGroupsAndRoles(sessionId: string, pack: ActivityPack
     .eq("session_id", sessionId);
   if (tErr) throw tErr;
 
-  const roleCount = Math.max(2, pack.groupSize);
+  const roleCount = Math.max(MIN_ROLES_PER_GROUP, pack.roles.length);
   const shuffled = [...players].sort(() => Math.random() - 0.5);
   const numGroups = computeSessionGroupCount(shuffled.length, roleCount);
 

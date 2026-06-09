@@ -24,8 +24,3 @@ export function getActivityPhaseStep(phase: ActivityPhase): {
   const n = step?.number ?? 1;
   return { stepNumber: n, stepLabel: `${n}단계` };
 }
-
-/** 학생 play 패널 `phase: 1 | 2 | 3 | 4` → 단계 번호 */
-export function playPanelPhaseToStepNumber(phase: 1 | 2 | 3 | 4): number {
-  return phase;
-}

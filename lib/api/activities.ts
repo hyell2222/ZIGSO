@@ -9,15 +9,13 @@ export type ActivityRecord = {
   title: string | null;
   description: string | null;
   activity_pack: ActivityPack | null;
-  task_count: number | null;
-  group_size: number | null;
   creator_id?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
 };
 
 const ACTIVITY_SELECT =
-  "id,title,description,activity_pack,task_count,group_size,creator_id,created_at,updated_at";
+  "id,title,description,activity_pack,creator_id,created_at,updated_at";
 
 function normalizeText(value: string | null | undefined) {
   const trimmed = value?.trim();
@@ -44,8 +42,6 @@ export type CreateActivityInput = {
   title: string;
   description: string;
   activity_pack: ActivityPack;
-  task_count: number;
-  group_size: number;
   creator_id?: string | null;
 };
 
@@ -56,8 +52,6 @@ export async function createActivity(input: CreateActivityInput) {
       title: normalizeText(input.title),
       description: normalizeText(input.description) ?? "",
       activity_pack: input.activity_pack,
-      task_count: input.task_count,
-      group_size: input.group_size,
       creator_id: input.creator_id ?? null,
     })
     .select("id")
@@ -86,8 +80,6 @@ export async function updateActivity(
       title: normalizeText(input.title),
       description: normalizeText(input.description) ?? "",
       activity_pack: input.activity_pack,
-      task_count: input.task_count,
-      group_size: input.group_size,
       updated_at: new Date().toISOString(),
     })
     .eq("id", activityId);

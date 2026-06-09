@@ -23,6 +23,7 @@ import {
   PLAYER_MESSAGES,
   toPracticeQuestionResult,
 } from "@/lib/activity-pack/engine";
+import { practiceBaseScore as practiceQuestionScore } from "@/lib/activity-pack/scoring";
 import { codenameForRole } from "@/lib/play/role-codenames";
 import type { ActivityPack, PracticeQuestionResult } from "@/lib/activity-pack/types";
 import { cn } from "@/lib/utils";
@@ -160,7 +161,10 @@ export function ExpertPhasePanel({
                 {practiceQuestions.map((q, qi) => {
                   const stored = completed[q.id];
                   const initialResult = stored
-                    ? { wrongAttempts: stored.wrongAttempts, baseScore: stored.score }
+                    ? {
+                        wrongAttempts: stored.wrongAttempts,
+                        baseScore: practiceQuestionScore(stored.wrongAttempts),
+                      }
                     : null;
                   const locked = practiceSubmitted || Boolean(stored) || submitting;
                   return (

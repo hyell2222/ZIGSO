@@ -6,12 +6,10 @@ export const MIN_ROLES_PER_GROUP = 2;
 export const MAX_ROLES_PER_GROUP = 12;
 
 /**
- * 모둠 인원 = 역할 수.
- * 역할 표시명은 코드명으로 고정(정답 노출 방지).
+ * 모둠 인원은 역할 수(`pack.roles.length`)와 같다 — 별도 필드로 저장하지 않는다.
+ * 역할 표시명만 코드명으로 고정한다(정답 노출 방지).
  */
 export function normalizePackSizing(pack: ActivityPack): ActivityPack {
-  const roleCount = pack.roles.length;
-  const groupSize = Math.min(MAX_ROLES_PER_GROUP, Math.max(MIN_ROLES_PER_GROUP, roleCount));
   const scopeKey = pack.title.trim() || "activity";
   const roleIds = pack.roles.map((r) => r.id);
   const roles = pack.roles.map((role) => ({
@@ -21,6 +19,5 @@ export function normalizePackSizing(pack: ActivityPack): ActivityPack {
   return {
     ...pack,
     roles,
-    groupSize,
   };
 }

@@ -27,11 +27,13 @@ export type QuizQuestion = {
   roleId?: string;
 };
 
-/** 역할당 연습 문항 결과 (저장·집계용) */
+/**
+ * 역할당 연습 문항 결과 (저장·집계용).
+ * 점수는 `wrongAttempts`에서 항상 파생되므로 따로 저장하지 않는다 (practiceBaseScore).
+ */
 export type PracticeQuestionResult = {
   questionId: string;
   wrongAttempts: number;
-  score: number;
 };
 
 /** 홈 모둠 역할 — 전문가가 마스터하는 지문 조각 + 연습/실전 문제(각 여러 개) */
@@ -51,8 +53,6 @@ export type ActivityPack = {
   version: typeof ACTIVITY_PACK_VERSION;
   title: string;
   description: string;
-  /** 모둠 인원 = 역할 수 */
-  groupSize: number;
   roles: Role[];
 };
 

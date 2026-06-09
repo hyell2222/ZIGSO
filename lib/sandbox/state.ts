@@ -2,13 +2,13 @@
  * 시뮬레이션 모드 — 교사 혼자서 활동 흐름을 시연·검수하기 위한 in-memory 모델.
  */
 
-import { ACTIVITY_PHASE_LABELS } from "@/lib/activity-phases";
 import { MIN_ROLES_PER_GROUP } from "@/lib/activity-pack/sizing";
 import type { ActivityPhase, SessionStatus } from "@/lib/types";
 import {
   assignRolesToPlayers,
   computeSessionGroupCount,
   getTestQuestions,
+  groupLabel,
 } from "@/lib/activity-pack/engine";
 import {
   averagePracticeBaseScore,
@@ -78,10 +78,6 @@ export function buildSandboxWaitingRoster(
   return out;
 }
 
-export function groupLabel(index: number) {
-  return String(index + 1);
-}
-
 function shuffleArrayInPlace<T>(arr: T[]) {
   for (let i = arr.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -126,17 +122,13 @@ function randomPracticeResults(questions: QuizQuestion[]): {
   results: PracticeQuestionResult[];
   baseScore: number;
 } {
-  const results = questions.map((q) => {
-    const wrongAttempts = randomWrongAttempts();
-    return {
-      questionId: q.id,
-      wrongAttempts,
-      score: practiceBaseScore(wrongAttempts),
-    };
-  });
+  const results = questions.map((q) => ({
+    questionId: q.id,
+    wrongAttempts: randomWrongAttempts(),
+  }));
   return {
     results,
-    baseScore: averagePracticeBaseScore(results.map((r) => r.score)),
+    baseScore: averagePracticeBaseScore(results.map((r) => practiceBaseScore(r.wrongAttempts))),
   };
 }
 
@@ -159,10 +151,10 @@ export function buildSandboxAssignments(
     return { groups: [], players: [] };
   }
 
-  const chips = buildSandboxWaitingRoster(activityId, realStudentNickname, pack.groupSize);
+  const chips = buildSandboxWaitingRoster(activityId, realStudentNickname, pack.roles.length);
   shuffleArrayInPlace(chips);
 
-  const roleCount = Math.max(MIN_ROLES_PER_GROUP, pack.groupSize);
+  const roleCount = Math.max(MIN_ROLES_PER_GROUP, pack.roles.length);
   const numGroups = computeSessionGroupCount(chips.length, roleCount);
 
   const groups: SandboxGroup[] = Array.from({ length: numGroups }, (_, i) => ({
@@ -215,28 +207,8 @@ export function buildSandboxAssignments(
   return { groups, players };
 }
 
+/** 샌드박스 단계 진행 — 대기→소개 외에는 실제 세션과 동일한 진행 순서를 따른다. */
 export function nextSandboxPhase(current: ActivityPhase): ActivityPhase | null {
-  switch (current) {
-    case "waiting":
-      return "overview";
-    case "overview":
-      return "expert_group";
-    case "expert_group":
-      return "home_group";
-    case "home_group":
-      return "individual_quiz";
-    case "individual_quiz":
-      return "results";
-    default:
-      return null;
-  }
+  if (current === "waiting") return "overview";
+  return getNextPhase(current);
 }
-
-export function getSandboxNextPhaseLabel(current: ActivityPhase): string {
-  if (current === "waiting") return "시작하기";
-  const next = getNextPhase(current);
-  if (!next) return "—";
-  return "다음";
-}
-
-export const SANDBOX_PHASE_LABEL = ACTIVITY_PHASE_LABELS;

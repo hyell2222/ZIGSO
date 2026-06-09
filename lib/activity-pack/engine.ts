@@ -6,6 +6,7 @@ import type {
   Role,
 } from "@/lib/activity-pack/types";
 import { averagePracticeBaseScore, practiceBaseScore } from "@/lib/activity-pack/scoring";
+import { MIN_ROLES_PER_GROUP } from "@/lib/activity-pack/sizing";
 import { isChoiceCorrect } from "@/lib/activity-pack/validate";
 
 /** activity-pack 엔진·API 공통 메시지 */
@@ -37,9 +38,9 @@ export function getTestQuestions(pack: ActivityPack): QuizQuestion[] {
   return pack.roles.flatMap((r) => r.testQuestions);
 }
 
-/** 연습 문항별 결과 → 기준 점수(평균) */
+/** 연습 문항별 결과 → 기준 점수(평균). 문항 점수는 오답 횟수에서 파생한다. */
 export function computeBaseScoreFromPracticeResults(results: PracticeQuestionResult[]): number {
-  return averagePracticeBaseScore(results.map((r) => r.score));
+  return averagePracticeBaseScore(results.map((r) => practiceBaseScore(r.wrongAttempts)));
 }
 
 /** 연습 완료 여부 — 역할 연습 문항 수와 결과 수가 일치 */
@@ -87,16 +88,12 @@ export function isQuizComplete(questions: QuizQuestion[], answers: QuizAnswer[])
   return gradeQuiz(questions, answers).complete;
 }
 
-/** PracticeResult from UI → stored result + score */
+/** PracticeResult from UI → stored result (점수는 wrongAttempts에서 파생) */
 export function toPracticeQuestionResult(
   questionId: string,
   wrongAttempts: number,
 ): PracticeQuestionResult {
-  return {
-    questionId,
-    wrongAttempts,
-    score: practiceBaseScore(wrongAttempts),
-  };
+  return { questionId, wrongAttempts };
 }
 
 // =====================================================================
@@ -113,9 +110,14 @@ export type AssignableMember = {
   created_at?: string | null;
 };
 
+/** 세션·샌드박스 공통 — 모둠 이름(1, 2, 3 …) */
+export function groupLabel(index: number): string {
+  return String(index + 1);
+}
+
 /** 세션·샌드박스 공통 — 모둠 수 */
 export function computeSessionGroupCount(playerCount: number, rolesPerGroup: number): number {
-  const roleCount = Math.max(2, rolesPerGroup);
+  const roleCount = Math.max(MIN_ROLES_PER_GROUP, rolesPerGroup);
   if (playerCount <= 0) return 0;
   if (playerCount <= roleCount) return 1;
   return Math.max(1, Math.floor(playerCount / roleCount));

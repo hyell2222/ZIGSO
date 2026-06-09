@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { FlaskConical, Loader2, PlusIcon } from "lucide-react";
+import { Loader2, PlusIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -153,7 +153,7 @@ export default function ActivitiesPage() {
                         </div>
                       </div>
                       <p className="text-xs text-[var(--muted-foreground)] pb-2">
-                        모둠 {row.group_size ?? "—"}명 · 역할 {row.task_count ?? "—"}개
+                        모둠 당 최소 인원 : {row.activity_pack?.roles?.length ?? "—"}명
                       </p>
                       <div className="flex flex-col gap-2">
                         <Button
@@ -181,7 +181,6 @@ export default function ActivitiesPage() {
                           disabled={isDeleting}
                           className="gap-2"
                         >
-                          <FlaskConical className="h-4 w-4 shrink-0 text-[var(--accent)]" aria-hidden />
                           수업 미리보기
                         </Button>
                       </div>

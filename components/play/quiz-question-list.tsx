@@ -1,12 +1,11 @@
 "use client";
 
 import { activityLayoutType } from "@/components/activity/activity-layout-typography";
+import { CHOICE_LABELS } from "@/lib/activity-pack/validate";
 import type { QuizQuestion } from "@/lib/activity-pack/types";
 import { cn } from "@/lib/utils";
 
 const t = activityLayoutType;
-
-const CHOICE_LABELS = ["A", "B", "C", "D", "E", "F"];
 
 type Props = {
   questions: QuizQuestion[];

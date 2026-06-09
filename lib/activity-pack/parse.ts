@@ -1,4 +1,3 @@
-import { PLAYER_MESSAGES } from "@/lib/activity-pack/engine";
 import { normalizePackSizing } from "@/lib/activity-pack/sizing";
 import { validateActivityPack } from "@/lib/activity-pack/validate";
 import type { ActivityPack, QuizQuestion, Role } from "@/lib/activity-pack/types";
@@ -23,29 +22,10 @@ export function parseActivityPack(raw: unknown): ActivityPack | null {
     version: ACTIVITY_PACK_VERSION,
     title: String(p.title ?? "").trim(),
     description: String(p.description ?? "").trim(),
-    groupSize: roles.length,
     roles,
   });
 
   return validateActivityPack(pack).length === 0 ? pack : null;
-}
-
-/** parse + 검증 실패 시 throw (AI 생성·저장 등) */
-export function loadActivityPack(raw: unknown): ActivityPack {
-  const pack = parseActivityPack(raw);
-  if (!pack) {
-    throw new Error("활동 콘텐츠를 읽을 수 없습니다.");
-  }
-
-  if (!pack.title.trim()) {
-    pack.title = PLAYER_MESSAGES.defaultPackTitle;
-  }
-
-  return normalizePackSizing(pack);
-}
-
-export function isValidActivityPack(pack: unknown): pack is ActivityPack {
-  return parseActivityPack(pack) !== null;
 }
 
 function readRole(

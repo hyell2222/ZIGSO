@@ -12,7 +12,7 @@ import {
 } from "@/components/play/play-phase-layout";
 import { QuizQuestionList } from "@/components/play/quiz-question-list";
 import { activityLayoutType } from "@/components/activity/activity-layout-typography";
-import { listGroupMembers, type PlayerSelfRow } from "@/lib/api/play";
+import type { PlayerSelfRow } from "@/lib/api/play";
 import { getRoleById } from "@/lib/activity-pack/engine";
 import { codenameForRole } from "@/lib/play/role-codenames";
 import type { ActivityPack } from "@/lib/activity-pack/types";
@@ -140,14 +140,4 @@ export function GroupPhasePanel({
       </PlayPhasePanel>
     </PlayPhaseShell>
   );
-}
-
-export async function fetchGroupMembersForPlay(groupId: string): Promise<GroupMember[]> {
-  const rows = await listGroupMembers(groupId);
-  return rows.map((r) => ({
-    id: r.id,
-    nickname: r.nickname,
-    assigned_role_id: r.assigned_role_id,
-    created_at: r.created_at,
-  }));
 }

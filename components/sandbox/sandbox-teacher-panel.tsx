@@ -78,8 +78,8 @@ export function SandboxTeacherPanel({
   );
 
   const waitingOnlinePlayers = useMemo(
-    () => buildSandboxWaitingRoster(activityId, realStudentNickname, pack.groupSize),
-    [activityId, realStudentNickname, pack.groupSize],
+    () => buildSandboxWaitingRoster(activityId, realStudentNickname, pack.roles.length),
+    [activityId, realStudentNickname, pack.roles.length],
   );
 
   const playercount = sessionStarted ? players.length : waitingOnlinePlayers.length;

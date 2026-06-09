@@ -21,6 +21,7 @@ import {
   editorQuestionLabel,
   editorRoleLabel,
   questionsToEditor,
+  CHOICE_LABELS,
   MAX_CHOICES_PER_QUESTION,
   MAX_ROLES_PER_GROUP,
   MIN_CHOICES_PER_QUESTION,
@@ -42,7 +43,6 @@ type QuestionKind = "practice" | "test";
 
 const inputClass = "h-9 w-full text-sm";
 const textareaClass = "resize-y text-sm";
-const CHOICE_LABELS = ["A", "B", "C", "D", "E", "F"];
 
 function parseEditorHints(hints: string) {
   const lines = hints.split("\n");
@@ -140,18 +140,19 @@ function SingleQuestionEditor({
 
   return (
     <div className="space-y-3">
-      <FormField label="문제" htmlFor={`q-prompt-${q.localId}`}>
+      <FormField label="발문" htmlFor={`q-prompt-${q.localId}`}>
         <Textarea
           id={`q-prompt-${q.localId}`}
           rows={2}
           value={q.prompt}
           onChange={(e) => onUpdate((cur) => ({ ...cur, prompt: e.target.value }))}
+          placeholder="문제를 입력하세요."
           className={cn(textareaClass, "min-h-[2.5rem]")}
         />
       </FormField>
 
       <div className="space-y-1.5">
-        <p className={formLabelClass}>보기 (정답 버튼 선택)</p>
+        <p className={formLabelClass}>보기</p>
         {q.choices.map((choice, ci) => {
           const isCorrect = q.correctIndex === ci;
           return (
@@ -181,6 +182,7 @@ function SingleQuestionEditor({
                     choices: cur.choices.map((c, i) => (i === ci ? e.target.value : c)),
                   }))
                 }
+                placeholder={`${CHOICE_LABELS[ci] ?? ci + 1}번 보기`}
                 className={inputClass}
               />
               {canRemoveChoice ? (
@@ -204,20 +206,23 @@ function SingleQuestionEditor({
           );
         })}
         {canAddChoice ? (
-          <button
+          <Button
             type="button"
+            size="sm"
+            variant="outline"
+            className="h-8 gap-1 px-2 text-xs"
             onClick={() => onUpdate((cur) => ({ ...cur, choices: [...cur.choices, ""] }))}
-            className="text-xs font-semibold text-[var(--primary)]"
           >
-            + 보기 추가
-          </button>
+            <Plus className="h-3.5 w-3.5" />
+            보기 추가
+          </Button>
         ) : null}
       </div>
 
       {withScaffold ? (
         <details className="rounded-md border border-dashed border-[var(--border)] px-3 py-1">
           <summary className={cn("cursor-pointer py-2", formLabelClass, "text-[var(--muted-foreground)]")}>
-            힌트·해설 (선택)
+            힌트·해설
           </summary>
           <div className="space-y-3 pb-2">
             <FormField label="1차 오답 힌트" htmlFor={`q-hint1-${q.localId}`}>
@@ -230,6 +235,7 @@ function SingleQuestionEditor({
                     hints: serializeEditorHints(e.target.value, parseEditorHints(cur.hints).hint2),
                   }))
                 }
+                placeholder="첫 번째 오답 시 보여줄 힌트"
                 className={inputClass}
               />
             </FormField>
@@ -243,6 +249,7 @@ function SingleQuestionEditor({
                     hints: serializeEditorHints(parseEditorHints(cur.hints).hint1, e.target.value),
                   }))
                 }
+                placeholder="두 번째 오답 시 보여줄 힌트"
                 className={inputClass}
               />
             </FormField>
@@ -252,6 +259,7 @@ function SingleQuestionEditor({
                 rows={2}
                 value={q.explanation}
                 onChange={(e) => onUpdate((cur) => ({ ...cur, explanation: e.target.value }))}
+                placeholder="정답 공개 시 보여줄 해설"
                 className={textareaClass}
               />
             </FormField>
@@ -282,7 +290,6 @@ const questionSectionStyles = {
 function QuestionListEditor({
   variant,
   label,
-  hint,
   questions,
   withScaffold,
   segment,
@@ -292,7 +299,6 @@ function QuestionListEditor({
 }: {
   variant: keyof typeof questionSectionStyles;
   label: string;
-  hint: string;
   questions: EditorQuestion[];
   withScaffold?: boolean;
   segment: string;
@@ -331,7 +337,6 @@ function QuestionListEditor({
         >
           {label}
         </h4>
-        <p className="text-xs text-[var(--muted-foreground)]">{hint}</p>
       </div>
 
       <div className="space-y-3">
@@ -435,7 +440,6 @@ function LearningContentBlock({
           <QuestionListEditor
             variant="practice"
             label="연습 문제"
-            hint="전문가 집단 · 3회 시도, 오답 시 힌트"
             questions={role.practiceQuestions}
             withScaffold
             segment={role.segment}
@@ -447,7 +451,6 @@ function LearningContentBlock({
           <QuestionListEditor
             variant="test"
             label="실전 문제"
-            hint="개인 형성평가 · 1회만 응시"
             questions={role.testQuestions}
             segment={role.segment}
             activityTitle={activityTitle}
@@ -508,7 +511,7 @@ export function ActivityEditorForm({ draft, onChange }: Props) {
           id="activity-title"
           value={draft.title}
           onChange={(e) => onChange({ ...draft, title: e.target.value })}
-          placeholder="예: 별과 우주"
+          placeholder="활동 제목을 입력하세요"
           className={inputClass}
         />
       </FormField>

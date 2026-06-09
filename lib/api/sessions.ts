@@ -2,6 +2,7 @@
 
 import { parseActivityPack, type ActivityRecord } from "@/lib/api/activities";
 import { assignGroupsAndRoles } from "@/lib/api/play";
+import { TIMED_PHASE_ORDER } from "@/lib/activity-phases";
 import type { ActivityPhase, SessionStatus } from "@/lib/types";
 import { supabase } from "@/lib/supabase";
 
@@ -78,17 +79,13 @@ export async function startSession(activity: ActivityRecord, hostId?: string | n
   } satisfies StartedSession;
 }
 
-const HOST_PHASE_PROGRESSION: Array<
-  "overview" | "expert_group" | "home_group" | "individual_quiz"
-> = ["overview", "expert_group", "home_group", "individual_quiz"];
-
 export function getNextPhase(current: string | null): ActivityPhase | null {
   const c = (current as ActivityPhase) ?? "waiting";
   if (c === "waiting" || c === "results") return null;
-  const idx = HOST_PHASE_PROGRESSION.indexOf(c as (typeof HOST_PHASE_PROGRESSION)[number]);
+  const idx = TIMED_PHASE_ORDER.indexOf(c as (typeof TIMED_PHASE_ORDER)[number]);
   if (idx < 0) return null;
-  if (idx === HOST_PHASE_PROGRESSION.length - 1) return "results";
-  return HOST_PHASE_PROGRESSION[idx + 1]!;
+  if (idx === TIMED_PHASE_ORDER.length - 1) return "results";
+  return TIMED_PHASE_ORDER[idx + 1]!;
 }
 
 export async function beginHostingSession(sessionId: string) {
