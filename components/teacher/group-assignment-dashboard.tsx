@@ -9,6 +9,7 @@ import {
 } from "@/components/activity/activity-layout-chrome";
 import { activityLayoutType } from "@/components/activity/activity-layout-typography";
 import { LoadingState } from "@/components/ui/loading-state";
+import { formatGroupDisplayName } from "@/lib/activity-pack/engine";
 import type { ActivityPhase } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -129,7 +130,11 @@ export function GroupAssignmentDashboard({
               </div>
               <ul className="mt-2.5 space-y-1.5">
                 {item.members.map((m) => (
-                  <AssignmentMemberRow key={m.id} member={m} secondary={m.groupName ?? "—"} />
+                  <AssignmentMemberRow
+                    key={m.id}
+                    member={m}
+                    secondary={formatGroupDisplayName(m.groupName)}
+                  />
                 ))}
               </ul>
             </div>
@@ -140,8 +145,8 @@ export function GroupAssignmentDashboard({
           {groups.map((g) => (
             <div key={g.group.id} className={activityTeacherGroupCard}>
               <div className="flex items-baseline justify-between gap-2 border-b border-[color-mix(in_srgb,var(--primary)_8%,var(--border))] pb-2.5">
-                <p className={cn(activityLayoutType.panelSectionTitle, "font-mono text-[var(--primary)]")}>
-                  {g.group.name ?? "—"}
+                <p className={cn(activityLayoutType.panelSectionTitle, "text-[var(--primary)]")}>
+                  {formatGroupDisplayName(g.group.name)}
                 </p>
                 <span
                   className={cn(

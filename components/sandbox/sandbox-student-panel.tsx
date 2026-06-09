@@ -155,9 +155,6 @@ function SandboxStudentPanelView({
             sessionTitle={activityTitle}
             state="waiting"
           />
-          <p className={cn("mt-3 text-center", activityLayoutType.caption)}>
-            선생님이 다음 단계로 넘길 때까지 기다려 주세요.
-          </p>
         </div>
       </PlayPhaseShell>
     );
@@ -209,6 +206,7 @@ function SandboxStudentPanelView({
         key={primaryPlayer.id}
         pack={pack}
         groupName={group?.name ?? null}
+        roleLabel={roleLabel}
         submittedAnswers={primaryPlayer.individual_quiz_answers}
         submittedAt={primaryPlayer.individual_quiz_submitted_at ?? null}
         onSubmit={(answers) => onSubmitIndividualQuiz(primaryPlayer.id, answers)}
@@ -241,17 +239,4 @@ function SandboxStudentPanelView({
       />
     );
   }
-
-  return (
-    <PlayPhaseShell contained>
-      <main
-        className={cn(
-          "flex min-h-[12rem] flex-1 items-center justify-center text-center",
-          activityLayoutType.bodyMuted,
-        )}
-      >
-        선생님이 다음 단계로 넘길 때까지 기다려 주세요.
-      </main>
-    </PlayPhaseShell>
-  );
 }

@@ -48,7 +48,7 @@ export function PracticeQuestionCard({
   );
   const [done, setDone] = useState(Boolean(initialResult));
   const [busy, setBusy] = useState(false);
-  const [lastWrong, setLastWrong] = useState<number | null>(null);
+  const [wrongChoices, setWrongChoices] = useState<number[]>([]);
 
   const attemptsLeft = PRACTICE_MAX_ATTEMPTS - wrongAttempts;
   const outOfAttempts = wrongAttempts >= PRACTICE_MAX_ATTEMPTS;
@@ -71,7 +71,7 @@ export function PracticeQuestionCard({
     if (selected === question.correctIndex) {
       setCorrect(true);
       setRevealed(true);
-      setLastWrong(null);
+      setWrongChoices([]);
       await finish({
         wrongAttempts,
         baseScore: practiceBaseScore(wrongAttempts),
@@ -82,7 +82,7 @@ export function PracticeQuestionCard({
     }
     const nextWrong = wrongAttempts + 1;
     setWrongAttempts(nextWrong);
-    setLastWrong(selected);
+    setWrongChoices((prev) => [...prev, selected]);
     if (nextWrong >= PRACTICE_MAX_ATTEMPTS) {
       // 3번째도 오답 — 정답 확인 단계로
       setSelected(null);
@@ -97,7 +97,10 @@ export function PracticeQuestionCard({
       wrongAttempts: PRACTICE_MAX_ATTEMPTS,
       baseScore: practiceBaseScore(PRACTICE_MAX_ATTEMPTS),
       correct: false,
-      answer: { questionId: question.id, choiceIndex: lastWrong ?? -1 },
+      answer: {
+        questionId: question.id,
+        choiceIndex: wrongChoices[wrongChoices.length - 1] ?? -1,
+      },
     });
   };
 
@@ -110,7 +113,7 @@ export function PracticeQuestionCard({
         <span className="shrink-0 rounded-full bg-[var(--tint-accent-weak)] px-2.5 py-1 font-mono text-xs font-semibold tabular-nums text-[var(--primary)]">
           {done
             ? scored
-              ? `이 문항 ${currentScore}점`
+              ? `${currentScore}점`
               : "완료"
             : scored
               ? `남은 기회 ${attemptsLeft}`
@@ -123,7 +126,8 @@ export function PracticeQuestionCard({
           const isChosen = selected === ci;
           const isCorrectChoice = question.correctIndex === ci;
           const showCorrect = revealed && isCorrectChoice;
-          const showWrong = revealed && !correct && lastWrong === ci && !isCorrectChoice;
+          const showWrong =
+            revealed && !correct && wrongChoices.includes(ci) && !isCorrectChoice;
           return (
             <button
               key={ci}
@@ -189,11 +193,22 @@ export function PracticeQuestionCard({
                 : "정답을 골라 제출하세요. 점수에는 영향 없어요."}
           </p>
           {outOfAttempts ? (
-            <Button type="button" variant="secondary" onClick={() => void handleReveal()} disabled={busy}>
+            <Button
+              type="button"
+              variant="secondary"
+              className="shrink-0 gap-2 min-h-10 touch-manipulation @md:min-h-11"
+              onClick={() => void handleReveal()}
+              disabled={busy}
+            >
               정답 확인
             </Button>
           ) : (
-            <Button type="button" onClick={() => void handleSubmit()} disabled={selected === null || busy}>
+            <Button
+              type="button"
+              className="shrink-0 gap-2 min-h-10 touch-manipulation @md:min-h-11"
+              onClick={() => void handleSubmit()}
+              disabled={selected === null || busy}
+            >
               제출
             </Button>
           )}
@@ -209,10 +224,10 @@ export function PracticeQuestionCard({
           >
             {correct
               ? scored
-                ? `정답! 이 문항 ${currentScore}점`
+                ? `정답! ${currentScore}점`
                 : "정답!"
               : scored
-                ? `정답 확인 · 이 문항 ${currentScore}점`
+                ? `정답 확인 · ${currentScore}점`
                 : "정답을 확인했어요."}
           </p>
           {question.explanation ? (

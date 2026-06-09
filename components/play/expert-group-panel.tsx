@@ -7,7 +7,7 @@ import {
   PlayPhaseMessage,
   PlayPhasePanel,
   PlayPhaseSection,
-  PlayPhaseWaitFootnote,
+  PlayPhaseSectionBadge,
   PlayStudentTopBanner,
 } from "@/components/play/play-phase-layout";
 import {
@@ -114,16 +114,8 @@ export function ExpertPhasePanel({
         <PlayStudentTopBanner
           phase="expert_group"
           groupName={groupName}
-          placeName={
-            phaseComplete
-              ? `${baseScore}점`
-              : doneCount > 0
-                ? `${doneCount}/${practiceQuestions.length || "—"}`
-                : roleLabel
-          }
-          placeLabel={
-            phaseComplete ? "기준 점수" : doneCount > 0 ? "연습 완료" : "역할"
-          }
+          placeName={roleLabel}
+          placeLabel="역할"
           pending={pending}
           contained={contained}
           completeTitle={phaseComplete ? "2단계 완료!" : undefined}
@@ -151,10 +143,14 @@ export function ExpertPhasePanel({
               </p>
             </PlayPhaseSection>
 
-            <PlayPhaseSection title="연습 문제">
-              <p className={cn("mb-3", t.playPanelHint)}>
-                문항마다 최대 3번, 틀릴 때마다 힌트와 감점이 적용됩니다.
-              </p>
+            <PlayPhaseSection
+              title="연습 문제"
+              variant="active"
+              headerExtra={
+              <PlayPhaseSectionBadge>
+                {doneCount}/{practiceQuestions.length} 문항
+              </PlayPhaseSectionBadge>
+            }>
               <div className="space-y-4">
                 {practiceQuestions.map((q, qi) => {
                   const stored = completed[q.id];
@@ -167,9 +163,6 @@ export function ExpertPhasePanel({
                   const locked = practiceSubmitted || Boolean(stored) || submitting;
                   return (
                     <div key={q.id}>
-                      <p className={cn("mb-2 font-medium", t.caption)}>
-                        연습 {qi + 1}/{practiceQuestions.length}
-                      </p>
                       <PracticeQuestionCard
                         question={q}
                         onComplete={(r) => handleQuestionComplete(q.id, r)}
@@ -180,10 +173,7 @@ export function ExpertPhasePanel({
                   );
                 })}
               </div>
-            </PlayPhaseSection>
-
-            {done && baseScore != null ? <PlayPhaseWaitFootnote className="mt-2" /> : null}
-
+            </PlayPhaseSection>                
             {message ? <PlayPhaseMessage message={message} /> : null}
           </>
         )}

@@ -1,4 +1,4 @@
-import { gradeTest } from "@/lib/activity-pack/engine";
+import { formatGroupDisplayName, gradeTest } from "@/lib/activity-pack/engine";
 import { formatAssignedRoleLabels } from "@/lib/activity-pack/roles";
 import { stadImprovementPoints, testPercent } from "@/lib/activity-pack/scoring";
 import type { ActivityPack, QuizAnswer } from "@/lib/activity-pack/types";
@@ -247,7 +247,7 @@ export function buildSessionResults(
     const mvp = pickMvp(memberResults);
     return {
       groupId: group.id,
-      groupName: group.name?.trim() || "모둠",
+      groupName: formatGroupDisplayName(group.name),
       teamScore,
       memberCount: memberResults.length,
       mvp,

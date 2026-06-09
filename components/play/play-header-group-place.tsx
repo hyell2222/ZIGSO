@@ -2,6 +2,7 @@
 
 import { Loader2 } from "lucide-react";
 
+import { groupNumberDisplay } from "@/lib/activity-pack/engine";
 import { cn } from "@/lib/utils";
 
 type Variant = "banner" | "floating";
@@ -24,9 +25,34 @@ export function PlayHeaderGroupPlace({
   contained?: boolean;
   variant?: Variant;
 }) {
-  const group = groupName?.trim() || "—";
+  const group = groupNumberDisplay(groupName);
   const place = placeName?.trim() || "—";
   const isBanner = variant === "banner";
+
+  const labelClass =
+    "text-xs font-semibold uppercase tracking-[0.12em] text-[var(--muted-foreground)] @sm:text-sm";
+
+  const valueClass = cn(
+    "truncate font-mono font-bold tabular-nums leading-none text-[var(--primary)]",
+    isBanner
+      ? contained
+        ? "text-xs"
+        : "text-xs @sm:text-sm"
+      : contained
+        ? "text-sm @sm:text-base"
+        : "text-lg @sm:text-xl @md:text-2xl",
+  );
+
+  const columnClass = cn(
+    "flex min-w-0 flex-col justify-center gap-0.5",
+    isBanner
+      ? contained
+        ? "max-w-[4.5rem] @sm:max-w-[5rem]"
+        : "max-w-[5rem] @sm:max-w-[5.5rem]"
+      : contained
+        ? "max-w-[6rem] @sm:max-w-[7rem]"
+        : "max-w-[7rem] @sm:max-w-[8.5rem] @md:max-w-[9.5rem]",
+  );
 
   return (
     <div
@@ -64,62 +90,14 @@ export function PlayHeaderGroupPlace({
         </div>
       ) : (
         <>
-          <div
-            className={cn(
-              "flex min-w-0 shrink-0 flex-col justify-center",
-              isBanner
-                ? contained
-                  ? "max-w-[4.5rem]"
-                  : "max-w-[5rem] @sm:max-w-[5.5rem]"
-                : contained
-                  ? "max-w-[6rem] @sm:max-w-[7rem]"
-                  : "max-w-[7rem] @sm:max-w-[8.5rem] @md:max-w-[9.5rem]",
-            )}
-          >
-            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--muted-foreground)] @sm:text-sm">
-              모둠
-            </p>
-            <p
-              className={cn(
-                "truncate font-mono font-bold tabular-nums text-[var(--primary)]",
-                isBanner
-                  ? contained
-                    ? "text-xs"
-                    : "text-xs @sm:text-sm"
-                  : contained
-                    ? "text-sm @sm:text-base"
-                    : "text-lg @sm:text-xl @md:text-2xl",
-              )}
-            >
-              {group}
-            </p>
+          <div className={columnClass}>
+            <p className={labelClass}>모둠</p>
+            <p className={valueClass}>{group}</p>
           </div>
           <div className="mx-1.5 w-px shrink-0 self-stretch bg-[var(--border)] @sm:mx-2" aria-hidden />
-          <div
-            className={cn(
-              "flex min-w-0 flex-1 flex-col justify-center",
-              isBanner
-                ? "max-w-[min(100%,8rem)] @sm:max-w-[min(100%,10rem)]"
-                : "max-w-[min(100%,14rem)] @sm:max-w-[min(100%,18rem)] @md:max-w-[20rem]",
-            )}
-          >
-            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--muted-foreground)] @sm:text-sm">
-              {placeLabel}
-            </p>
-            <p
-              className={cn(
-                "line-clamp-2 break-words font-bold leading-snug text-[var(--primary)]",
-                isBanner
-                  ? contained
-                    ? "text-xs"
-                    : "text-xs @sm:text-sm"
-                  : contained
-                    ? "text-sm @sm:text-base"
-                    : "text-base @sm:text-lg @md:text-xl",
-              )}
-            >
-              {place}
-            </p>
+          <div className={columnClass}>
+            <p className={labelClass}>{placeLabel}</p>
+            <p className={valueClass}>{place}</p>
           </div>
         </>
       )}

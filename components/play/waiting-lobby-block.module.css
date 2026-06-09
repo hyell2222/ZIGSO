@@ -53,14 +53,14 @@
 }
 
 .sessionTitle {
-  font-size: 0.875rem;
+  font-size: 1.125rem;
   font-weight: 700; /* KERISBAEUM B */
   color: color-mix(in srgb, var(--primary) 88%, var(--ink));
 }
 
 @container (min-width: 640px) {
   .sessionTitle {
-    font-size: 1rem;
+    font-size: 1.25rem;
   }
 }
 

@@ -4,10 +4,10 @@ import { Loader2 } from "lucide-react";
 
 import { activityLayoutType } from "@/components/activity/activity-layout-typography";
 import {
-  PlayPhaseWaitFootnote,
   PlayStudentTopBanner,
 } from "@/components/play/play-phase-layout";
 import { PlayPhaseShell } from "@/components/play/play-phase-shell";
+import { groupNumberDisplay } from "@/lib/activity-pack/engine";
 import { cn } from "@/lib/utils";
 
 const t = activityLayoutType;
@@ -35,7 +35,7 @@ export function OverviewPhasePanel({
   pending,
   contained = false,
 }: Props) {
-  const group = groupName?.trim() || "—";
+  const group = groupNumberDisplay(groupName);
   const role = roleLabel?.trim() || "—";
 
   return (
@@ -100,8 +100,6 @@ export function OverviewPhasePanel({
           </div>
         )}
       </div>
-
-      <PlayPhaseWaitFootnote className="shrink-0" />
     </PlayPhaseShell>
   );
 }

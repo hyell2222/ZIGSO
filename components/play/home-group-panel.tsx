@@ -7,7 +7,6 @@ import {
   PlayPhaseMessage,
   PlayPhasePanel,
   PlayPhaseSection,
-  PlayPhaseWaitFootnote,
   PlayStudentTopBanner,
 } from "@/components/play/play-phase-layout";
 import { PracticeQuestionCard } from "@/components/play/practice-question-card";
@@ -84,7 +83,6 @@ export function GroupPhasePanel({
     [pack, memberRoleIds, ownRoleId],
   );
 
-  const peerDoneCount = peerQuestions.filter((q) => completed[q.id]).length;
   const allPeerDone =
     isPeerPracticeComplete(peerQuestions, Object.keys(completed)) ||
     Boolean(homeGroupCompletedAt);
@@ -131,12 +129,8 @@ export function GroupPhasePanel({
         <PlayStudentTopBanner
           phase="home_group"
           groupName={groupName}
-          placeName={
-            peerQuestions.length > 0
-              ? `${peerDoneCount}/${peerQuestions.length}`
-              : `${members.length}명`
-          }
-          placeLabel={peerQuestions.length > 0 ? "모둠원 연습" : "모둠원"}
+          placeName={roleLabelFor(ownRoleId)}
+          placeLabel="역할"
           pending={pending}
           contained={contained}
           completeTitle={
@@ -232,8 +226,6 @@ export function GroupPhasePanel({
             );
           })
         )}
-
-        <PlayPhaseWaitFootnote className="mt-2" />
 
         {message ? <PlayPhaseMessage message={message} /> : null}
       </PlayPhasePanel>

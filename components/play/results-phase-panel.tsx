@@ -12,6 +12,7 @@ import { PlayPhaseShell } from "@/components/play/play-phase-shell";
 import { PlayStudentTopBanner } from "@/components/play/play-phase-layout";
 import { activityPanelCard } from "@/components/activity/activity-layout-chrome";
 import { LoadingState } from "@/components/ui/loading-state";
+import { formatGroupDisplayName } from "@/lib/activity-pack/engine";
 import {
   getStudentResultsSnapshot,
   type SessionResultsSummary,
@@ -46,7 +47,9 @@ export function ResultsPhasePanel({
     [results, highlightGroupId, currentPlayerId],
   );
 
-  const teamTitle = groupName?.trim() || snapshot?.groupName || "모둠";
+  const teamTitle = formatGroupDisplayName(
+    groupName?.trim() || snapshot?.groupName || null,
+  );
 
   return (
     <PlayPhaseShell
@@ -54,7 +57,7 @@ export function ResultsPhasePanel({
       topBanner={
         <PlayStudentTopBanner
           phase="results"
-          groupName={teamTitle}
+          groupName={groupName ?? null}
           placeName={roleLabel ?? "—"}
           placeLabel="역할"
           contained={contained}

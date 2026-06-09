@@ -9,7 +9,6 @@ import {
   PlayPhasePanel,
   PlayPhaseSection,
   PlayPhaseSectionBadge,
-  PlayPhaseWaitFootnote,
   PlayStudentTopBanner,
   playPhaseFormActions,
 } from "@/components/play/play-phase-layout";
@@ -28,6 +27,7 @@ const t = activityLayoutType;
 type Props = {
   pack: ActivityPack;
   groupName: string | null;
+  roleLabel?: string | null;
   /** 이미 제출한 응답 (있으면 결과 표시) */
   submittedAnswers?: QuizAnswer[];
   submittedAt?: string | null;
@@ -40,6 +40,7 @@ type Props = {
 export function IndividualQuizPanel({
   pack,
   groupName,
+  roleLabel,
   submittedAnswers,
   submittedAt,
   onSubmit,
@@ -85,10 +86,8 @@ export function IndividualQuizPanel({
         <PlayStudentTopBanner
           phase="individual_quiz"
           groupName={groupName}
-          placeName={
-            submitted ? `${grade.correctCount}/${questions.length}` : `${answeredCount}/${questions.length}`
-          }
-          placeLabel={submitted ? "정답" : "푼 문항"}
+          placeName={roleLabel ?? "—"}
+          placeLabel="역할"
           pending={pending}
           contained={contained}
           completeTitle={submitted ? "제출 완료" : undefined}
@@ -101,9 +100,6 @@ export function IndividualQuizPanel({
       }
     >
       <PlayPhasePanel>
-        {submitted ? (
-          <PlayPhaseWaitFootnote className="mt-2" />
-        ) : (
           <PlayPhaseSection
             title="실전 문제"
             variant="active"
@@ -127,6 +123,7 @@ export function IndividualQuizPanel({
             <div className={playPhaseFormActions}>
               <Button
                 type="button"
+                className="shrink-0 gap-2 min-h-10 touch-manipulation @md:min-h-11"
                 onClick={() => void handleSubmit()}
                 disabled={busy || !allAnswered}
               >
@@ -141,7 +138,6 @@ export function IndividualQuizPanel({
               </Button>
             </div>
           </PlayPhaseSection>
-        )}
 
         {message ? (
           <PlayPhaseMessage message={message} success={message.includes("제출")} />

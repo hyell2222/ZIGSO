@@ -12,7 +12,6 @@ export {
   PhaseSectionCard as PlayPhaseSectionCard,
   PhaseSectionBadge as PlayPhaseSectionBadge,
   PhaseSectionCallout as PlayPhaseCallout,
-  PhaseSectionWaitFootnote as PlayPhaseWaitFootnote,
   PhaseSectionEmptyState as PlayPhaseEmptyState,
   phaseSectionListRowClass as playPhaseListRowClass,
   PhaseSectionListRow as PlayPhaseListRow,

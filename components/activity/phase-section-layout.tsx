@@ -145,14 +145,6 @@ export function PhaseSectionCallout({
   );
 }
 
-export function PhaseSectionWaitFootnote({ className }: { className?: string }) {
-  return (
-    <p className={cn("text-center", t.playPanelCalloutFootnote, className)}>
-      선생님이 다음 단계로 넘길 때까지 기다려 주세요.
-    </p>
-  );
-}
-
 export function PhaseSectionEmptyState({
   children,
   className,

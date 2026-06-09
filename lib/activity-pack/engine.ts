@@ -135,9 +135,28 @@ export type AssignableMember = {
   created_at?: string | null;
 };
 
-/** 세션·샌드박스 공통 — 모둠 이름(1, 2, 3 …) */
+/** 세션·샌드박스 공통 — 모둠 이름(모둠 1, 모둠 2 …) */
 export function groupLabel(index: number): string {
-  return String(index + 1);
+  return `모둠 ${index + 1}`;
+}
+
+/** 카드·배지 등 표시용 — 저장값이 숫자만이어도 '모둠' 접두사 보장 */
+export function formatGroupDisplayName(name: string | null | undefined): string {
+  const trimmed = name?.trim();
+  if (!trimmed) return "—";
+  if (trimmed.startsWith("모둠")) return trimmed;
+  return `모둠 ${trimmed}`;
+}
+
+/** 헤더·overview 등 라벨+숫자 분리 표시용 — '모둠 1' → '1' */
+export function groupNumberDisplay(name: string | null | undefined): string {
+  const trimmed = name?.trim();
+  if (!trimmed) return "—";
+  if (trimmed.startsWith("모둠")) {
+    const number = trimmed.slice(2).trim();
+    return number || "—";
+  }
+  return trimmed;
 }
 
 /** 세션·샌드박스 공통 — 모둠 수 */

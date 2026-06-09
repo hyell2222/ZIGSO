@@ -452,6 +452,7 @@ export function PlaySessionShell({
       <IndividualQuizPanel
         pack={activityPack}
         groupName={groupName}
+        roleLabel={assignedRoleLabel}
         submittedAnswers={playerQuery.data?.individual_quiz_answers ?? undefined}
         submittedAt={playerQuery.data?.individual_quiz_submitted_at ?? null}
         onSubmit={(answers) =>
@@ -489,9 +490,6 @@ export function PlaySessionShell({
             sessionTitle={sessionQuery.data?.activities?.title ?? null}
             state={waitingLobbyState}
           />
-          <p className="mt-6 text-center text-xs text-[var(--muted-foreground)]">
-            선생님이 다음 단계로 넘길 때까지 기다려 주세요.
-          </p>
         </div>
       </PlayPhaseShell>
     );
