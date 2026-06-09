@@ -9,6 +9,7 @@ import {
 } from "@/components/activity/rank-display";
 import { activityLayoutType } from "@/components/activity/activity-layout-typography";
 import { PlayPhaseShell } from "@/components/play/play-phase-shell";
+import { PlayStudentTopBanner } from "@/components/play/play-phase-layout";
 import { activityPanelCard } from "@/components/activity/activity-layout-chrome";
 import { LoadingState } from "@/components/ui/loading-state";
 import {
@@ -33,6 +34,7 @@ export function ResultsPhasePanel({
   results,
   highlightGroupId,
   groupName,
+  roleLabel,
   currentPlayerId,
   contained = false,
 }: Props) {
@@ -47,7 +49,18 @@ export function ResultsPhasePanel({
   const teamTitle = groupName?.trim() || snapshot?.groupName || "모둠";
 
   return (
-    <PlayPhaseShell contained={contained}>
+    <PlayPhaseShell
+      contained={contained}
+      topBanner={
+        <PlayStudentTopBanner
+          phase="results"
+          groupName={teamTitle}
+          placeName={roleLabel ?? "—"}
+          placeLabel="나의 역할"
+          contained={contained}
+        />
+      }
+    >
       {loading ? (
         <LoadingState variant="section" tone="play" label="순위 집계 중…" />
       ) : !snapshot ? (

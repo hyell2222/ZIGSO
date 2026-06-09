@@ -1,8 +1,7 @@
 "use client";
 
-import { activityListRow } from "@/components/activity/activity-layout-chrome";
+import { activityTeacherPresenceChip } from "@/components/activity/activity-layout-chrome";
 import { activityLayoutType } from "@/components/activity/activity-layout-typography";
-import { PhaseSection, PhaseSectionBadge } from "@/components/activity/phase-section-layout";
 import { cn } from "@/lib/utils";
 
 type Player = { id: string; nickname: string | null };
@@ -11,25 +10,18 @@ type Props = {
   players: Player[];
 };
 
-/** 호스트 대기 학생 — 섹션 카드 UI */
+/** 호스트 대기 학생 목록 — 본문 상단 중앙 */
 export function SessionHostWaitingRoster({ players }: Props) {
   return (
-    <PhaseSection
-      title="입장 대기"
-      heading="section"
-      as="h2"
-      subtitle="참가 코드로 들어왔고, 시작을 기다리는 학생입니다."
-      headerExtra={<PhaseSectionBadge>{players.length}명</PhaseSectionBadge>}
-    >
+    <div className="flex w-full max-w-2xl flex-col items-center self-center">
       {players.length === 0 ? (
-        <p className={cn("py-2 text-center", activityLayoutType.bodyMuted)}>아직 없음</p>
+        <p className={cn("py-1 text-center", activityLayoutType.bodyMuted)}>
+          아직 입장한 학생이 없습니다.
+        </p>
       ) : (
-        <ul className="flex max-h-56 flex-wrap gap-2 overflow-y-auto overscroll-y-contain pr-1">
+        <ul className="flex max-h-56 w-full flex-wrap items-start justify-center gap-2 overflow-y-auto overscroll-y-contain px-1">
           {players.map((p) => (
-            <li
-              key={p.id}
-              className={cn(activityListRow, "inline-flex min-h-9 w-auto items-center gap-1.5")}
-            >
+            <li key={p.id} className={activityTeacherPresenceChip}>
               <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--primary)]" aria-hidden />
               <span className={activityLayoutType.listRowPrimary}>
                 {p.nickname ?? "참가자"}
@@ -38,6 +30,6 @@ export function SessionHostWaitingRoster({ players }: Props) {
           ))}
         </ul>
       )}
-    </PhaseSection>
+    </div>
   );
 }

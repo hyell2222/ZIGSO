@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 
 import { ExpertPhasePanel } from "@/components/play/expert-group-panel";
-import { ActivityIntroductionLayout } from "@/components/play/overview-layout";
+import { PlayPhasePanel, PlayPhaseWaitFootnote } from "@/components/play/play-phase-layout";
 import { GroupPhasePanel, type GroupMember } from "@/components/play/home-group-panel";
 import { IndividualQuizPanel } from "@/components/play/individual-quiz-panel";
 import { PlayJoinModal } from "@/components/play/play-join-modal";
@@ -13,7 +13,7 @@ import { buildSessionResults } from "@/lib/activity-pack/session-results";
 import { PlayAtmosphere } from "@/components/play/play-atmosphere";
 import { activityLoaderRegion } from "@/components/activity/activity-layout-chrome";
 import { PlayPhaseShell } from "@/components/play/play-phase-shell";
-import { PlayHeaderGroupPlace } from "@/components/play/play-header-group-place";
+import { PlayStudentTopBanner } from "@/components/play/play-phase-layout";
 import { WaitingLobbyBlock } from "@/components/play/waiting-lobby-block";
 import type { ActivityPhase } from "@/lib/api/activities";
 import type { ActivityPack, QuizAnswer } from "@/lib/activity-pack/types";
@@ -29,7 +29,6 @@ import { cn } from "@/lib/utils";
 type Props = {
   activityId: string;
   activityTitle: string | null;
-  description: string | null;
   pack: ActivityPack;
   phase: ActivityPhase;
   groups: SandboxGroup[];
@@ -40,12 +39,21 @@ type Props = {
   onLeaveAsStudent: () => void;
   onSubmitPractice: (playerId: string, results: PracticeQuestionResult[], baseScore: number) => void;
   onSubmitIndividualQuiz: (playerId: string, answers: QuizAnswer[]) => void;
+  onPeerQuestionComplete: (playerId: string, questionId: string) => void;
+  onEnsureHomeGroupComplete: (playerId: string) => void;
 };
 
-export function SandboxStudentPanel({
+export function SandboxStudentPanel(props: Props) {
+  return (
+    <div className="flex h-full min-h-0 flex-col overflow-hidden">
+      <SandboxStudentPanelView {...props} />
+    </div>
+  );
+}
+
+function SandboxStudentPanelView({
   activityId,
   activityTitle,
-  description,
   pack,
   phase,
   groups,
@@ -55,6 +63,8 @@ export function SandboxStudentPanel({
   onLeaveAsStudent,
   onSubmitPractice,
   onSubmitIndividualQuiz,
+  onPeerQuestionComplete,
+  onEnsureHomeGroupComplete,
 }: Props) {
   void onLeaveAsStudent;
   const [nickname, setNickname] = useState("");
@@ -180,8 +190,15 @@ export function SandboxStudentPanel({
         pack={pack}
         groupName={group.name}
         playerId={primaryPlayer.id}
+        ownRoleId={primaryPlayer.roleId}
         members={groupMembers}
         roleScopeKey={scopeKey}
+        peerPracticeCompleted={primaryPlayer.peer_practice_completed ?? []}
+        homeGroupCompletedAt={primaryPlayer.home_group_completed_at ?? null}
+        onPeerQuestionComplete={(questionId) =>
+          onPeerQuestionComplete(primaryPlayer.id, questionId)
+        }
+        onEnsureHomeGroupComplete={() => onEnsureHomeGroupComplete(primaryPlayer.id)}
         contained
       />
     );
@@ -205,27 +222,19 @@ export function SandboxStudentPanel({
     return (
       <PlayPhaseShell
         contained
-        header={{
-          phase: 1,
-          title: "활동 소개",
-          description:
-            "모둠·역할·활동 흐름을 확인하세요. 전문가 집단(연습 문제) → 홈 집단(설명) → 개별 형성평가 순으로 진행됩니다.",
-          rightSlot: (
-            <PlayHeaderGroupPlace
-              groupName={group?.name ?? null}
-              placeName={roleLabel}
-              placeLabel="나의 역할"
-              contained
-            />
-          ),
-        }}
+        topBanner={
+          <PlayStudentTopBanner
+            phase="overview"
+            groupName={group?.name ?? null}
+            placeName={roleLabel}
+            placeLabel="나의 역할"
+            contained
+          />
+        }
       >
-        <ActivityIntroductionLayout
-          loading={false}
-          title={activityTitle}
-          description={description}
-          activityPack={pack}
-        />
+        <PlayPhasePanel>
+          <PlayPhaseWaitFootnote />
+        </PlayPhasePanel>
       </PlayPhaseShell>
     );
   }

@@ -4,14 +4,13 @@ import { Loader2 } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { PlayPhaseShell } from "@/components/play/play-phase-shell";
-import { PlayHeaderGroupPlace } from "@/components/play/play-header-group-place";
 import {
-  PlayPhaseCallout,
   PlayPhaseMessage,
   PlayPhasePanel,
   PlayPhaseSection,
   PlayPhaseSectionBadge,
   PlayPhaseWaitFootnote,
+  PlayStudentTopBanner,
   playPhaseFormActions,
 } from "@/components/play/play-phase-layout";
 import {
@@ -71,7 +70,7 @@ export function IndividualQuizPanel({
     try {
       await onSubmit(answers);
       onUpdate?.();
-      setMessage("개별 형성평가를 제출했어요!");
+      setMessage("실력 확인하기를 제출했어요!");
     } catch (e) {
       setMessage(e instanceof Error ? e.message : PLAYER_MESSAGES.operationFailed);
     } finally {
@@ -82,32 +81,28 @@ export function IndividualQuizPanel({
   return (
     <PlayPhaseShell
       contained={contained}
-      header={{
-        phase: 4,
-        title: "개별 형성평가",
-        description:
-          "전체 내용에 대한 실전 문제입니다. 연습과 달리 다시 풀 기회가 없으니 신중히 풀고 한 번에 제출하세요. 기준 점수 대비 향상도로 개인·집단 점수가 정해집니다.",
-        rightSlot: (
-          <PlayHeaderGroupPlace
-            groupName={groupName}
-            placeName={
-              submitted ? `${grade.correctCount}/${questions.length}` : `${answeredCount}/${questions.length}`
-            }
-            placeLabel={submitted ? "정답" : "푼 문항"}
-            pending={pending}
-            contained={contained}
-          />
-        ),
-      }}
+      topBanner={
+        <PlayStudentTopBanner
+          phase="individual_quiz"
+          groupName={groupName}
+          placeName={
+            submitted ? `${grade.correctCount}/${questions.length}` : `${answeredCount}/${questions.length}`
+          }
+          placeLabel={submitted ? "정답" : "푼 문항"}
+          pending={pending}
+          contained={contained}
+          completeTitle={submitted ? "제출 완료" : undefined}
+          completeMessage={
+            submitted
+              ? `실전 ${grade.correctCount}/${questions.length} 정답. 순위는 최종 순위 단계에서 확인할 수 있어요.`
+              : undefined
+          }
+        />
+      }
     >
       <PlayPhasePanel>
         {submitted ? (
-          <PlayPhaseCallout title="제출 완료" centered>
-            <p className={t.playPanelCalloutBody}>
-              실전 {grade.correctCount}/{questions.length} 정답. 순위는 최종 순위 단계에서 확인할 수 있어요.
-            </p>
-            <PlayPhaseWaitFootnote className="mt-4" />
-          </PlayPhaseCallout>
+          <PlayPhaseWaitFootnote className="mt-2" />
         ) : (
           <PlayPhaseSection
             title="실전 문제"
@@ -141,7 +136,7 @@ export function IndividualQuizPanel({
                     제출 중…
                   </>
                 ) : (
-                  "개별 형성평가 제출"
+                  "실력 확인하기 제출"
                 )}
               </Button>
             </div>

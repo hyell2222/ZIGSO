@@ -176,9 +176,7 @@ export function editorDraftToPack(draft: ActivityEditorDraft): ActivityPack {
   });
 
   const title = draft.title.trim()
-    ? draft.title.trim().startsWith("활동:")
-      ? draft.title.trim()
-      : `활동: ${draft.title.trim()}`
+    ? draft.title.trim()
     : "새 직소 활동";
 
   return normalizePackSizing({

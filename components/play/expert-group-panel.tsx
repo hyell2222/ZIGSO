@@ -3,13 +3,12 @@
 import { useMemo, useState } from "react";
 
 import { PlayPhaseShell } from "@/components/play/play-phase-shell";
-import { PlayHeaderGroupPlace } from "@/components/play/play-header-group-place";
 import {
-  PlayPhaseCallout,
   PlayPhaseMessage,
   PlayPhasePanel,
   PlayPhaseSection,
   PlayPhaseWaitFootnote,
+  PlayStudentTopBanner,
 } from "@/components/play/play-phase-layout";
 import {
   PracticeQuestionCard,
@@ -106,36 +105,35 @@ export function ExpertPhasePanel({
     }
   };
 
+  const phaseComplete = done && baseScore != null;
+
   return (
     <PlayPhaseShell
       contained={contained}
-      header={{
-        phase: 2,
-        title: "전문가 집단",
-        description:
-          "같은 역할끼리 모여 내가 맡은 지문을 이해하고, 연습 문제를 모두 풉니다. 문항별 점수의 평균이 기준 점수가 됩니다.",
-        rightSlot: (
-          <PlayHeaderGroupPlace
-            groupName={groupName}
-            placeName={
-              done && baseScore != null
-                ? `${baseScore}점`
-                : doneCount > 0
-                  ? `${doneCount}/${practiceQuestions.length || "—"}`
-                  : roleLabel
-            }
-            placeLabel={
-              done && baseScore != null
-                ? "기준 점수"
-                : doneCount > 0
-                  ? "연습 완료"
-                  : "나의 역할"
-            }
-            pending={pending}
-            contained={contained}
-          />
-        ),
-      }}
+      topBanner={
+        <PlayStudentTopBanner
+          phase="expert_group"
+          groupName={groupName}
+          placeName={
+            phaseComplete
+              ? `${baseScore}점`
+              : doneCount > 0
+                ? `${doneCount}/${practiceQuestions.length || "—"}`
+                : roleLabel
+          }
+          placeLabel={
+            phaseComplete ? "기준 점수" : doneCount > 0 ? "연습 완료" : "나의 역할"
+          }
+          pending={pending}
+          contained={contained}
+          completeTitle={phaseComplete ? "2단계 완료!" : undefined}
+          completeMessage={
+            phaseComplete
+              ? `기준 점수 ${baseScore}점 — 연습 ${practiceQuestions.length}문항 평균. 다음은 서로 알려주기 단계에서 모둠원에게 내용과 풀이를 설명할 차례예요.`
+              : undefined
+          }
+        />
+      }
     >
       <PlayPhasePanel>
         {!role ? (
@@ -184,15 +182,7 @@ export function ExpertPhasePanel({
               </div>
             </PlayPhaseSection>
 
-            {done && baseScore != null ? (
-              <PlayPhaseCallout title="전문가 완료!" centered>
-                <p className={t.playPanelCalloutBody}>
-                  기준 점수 {baseScore}점 — 연습 {practiceQuestions.length}문항 평균. 홈 집단에서
-                  모둠원에게 지문과 풀이 방식을 설명할 준비가 되었어요.
-                </p>
-                <PlayPhaseWaitFootnote className="mt-4" />
-              </PlayPhaseCallout>
-            ) : null}
+            {done && baseScore != null ? <PlayPhaseWaitFootnote className="mt-2" /> : null}
 
             {message ? <PlayPhaseMessage message={message} /> : null}
           </>

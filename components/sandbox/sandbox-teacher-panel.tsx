@@ -8,10 +8,6 @@ import {
   type GroupAssignmentGroup,
 } from "@/components/teacher/group-assignment-dashboard";
 import {
-  GroupProgressDashboard,
-  type GroupProgressGroup,
-} from "@/components/teacher/group-progress-dashboard";
-import {
   SessionResultsDashboard,
   type SessionResultsMember,
 } from "@/components/teacher/session-results-dashboard";
@@ -33,6 +29,7 @@ import { isSessionEnded, isTimedPhase, type TimedPhase } from "@/lib/activity-ph
 import { hostSessionNextPhaseLabel } from "@/lib/api/sessions";
 import { buildRoleCodenameMap } from "@/lib/play/role-codenames";
 import { formatAssignedRoleLabels } from "@/lib/activity-pack/roles";
+import { isPlayerPhaseComplete } from "@/lib/teacher/phase-completion";
 
 type Props = {
   activityTitle: string | null;
@@ -95,36 +92,34 @@ export function SandboxTeacherPanel({
       list.push(p);
       byGroup.set(p.groupId, list);
     }
-    return groups.map((group) => ({
-      group: { id: group.id, name: group.name },
-      members: (byGroup.get(group.id) ?? []).map((m) => ({
-        id: m.id,
-        nickname: m.nickname,
-        zoneName:
-          formatAssignedRoleLabels(pack, [m.roleId], `sandbox-${activityId}`) ??
-          roleCodenameById.get(m.roleId) ??
-          null,
-      })),
-    }));
-  }, [players, groups, pack, activityId, roleCodenameById]);
-
-  const progressGroups = useMemo<GroupProgressGroup[]>(() => {
-    const byGroup = new Map<string, SandboxPlayer[]>();
-    for (const p of players) {
-      const list = byGroup.get(p.groupId) ?? [];
-      list.push(p);
-      byGroup.set(p.groupId, list);
-    }
-    return groups.map((group) => ({
-      group: { id: group.id, name: group.name },
-      members: (byGroup.get(group.id) ?? []).map((m) => ({
-        id: m.id,
-        nickname: m.nickname,
-        baseScore: m.base_score ?? null,
-        practiceSubmitted: Boolean(m.practice_submitted_at),
-      })),
-    }));
-  }, [groups, players]);
+    return groups.map((group) => {
+      const groupMembers = byGroup.get(group.id) ?? [];
+      const memberRoleIds = groupMembers.map((m) => m.roleId);
+      return {
+        group: { id: group.id, name: group.name },
+        members: groupMembers.map((m) => ({
+          id: m.id,
+          nickname: m.nickname,
+          zoneName:
+            formatAssignedRoleLabels(pack, [m.roleId], `sandbox-${activityId}`) ??
+            roleCodenameById.get(m.roleId) ??
+            null,
+          phaseComplete: isPlayerPhaseComplete(
+            phase,
+            {
+              group_id: m.groupId,
+              assigned_role_id: m.roleId,
+              practice_submitted_at: m.practice_submitted_at,
+              peer_practice_completed: m.peer_practice_completed,
+              home_group_completed_at: m.home_group_completed_at,
+              individual_quiz_submitted_at: m.individual_quiz_submitted_at,
+            },
+            { pack, memberRoleIds },
+          ),
+        })),
+      };
+    });
+  }, [players, groups, pack, activityId, roleCodenameById, phase]);
 
   const resultsMembers = useMemo<SessionResultsMember[]>(
     () =>
@@ -148,11 +143,6 @@ export function SandboxTeacherPanel({
         name: group.name,
       })),
     [groups],
-  );
-
-  const individualQuizSubmitted = useMemo(
-    () => players.filter((p) => p.individual_quiz_submitted_at).length,
-    [players],
   );
 
   const shouldShowTimer = isTimedPhase(phase);
@@ -188,7 +178,7 @@ export function SandboxTeacherPanel({
     ) : null;
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-y-auto text-sm">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden text-sm">
       <SessionHostLayout
         contained
         activityTitle={activityTitle}
@@ -204,35 +194,17 @@ export function SandboxTeacherPanel({
           <SessionHostWaitingRoster players={waitingOnlinePlayers} />
         ) : null}
 
-        {phase === "overview" || phase === "expert_group" ? (
+        {phase === "overview" ||
+        phase === "expert_group" ||
+        phase === "home_group" ||
+        phase === "individual_quiz" ? (
           <GroupAssignmentDashboard
             groups={assignmentGroups}
             loading={false}
+            phase={phase}
             groupBy={phase === "expert_group" ? "item" : "group"}
             contained
           />
-        ) : null}
-
-        {phase === "expert_group" || phase === "home_group" ? (
-          <GroupProgressDashboard
-            groups={progressGroups}
-            loading={false}
-            contained
-          />
-        ) : null}
-
-        {phase === "individual_quiz" ? (
-          <section className="rounded-xl border border-[var(--border)] bg-[var(--card-bg)] p-4">
-            <div className="flex items-baseline justify-between gap-2">
-              <h2 className="text-sm font-semibold text-[var(--foreground)]">개별 형성평가 진행</h2>
-              <span className="font-mono text-sm font-semibold tabular-nums text-[var(--primary)]">
-                제출 {individualQuizSubmitted}/{players.length}
-              </span>
-            </div>
-            <p className="mt-2 text-xs text-[var(--muted-foreground)]">
-              학생들이 모든 역할의 실전 문제를 한 번씩 풉니다. 모두 제출하면 최종 순위로 넘어가세요.
-            </p>
-          </section>
         ) : null}
 
         {phase === "results" ? (

@@ -83,10 +83,10 @@ export function ActivitySteps(props: Props) {
   };
 
   return (
-    <>
+    <div className="app-page">
       <TopNav />
 
-      <main className="mx-auto w-full min-w-0 max-w-5xl overflow-x-hidden px-4 py-6 pb-10 sm:py-8">
+      <main className="mx-auto w-full min-w-0 max-w-5xl flex-1 overflow-x-hidden px-4 py-6 pb-10 sm:py-8">
         <div className="mb-6">
           <PageHeader
             title={
@@ -118,6 +118,6 @@ export function ActivitySteps(props: Props) {
           </Button>
         </div>
       </main>
-    </>
+    </div>
   );
 }

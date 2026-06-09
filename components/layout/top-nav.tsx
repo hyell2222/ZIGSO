@@ -53,7 +53,7 @@ export function TopNav() {
           <div className="shrink-0">
             <Link
               href={ROUTES.home}
-              className="block whitespace-nowrap text-2xl font-semibold tracking-tight text-[var(--on-primary)] transition hover:brightness-110"
+              className="block whitespace-nowrap text-3xl font-extrabold tracking-tight text-[var(--on-primary)] transition hover:brightness-110"
             >
               Jigsaw
             </Link>

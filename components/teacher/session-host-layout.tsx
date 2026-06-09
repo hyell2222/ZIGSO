@@ -4,10 +4,8 @@ import type { ReactNode } from "react";
 
 import {
   activityLayoutClasses,
-  activityPhaseHeaderShell,
   activitySessionMetaShell,
 } from "@/components/activity/activity-layout-chrome";
-import { PhaseSectionPanel } from "@/components/activity/phase-section-layout";
 import { activityLayoutType } from "@/components/activity/activity-layout-typography";
 import { PhaseGuideCard } from "@/components/teacher/phase-guide-card";
 import { SessionHostJoinCard } from "@/components/teacher/session-host-join-card";
@@ -43,27 +41,32 @@ export function SessionHostLayout({
 }: Props) {
   const layout = activityLayoutClasses(contained);
   const showPhaseGuide = isTimedPhase(phase);
-  const showPhaseActions = Boolean(timerButton || startButton || nextButton);
-  const phaseActions = showPhaseActions ? (
+  const phaseActions = (
     <>
       {timerButton}
       {startButton}
       {nextButton}
     </>
-  ) : null;
+  );
+  const hasPhaseActions = Boolean(timerButton || startButton || nextButton);
 
   return (
     <main
       className={cn(
-        "mx-auto w-full space-y-0",
-        contained
-          ? "pb-[max(1.5rem,env(safe-area-inset-bottom,0px))]"
-          : "pb-[max(2.5rem,env(safe-area-inset-bottom,0px))]",
+        "relative mx-auto flex w-full flex-col space-y-0 overflow-hidden bg-[var(--background)]",
+        contained ? "h-full min-h-0" : "h-dvh min-h-0",
       )}
     >
-      <header className={activitySessionMetaShell}>
+      <header
+        className={cn(
+          "z-30 w-full shrink-0",
+          activitySessionMetaShell,
+          !contained && "pt-[env(safe-area-inset-top,0px)]",
+        )}
+      >
         <div className={layout.sessionMetaInner}>
-          <div className="min-w-0 flex-1 space-y-0.5">
+          <SessionHostJoinCard joinCode={joinCode} sessionEnded={sessionEnded} contained={contained} />
+          <div className="min-w-0 flex-1 basis-full space-y-0.5 @sm:basis-auto">
             <h1
               className={cn(
                 contained
@@ -75,9 +78,14 @@ export function SessionHostLayout({
             </h1>
             <p
               className={cn(
+                "inline-flex items-center gap-1.5",
                 contained ? activityLayoutType.activityMetaContained : activityLayoutType.activityMeta,
               )}
             >
+              <span
+                className="h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--primary)]"
+                aria-hidden
+              />
               접속{" "}
               <span className={activityLayoutType.activityMetaStrong}>
                 {playerCount}
@@ -85,39 +93,34 @@ export function SessionHostLayout({
               명
             </p>
           </div>
-          <SessionHostJoinCard joinCode={joinCode} sessionEnded={sessionEnded} contained={contained} />
+          {hasPhaseActions ? (
+            <div
+              className={cn(
+                "ml-auto flex w-full flex-wrap items-stretch justify-end gap-2 @sm:w-auto",
+                "[&_button]:min-h-10 [&_button]:touch-manipulation @md:[&_button]:min-h-11",
+              )}
+            >
+              {phaseActions}
+            </div>
+          ) : null}
         </div>
       </header>
 
-      {showPhaseGuide || showPhaseActions ? (
-        <section className={activityPhaseHeaderShell}>
-          <div className={layout.phaseHeaderInner}>
-            {showPhaseGuide ? (
-              <PhaseGuideCard
-                phase={phase}
-                contained={contained}
-                rightSlot={
-                  phaseActions ? (
-                    <div
-                      className={cn(
-                        "flex w-full flex-wrap items-stretch justify-end gap-2",
-                        "[&_button]:min-h-10 [&_button]:touch-manipulation @md:[&_button]:min-h-11",
-                      )}
-                    >
-                      {phaseActions}
-                    </div>
-                  ) : null
-                }
-              />
-            ) : (
-              <div className="flex justify-end gap-2">{phaseActions}</div>
-            )}
-          </div>
-        </section>
-      ) : null}
-
-      <div className={layout.pageBody}>
-        <PhaseSectionPanel>{children}</PhaseSectionPanel>
+      <div
+        className={cn(
+          layout.pageBody,
+          "min-h-0 flex-1 overflow-y-auto overscroll-y-contain",
+          contained
+            ? "pb-[max(1.5rem,env(safe-area-inset-bottom,0px))]"
+            : "pb-[max(2.5rem,env(safe-area-inset-bottom,0px))]",
+          phase === "waiting" &&
+            "flex flex-col items-center p-5 text-center @sm:p-6",
+        )}
+      >
+        {showPhaseGuide ? (
+          <PhaseGuideCard phase={phase} contained={contained} />
+        ) : null}
+        {children}
       </div>
     </main>
   );

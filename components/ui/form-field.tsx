@@ -3,7 +3,7 @@ import { type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 /** 모달·폼 공통 필드 라벨 */
-export const formLabelClass = "text-xs font-medium text-[var(--foreground)]";
+export const formLabelClass = "text-sm font-medium text-[var(--foreground)]";
 
 type FormFieldProps = {
   label: string;
@@ -21,7 +21,7 @@ export function FormField({ label, htmlFor, help, children, className }: FormFie
         <label htmlFor={htmlFor} className={formLabelClass}>
           {label}
         </label>
-        {help ? <p className="mt-0.5 text-xs text-[var(--muted-foreground)]">{help}</p> : null}
+        {help ? <p className="mt-0.5 text-sm text-[var(--muted-foreground)]">{help}</p> : null}
       </div>
       {children}
     </div>

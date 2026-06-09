@@ -16,7 +16,8 @@ export const PLAYER_MESSAGES = {
   quizIncomplete: "아직 답하지 않은 문항이 있어요.",
   practiceAlreadyDone: "이미 연습 문제를 마쳤어요.",
   practiceIncomplete: "아직 풀지 않은 연습 문제가 있어요.",
-  individualQuizAlreadySubmitted: "이미 개별 형성평가를 제출했어요.",
+  individualQuizAlreadySubmitted: "이미 실력 확인하기를 제출했어요.",
+  homeGroupAlreadyDone: "이미 서로 알려주기를 마쳤어요.",
   operationFailed: "요청을 처리하지 못했어요. 잠시 후 다시 시도해 주세요.",
 } as const;
 
@@ -41,6 +42,30 @@ export function getTestQuestions(pack: ActivityPack): QuizQuestion[] {
 /** 연습 문항별 결과 → 기준 점수(평균). 문항 점수는 오답 횟수에서 파생한다. */
 export function computeBaseScoreFromPracticeResults(results: PracticeQuestionResult[]): number {
   return averagePracticeBaseScore(results.map((r) => practiceBaseScore(r.wrongAttempts)));
+}
+
+/** 서로 알려주기 — 모둠원(내 역할 제외) 연습 문항 */
+export function getPeerPracticeQuestions(
+  pack: ActivityPack,
+  memberRoleIds: Array<string | null | undefined>,
+  ownRoleId: string | null,
+): QuizQuestion[] {
+  const otherRoleIds = [
+    ...new Set(
+      memberRoleIds.filter((id): id is string => Boolean(id) && id !== ownRoleId),
+    ),
+  ];
+  return otherRoleIds.flatMap((roleId) => getPracticeQuestions(pack, roleId));
+}
+
+/** 서로 알려주기 — 모둠원 파트 연습 완료 여부 */
+export function isPeerPracticeComplete(
+  questions: QuizQuestion[],
+  completedQuestionIds: string[],
+): boolean {
+  if (questions.length === 0) return true;
+  const done = new Set(completedQuestionIds);
+  return questions.every((q) => done.has(q.id));
 }
 
 /** 연습 완료 여부 — 역할 연습 문항 수와 결과 수가 일치 */

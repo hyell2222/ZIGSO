@@ -29,9 +29,17 @@ type Props = {
   /** 이미 완료된 경우(복귀 등) 표시용 */
   initialResult?: { wrongAttempts: number; baseScore: number } | null;
   disabled?: boolean;
+  /** false면 점수·감점 없이 탐색용 (서로 알려주기 모둠원 파트) */
+  scored?: boolean;
 };
 
-export function PracticeQuestionCard({ question, onComplete, initialResult, disabled }: Props) {
+export function PracticeQuestionCard({
+  question,
+  onComplete,
+  initialResult,
+  disabled,
+  scored = true,
+}: Props) {
   const [selected, setSelected] = useState<number | null>(null);
   const [wrongAttempts, setWrongAttempts] = useState(initialResult?.wrongAttempts ?? 0);
   const [revealed, setRevealed] = useState(Boolean(initialResult));
@@ -100,7 +108,13 @@ export function PracticeQuestionCard({ question, onComplete, initialResult, disa
       <div className="mb-3 flex items-center justify-between gap-2">
         <p className={cn("font-medium", t.playPanelBody)}>{question.prompt}</p>
         <span className="shrink-0 rounded-full bg-[var(--tint-accent-weak)] px-2.5 py-1 font-mono text-xs font-semibold tabular-nums text-[var(--primary)]">
-          {done ? `이 문항 ${currentScore}점` : `남은 기회 ${attemptsLeft}`}
+          {done
+            ? scored
+              ? `이 문항 ${currentScore}점`
+              : "완료"
+            : scored
+              ? `남은 기회 ${attemptsLeft}`
+              : `남은 기회 ${attemptsLeft}`}
         </span>
       </div>
 
@@ -167,8 +181,12 @@ export function PracticeQuestionCard({ question, onComplete, initialResult, disa
         <div className="mt-4 flex items-center justify-between gap-3">
           <p className={cn(t.caption)}>
             {wrongAttempts > 0 && !outOfAttempts
-              ? `오답이에요. 힌트를 참고해 다시 풀어 보세요. (현재 ${currentScore}점)`
-              : "정답을 골라 제출하세요. 오답마다 점수가 깎여요."}
+              ? scored
+                ? `오답이에요. 힌트를 참고해 다시 풀어 보세요. (현재 ${currentScore}점)`
+                : "오답이에요. 힌트를 참고해 다시 풀어 보세요."
+              : scored
+                ? "정답을 골라 제출하세요. 오답마다 점수가 깎여요."
+                : "정답을 골라 제출하세요. 점수에는 영향 없어요."}
           </p>
           {outOfAttempts ? (
             <Button type="button" variant="secondary" onClick={() => void handleReveal()} disabled={busy}>
@@ -189,7 +207,13 @@ export function PracticeQuestionCard({ question, onComplete, initialResult, disa
               t.playPanelBody,
             )}
           >
-            {correct ? `정답! 이 문항 ${currentScore}점` : `정답 확인 · 이 문항 ${currentScore}점`}
+            {correct
+              ? scored
+                ? `정답! 이 문항 ${currentScore}점`
+                : "정답!"
+              : scored
+                ? `정답 확인 · 이 문항 ${currentScore}점`
+                : "정답을 확인했어요."}
           </p>
           {question.explanation ? (
             <p className={cn("rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2", t.caption)}>
