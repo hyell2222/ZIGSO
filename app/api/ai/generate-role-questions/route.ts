@@ -47,6 +47,11 @@ function buildSystemPrompt(kind: "practice" | "test", contentLanguage: ContentLa
       ? "All question content in Korean: prompts, choices, hints, explanations."
       : "All question content in English: prompts, choices, hints, explanations.";
 
+  const distinctnessRule =
+    "- If existing questions are listed, the new question(s) MUST cover a DISTINCT concept: do not duplicate or paraphrase any existing prompt, do not re-test the same fact, and avoid reusing the same correct answer.";
+  const varietyRule =
+    "- When generating multiple questions, each one must target a different sub-concept of the segment so none overlap with another.";
+
   if (kind === "practice") {
     return [
       "You write multiple-choice PRACTICE questions for a jigsaw expert-group segment.",
@@ -55,6 +60,8 @@ function buildSystemPrompt(kind: "practice" | "test", contentLanguage: ContentLa
       "- Each question: prompt, 3–4 choices, correctIndex (0-based), hints (exactly 2 strings for wrong attempts 1 and 2), explanation (shown on reveal).",
       "- Questions must test understanding of the given segment only.",
       "- Exactly one correct choice per question.",
+      distinctnessRule,
+      varietyRule,
     ].join("\n");
   }
 
@@ -65,6 +72,8 @@ function buildSystemPrompt(kind: "practice" | "test", contentLanguage: ContentLa
     "- Each question: prompt, 3–4 choices, correctIndex (0-based). No hints or explanations.",
     "- Questions must test understanding of the given segment only.",
     "- Exactly one correct choice per question.",
+    distinctnessRule,
+    varietyRule,
   ].join("\n");
 }
 
@@ -74,6 +83,7 @@ function buildUserPrompt(opts: {
   kind: "practice" | "test";
   questionCount: number;
   contentLanguage: ContentLanguage;
+  existingQuestions: string[];
 }): string {
   const lines = [
     `Generate exactly ${opts.questionCount} ${opts.kind === "practice" ? "practice" : "test"} questions as JSON.`,
@@ -83,6 +93,13 @@ function buildUserPrompt(opts: {
     lines.push("", "Activity title:", opts.activityTitle.trim());
   }
   lines.push("", "Learning content:", opts.segment.trim());
+  if (opts.existingQuestions.length > 0) {
+    lines.push(
+      "",
+      "Existing questions already in this set — do NOT overlap, duplicate, or paraphrase these. Cover a different concept:",
+      ...opts.existingQuestions.map((q, i) => `${i + 1}. ${q}`),
+    );
+  }
   return lines.join("\n");
 }
 
@@ -106,17 +123,15 @@ function normalizeQuestions(raw: unknown, kind: "practice" | "test"): QuizQuesti
       prompt: String(q.prompt ?? "").trim(),
       choices,
       correctIndex,
+      hints: [],
+      explanation: "",
     };
     if (kind === "practice") {
       const hints = Array.isArray(q.hints)
         ? q.hints.map((h) => String(h).trim()).filter(Boolean)
         : [];
       const explanation = String(q.explanation ?? "").trim();
-      return {
-        ...base,
-        hints: hints.length > 0 ? hints : undefined,
-        explanation: explanation || undefined,
-      };
+      return { ...base, hints, explanation };
     }
     return base;
   });
@@ -155,6 +170,12 @@ export async function POST(req: NextRequest) {
     input.contentLanguage === "en" || input.contentLanguage === "ko"
       ? input.contentLanguage
       : DEFAULT_CONTENT_LANGUAGE;
+  const existingQuestions = Array.isArray(input.existingQuestions)
+    ? input.existingQuestions
+        .map((q) => (typeof q === "string" ? q.trim() : ""))
+        .filter(Boolean)
+        .slice(0, 20)
+    : [];
 
   const schema =
     kind === "practice"
@@ -196,6 +217,7 @@ export async function POST(req: NextRequest) {
               kind,
               questionCount,
               contentLanguage,
+              existingQuestions,
             }),
           },
         ],

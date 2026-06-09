@@ -69,7 +69,7 @@ export function ExpertPhasePanel({
   );
 
   const roleLabel = useMemo(() => {
-    if (!roleId) return "나의 역할";
+    if (!roleId) return "역할";
     return codenameForRole(roleScopeKey, roleId, pack.roles.map((r) => r.id));
   }, [roleId, roleScopeKey, pack.roles]);
 
@@ -122,7 +122,7 @@ export function ExpertPhasePanel({
                 : roleLabel
           }
           placeLabel={
-            phaseComplete ? "기준 점수" : doneCount > 0 ? "연습 완료" : "나의 역할"
+            phaseComplete ? "기준 점수" : doneCount > 0 ? "연습 완료" : "역할"
           }
           pending={pending}
           contained={contained}

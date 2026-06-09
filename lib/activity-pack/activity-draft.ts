@@ -144,8 +144,8 @@ export function editorDraftToPack(draft: ActivityEditorDraft): ActivityPack {
       prompt: raw.prompt.trim(),
       choices,
       correctIndex,
-      hints: hints.length > 0 ? hints : undefined,
-      explanation: explanation || undefined,
+      hints,
+      explanation,
     };
   };
 

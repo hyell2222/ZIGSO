@@ -19,7 +19,7 @@ export function SessionHostWaitingRoster({ players }: Props) {
           아직 입장한 학생이 없습니다.
         </p>
       ) : (
-        <ul className="flex max-h-56 w-full flex-wrap items-start justify-center gap-2 overflow-y-auto overscroll-y-contain px-1">
+        <ul className="flex w-full flex-wrap items-start justify-center gap-2 px-1">
           {players.map((p) => (
             <li key={p.id} className={activityTeacherPresenceChip}>
               <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--primary)]" aria-hidden />

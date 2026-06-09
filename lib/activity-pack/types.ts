@@ -18,12 +18,10 @@ export type QuizQuestion = {
   choices: string[];
   /** 정답 보기 인덱스 (0-based) */
   correctIndex: number;
-  /** 오답 시 단계별 스캐폴딩 힌트 (연습 문제용, 선택) */
-  hints?: string[];
-  /** 정답 공개 시 보여줄 해설 (선택) */
-  explanation?: string;
-  /** 관련 역할(선택) */
-  roleId?: string;
+  /** 오답 시 단계별 스캐폴딩 힌트 (연습 문제용) */
+  hints: string[];
+  /** 정답 공개 시 보여줄 해설 */
+  explanation: string;
 };
 
 /**

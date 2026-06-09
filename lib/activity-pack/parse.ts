@@ -102,19 +102,17 @@ function readQuestion(
 
   const hints = Array.isArray(q.hints)
     ? q.hints.map((h) => String(h ?? "").trim()).filter(Boolean)
-    : undefined;
+    : [];
 
   const explanation =
-    typeof q.explanation === "string" && q.explanation.trim()
-      ? q.explanation.trim()
-      : undefined;
+    typeof q.explanation === "string" ? q.explanation.trim() : "";
 
   return {
     id,
     prompt: String(q.prompt ?? "").trim(),
     choices,
     correctIndex,
-    hints: hints && hints.length > 0 ? hints : undefined,
+    hints,
     explanation,
   };
 }

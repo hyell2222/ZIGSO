@@ -1,29 +1,14 @@
 "use client";
 
+import { Loader2 } from "lucide-react";
+
+import { LoadingState } from "@/components/ui/loading-state";
 import { cn } from "@/lib/utils";
 import styles from "@/components/play/waiting-lobby-block.module.css";
-import { LoadingState } from "../ui/loading-state";
 
-const WAITING_LOBBY: Record<
-  "session_loading" | "waiting",
-  { title: string; body1: string;  }
-> = {
-  session_loading: {
-    title: "준비 중",
-    body1: "활동 안내를 불러오고 있어요.",
-  },
-  waiting: {
-    title: "곧 활동이 시작됩니다",
-    body1: "모둠과 역할이 배정되면, 같은 모둠끼리 모여 주세요.",
-  },
-};
-
-export type WaitingLobbyState = keyof typeof WAITING_LOBBY;
+export type WaitingLobbyState = "session_loading" | "waiting";
 
 export function WaitingLobbyBlock({
-  joinCode,
-  nickname,
-  sessionTitle,
   state,
   className,
 }: {
@@ -33,7 +18,6 @@ export function WaitingLobbyBlock({
   state: WaitingLobbyState;
   className?: string;
 }) {
-  const copy = WAITING_LOBBY[state];
   return (
     <div
       className={cn(
@@ -42,19 +26,17 @@ export function WaitingLobbyBlock({
         className,
       )}
     >
-      <LoadingState variant="section" tone="play" className="min-h-[min(16rem,40dvh)] py-8" />
-      <div className="w-full max-w-sm space-y-1.5 @sm:space-y-2">
-        <p className={styles.title}>{copy.title}</p>
-        {sessionTitle ? (
-          <p className={styles.sessionTitle}>
-            {sessionTitle}
-            <span className={styles.dot} aria-hidden>
-              ·
-            </span>
-            {nickname}
-          </p>
-        ) : null}
-      </div>
+      {state === "session_loading" ? (
+        <LoadingState variant="section" tone="play" className="min-h-[min(16rem,40dvh)] py-8" />
+      ) : (
+        <>
+          <Loader2
+            className="h-10 w-10 animate-spin text-[var(--primary)]"
+            aria-hidden
+          />
+          <p className={styles.body}>곧 활동이 시작됩니다</p>
+        </>
+      )}
     </div>
   );
 }

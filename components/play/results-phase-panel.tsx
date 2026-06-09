@@ -56,7 +56,7 @@ export function ResultsPhasePanel({
           phase="results"
           groupName={teamTitle}
           placeName={roleLabel ?? "—"}
-          placeLabel="나의 역할"
+          placeLabel="역할"
           contained={contained}
         />
       }

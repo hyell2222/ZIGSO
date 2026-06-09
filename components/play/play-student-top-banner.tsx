@@ -30,7 +30,7 @@ export function PlayStudentTopBanner({
   phase,
   groupName,
   placeName,
-  placeLabel = "나의 역할",
+  placeLabel = "역할",
   pending,
   contained = false,
   completeTitle,
@@ -77,14 +77,6 @@ export function PlayStudentTopBanner({
               )}
             >
               {step.title}
-            </p>
-            <p
-              className={cn(
-                "truncate text-[var(--muted-foreground)]",
-                contained ? activityLayoutType.caption : "text-xs @sm:text-sm",
-              )}
-            >
-              {step.number}단계
             </p>
           </div>
         </div>

@@ -16,7 +16,7 @@ export const PLAYER_MESSAGES = {
   quizIncomplete: "아직 답하지 않은 문항이 있어요.",
   practiceAlreadyDone: "이미 연습 문제를 마쳤어요.",
   practiceIncomplete: "아직 풀지 않은 연습 문제가 있어요.",
-  individualQuizAlreadySubmitted: "이미 실력 확인하기를 제출했어요.",
+  individualQuizAlreadySubmitted: "이미 실전 문제를 마쳤어요.",
   homeGroupAlreadyDone: "이미 서로 알려주기를 마쳤어요.",
   operationFailed: "요청을 처리하지 못했어요. 잠시 후 다시 시도해 주세요.",
 } as const;

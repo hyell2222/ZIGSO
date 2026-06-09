@@ -8,6 +8,7 @@ import {
   Circle,
   Sparkles,
   Loader2,
+  Link,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -69,11 +70,13 @@ function QuestionAIGenerateButton({
   segment,
   activityTitle,
   kind,
+  existingPrompts,
   onGenerated,
 }: {
   segment: string;
   activityTitle: string;
   kind: QuestionKind;
+  existingPrompts: string[];
   onGenerated: (question: EditorQuestion) => void;
 }) {
   const [loading, setLoading] = useState(false);
@@ -93,6 +96,7 @@ function QuestionAIGenerateButton({
         kind,
         questionCount: 1,
         contentLanguage: DEFAULT_CONTENT_LANGUAGE,
+        existingQuestions: existingPrompts,
       });
       const [generated] = questionsToEditor(questions);
       if (!generated) throw new Error("생성된 문항이 없습니다.");
@@ -147,7 +151,7 @@ function SingleQuestionEditor({
           rows={2}
           value={q.prompt}
           onChange={(e) => onUpdate((cur) => ({ ...cur, prompt: e.target.value }))}
-          placeholder="문제를 입력하세요."
+          placeholder="발문을 입력하세요."
           className={cn(textareaClass, "min-h-[2.5rem]")}
         />
       </FormField>
@@ -183,7 +187,6 @@ function SingleQuestionEditor({
                     choices: cur.choices.map((c, i) => (i === ci ? e.target.value : c)),
                   }))
                 }
-                placeholder={`${CHOICE_LABELS[ci] ?? ci + 1}번 보기`}
                 className={inputClass}
               />
               {canRemoveChoice ? (
@@ -207,16 +210,17 @@ function SingleQuestionEditor({
           );
         })}
         {canAddChoice ? (
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            className="h-8 gap-1 px-2 text-xs"
-            onClick={() => onUpdate((cur) => ({ ...cur, choices: [...cur.choices, ""] }))}
+          <Link
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              onUpdate((cur) => ({ ...cur, choices: [...cur.choices, ""] }));
+            }}
+            className="inline-flex h-8 items-center gap-1 px-2 text-xs text-[var(--primary)] underline-offset-4 transition hover:text-[var(--primary)] hover:underline"
           >
-            <Plus className="h-3.5 w-3.5" />
+            <Plus className="h-3.5 w-3.5 text-[var(--primary)]" />
             보기 추가
-          </Button>
+          </Link>
         ) : null}
       </div>
 
@@ -260,7 +264,6 @@ function SingleQuestionEditor({
                 rows={2}
                 value={q.explanation}
                 onChange={(e) => onUpdate((cur) => ({ ...cur, explanation: e.target.value }))}
-                placeholder="정답 공개 시 보여줄 해설"
                 className={textareaClass}
               />
             </FormField>
@@ -358,6 +361,10 @@ function QuestionListEditor({
                   segment={segment}
                   activityTitle={activityTitle}
                   kind={aiKind}
+                  existingPrompts={questions
+                    .filter((item) => item.localId !== q.localId)
+                    .map((item) => item.prompt.trim())
+                    .filter(Boolean)}
                   onGenerated={(generated) =>
                     updateQuestion(q.localId, (cur) => mergeGeneratedQuestion(cur, generated))
                   }
@@ -435,7 +442,7 @@ function LearningContentBlock({
             rows={8}
             value={role.segment}
             onChange={(e) => onChange({ ...role, segment: e.target.value })}
-            placeholder="이 역할의 학생이 익힐 내용을 적어 주세요."
+            placeholder="학습할 내용을 입력하세요."
             className={cn(textareaClass, "min-h-[5rem]")}
           />
         </FormField>

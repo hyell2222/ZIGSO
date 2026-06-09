@@ -105,11 +105,21 @@ export default function HomePage() {
               </p>
             </header>
 
-            <div className="mt-8 flex flex-col items-stretch justify-center gap-3 sm:mt-10 sm:flex-row sm:items-center sm:justify-center sm:gap-4">
-              <ButtonLink href={ROUTES.login} variant="default" size="lg">
+            <div className="mt-8 flex w-full flex-col items-stretch justify-center gap-3 sm:mt-10 sm:flex-row sm:items-center sm:justify-center sm:gap-4">
+              <ButtonLink
+                href={ROUTES.login}
+                variant="default"
+                size="lg"
+                className="w-full sm:w-auto sm:min-w-[13.5rem]"
+              >
                 교사로 시작하기
               </ButtonLink>
-              <ButtonLink href={ROUTES.play} variant="outline" size="lg">
+              <ButtonLink
+                href={ROUTES.play}
+                variant="outline"
+                size="lg"
+                className="w-full sm:w-auto sm:min-w-[13.5rem]"
+              >
                 학생으로 입장하기
               </ButtonLink>
             </div>

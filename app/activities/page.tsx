@@ -153,7 +153,7 @@ export default function ActivitiesPage() {
                         </div>
                       </div>
                       <p className="text-xs text-[var(--muted-foreground)] pb-2">
-                        모둠 당 최소 인원 : {row.activity_pack?.roles?.length ?? "—"}명
+                        모둠 당 최소 필요 인원 : {row.activity_pack?.roles?.length ?? "—"}명
                       </p>
                       <div className="flex flex-col gap-2">
                         <Button
@@ -181,7 +181,7 @@ export default function ActivitiesPage() {
                           disabled={isDeleting}
                           className="gap-2"
                         >
-                          수업 미리보기
+                          시뮬레이션
                         </Button>
                       </div>
                     </div>

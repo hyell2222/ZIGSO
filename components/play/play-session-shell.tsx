@@ -5,13 +5,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { activityPageShell, activityLoaderRegion } from "@/components/activity/activity-layout-chrome";
 import { ExpertPhasePanel } from "@/components/play/expert-group-panel";
-import { PlayPhasePanel, PlayPhaseWaitFootnote } from "@/components/play/play-phase-layout";
 import { GroupPhasePanel, type GroupMember } from "@/components/play/home-group-panel";
 import { IndividualQuizPanel } from "@/components/play/individual-quiz-panel";
+import { OverviewPhasePanel } from "@/components/play/overview-phase-panel";
 import { ResultsPhasePanel } from "@/components/play/results-phase-panel";
 import { PlayPhaseShell } from "@/components/play/play-phase-shell";
 import { PlayAtmosphere, playSurfaceCool } from "@/components/play/play-atmosphere";
-import { PlayStudentTopBanner } from "@/components/play/play-phase-layout";
 import { WaitingLobbyBlock } from "@/components/play/waiting-lobby-block";
 import { LoadingState } from "@/components/ui/loading-state";
 import { PlayJoinModal } from "@/components/play/play-join-modal";
@@ -467,29 +466,16 @@ export function PlaySessionShell({
   }
 
   if (hasSupabaseEnv && isActivityIntroduction) {
-    const roleLabel = assignedRoleLabel;
     return (
-      <PlayPhaseShell
-        topBanner={
-          <PlayStudentTopBanner
-            phase="overview"
-            groupName={groupName}
-            placeName={roleLabel}
-            placeLabel="나의 역할"
-            pending={playerQuery.isLoading || !hasAssignment}
-          />
+      <OverviewPhasePanel
+        groupName={groupName}
+        roleLabel={assignedRoleLabel}
+        pending={
+          playerQuery.isLoading ||
+          sessionQuery.isLoading ||
+          (!hasAssignment && Boolean(playerId))
         }
-      >
-        {playerQuery.isLoading && !hasAssignment ? (
-          <LoadingState variant="section" tone="play" className="min-h-[min(12rem,32dvh)] py-8" />
-        ) : sessionQuery.isLoading ? (
-          <LoadingState variant="section" tone="play" className="min-h-[min(12rem,32dvh)] py-8" />
-        ) : (
-          <PlayPhasePanel>
-            <PlayPhaseWaitFootnote />
-          </PlayPhasePanel>
-        )}
-      </PlayPhaseShell>
+      />
     );
   }
 

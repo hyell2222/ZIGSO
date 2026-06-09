@@ -9,6 +9,8 @@ export type AIRoleQuestionsRequest = {
   kind: "practice" | "test";
   questionCount?: number;
   contentLanguage?: ContentLanguage;
+  /** 같은 세트의 기존 문항 발문 — 중복 생성을 피하기 위한 컨텍스트 */
+  existingQuestions?: string[];
 };
 
 export type AIRoleQuestionsResponse = {

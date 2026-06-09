@@ -70,7 +70,7 @@ export function IndividualQuizPanel({
     try {
       await onSubmit(answers);
       onUpdate?.();
-      setMessage("실력 확인하기를 제출했어요!");
+      setMessage("제출 완료!");
     } catch (e) {
       setMessage(e instanceof Error ? e.message : PLAYER_MESSAGES.operationFailed);
     } finally {
@@ -136,7 +136,7 @@ export function IndividualQuizPanel({
                     제출 중…
                   </>
                 ) : (
-                  "실력 확인하기 제출"
+                  "제출"
                 )}
               </Button>
             </div>

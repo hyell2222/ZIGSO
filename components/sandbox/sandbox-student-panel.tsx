@@ -3,9 +3,9 @@
 import { useMemo, useState } from "react";
 
 import { ExpertPhasePanel } from "@/components/play/expert-group-panel";
-import { PlayPhasePanel, PlayPhaseWaitFootnote } from "@/components/play/play-phase-layout";
 import { GroupPhasePanel, type GroupMember } from "@/components/play/home-group-panel";
 import { IndividualQuizPanel } from "@/components/play/individual-quiz-panel";
+import { OverviewPhasePanel } from "@/components/play/overview-phase-panel";
 import { PlayJoinModal } from "@/components/play/play-join-modal";
 import type { PracticeQuestionResult } from "@/lib/activity-pack/types";
 import { ResultsPhasePanel } from "@/components/play/results-phase-panel";
@@ -13,7 +13,6 @@ import { buildSessionResults } from "@/lib/activity-pack/session-results";
 import { PlayAtmosphere } from "@/components/play/play-atmosphere";
 import { activityLoaderRegion } from "@/components/activity/activity-layout-chrome";
 import { PlayPhaseShell } from "@/components/play/play-phase-shell";
-import { PlayStudentTopBanner } from "@/components/play/play-phase-layout";
 import { WaitingLobbyBlock } from "@/components/play/waiting-lobby-block";
 import type { ActivityPhase } from "@/lib/api/activities";
 import type { ActivityPack, QuizAnswer } from "@/lib/activity-pack/types";
@@ -220,22 +219,11 @@ function SandboxStudentPanelView({
 
   if (phase === "overview") {
     return (
-      <PlayPhaseShell
+      <OverviewPhasePanel
         contained
-        topBanner={
-          <PlayStudentTopBanner
-            phase="overview"
-            groupName={group?.name ?? null}
-            placeName={roleLabel}
-            placeLabel="나의 역할"
-            contained
-          />
-        }
-      >
-        <PlayPhasePanel>
-          <PlayPhaseWaitFootnote />
-        </PlayPhasePanel>
-      </PlayPhaseShell>
+        groupName={group?.name ?? null}
+        roleLabel={roleLabel}
+      />
     );
   }
 

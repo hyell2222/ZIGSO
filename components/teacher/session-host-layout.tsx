@@ -74,7 +74,7 @@ export function SessionHostLayout({
                   : activityLayoutType.activityTitle,
               )}
             >
-              {activityTitle ?? "수업 미리보기"}
+              {activityTitle ?? "시뮬레이션"}
             </h1>
             <p
               className={cn(

@@ -10,7 +10,7 @@ type Variant = "banner" | "floating";
 export function PlayHeaderGroupPlace({
   groupName,
   placeName,
-  placeLabel = "나의 역할",
+  placeLabel = "역할",
   pending,
   className,
   contained = false,
