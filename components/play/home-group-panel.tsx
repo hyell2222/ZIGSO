@@ -7,10 +7,10 @@ import {
   PlayPhaseMessage,
   PlayPhasePanel,
   PlayPhaseSection,
+  PlayPhaseSectionBadge,
   PlayStudentTopBanner,
 } from "@/components/play/play-phase-layout";
 import { PracticeQuestionCard } from "@/components/play/practice-question-card";
-import { QuizQuestionList } from "@/components/play/quiz-question-list";
 import { activityLayoutType } from "@/components/activity/activity-layout-typography";
 import type { PlayerSelfRow } from "@/lib/api/play";
 import {
@@ -20,10 +20,14 @@ import {
   PLAYER_MESSAGES,
 } from "@/lib/activity-pack/engine";
 import { codenameForRole } from "@/lib/play/role-codenames";
-import type { ActivityPack } from "@/lib/activity-pack/types";
+import { practiceBaseScore as practiceQuestionScore } from "@/lib/activity-pack/scoring";
+import type { ActivityPack, PracticeQuestionResult } from "@/lib/activity-pack/types";
 import { cn } from "@/lib/utils";
 
 const t = activityLayoutType;
+
+const playChipClass =
+  "inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors";
 
 export type GroupMember = Pick<
   PlayerSelfRow,
@@ -38,6 +42,7 @@ type Props = {
   members: GroupMember[];
   roleScopeKey: string;
   peerPracticeCompleted?: string[];
+  practiceResults?: PracticeQuestionResult[];
   homeGroupCompletedAt?: string | null;
   onPeerQuestionComplete?: (questionId: string) => void | Promise<void>;
   onEnsureHomeGroupComplete?: () => void | Promise<void>;
@@ -53,6 +58,7 @@ export function GroupPhasePanel({
   members,
   roleScopeKey,
   peerPracticeCompleted = [],
+  practiceResults = [],
   homeGroupCompletedAt,
   onPeerQuestionComplete,
   onEnsureHomeGroupComplete,
@@ -122,6 +128,45 @@ export function GroupPhasePanel({
     [members, playerId],
   );
 
+  const defaultMemberId = useMemo(() => {
+    const me = cards.find((c) => c.isMe);
+    return me?.key ?? cards[0]?.key ?? "";
+  }, [cards]);
+
+  const [activeMemberId, setActiveMemberId] = useState(defaultMemberId);
+
+  const resolvedMemberId = cards.some((c) => c.key === activeMemberId)
+    ? activeMemberId
+    : defaultMemberId;
+
+  const activeCard = cards.find((c) => c.key === resolvedMemberId) ?? cards[0];
+  const activeRole = activeCard?.roleId ? getRoleById(pack, activeCard.roleId) : undefined;
+  const practiceQuestions = activeRole?.practiceQuestions ?? [];
+  const ownPracticeResults = useMemo(() => {
+    const map: Record<string, PracticeQuestionResult> = {};
+    for (const r of practiceResults) map[r.questionId] = r;
+    return map;
+  }, [practiceResults]);
+
+  const practiceDoneCount = practiceQuestions.filter(
+    (pq) => activeCard?.isMe || completed[pq.id] || homeGroupCompletedAt,
+  ).length;
+  const segmentTitle = activeCard?.isMe
+    ? "내가 맡은 부분"
+    : `${roleLabelFor(activeCard?.roleId ?? null)} · ${activeCard?.nickname ?? "팀원"}`;
+
+  const memberPeerDone = useCallback(
+    (card: (typeof cards)[number]) => {
+      if (card.isMe) return true;
+      const role = card.roleId ? getRoleById(pack, card.roleId) : undefined;
+      if (!role) return false;
+      return role.practiceQuestions.every(
+        (pq) => completed[pq.id] || homeGroupCompletedAt,
+      );
+    },
+    [pack, completed, homeGroupCompletedAt],
+  );
+
   return (
     <PlayPhaseShell
       contained={contained}
@@ -133,99 +178,124 @@ export function GroupPhasePanel({
           placeLabel="역할"
           pending={pending}
           contained={contained}
-          completeTitle={
-            allPeerDone && peerQuestions.length > 0 ? "3단계 완료!" : undefined
-          }
-          completeMessage={
-            allPeerDone && peerQuestions.length > 0
-              ? "모둠원 파트 연습을 모두 마쳤어요. 모둠원과 서로 설명하며 내용을 정리해 보세요."
-              : undefined
-          }
         />
       }
     >
       <PlayPhasePanel>
         {cards.length === 0 ? (
           <PlayPhaseMessage message="모둠원 정보를 불러오는 중이에요." />
-        ) : (
-          cards.map((card) => {
-            const role = card.roleId ? getRoleById(pack, card.roleId) : undefined;
-            const label = roleLabelFor(card.roleId);
-            return (
-              <PlayPhaseSection
-                key={card.key}
-                title={`${label} · ${card.nickname}${card.isMe ? " (나)" : ""}`}
-                variant={card.isMe ? "active" : undefined}
-              >
-                {!role ? (
-                  <p className={t.playPanelBody}>아직 역할이 배정되지 않았어요.</p>
-                ) : (
-                  <div className="space-y-3">
-                    <p
+        ) : activeCard ? (
+          <>
+            <div
+              className="flex gap-2 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              role="tablist"
+              aria-label="모둠원 파트 선택"
+            >
+              {cards.map((card) => {
+                const isActive = card.key === resolvedMemberId;
+                const done = memberPeerDone(card);
+                const label = roleLabelFor(card.roleId);
+                return (
+                  <button
+                    key={card.key}
+                    type="button"
+                    role="tab"
+                    aria-selected={isActive}
+                    onClick={() => setActiveMemberId(card.key)}
+                    className={cn(
+                      playChipClass,
+                      isActive
+                        ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--on-primary)]"
+                        : "border-[var(--border)] bg-[var(--card-bg)] text-[var(--foreground)] hover:border-[color-mix(in_srgb,var(--primary)_35%,var(--border))]",
+                    )}
+                  >
+                    <span
                       className={cn(
-                        "whitespace-pre-line rounded-xl border border-[var(--border)] bg-[var(--card-bg)] p-4 leading-relaxed",
-                        t.playPanelBody,
+                        "h-1.5 w-1.5 rounded-full",
+                        done
+                          ? isActive
+                            ? "bg-[var(--on-primary)]"
+                            : "bg-[var(--primary)]"
+                          : isActive
+                            ? "bg-[var(--on-primary)]/50"
+                            : "bg-[var(--border)]",
                       )}
-                    >
-                      {role.segment}
-                    </p>
-                    <div>
-                      <p className={cn("mb-2", t.caption)}>
-                        {card.isMe ? "연습 문제 · 내 답 확인" : "연습 문제 · 직접 풀기"}
-                      </p>
-                      <div className="space-y-3">
-                        {role.practiceQuestions.map((pq, pqi) => {
-                          const label =
-                            role.practiceQuestions.length > 1 ? `연습 ${pqi + 1}` : null;
-                          if (card.isMe) {
-                            return (
-                              <div key={pq.id}>
-                                {label ? (
-                                  <p className={cn("mb-1 text-xs font-medium", t.caption)}>
-                                    {label}
-                                  </p>
-                                ) : null}
-                                <QuizQuestionList questions={[pq]} selected={{}} reveal />
-                                {pq.explanation ? (
-                                  <p
-                                    className={cn(
-                                      "mt-2 rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2",
-                                      t.caption,
-                                    )}
-                                  >
-                                    {pq.explanation}
-                                  </p>
-                                ) : null}
-                              </div>
-                            );
-                          }
+                      aria-hidden
+                    />
+                    {label} · {card.nickname}
+                    {card.isMe ? " (나)" : ""}
+                  </button>
+                );
+              })}
+            </div>
 
-                          const done = Boolean(completed[pq.id] || homeGroupCompletedAt);
+            {!activeRole ? (
+              <p className={t.playPanelBody}>아직 역할이 배정되지 않았어요.</p>
+            ) : (
+              <>
+                <PlayPhaseSection title={segmentTitle} variant="active">
+                  <p
+                    className={cn(
+                      "whitespace-pre-line rounded-xl border border-[var(--border)] bg-[var(--card-bg)] p-4 leading-relaxed @md:p-6",
+                      t.playPanelBody,
+                    )}
+                  >
+                    {activeRole.segment}
+                  </p>
+                </PlayPhaseSection>
+
+                {practiceQuestions.length > 0 ? (
+                  <PlayPhaseSection
+                    title="연습 문제"
+                    variant="active"
+                    headerExtra={
+                      <PlayPhaseSectionBadge>
+                        {practiceDoneCount}/{practiceQuestions.length} 문항
+                      </PlayPhaseSectionBadge>
+                    }
+                  >
+                    <div className="space-y-4">
+                      {practiceQuestions.map((pq) => {
+                        if (activeCard.isMe) {
+                          const stored = ownPracticeResults[pq.id];
+                          const initialResult = stored
+                            ? {
+                                wrongAttempts: stored.wrongAttempts,
+                                baseScore: practiceQuestionScore(stored.wrongAttempts),
+                              }
+                            : { wrongAttempts: 0, baseScore: practiceQuestionScore(0) };
                           return (
                             <div key={pq.id}>
-                              {label ? (
-                                <p className={cn("mb-1 text-xs font-medium", t.caption)}>
-                                  {label}
-                                </p>
-                              ) : null}
                               <PracticeQuestionCard
                                 question={pq}
-                                scored={false}
-                                initialResult={done ? { wrongAttempts: 0, baseScore: 0 } : null}
-                                disabled={done || busyId === pq.id}
-                                onComplete={() => handlePeerComplete(pq.id)}
+                                initialResult={initialResult}
+                                disabled
+                                onComplete={() => {}}
                               />
                             </div>
                           );
-                        })}
-                      </div>
+                        }
+
+                        const done = Boolean(completed[pq.id] || homeGroupCompletedAt);
+                        return (
+                          <div key={pq.id}>
+                            <PracticeQuestionCard
+                              question={pq}
+                              scored={false}
+                              initialResult={done ? { wrongAttempts: 0, baseScore: 0 } : null}
+                              disabled={done || busyId === pq.id}
+                              onComplete={() => handlePeerComplete(pq.id)}
+                            />
+                          </div>
+                        );
+                      })}
                     </div>
-                  </div>
-                )}
-              </PlayPhaseSection>
-            );
-          })
-        )}
+                  </PlayPhaseSection>
+                ) : null}
+              </>
+            )}
+          </>
+        ) : null}
 
         {message ? <PlayPhaseMessage message={message} /> : null}
       </PlayPhasePanel>

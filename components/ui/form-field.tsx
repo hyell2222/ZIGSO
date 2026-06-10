@@ -9,17 +9,31 @@ type FormFieldProps = {
   label: string;
   htmlFor?: string;
   help?: string;
+  required?: boolean;
   children: ReactNode;
   className?: string;
 };
 
 /** label + (선택) help + control — `space-y-1.5` 간격 */
-export function FormField({ label, htmlFor, help, children, className }: FormFieldProps) {
+export function FormField({
+  label,
+  htmlFor,
+  help,
+  required = false,
+  children,
+  className,
+}: FormFieldProps) {
   return (
     <div className={cn("w-full min-w-0 space-y-0.5", className)}>
       <div>
         <label htmlFor={htmlFor} className={formLabelClass}>
           {label}
+          {required ? (
+            <span className="text-[var(--danger)]" aria-hidden>
+              {" "}
+              *
+            </span>
+          ) : null}
         </label>
         {help ? <p className="mt-0.5 text-sm text-[var(--muted-foreground)]">{help}</p> : null}
       </div>

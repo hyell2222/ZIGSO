@@ -59,7 +59,7 @@ export function SessionHostLayout({
     >
       <header
         className={cn(
-          "z-30 w-full shrink-0",
+          "w-full shrink-0",
           activitySessionMetaShell,
           !contained && "pt-[env(safe-area-inset-top,0px)]",
         )}

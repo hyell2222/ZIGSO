@@ -21,9 +21,7 @@ import {
   type SandboxPlayer,
   type SandboxGroup,
 } from "@/lib/sandbox/state";
-import { activityLayoutType } from "@/components/activity/activity-layout-typography";
 import { formatAssignedRoleLabels } from "@/lib/activity-pack/roles";
-import { cn } from "@/lib/utils";
 
 type Props = {
   activityId: string;
@@ -100,7 +98,6 @@ function SandboxStudentPanelView({
     : null;
 
   const sessionResults = useMemo(() => {
-    if (phase !== "results" || showJoinModal) return null;
     return buildSessionResults(
       pack,
       groups.map((g) => ({
@@ -190,6 +187,7 @@ function SandboxStudentPanelView({
         members={groupMembers}
         roleScopeKey={scopeKey}
         peerPracticeCompleted={primaryPlayer.peer_practice_completed ?? []}
+        practiceResults={primaryPlayer.practice_results ?? []}
         homeGroupCompletedAt={primaryPlayer.home_group_completed_at ?? null}
         onPeerQuestionComplete={(questionId) =>
           onPeerQuestionComplete(primaryPlayer.id, questionId)
@@ -207,6 +205,7 @@ function SandboxStudentPanelView({
         pack={pack}
         groupName={group?.name ?? null}
         roleLabel={roleLabel}
+        baseScore={primaryPlayer.base_score ?? null}
         submittedAnswers={primaryPlayer.individual_quiz_answers}
         submittedAt={primaryPlayer.individual_quiz_submitted_at ?? null}
         onSubmit={(answers) => onSubmitIndividualQuiz(primaryPlayer.id, answers)}

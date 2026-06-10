@@ -7,7 +7,7 @@ export const activityLayoutType = {
   activityTitle:
     "break-words text-xl font-extrabold leading-tight tracking-tight text-[var(--foreground)] @md:text-2xl",
   activityTitleContained:
-    "break-words font-mono text-base font-bold leading-tight tracking-wide text-[var(--accent)] @md:text-lg",
+    "break-words font-mono text-xl font-bold leading-tight tracking-wide text-[var(--accent)] @md:text-2xl",
   /** R / L */
   activityMeta: "text-sm font-normal text-[var(--muted-foreground)]",
   activityMetaStrong: "font-bold text-[var(--foreground)]",

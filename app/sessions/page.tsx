@@ -38,6 +38,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { LoadingState } from "@/components/ui/loading-state";
 import { Modal } from "@/components/ui/modal";
+import { Z } from "@/lib/ui/z-index";
 import { ROUTES } from "@/lib/routes";
 import {
   flattenPresenceState,
@@ -519,7 +520,7 @@ function SessionHostContent() {
         onClose={closeTimerModal}
         title="타이머"
         titleId="host-timer-heading"
-        zIndexClassName="z-[90]"
+        zIndexClassName={Z.hostTool}
         contentClassName="py-5"
       >
         <PhaseTimerContent key={phase} phase={phase as TimedPhase} />

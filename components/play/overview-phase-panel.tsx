@@ -3,9 +3,7 @@
 import { Loader2 } from "lucide-react";
 
 import { activityLayoutType } from "@/components/activity/activity-layout-typography";
-import {
-  PlayStudentTopBanner,
-} from "@/components/play/play-phase-layout";
+import { PlayStudentTopBanner } from "@/components/play/play-phase-layout";
 import { PlayPhaseShell } from "@/components/play/play-phase-shell";
 import { groupNumberDisplay } from "@/lib/activity-pack/engine";
 import { cn } from "@/lib/utils";

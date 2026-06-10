@@ -10,6 +10,8 @@ import { Button, ButtonLink } from "@/components/ui/button";
 import { AUTH_SESSION_QUERY_KEY } from "@/lib/auth-session-query";
 import { ROUTES } from "@/lib/routes";
 import { hasSupabaseEnv } from "@/lib/supabase";
+import { Z } from "@/lib/ui/z-index";
+import { cn } from "@/lib/utils";
 
 function showTeacherSubNav(pathname: string) {
   const p = pathname.split("?")[0] ?? "";
@@ -48,7 +50,7 @@ export function TopNav() {
 
   return (
     <>
-      <header className="sticky top-0 z-50 w-full border-b border-[color-mix(in_srgb,var(--primary)_78%,#000000)] bg-[var(--primary)] text-[var(--on-primary)] shadow-[0_1px_0_color-mix(in_srgb,var(--on-primary)_6%,transparent)]">
+      <header className={cn("sticky top-0 w-full border-b border-[color-mix(in_srgb,var(--primary)_78%,#000000)] bg-[var(--primary)] text-[var(--on-primary)] shadow-[0_1px_0_color-mix(in_srgb,var(--on-primary)_6%,transparent)]", Z.stickyNav)}>
         <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-3 px-4 py-3">
           <div className="shrink-0">
             <Link

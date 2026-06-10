@@ -4,6 +4,8 @@ import { MoreVertical, Pencil, Trash2 } from "lucide-react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { Z } from "@/lib/ui/z-index";
+import { cn } from "@/lib/utils";
 
 type KebabMenuProps = {
   onDelete: () => void;
@@ -49,7 +51,10 @@ export function KebabMenu({ onEdit, onDelete, disabled }: KebabMenuProps) {
       {open ? (
         <div
           role="menu"
-          className="absolute right-0 top-7 z-20 min-w-[100px] overflow-hidden rounded-md border border-[var(--border)] bg-[var(--background)] shadow-lg"
+          className={cn(
+            "absolute right-0 top-7 min-w-[100px] overflow-hidden rounded-md border border-[var(--border)] bg-[var(--background)] shadow-lg",
+            Z.dropdown,
+          )}
         >
           {onEdit ? (
             <KebabMenuRow

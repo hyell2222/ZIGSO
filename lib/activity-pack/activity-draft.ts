@@ -4,6 +4,7 @@ import {
   normalizePackSizing,
 } from "@/lib/activity-pack/sizing";
 import {
+  CHOICE_LABELS,
   MIN_CHOICES_PER_QUESTION,
   MIN_QUESTIONS_PER_ROLE,
 } from "@/lib/activity-pack/validate";
@@ -189,28 +190,49 @@ export function editorDraftToPack(draft: ActivityEditorDraft): ActivityPack {
   });
 }
 
-function validateQuestion(q: EditorQuestion, label: string, errors: string[]) {
-  if (!q.prompt.trim()) errors.push(`${label} 문제를 입력하세요.`);
-  const filled = q.choices.map((c) => c.trim()).filter(Boolean);
-  if (filled.length < MIN_CHOICES_PER_QUESTION) {
+function validateQuestion(
+  q: EditorQuestion,
+  label: string,
+  errors: string[],
+  options?: { withScaffold?: boolean },
+) {
+  if (!q.prompt.trim()) errors.push(`${label} 발문을 입력하세요.`);
+  if (q.choices.length < MIN_CHOICES_PER_QUESTION) {
     errors.push(`${label} 보기를 ${MIN_CHOICES_PER_QUESTION}개 이상 입력하세요.`);
   }
+  q.choices.forEach((choice, ci) => {
+    if (!choice.trim()) {
+      errors.push(`${label} ${CHOICE_LABELS[ci] ?? ci + 1}번 보기를 입력하세요.`);
+    }
+  });
   if (!q.choices[q.correctIndex]?.trim()) {
     errors.push(`${label} 정답 보기를 선택하세요.`);
   }
+  if (options?.withScaffold) {
+    const { hint1, hint2 } = parseEditorHints(q.hints);
+    if (!hint1.trim()) errors.push(`${label} 1차 오답 힌트를 입력하세요.`);
+    if (!hint2.trim()) errors.push(`${label} 2차 오답 힌트를 입력하세요.`);
+    if (!q.explanation.trim()) errors.push(`${label} 해설을 입력하세요.`);
+  }
+}
+
+function parseEditorHints(hints: string) {
+  const lines = hints.split("\n");
+  return { hint1: lines[0] ?? "", hint2: lines[1] ?? "" };
 }
 
 function validateQuestionList(
   questions: EditorQuestion[],
   label: string,
   errors: string[],
+  options?: { withScaffold?: boolean },
 ) {
   if (questions.length < MIN_QUESTIONS_PER_ROLE) {
     errors.push(`${label} 문항을 ${MIN_QUESTIONS_PER_ROLE}개 이상 추가하세요.`);
     return;
   }
   questions.forEach((q, qi) => {
-    validateQuestion(q, `${label} ${editorQuestionLabel(qi)}`, errors);
+    validateQuestion(q, `${label} ${editorQuestionLabel(qi)}`, errors, options);
   });
 }
 
@@ -226,7 +248,9 @@ function validateRoles(draft: ActivityEditorDraft, errors: string[]) {
     if (!role.segment.trim()) {
       errors.push(`「${roleLabel}」을 입력하세요.`);
     }
-    validateQuestionList(role.practiceQuestions, `「${roleLabel}」연습`, errors);
+    validateQuestionList(role.practiceQuestions, `「${roleLabel}」연습`, errors, {
+      withScaffold: true,
+    });
     validateQuestionList(role.testQuestions, `「${roleLabel}」실전`, errors);
   }
 }

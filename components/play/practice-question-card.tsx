@@ -1,9 +1,15 @@
 "use client";
 
-import { CheckCircle2, Lightbulb, XCircle } from "lucide-react";
+import { CheckCircle2, XCircle } from "lucide-react";
 import { useState } from "react";
 
 import { activityLayoutType } from "@/components/activity/activity-layout-typography";
+import {
+  PlayQuestionExplanation,
+  PlayQuestionHelperText,
+  PlayQuestionHints,
+  PlayQuestionResultText,
+} from "@/components/play/play-question-support";
 import { Button } from "@/components/ui/button";
 import {
   PRACTICE_MAX_ATTEMPTS,
@@ -110,15 +116,6 @@ export function PracticeQuestionCard({
     <div className="rounded-xl border border-[var(--border)] bg-[var(--card-bg)] p-4 @md:p-5">
       <div className="mb-3 flex items-center justify-between gap-2">
         <p className={cn("font-medium", t.playPanelBody)}>{question.prompt}</p>
-        <span className="shrink-0 rounded-full bg-[var(--tint-accent-weak)] px-2.5 py-1 font-mono text-xs font-semibold tabular-nums text-[var(--primary)]">
-          {done
-            ? scored
-              ? `${currentScore}점`
-              : "완료"
-            : scored
-              ? `남은 기회 ${attemptsLeft}`
-              : `남은 기회 ${attemptsLeft}`}
-        </span>
       </div>
 
       <div className="space-y-2">
@@ -164,26 +161,11 @@ export function PracticeQuestionCard({
         })}
       </div>
 
-      {shownHints.length > 0 && !correct ? (
-        <ul className="mt-3 space-y-2">
-          {shownHints.map((hint, i) => (
-            <li
-              key={i}
-              className={cn(
-                "flex gap-2 rounded-lg border border-[var(--accent)]/40 bg-[var(--tint-accent-weak)] px-3 py-2",
-                t.playPanelBody,
-              )}
-            >
-              <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-[var(--accent)]" aria-hidden />
-              <span>{hint}</span>
-            </li>
-          ))}
-        </ul>
-      ) : null}
+      {shownHints.length > 0 && !correct ? <PlayQuestionHints hints={shownHints} /> : null}
 
       {!done ? (
         <div className="mt-4 flex items-center justify-between gap-3">
-          <p className={cn(t.caption)}>
+          <PlayQuestionHelperText>
             {wrongAttempts > 0 && !outOfAttempts
               ? scored
                 ? `오답이에요. 힌트를 참고해 다시 풀어 보세요. (현재 ${currentScore}점)`
@@ -191,7 +173,7 @@ export function PracticeQuestionCard({
               : scored
                 ? "정답을 골라 제출하세요. 오답마다 점수가 깎여요."
                 : "정답을 골라 제출하세요. 점수에는 영향 없어요."}
-          </p>
+          </PlayQuestionHelperText>
           {outOfAttempts ? (
             <Button
               type="button"
@@ -215,13 +197,7 @@ export function PracticeQuestionCard({
         </div>
       ) : (
         <div className="mt-4 space-y-2">
-          <p
-            className={cn(
-              "font-semibold",
-              correct ? "text-[var(--primary)]" : "text-[var(--danger)]",
-              t.playPanelBody,
-            )}
-          >
+          <PlayQuestionResultText correct={correct}>
             {correct
               ? scored
                 ? `정답! ${currentScore}점`
@@ -229,11 +205,9 @@ export function PracticeQuestionCard({
               : scored
                 ? `정답 확인 · ${currentScore}점`
                 : "정답을 확인했어요."}
-          </p>
+          </PlayQuestionResultText>
           {question.explanation ? (
-            <p className={cn("rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2", t.caption)}>
-              {question.explanation}
-            </p>
+            <PlayQuestionExplanation>{question.explanation}</PlayQuestionExplanation>
           ) : null}
         </div>
       )}

@@ -31,19 +31,45 @@ const tierRankClass: Record<RankTier, string> = {
 export function RankListRow({
   rank,
   title,
+  score,
+  centered = false,
   className,
 }: {
   rank: number;
   title: string;
+  score?: string;
+  centered?: boolean;
   className?: string;
 }) {
   const tier = rankTier(rank);
   const medal = tierMedal[tier];
 
+  if (centered) {
+    return (
+      <div
+        className={cn("flex flex-col items-center gap-1 py-2 text-center", className)}
+        aria-label={`${title} ${rank}위`}
+      >
+        <span
+          className={cn(
+            "text-base font-bold tabular-nums leading-none",
+            tierRankClass[tier],
+          )}
+        >
+          {medal ?? `${rank}위`}
+        </span>
+        <p className="text-sm font-medium text-[var(--foreground)]">{title}</p>
+        {score ? (
+          <p className="text-xs font-bold tabular-nums text-[var(--primary)]">{score}</p>
+        ) : null}
+      </div>
+    );
+  }
+
   return (
     <div
       className={cn("flex min-h-9 items-center gap-2.5", className)}
-      aria-label={`${title} ${rank}위`}
+      aria-label={score ? `${title} ${rank}위 ${score}` : `${title} ${rank}위`}
     >
       <span
         className={cn(
@@ -56,6 +82,11 @@ export function RankListRow({
       <p className="min-w-0 flex-1 truncate text-sm font-medium text-[var(--foreground)]">
         {title}
       </p>
+      {score ? (
+        <span className="shrink-0 text-sm font-bold tabular-nums text-[var(--primary)]">
+          {score}
+        </span>
+      ) : null}
     </div>
   );
 }

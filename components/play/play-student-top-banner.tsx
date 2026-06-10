@@ -73,7 +73,7 @@ export function PlayStudentTopBanner({
             <p
               className={cn(
                 "truncate font-bold text-[var(--foreground)]",
-                contained ? "text-sm" : "text-sm @sm:text-base @md:text-lg",
+                contained ? "text-base @sm:text-lg" : "text-base @sm:text-lg @md:text-xl",
               )}
             >
               {step.title}

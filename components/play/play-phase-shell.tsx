@@ -9,6 +9,7 @@ import {
   activityMainInner,
 } from "@/components/activity/activity-layout-chrome";
 import { PlayAtmosphere } from "@/components/play/play-atmosphere";
+import { Z } from "@/lib/ui/z-index";
 import { cn } from "@/lib/utils";
 
 export type PlayPhaseShellProps = {
@@ -18,6 +19,8 @@ export type PlayPhaseShellProps = {
   footer?: ReactNode;
   footerClue?: ReactNode;
   mainClassName?: string;
+  /** 패널 전체(배너 포함)를 덮는 오버레이 — 샌드박스 contained 모달 */
+  overlay?: ReactNode;
   children: ReactNode;
 };
 
@@ -27,6 +30,7 @@ export function PlayPhaseShell({
   footer,
   footerClue,
   mainClassName,
+  overlay,
   children,
 }: PlayPhaseShellProps) {
   const layout = activityLayoutClasses(contained);
@@ -34,10 +38,12 @@ export function PlayPhaseShell({
   return (
     <PlayAtmosphere variant={contained ? "contained" : "viewport"}>
       <div className="relative flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden">
+        {overlay}
         {topBanner ? (
           <div
             className={cn(
-              "z-30 w-full shrink-0",
+              Z.playBanner,
+              "w-full shrink-0",
               !contained && "pt-[env(safe-area-inset-top,0px)]",
             )}
           >

@@ -16,6 +16,7 @@ import { SessionHostWaitingRoster } from "@/components/teacher/session-host-wait
 import { PhaseTimerContent } from "@/components/teacher/phase-timer-content";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
+import { Z } from "@/lib/ui/z-index";
 import type { ActivityPhase } from "@/lib/api/activities";
 import type { ActivityPack } from "@/lib/activity-pack/types";
 import {
@@ -178,7 +179,7 @@ export function SandboxTeacherPanel({
     ) : null;
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden text-sm">
+    <div className="relative flex h-full min-h-0 flex-col overflow-hidden text-sm">
       <SessionHostLayout
         contained
         activityTitle={activityTitle}
@@ -222,8 +223,10 @@ export function SandboxTeacherPanel({
       <Modal
         open={timerToolOpen}
         onClose={() => setTimerModalOpen({ open: false, phaseAtOpen: null })}
+        variant="contained"
         title="타이머"
         titleId="sandbox-timer-heading"
+        zIndexClassName={Z.containedOverlay}
         contentClassName="py-5"
       >
         <PhaseTimerContent key={phase} phase={phase as TimedPhase} />

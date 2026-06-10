@@ -10,11 +10,15 @@ import {
   PlayPhaseSectionBadge,
   PlayStudentTopBanner,
 } from "@/components/play/play-phase-layout";
+import { BaseScoreGuideModal } from "@/components/play/base-score-guide-modal";
+import { PracticeCompleteSummary } from "@/components/play/practice-complete-summary";
+import { PlayScoreModal } from "@/components/play/play-score-modal";
 import {
   PracticeQuestionCard,
   type PracticeResult,
 } from "@/components/play/practice-question-card";
 import { activityLayoutType } from "@/components/activity/activity-layout-typography";
+import { Button } from "@/components/ui/button";
 import {
   computeBaseScoreFromPracticeResults,
   getPracticeQuestions,
@@ -41,6 +45,7 @@ type Props = {
 };
 
 const t = activityLayoutType;
+const scoreModalTitleId = "expert-practice-score-modal";
 
 export function ExpertPhasePanel({
   pack,
@@ -61,6 +66,8 @@ export function ExpertPhasePanel({
   });
   const [message, setMessage] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [scoreModalOpen, setScoreModalOpen] = useState(false);
+  const [baseScoreGuideOpen, setBaseScoreGuideOpen] = useState(false);
 
   const role = roleId ? getRoleById(pack, roleId) : undefined;
   const practiceQuestions = useMemo(
@@ -84,6 +91,8 @@ export function ExpertPhasePanel({
     return computeBaseScoreFromPracticeResults(results);
   }, [practiceSubmitted, practiceBaseScore, practiceQuestions, completed]);
 
+  const phaseComplete = done && baseScore != null;
+
   const handleQuestionComplete = async (questionId: string, result: PracticeResult) => {
     const entry = toPracticeQuestionResult(questionId, result.wrongAttempts);
     const next = { ...completed, [questionId]: entry };
@@ -97,6 +106,7 @@ export function ExpertPhasePanel({
     try {
       const score = computeBaseScoreFromPracticeResults(resultsList);
       await onSubmitPractice(resultsList, score);
+      setScoreModalOpen(true);
     } catch (e) {
       setMessage(e instanceof Error ? e.message : PLAYER_MESSAGES.operationFailed);
       throw e;
@@ -104,8 +114,6 @@ export function ExpertPhasePanel({
       setSubmitting(false);
     }
   };
-
-  const phaseComplete = done && baseScore != null;
 
   return (
     <PlayPhaseShell
@@ -118,13 +126,30 @@ export function ExpertPhasePanel({
           placeLabel="역할"
           pending={pending}
           contained={contained}
-          completeTitle={phaseComplete ? "2단계 완료!" : undefined}
-          completeMessage={
-            phaseComplete
-              ? `기준 점수 ${baseScore}점 — 연습 ${practiceQuestions.length}문항 평균. 다음은 서로 알려주기 단계에서 모둠원에게 내용과 풀이를 설명할 차례예요.`
-              : undefined
-          }
         />
+      }
+      overlay={
+        <>
+          {phaseComplete && baseScore != null ? (
+            <PlayScoreModal
+              open={scoreModalOpen}
+              onClose={() => setScoreModalOpen(false)}
+              title="2단계 완료!"
+              titleId={scoreModalTitleId}
+              contained={contained}
+            >
+              <PracticeCompleteSummary
+                baseScore={baseScore}
+                onOpenBaseScoreGuide={() => setBaseScoreGuideOpen(true)}
+              />
+            </PlayScoreModal>
+          ) : null}
+          <BaseScoreGuideModal
+            open={baseScoreGuideOpen}
+            onClose={() => setBaseScoreGuideOpen(false)}
+            contained={contained}
+          />
+        </>
       }
     >
       <PlayPhasePanel>
@@ -147,12 +172,26 @@ export function ExpertPhasePanel({
               title="연습 문제"
               variant="active"
               headerExtra={
-              <PlayPhaseSectionBadge>
-                {doneCount}/{practiceQuestions.length} 문항
-              </PlayPhaseSectionBadge>
-            }>
+                <div className="flex items-center gap-2">
+                  {phaseComplete ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-7 px-2 text-xs"
+                      onClick={() => setScoreModalOpen(true)}
+                    >
+                      점수 보기
+                    </Button>
+                  ) : null}
+                  <PlayPhaseSectionBadge>
+                    {doneCount}/{practiceQuestions.length} 문항
+                  </PlayPhaseSectionBadge>
+                </div>
+              }
+            >
               <div className="space-y-4">
-                {practiceQuestions.map((q, qi) => {
+                {practiceQuestions.map((q) => {
                   const stored = completed[q.id];
                   const initialResult = stored
                     ? {
@@ -173,7 +212,7 @@ export function ExpertPhasePanel({
                   );
                 })}
               </div>
-            </PlayPhaseSection>                
+            </PlayPhaseSection>
             {message ? <PlayPhaseMessage message={message} /> : null}
           </>
         )}

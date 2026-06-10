@@ -1,7 +1,7 @@
 "use client";
 
 import { Loader2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { PlayPhaseShell } from "@/components/play/play-phase-shell";
 import {
@@ -12,22 +12,27 @@ import {
   PlayStudentTopBanner,
   playPhaseFormActions,
 } from "@/components/play/play-phase-layout";
+import { PlayQuestionHelperText } from "@/components/play/play-question-support";
+import { BaseScoreGuideModal } from "@/components/play/base-score-guide-modal";
+import { PlayScoreModal } from "@/components/play/play-score-modal";
+import { QuizSubmitSummary } from "@/components/play/quiz-submit-summary";
+import { StadImprovementModal } from "@/components/play/stad-improvement-modal";
 import {
   QuizQuestionList,
   answersToSelected,
   selectedToAnswers,
 } from "@/components/play/quiz-question-list";
-import { activityLayoutType } from "@/components/activity/activity-layout-typography";
 import { Button } from "@/components/ui/button";
 import { PLAYER_MESSAGES, gradeQuiz, getTestQuestions } from "@/lib/activity-pack/engine";
+import { buildStadScoreSnapshot } from "@/lib/activity-pack/stad-guide";
 import type { ActivityPack, QuizAnswer } from "@/lib/activity-pack/types";
-
-const t = activityLayoutType;
 
 type Props = {
   pack: ActivityPack;
   groupName: string | null;
   roleLabel?: string | null;
+  /** 2단계 연습으로 정해진 기준 점수 (0~100) */
+  baseScore?: number | null;
   /** 이미 제출한 응답 (있으면 결과 표시) */
   submittedAnswers?: QuizAnswer[];
   submittedAt?: string | null;
@@ -37,10 +42,13 @@ type Props = {
   contained?: boolean;
 };
 
+const scoreModalTitleId = "individual-quiz-score-modal";
+
 export function IndividualQuizPanel({
   pack,
   groupName,
   roleLabel,
+  baseScore,
   submittedAnswers,
   submittedAt,
   onSubmit,
@@ -50,6 +58,12 @@ export function IndividualQuizPanel({
 }: Props) {
   const questions = useMemo(() => getTestQuestions(pack), [pack]);
   const submitted = Boolean(submittedAt);
+  const [justSubmitted, setJustSubmitted] = useState(false);
+  const isSubmitted = submitted || justSubmitted;
+  const [scoreModalOpen, setScoreModalOpen] = useState(false);
+  const [stadGuideOpen, setStadGuideOpen] = useState(false);
+  const [baseScoreGuideOpen, setBaseScoreGuideOpen] = useState(false);
+
   const [selected, setSelected] = useState<Record<string, number>>(() =>
     submittedAnswers ? answersToSelected(submittedAnswers) : {},
   );
@@ -60,18 +74,28 @@ export function IndividualQuizPanel({
   const answeredCount = answers.length;
   const allAnswered = answeredCount >= questions.length && questions.length > 0;
 
+  const resultAnswers = isSubmitted ? (submittedAnswers ?? answers) : [];
   const grade = useMemo(
-    () => gradeQuiz(questions, submittedAnswers ?? []),
-    [questions, submittedAnswers],
+    () => gradeQuiz(questions, resultAnswers),
+    [questions, resultAnswers],
   );
+
+  const scoreSnapshot = useMemo(
+    () => buildStadScoreSnapshot(baseScore, grade.correctCount, questions.length),
+    [baseScore, grade.correctCount, questions.length],
+  );
+
+  useEffect(() => {
+    if (justSubmitted) setScoreModalOpen(true);
+  }, [justSubmitted]);
 
   const handleSubmit = async () => {
     setMessage(null);
     setBusy(true);
     try {
       await onSubmit(answers);
+      setJustSubmitted(true);
       onUpdate?.();
-      setMessage("제출 완료!");
     } catch (e) {
       setMessage(e instanceof Error ? e.message : PLAYER_MESSAGES.operationFailed);
     } finally {
@@ -90,58 +114,99 @@ export function IndividualQuizPanel({
           placeLabel="역할"
           pending={pending}
           contained={contained}
-          completeTitle={submitted ? "제출 완료" : undefined}
-          completeMessage={
-            submitted
-              ? `실전 ${grade.correctCount}/${questions.length} 정답. 순위는 최종 순위 단계에서 확인할 수 있어요.`
-              : undefined
-          }
         />
+      }
+      overlay={
+        <>
+          {isSubmitted ? (
+            <PlayScoreModal
+              open={scoreModalOpen}
+              onClose={() => setScoreModalOpen(false)}
+              title="제출 완료!"
+              titleId={scoreModalTitleId}
+              contained={contained}
+            >
+              <QuizSubmitSummary
+                snapshot={scoreSnapshot}
+                onOpenBaseScoreGuide={() => setBaseScoreGuideOpen(true)}
+                onOpenStadGuide={() => setStadGuideOpen(true)}
+              />
+            </PlayScoreModal>
+          ) : null}
+          <BaseScoreGuideModal
+            open={baseScoreGuideOpen}
+            onClose={() => setBaseScoreGuideOpen(false)}
+            contained={contained}
+          />
+          <StadImprovementModal
+            open={stadGuideOpen}
+            onClose={() => setStadGuideOpen(false)}
+            contained={contained}
+          />
+        </>
       }
     >
       <PlayPhasePanel>
-          <PlayPhaseSection
-            title="실전 문제"
-            variant="active"
-            headerExtra={
+        <PlayPhaseSection
+          title={isSubmitted ? "제출한 답" : "실전 문제"}
+          variant="active"
+          headerExtra={
+            <div className="flex items-center gap-2">
+              {isSubmitted ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-7 px-2 text-xs"
+                  onClick={() => setScoreModalOpen(true)}
+                >
+                  점수 보기
+                </Button>
+              ) : null}
               <PlayPhaseSectionBadge>
-                {answeredCount}/{questions.length} 문항
+                {isSubmitted
+                  ? `${grade.correctCount}/${questions.length} 정답`
+                  : `${answeredCount}/${questions.length} 문항`}
               </PlayPhaseSectionBadge>
-            }
-          >
-            <QuizQuestionList
-              questions={questions}
-              selected={selected}
-              onSelect={(qid, ci) => setSelected((prev) => ({ ...prev, [qid]: ci }))}
-              disabled={busy}
-            />
-            <p className={`mt-4 ${t.playPanelBody}`}>
-              {allAnswered
-                ? "답을 모두 골랐어요. 제출 후에는 수정할 수 없어요."
-                : "모든 문항에 답하면 제출할 수 있어요. 실전 문제는 한 번만 응시합니다."}
-            </p>
-            <div className={playPhaseFormActions}>
-              <Button
-                type="button"
-                className="shrink-0 gap-2 min-h-10 touch-manipulation @md:min-h-11"
-                onClick={() => void handleSubmit()}
-                disabled={busy || !allAnswered}
-              >
-                {busy ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
-                    제출 중…
-                  </>
-                ) : (
-                  "제출"
-                )}
-              </Button>
             </div>
-          </PlayPhaseSection>
+          }
+        >
+          <QuizQuestionList
+            questions={questions}
+            selected={selected}
+            onSelect={(qid, ci) => setSelected((prev) => ({ ...prev, [qid]: ci }))}
+            disabled={busy || isSubmitted}
+            reveal={isSubmitted}
+          />
+          {!isSubmitted ? (
+            <>
+              <PlayQuestionHelperText className="mt-4">
+                {allAnswered
+                  ? "답을 모두 골랐어요. 제출 후에는 수정할 수 없어요."
+                  : "모든 문항에 답하면 제출할 수 있어요. 실전 문제는 한 번만 응시합니다."}
+              </PlayQuestionHelperText>
+              <div className={playPhaseFormActions}>
+                <Button
+                  type="button"
+                  className="shrink-0 gap-2 min-h-10 touch-manipulation @md:min-h-11"
+                  onClick={() => void handleSubmit()}
+                  disabled={busy || !allAnswered}
+                >
+                  {busy ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
+                      제출 중…
+                    </>
+                  ) : (
+                    "제출"
+                  )}
+                </Button>
+              </div>
+            </>
+          ) : null}
+        </PlayPhaseSection>
 
-        {message ? (
-          <PlayPhaseMessage message={message} success={message.includes("제출")} />
-        ) : null}
+        {message ? <PlayPhaseMessage message={message} /> : null}
       </PlayPhasePanel>
     </PlayPhaseShell>
   );

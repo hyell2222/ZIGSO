@@ -2,6 +2,7 @@
 
 import { PlayJoinReadonlyFields } from "@/components/play/play-join-form";
 import { Modal } from "@/components/ui/modal";
+import { Z } from "@/lib/ui/z-index";
 import { Button } from "@/components/ui/button";
 
 type Props = {
@@ -30,7 +31,7 @@ export function PlayResumeModal({
       variant={modalVariant}
       title="활동 참가"
       titleId={titleId}
-      zIndexClassName={modalVariant === "contained" ? "z-20" : "z-50"}
+      zIndexClassName={modalVariant === "contained" ? Z.containedOverlay : Z.modal}
       closeOnBackdrop={false}
       closeOnEscape={false}
       hideCloseButton

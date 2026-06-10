@@ -132,59 +132,64 @@ export default function ActivitiesPage() {
                 </Button>
               </div>
             ) : (
-              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-                {activitiesQuery.data?.map((row) => {
+              <div className="grid gap-3">
+                {activitiesQuery.data?.map((row: ActivityListRow) => {
                   const isDeleting = pendingDeleteId === row.id;
                   return (
+                    <div key={row.id}>
                     <div
-                      key={row.id}
                       className="relative space-y-3 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4 text-left shadow-[var(--elevation-sm)] transition hover:border-[color-mix(in_srgb,var(--primary)_35%,var(--border))] hover:shadow-[var(--elevation-md)]"
                     >
-                      <div className="flex items-start gap-2">
-                        <p className="min-w-0 flex-1 font-semibold text-[var(--foreground)]">
-                          {row.title ?? "제목 없는 활동"}
-                        </p>
-                        <div className="ml-auto shrink-0">
-                          <KebabMenu
+                      <div className="flex justify-between items-center">
+                        <div className="flex flex-col gap-2">
+                          <p className="min-w-0 flex-1 text-lg font-semibold text-[var(--foreground)]">
+                            {row.title ?? "제목 없는 활동"}
+                          </p>
+                          <p className="text-xs text-[var(--muted-foreground)] pb-2">
+                            모둠 당 최소 필요 인원 : {row.activity_pack?.roles?.length ?? "—"}명
+                          </p>
+                        </div>
+
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            type="button"
+                            onClick={() => handleStartGame(row)}
+                            disabled={
+                              startGameMutation.isPending ||
+                              isDeleting ||
+                              !sessionQuery.data?.user.id
+                            }
+                          >
+                            {startGameMutation.isPending ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 shrink-0 animate-spin text-[var(--primary)]" aria-hidden />
+                                시작하는 중…
+                              </>
+                            ) : (
+                              "시작하기"
+                            )}
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={() => handleSandbox(row)}
                             disabled={isDeleting}
-                            onEdit={() => handleEdit(row)}
-                            onDelete={() => handleDelete(row)}
-                          />
+                            className="gap-2"
+                          >
+                            시뮬레이션
+                          </Button>
+
+                          <div className="ml-auto shrink-0">
+                            <KebabMenu
+                              disabled={isDeleting}
+                              onEdit={() => handleEdit(row)}
+                              onDelete={() => handleDelete(row)}
+                            />
+                          </div>
                         </div>
                       </div>
-                      <p className="text-xs text-[var(--muted-foreground)] pb-2">
-                        모둠 당 최소 필요 인원 : {row.activity_pack?.roles?.length ?? "—"}명
-                      </p>
-                      <div className="flex flex-col gap-2">
-                        <Button
-                          type="button"
-                          onClick={() => handleStartGame(row)}
-                          disabled={
-                            startGameMutation.isPending ||
-                            isDeleting ||
-                            !sessionQuery.data?.user.id
-                          }
-                        >
-                          {startGameMutation.isPending ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 shrink-0 animate-spin text-[var(--primary)]" aria-hidden />
-                              시작하는 중…
-                            </>
-                          ) : (
-                            "시작하기"
-                          )}
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          onClick={() => handleSandbox(row)}
-                          disabled={isDeleting}
-                          className="gap-2"
-                        >
-                          시뮬레이션
-                        </Button>
-                      </div>
                     </div>
+                  </div>
                   );
                 })}
               </div>

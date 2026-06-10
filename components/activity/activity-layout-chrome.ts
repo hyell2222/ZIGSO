@@ -1,3 +1,4 @@
+import { Z } from "@/lib/ui/z-index";
 import { cn } from "@/lib/utils";
 
 export const ACTIVITY_LAYOUT_MAX = "max-w-5xl";
@@ -93,7 +94,8 @@ export const activityMainContentContained = cn(activityPageGutterContained, "py-
 export const activityMainInner = "w-full min-h-0 flex-1 overflow-y-auto overscroll-y-contain";
 
 export const activityFooterChrome = cn(
-  "sticky bottom-0 z-20 shrink-0 border-t border-[color-mix(in_srgb,var(--primary)_18%,var(--border))]",
+  "sticky bottom-0 shrink-0 border-t border-[color-mix(in_srgb,var(--primary)_18%,var(--border))]",
+  Z.dropdown,
   "bg-[var(--surface)]",
   "shadow-[0_-1px_0_color-mix(in_srgb,var(--primary)_8%,transparent)]",
 );

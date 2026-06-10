@@ -111,7 +111,7 @@ export function Modal({
   children,
   footer,
   variant = "viewport",
-  zIndexClassName = "z-50",
+  zIndexClassName,
   overlayClassName,
   closeOnBackdrop,
   closeOnEscape = true,
@@ -162,13 +162,13 @@ export function Modal({
     <div
       className={cn(
         variant === "contained" ? "absolute inset-0" : "fixed inset-0",
+        zIndexClassName,
         "flex backdrop-blur-[2px]",
         "px-4 py-6",
         "pb-[max(1.5rem,env(safe-area-inset-bottom,0px))] pt-[max(1.5rem,env(safe-area-inset-top,0px))]",
         sheetOnNarrow ? "items-end justify-center sm:items-center" : "items-center justify-center",
         overlayClassName ?? "bg-[var(--overlay-scrim)]/85",
         dismissOnBackdrop && "cursor-pointer",
-        zIndexClassName,
       )}
       role="presentation"
       onClick={(event) => {

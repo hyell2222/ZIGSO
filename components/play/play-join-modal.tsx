@@ -1,6 +1,7 @@
 "use client";
 
 import { Modal } from "@/components/ui/modal";
+import { Z } from "@/lib/ui/z-index";
 import { PlayJoinForm, type PlayJoinFormProps } from "@/components/play/play-join-form";
 
 type Props = Omit<PlayJoinFormProps, "className"> & {
@@ -26,7 +27,7 @@ export function PlayJoinModal({
       variant={modalVariant}
       title={title}
       titleId={titleId}
-      zIndexClassName={modalVariant === "contained" ? "z-20" : "z-50"}
+      zIndexClassName={modalVariant === "contained" ? Z.containedOverlay : Z.modal}
       closeOnBackdrop={false}
       closeOnEscape={false}
       hideCloseButton

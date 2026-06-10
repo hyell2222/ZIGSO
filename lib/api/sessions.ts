@@ -140,5 +140,8 @@ export async function deleteSession(sessionId: string) {
 export const HOST_SESSION_NEXT_BUTTON_LABEL = "다음";
 
 export function hostSessionNextPhaseLabel(phase: ActivityPhase): string {
-  return getNextPhase(phase) ? HOST_SESSION_NEXT_BUTTON_LABEL : "—";
+  const next = getNextPhase(phase);
+  if (!next) return "—";
+  if (next === "results") return "순위 확인";
+  return HOST_SESSION_NEXT_BUTTON_LABEL;
 }

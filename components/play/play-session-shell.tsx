@@ -420,6 +420,7 @@ export function PlaySessionShell({
         members={groupMembers}
         roleScopeKey={sessionId ?? ""}
         peerPracticeCompleted={playerQuery.data?.peer_practice_completed ?? []}
+        practiceResults={playerQuery.data?.practice_results ?? []}
         homeGroupCompletedAt={playerQuery.data?.home_group_completed_at ?? null}
         onPeerQuestionComplete={(questionId) =>
           completePeerPracticeQuestion({
@@ -453,6 +454,7 @@ export function PlaySessionShell({
         pack={activityPack}
         groupName={groupName}
         roleLabel={assignedRoleLabel}
+        baseScore={playerQuery.data?.base_score ?? null}
         submittedAnswers={playerQuery.data?.individual_quiz_answers ?? undefined}
         submittedAt={playerQuery.data?.individual_quiz_submitted_at ?? null}
         onSubmit={(answers) =>

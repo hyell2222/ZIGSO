@@ -145,7 +145,7 @@ function SingleQuestionEditor({
 
   return (
     <div className="space-y-3">
-      <FormField label="발문" htmlFor={`q-prompt-${q.localId}`}>
+      <FormField label="발문" htmlFor={`q-prompt-${q.localId}`} required>
         <Textarea
           id={`q-prompt-${q.localId}`}
           rows={2}
@@ -157,7 +157,13 @@ function SingleQuestionEditor({
       </FormField>
 
       <div className="space-y-1.5">
-        <p className={formLabelClass}>보기</p>
+        <p className={formLabelClass}>
+          보기
+          <span className="text-[var(--danger)]" aria-hidden>
+            {" "}
+            *
+          </span>
+        </p>
         {q.choices.map((choice, ci) => {
           const isCorrect = q.correctIndex === ci;
           return (
@@ -230,7 +236,7 @@ function SingleQuestionEditor({
             힌트·해설
           </summary>
           <div className="space-y-3 pb-2">
-            <FormField label="1차 오답 힌트" htmlFor={`q-hint1-${q.localId}`}>
+            <FormField label="1차 오답 힌트" htmlFor={`q-hint1-${q.localId}`} required>
               <Input
                 id={`q-hint1-${q.localId}`}
                 value={hint1}
@@ -244,7 +250,7 @@ function SingleQuestionEditor({
                 className={inputClass}
               />
             </FormField>
-            <FormField label="2차 오답 힌트" htmlFor={`q-hint2-${q.localId}`}>
+            <FormField label="2차 오답 힌트" htmlFor={`q-hint2-${q.localId}`} required>
               <Input
                 id={`q-hint2-${q.localId}`}
                 value={hint2}
@@ -258,7 +264,7 @@ function SingleQuestionEditor({
                 className={inputClass}
               />
             </FormField>
-            <FormField label="해설" htmlFor={`q-explanation-${q.localId}`}>
+            <FormField label="해설" htmlFor={`q-explanation-${q.localId}`} required>
               <Textarea
                 id={`q-explanation-${q.localId}`}
                 rows={2}
@@ -436,7 +442,7 @@ function LearningContentBlock({
       </div>
 
       <div className="space-y-5">
-        <FormField label="학습 내용" htmlFor={`segment-${role.localId}`}>
+        <FormField label="학습 내용" htmlFor={`segment-${role.localId}`} required>
           <Textarea
             id={`segment-${role.localId}`}
             rows={8}
@@ -519,7 +525,7 @@ export function ActivityEditorForm({ draft, onChange }: Props) {
 
   return (
     <div className="w-full space-y-6">
-      <FormField label="활동 제목" htmlFor="activity-title">
+      <FormField label="활동 제목" htmlFor="activity-title" required>
         <Input
           id="activity-title"
           value={draft.title}
