@@ -3,7 +3,7 @@
 import { Modal } from "@/components/ui/modal";
 import { PlayJoinForm, type PlayJoinFormProps } from "@/components/play/play-join-form";
 
-export type PlayJoinCardProps = Omit<PlayJoinFormProps, "className"> & {
+type PlayJoinCardProps = Omit<PlayJoinFormProps, "className"> & {
   title?: string;
   description?: string;
 };
@@ -13,7 +13,7 @@ export function PlayJoinCard({
   title = "활동 참가",
   titleId = "play-join-card",
   submitLabel = "참가하기",
-  pendingLabel = "확인 중…",
+  pendingLabel = "불러오는 중…",
   ...formProps
 }: PlayJoinCardProps) {
   return (

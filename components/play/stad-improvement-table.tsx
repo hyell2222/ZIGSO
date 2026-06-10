@@ -1,15 +1,13 @@
 "use client";
 
-import { activityLayoutType } from "@/components/activity/activity-layout-typography";
+import { guideInfoModalBodyClass } from "@/components/play/guide-info-modal";
 import { STAD_IMPROVEMENT_TABLE } from "@/lib/activity-pack/stad-guide";
 import { cn } from "@/lib/utils";
-
-const t = activityLayoutType;
 
 export function StadImprovementTable({ className }: { className?: string }) {
   return (
     <div className={cn("overflow-x-auto", className)}>
-      <table className={cn("w-full border-collapse text-left", t.caption)}>
+      <table className={cn("w-full border-collapse text-left", guideInfoModalBodyClass)}>
         <thead>
           <tr className="border-b border-[var(--border)]">
             <th scope="col" className="py-1.5 pr-2 font-medium text-[var(--foreground)]">

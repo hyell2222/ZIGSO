@@ -63,7 +63,7 @@ function ReportsSessionsListPanel({ teacherUserId }: { teacherUserId: string }) 
     const label = row.activities?.title?.trim() || "제목 없는 활동";
     if (
       !window.confirm(
-        `「${label}」수업 기록을 삭제할까요?\n모둠·참가 데이터가 삭제되며 되돌릴 수 없습니다. 활동 원본은 유지됩니다.`,
+        `「${label}」활동 기록을 삭제할까요?\n모둠·참가 데이터가 삭제되며 되돌릴 수 없습니다. 활동 원본은 유지됩니다.`,
       )
     ) {
       return;
@@ -165,26 +165,20 @@ function ReportsSessionDetailPanel({ sessionId, teacherUserId }: { sessionId: st
   }, [playersQuery.data, groupsQuery.data, activityPack, sessionId, reportPhase]);
 
   if (sessionQuery.isLoading) {
-    return <LoadingState variant="section" label="불러오는 중…" />;
+    return <LoadingState variant="section" label="불러오는 중…" className="min-h-[min(32rem,55dvh)]" />;
   }
 
   if (sessionQuery.isError || !sessionQuery.data) {
-    return <p className="text-sm text-[var(--danger)]">수업 기록을 불러오지 못했습니다.</p>;
+    return <p className="text-sm text-[var(--danger)]">활동 기록을 불러오지 못했습니다.</p>;
   }
 
   if (sessionQuery.data.host_id !== teacherUserId) {
-    return <p className="text-sm text-[var(--accent)]">이 수업 기록을 볼 권한이 없습니다.</p>;
+    return <p className="text-sm text-[var(--accent)]">이 활동 기록을 볼 권한이 없습니다.</p>;
   }
 
   return (
     <div className="space-y-6">
       <div>
-        <Link
-          href={ROUTES.reports}
-          className="inline-flex text-sm font-medium text-[var(--accent)] underline-offset-2 hover:underline"
-        >
-          ← 수업 목록
-        </Link>
         <h2 className="mt-2 font-mono text-2xl font-semibold text-[var(--accent)]">
           {sessionQuery.data.activities?.title ?? "세션"}
         </h2>
@@ -197,7 +191,6 @@ function ReportsSessionDetailPanel({ sessionId, teacherUserId }: { sessionId: st
       <GroupAssignmentDashboard
         groups={assignmentGroups}
         loading={playersQuery.isLoading || groupsQuery.isLoading}
-        phase={reportPhase}
       />
     </div>
   );
@@ -220,7 +213,7 @@ function ReportsPageInner() {
       <TopNav />
       <main className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8">
         <PageHeader
-          title="수업 기록"
+          title="활동 기록"
         />
         {sessionId ? (
           <ReportsSessionDetailPanel sessionId={sessionId} teacherUserId={teacherUserId} />
@@ -228,11 +221,11 @@ function ReportsPageInner() {
           <LoadingState variant="section" label="불러오는 중…" />
         ) : (listQuery.data?.length ?? 0) === 0 ? (
           <p className="rounded-lg border border-dashed border-[var(--border)] px-4 py-8 text-center text-sm text-[var(--muted-foreground)]">
-            아직 진행한 수업이 없습니다.{" "}
+            아직 진행한 활동이 없습니다.{" "}
             <Link className="underline text-[var(--accent)]" href={ROUTES.activities}>
               내 활동
             </Link>
-            에서 수업을 시작해 주세요.
+            에서 활동을 시작해 주세요.
           </p>
         ) : (
           <ReportsSessionsListPanel teacherUserId={teacherUserId} />
@@ -246,11 +239,9 @@ export default function ReportsPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen">
+        <div className="app-page">
           <TopNav />
-          <main className="mx-auto max-w-5xl px-4 py-8">
-            <LoadingState variant="page" />
-          </main>
+          <LoadingState variant="page" className="min-h-0 flex-1" />
         </div>
       }
     >

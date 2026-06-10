@@ -1,6 +1,5 @@
 import {
   PRACTICE_MAX_ATTEMPTS,
-  PRACTICE_WRONG_PENALTY,
   practiceBaseScore,
   stadImprovementPoints,
   testPercent,
@@ -8,11 +7,8 @@ import {
 
 export type StadScoreSnapshot = {
   baseScore: number;
-  testCorrect: number;
-  testTotal: number;
   testScore: number;
   improvementPoints: number;
-  scoreDiff: number;
 };
 
 export function buildStadScoreSnapshot(
@@ -25,11 +21,8 @@ export function buildStadScoreSnapshot(
   const improvementPoints = stadImprovementPoints(base, testScore);
   return {
     baseScore: base,
-    testCorrect: correctCount,
-    testTotal: total,
     testScore,
     improvementPoints,
-    scoreDiff: testScore - base,
   };
 }
 
@@ -47,8 +40,3 @@ export const STAD_IMPROVEMENT_TABLE = [
   { condition: "0 ~ +10", points: 20 },
   { condition: "+11 이상", points: 30 },
 ] as const;
-
-export function formatStadScoreDiff(diff: number): string {
-  if (diff > 0) return `+${diff}`;
-  return String(diff);
-}

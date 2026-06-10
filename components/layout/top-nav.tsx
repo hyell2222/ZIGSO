@@ -61,14 +61,6 @@ export function TopNav() {
             </Link>
           </div>
           <nav className="flex shrink-0 items-center justify-end gap-2 text-sm">
-            {!sessionQuery.data ? (
-              <Link
-                href={ROUTES.play}
-                className="inline-flex h-9 items-center rounded-md px-2.5 text-sm text-[var(--on-primary)]/90 underline-offset-4 transition hover:text-[var(--on-primary)] hover:underline"
-              >
-                학생 입장
-              </Link>
-            ) : null}
             {sessionQuery.data ? (
               <Button
                 variant="transparent"
@@ -85,7 +77,7 @@ export function TopNav() {
                 size="sm"
                 className="max-sm:hidden"
               >
-                교사 로그인
+                지금 시작하기
               </ButtonLink>
             )}
           </nav>

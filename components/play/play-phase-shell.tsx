@@ -6,14 +6,13 @@ import {
   activityFooterChrome,
   activityFooterInner,
   activityLayoutClasses,
-  activityMainInner,
+  activityScrollBodyShell,
 } from "@/components/activity/activity-layout-chrome";
 import { PlayAtmosphere } from "@/components/play/play-atmosphere";
 import { Z } from "@/lib/ui/z-index";
 import { cn } from "@/lib/utils";
 
-export type PlayPhaseShellProps = {
-  contained?: boolean;
+type PlayPhaseShellProps = {
   /** 상단 배너 — 단계·모둠·역할·완료 안내 */
   topBanner?: ReactNode;
   footer?: ReactNode;
@@ -24,8 +23,8 @@ export type PlayPhaseShellProps = {
   children: ReactNode;
 };
 
+/** 학생 play·샌드박스 — 배너 고정, full-bleed 스크롤, 푸터 고정 */
 export function PlayPhaseShell({
-  contained = false,
   topBanner,
   footer,
   footerClue,
@@ -33,46 +32,29 @@ export function PlayPhaseShell({
   overlay,
   children,
 }: PlayPhaseShellProps) {
-  const layout = activityLayoutClasses(contained);
+  const layout = activityLayoutClasses();
 
   return (
-    <PlayAtmosphere variant={contained ? "contained" : "viewport"}>
-      <div className="relative flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden">
-        {overlay}
-        {topBanner ? (
-          <div
-            className={cn(
-              Z.playBanner,
-              "w-full shrink-0",
-              !contained && "pt-[env(safe-area-inset-top,0px)]",
-            )}
-          >
-            {topBanner}
-          </div>
-        ) : null}
+    <PlayAtmosphere className="relative min-h-0 flex-1">
+      {overlay}
+      {topBanner ? (
+        <div className={cn(Z.playBanner, "w-full shrink-0")}>{topBanner}</div>
+      ) : null}
 
-        <main
-          className={cn(
-            activityMainInner,
-            layout.mainContent,
-            "flex flex-col gap-4 @sm:gap-5",
-            mainClassName,
-          )}
-        >
-          {children}
-        </main>
-
-        {footer || footerClue ? (
-          <footer className={activityFooterChrome}>
-            <div className={activityFooterInner}>
-              {footerClue ? (
-                <p className="mb-2 text-center text-xs text-[var(--muted-foreground)]">{footerClue}</p>
-              ) : null}
-              {footer}
-            </div>
-          </footer>
-        ) : null}
+      <div className={activityScrollBodyShell}>
+        <div className={cn(layout.pageBody, "flex flex-col", mainClassName)}>{children}</div>
       </div>
+
+      {footer || footerClue ? (
+        <footer className={activityFooterChrome}>
+          <div className={activityFooterInner}>
+            {footerClue ? (
+              <p className="mb-2 text-center text-xs text-[var(--muted-foreground)]">{footerClue}</p>
+            ) : null}
+            {footer}
+          </div>
+        </footer>
+      ) : null}
     </PlayAtmosphere>
   );
 }

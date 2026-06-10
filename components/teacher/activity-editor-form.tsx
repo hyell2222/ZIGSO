@@ -8,7 +8,6 @@ import {
   Circle,
   Sparkles,
   Loader2,
-  Link,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -33,7 +32,7 @@ import {
   type ActivityEditorDraft,
 } from "@/lib/activity-pack/activity-draft";
 import { DEFAULT_CONTENT_LANGUAGE } from "@/lib/activity-pack/content-language";
-import { ACTIVITY_FLOW_STEPS, EDITOR_QUESTION_HINTS } from "@/lib/activity-phases";
+import { EDITOR_QUESTION_HINTS } from "@/lib/activity-phases";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -119,7 +118,7 @@ function QuestionAIGenerateButton({
         onClick={() => void handleGenerate()}
       >
         {loading ? (
-          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          <Loader2 className="h-3.5 w-3.5 animate-spin text-[var(--primary)]" />
         ) : (
           <Sparkles className="h-3.5 w-3.5 text-[var(--primary)]" />
         )}
@@ -216,22 +215,21 @@ function SingleQuestionEditor({
           );
         })}
         {canAddChoice ? (
-          <Link
-            href="#"
-            onClick={(e) => {
-              e.preventDefault();
-              onUpdate((cur) => ({ ...cur, choices: [...cur.choices, ""] }));
-            }}
-            className="inline-flex h-8 items-center gap-1 px-2 text-xs text-[var(--primary)] underline-offset-4 transition hover:text-[var(--primary)] hover:underline"
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            className="h-8 gap-1 px-2 text-xs text-[var(--primary)]"
+            onClick={() => onUpdate((cur) => ({ ...cur, choices: [...cur.choices, ""] }))}
           >
-            <Plus className="h-3.5 w-3.5 text-[var(--primary)]" />
+            <Plus className="h-3.5 w-3.5" />
             보기 추가
-          </Link>
+          </Button>
         ) : null}
       </div>
 
       {withScaffold ? (
-        <details className="rounded-md border border-dashed border-[var(--border)] px-3 py-1">
+        <details open className="rounded-md border border-dashed border-[var(--border)] px-3 py-1">
           <summary className={cn("cursor-pointer py-2", formLabelClass, "text-[var(--muted-foreground)]")}>
             힌트·해설
           </summary>
@@ -270,7 +268,7 @@ function SingleQuestionEditor({
                 rows={2}
                 value={q.explanation}
                 onChange={(e) => onUpdate((cur) => ({ ...cur, explanation: e.target.value }))}
-                className={textareaClass}
+                className={cn(textareaClass, "min-h-[2.5rem]")}
               />
             </FormField>
           </div>

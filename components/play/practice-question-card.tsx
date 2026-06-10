@@ -8,7 +8,6 @@ import {
   PlayQuestionExplanation,
   PlayQuestionHelperText,
   PlayQuestionHints,
-  PlayQuestionResultText,
 } from "@/components/play/play-question-support";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,14 +29,24 @@ export type PracticeResult = {
 
 type Props = {
   question: QuizQuestion;
-  /** 연습 종료(정답 또는 정답 확인) 시 1회 호출 */
+  /** 연습 종료(정답 또는 3회 오답) 시 1회 호출 */
   onComplete: (result: PracticeResult) => void | Promise<void>;
   /** 이미 완료된 경우(복귀 등) 표시용 */
-  initialResult?: { wrongAttempts: number; baseScore: number } | null;
+  initialResult?: {
+    wrongAttempts: number;
+    baseScore: number;
+    choiceIndex?: number;
+    wrongChoiceIndices?: number[];
+  } | null;
   disabled?: boolean;
   /** false면 점수·감점 없이 탐색용 (서로 알려주기 모둠원 파트) */
   scored?: boolean;
 };
+
+function initialWrongChoices(initialResult: Props["initialResult"]): number[] {
+  if (!initialResult?.wrongChoiceIndices?.length) return [];
+  return initialResult.wrongChoiceIndices;
+}
 
 export function PracticeQuestionCard({
   question,
@@ -47,6 +56,9 @@ export function PracticeQuestionCard({
   scored = true,
 }: Props) {
   const [selected, setSelected] = useState<number | null>(null);
+  const [wrongChoices, setWrongChoices] = useState<number[]>(() =>
+    initialWrongChoices(initialResult),
+  );
   const [wrongAttempts, setWrongAttempts] = useState(initialResult?.wrongAttempts ?? 0);
   const [revealed, setRevealed] = useState(Boolean(initialResult));
   const [correct, setCorrect] = useState(
@@ -54,13 +66,12 @@ export function PracticeQuestionCard({
   );
   const [done, setDone] = useState(Boolean(initialResult));
   const [busy, setBusy] = useState(false);
-  const [wrongChoices, setWrongChoices] = useState<number[]>([]);
 
-  const attemptsLeft = PRACTICE_MAX_ATTEMPTS - wrongAttempts;
   const outOfAttempts = wrongAttempts >= PRACTICE_MAX_ATTEMPTS;
   const currentScore = practiceBaseScore(wrongAttempts);
   const hints = question.hints ?? [];
   const shownHints = hints.slice(0, Math.min(wrongAttempts, hints.length));
+  const showOutcome = done || (revealed && !correct && outOfAttempts);
 
   const finish = async (result: PracticeResult) => {
     setBusy(true);
@@ -75,9 +86,8 @@ export function PracticeQuestionCard({
   const handleSubmit = async () => {
     if (selected === null || done || busy) return;
     if (selected === question.correctIndex) {
-      setCorrect(true);
       setRevealed(true);
-      setWrongChoices([]);
+      setCorrect(true);
       await finish({
         wrongAttempts,
         baseScore: practiceBaseScore(wrongAttempts),
@@ -87,30 +97,27 @@ export function PracticeQuestionCard({
       return;
     }
     const nextWrong = wrongAttempts + 1;
+    const nextWrongChoices = [...wrongChoices, selected];
     setWrongAttempts(nextWrong);
-    setWrongChoices((prev) => [...prev, selected]);
+    setWrongChoices(nextWrongChoices);
     if (nextWrong >= PRACTICE_MAX_ATTEMPTS) {
-      // 3번째도 오답 — 정답 확인 단계로
-      setSelected(null);
+      setRevealed(true);
+      setCorrect(false);
+      await finish({
+        wrongAttempts: PRACTICE_MAX_ATTEMPTS,
+        baseScore: practiceBaseScore(PRACTICE_MAX_ATTEMPTS),
+        correct: false,
+        answer: {
+          questionId: question.id,
+          choiceIndex: selected,
+        },
+      });
     } else {
       setSelected(null);
     }
   };
 
-  const handleReveal = async () => {
-    setRevealed(true);
-    await finish({
-      wrongAttempts: PRACTICE_MAX_ATTEMPTS,
-      baseScore: practiceBaseScore(PRACTICE_MAX_ATTEMPTS),
-      correct: false,
-      answer: {
-        questionId: question.id,
-        choiceIndex: wrongChoices[wrongChoices.length - 1] ?? -1,
-      },
-    });
-  };
-
-  const lockChoices = done || revealed || busy || disabled;
+  const lockAll = done || revealed || busy || disabled;
 
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--card-bg)] p-4 @md:p-5">
@@ -120,17 +127,18 @@ export function PracticeQuestionCard({
 
       <div className="space-y-2">
         {question.choices.map((choice, ci) => {
-          const isChosen = selected === ci;
+          const isWrongChoice = wrongChoices.includes(ci);
+          const isChosen = !lockAll && selected === ci;
           const isCorrectChoice = question.correctIndex === ci;
           const showCorrect = revealed && isCorrectChoice;
-          const showWrong =
-            revealed && !correct && wrongChoices.includes(ci) && !isCorrectChoice;
+          const showWrong = isWrongChoice && !isCorrectChoice;
+          const choiceDisabled = lockAll || isWrongChoice;
           return (
             <button
               key={ci}
               type="button"
-              disabled={lockChoices}
-              aria-pressed={isChosen}
+              disabled={choiceDisabled}
+              aria-pressed={isChosen || showWrong}
               onClick={() => setSelected(ci)}
               className={cn(
                 "flex w-full items-center gap-3 rounded-lg border px-3 py-2 text-left transition",
@@ -142,13 +150,19 @@ export function PracticeQuestionCard({
                     : isChosen
                       ? "border-[var(--primary)] bg-[var(--tint-accent-strong)] text-[var(--primary)] ring-2 ring-[var(--primary)]/30"
                       : "border-[var(--border)] bg-[var(--background)] hover:border-[var(--accent)]",
-                lockChoices && !showCorrect && !showWrong && "cursor-default opacity-90",
+                choiceDisabled &&
+                  !showCorrect &&
+                  !showWrong &&
+                  "cursor-default opacity-90",
+                isWrongChoice && !lockAll && "cursor-not-allowed",
               )}
             >
               <span
                 className={cn(
                   "flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs font-semibold",
-                  isChosen || showCorrect ? "border-current" : "border-[var(--border)] text-[var(--muted-foreground)]",
+                  isChosen || showCorrect || showWrong
+                    ? "border-current"
+                    : "border-[var(--border)] text-[var(--muted-foreground)]",
                 )}
               >
                 {CHOICE_LABELS[ci] ?? ci + 1}
@@ -163,7 +177,7 @@ export function PracticeQuestionCard({
 
       {shownHints.length > 0 && !correct ? <PlayQuestionHints hints={shownHints} /> : null}
 
-      {!done ? (
+      {!showOutcome ? (
         <div className="mt-4 flex items-center justify-between gap-3">
           <PlayQuestionHelperText>
             {wrongAttempts > 0 && !outOfAttempts
@@ -174,17 +188,7 @@ export function PracticeQuestionCard({
                 ? "정답을 골라 제출하세요. 오답마다 점수가 깎여요."
                 : "정답을 골라 제출하세요. 점수에는 영향 없어요."}
           </PlayQuestionHelperText>
-          {outOfAttempts ? (
-            <Button
-              type="button"
-              variant="secondary"
-              className="shrink-0 gap-2 min-h-10 touch-manipulation @md:min-h-11"
-              onClick={() => void handleReveal()}
-              disabled={busy}
-            >
-              정답 확인
-            </Button>
-          ) : (
+          {outOfAttempts ? null : (
             <Button
               type="button"
               className="shrink-0 gap-2 min-h-10 touch-manipulation @md:min-h-11"
@@ -197,15 +201,7 @@ export function PracticeQuestionCard({
         </div>
       ) : (
         <div className="mt-4 space-y-2">
-          <PlayQuestionResultText correct={correct}>
-            {correct
-              ? scored
-                ? `정답! ${currentScore}점`
-                : "정답!"
-              : scored
-                ? `정답 확인 · ${currentScore}점`
-                : "정답을 확인했어요."}
-          </PlayQuestionResultText>
+          <p className="text-sm">해설</p>
           {question.explanation ? (
             <PlayQuestionExplanation>{question.explanation}</PlayQuestionExplanation>
           ) : null}

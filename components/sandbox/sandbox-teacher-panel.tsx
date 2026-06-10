@@ -14,9 +14,12 @@ import {
 import { SessionHostLayout } from "@/components/teacher/session-host-layout";
 import { SessionHostWaitingRoster } from "@/components/teacher/session-host-waiting-roster";
 import { PhaseTimerContent } from "@/components/teacher/phase-timer-content";
+import { activityBannerButtonClass, activityGuideModalScope } from "@/components/activity/activity-layout-chrome";
+import { GuideModalScope } from "@/components/play/guide-modal-scope";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { Z } from "@/lib/ui/z-index";
+import { cn } from "@/lib/utils";
 import type { ActivityPhase } from "@/lib/api/activities";
 import type { ActivityPack } from "@/lib/activity-pack/types";
 import {
@@ -43,7 +46,6 @@ type Props = {
   realStudentNickname: string | null;
   onBegin: () => void;
   onAdvance: () => void;
-  onResetPhase: () => void;
 };
 
 export function SandboxTeacherPanel({
@@ -57,9 +59,7 @@ export function SandboxTeacherPanel({
   realStudentNickname,
   onBegin,
   onAdvance,
-  onResetPhase: _onResetPhase,
 }: Props) {
-  void _onResetPhase;
   const [timerModalOpen, setTimerModalOpen] = useState<{
     open: boolean;
     phaseAtOpen: ActivityPhase | null;
@@ -110,9 +110,11 @@ export function SandboxTeacherPanel({
             {
               group_id: m.groupId,
               assigned_role_id: m.roleId,
+              practice_results: m.practice_results,
               practice_submitted_at: m.practice_submitted_at,
               peer_practice_completed: m.peer_practice_completed,
               home_group_completed_at: m.home_group_completed_at,
+              individual_quiz_answers: m.individual_quiz_answers,
               individual_quiz_submitted_at: m.individual_quiz_submitted_at,
             },
             { pack, memberRoleIds },
@@ -157,31 +159,32 @@ export function SandboxTeacherPanel({
       type="button"
       variant="secondary"
       size="sm"
-      className="gap-1.5"
+      className={cn("shrink-0", activityBannerButtonClass)}
+      aria-haspopup="dialog"
+      aria-expanded={timerToolOpen}
       onClick={() => setTimerModalOpen({ open: true, phaseAtOpen: phase })}
     >
-      <Timer className="h-3.5 w-3.5" aria-hidden />
+      <Timer className="h-4 w-4 shrink-0 text-[var(--accent)]" aria-hidden />
       타이머
     </Button>
   ) : null;
 
   const startButton = !sessionStarted ? (
-    <Button type="button" size="sm" onClick={onBegin}>
+    <Button type="button" size="sm" className={activityBannerButtonClass} onClick={onBegin}>
       시작하기
     </Button>
   ) : null;
 
   const nextButton =
     sessionStarted && !sessionEnded && hasNextPhase ? (
-      <Button type="button" size="sm" onClick={onAdvance}>
+      <Button type="button" size="sm" className={activityBannerButtonClass} onClick={onAdvance}>
         {hostSessionNextPhaseLabel(phase)}
       </Button>
     ) : null;
 
   return (
-    <div className="relative flex h-full min-h-0 flex-col overflow-hidden text-sm">
+    <GuideModalScope className={activityGuideModalScope}>
       <SessionHostLayout
-        contained
         activityTitle={activityTitle}
         playerCount={playercount}
         joinCode={SANDBOX_JOIN_CODE}
@@ -202,9 +205,7 @@ export function SandboxTeacherPanel({
           <GroupAssignmentDashboard
             groups={assignmentGroups}
             loading={false}
-            phase={phase}
             groupBy={phase === "expert_group" ? "item" : "group"}
-            contained
           />
         ) : null}
 
@@ -215,7 +216,6 @@ export function SandboxTeacherPanel({
             pack={pack}
             roleScopeKey={`sandbox-${activityId}`}
             loading={false}
-            contained
           />
         ) : null}
       </SessionHostLayout>
@@ -223,14 +223,13 @@ export function SandboxTeacherPanel({
       <Modal
         open={timerToolOpen}
         onClose={() => setTimerModalOpen({ open: false, phaseAtOpen: null })}
-        variant="contained"
         title="타이머"
         titleId="sandbox-timer-heading"
-        zIndexClassName={Z.containedOverlay}
+        zIndexClassName={Z.hostTool}
         contentClassName="py-5"
       >
         <PhaseTimerContent key={phase} phase={phase as TimedPhase} />
       </Modal>
-    </div>
+    </GuideModalScope>
   );
 }

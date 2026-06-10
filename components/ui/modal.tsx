@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 /** 다이얼로그·인라인 폼 공통 최대 너비 */
-export const MODAL_DEFAULT_MAX_WIDTH = "w-full max-w-[min(100%,28rem)]";
+const MODAL_DEFAULT_MAX_WIDTH = "w-full max-w-[min(100%,28rem)]";
 
 const closeMuted =
   "text-[var(--muted-foreground)] hover:bg-[var(--tint-primary-weak)] hover:text-[var(--foreground)]";

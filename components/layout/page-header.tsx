@@ -33,7 +33,7 @@ export function PageHeader({
           ) : null}
           <Heading
             className={cn(
-              "text-2xl font-extrabold tracking-tight text-[var(--foreground)] sm:text-3xl",
+              "text-xl font-bold tracking-tight text-[var(--foreground)] sm:text-2xl",
               titleClassName,
             )}
           >

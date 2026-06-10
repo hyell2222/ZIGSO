@@ -2,17 +2,16 @@
 
 import { useMemo } from "react";
 
-import {
-  RankLeaderboard,
-  RankLeaderboardItem,
-  RankListRow,
-} from "@/components/activity/rank-display";
+import { RankResultTile } from "@/components/activity/rank-display";
+import { playPhaseDualSectionGrid } from "@/components/activity/activity-layout-chrome";
 import { activityLayoutType } from "@/components/activity/activity-layout-typography";
 import { PhaseSection } from "@/components/activity/phase-section-layout";
 import { LoadingState } from "@/components/ui/loading-state";
+import { formatGroupDisplayName } from "@/lib/activity-pack/engine";
 import { buildSessionResults } from "@/lib/activity-pack/session-results";
 import type { ActivityPack } from "@/lib/activity-pack/types";
 import type { GroupRow } from "@/lib/api/play";
+import { RESULTS_COPY } from "@/lib/activity-phases";
 import { cn } from "@/lib/utils";
 
 export type SessionResultsMember = {
@@ -31,7 +30,6 @@ type Props = {
   pack: ActivityPack | null;
   roleScopeKey?: string;
   loading?: boolean;
-  contained?: boolean;
 };
 
 const sectionCenterClass =
@@ -43,10 +41,7 @@ export function SessionResultsDashboard({
   pack,
   roleScopeKey,
   loading,
-  contained = false,
 }: Props) {
-  void contained;
-
   const results = useMemo(() => {
     if (!pack) return null;
     return buildSessionResults(
@@ -70,63 +65,61 @@ export function SessionResultsDashboard({
 
   if (loading) {
     return (
-      <div className="flex w-full justify-center py-8">
-        <LoadingState variant="section" label="순위 집계 중…" />
-      </div>
+      <LoadingState variant="section" label={RESULTS_COPY.loading} className="min-h-0 flex-1" />
     );
   }
 
   if (!results?.rankedTeams.length) {
     return (
-      <p className={cn("text-center", activityLayoutType.bodyMuted)}>집계할 순위가 없습니다.</p>
+      <p className={cn("text-center", activityLayoutType.bodyMuted)}>
+        {RESULTS_COPY.noTeamRank}
+      </p>
     );
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-xs flex-col items-center gap-5">
-        <PhaseSection
-          title="모둠 순위"
-          heading="section"
-          as="h2"
-          className={cn("w-full", sectionCenterClass)}
-        >
-          <RankLeaderboard bordered>
-            {results.rankedTeams.map((team) => (
-              <RankLeaderboardItem key={team.groupId}>
-                <RankListRow
-                  title={team.groupName}
-                  rank={team.rank}
-                  score={`${team.teamScore}점`}
-                />
-              </RankLeaderboardItem>
+    <div className={playPhaseDualSectionGrid}>
+      <PhaseSection
+        title={RESULTS_COPY.personalRank}
+        heading="section"
+        as="h2"
+        className={cn("h-fit w-full", sectionCenterClass)}
+      >
+        {results.rankedMembers.length === 0 ? (
+          <p className={cn("text-center", activityLayoutType.bodyMuted)}>
+            {RESULTS_COPY.noPersonalRank}
+          </p>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {results.rankedMembers.map((member) => (
+              <RankResultTile
+                key={member.playerId}
+                label={member.nickname}
+                rank={member.rank}
+                score={`${member.improvementPoints}점`}
+              />
             ))}
-          </RankLeaderboard>
-        </PhaseSection>
+          </div>
+        )}
+      </PhaseSection>
 
-        <PhaseSection
-          title="개인 순위"
-          heading="section"
-          as="h2"
-          className={cn("w-full", sectionCenterClass)}
-        >
-          {results.rankedMembers.length === 0 ? (
-            <p className={cn("text-center", activityLayoutType.bodyMuted)}>
-              집계할 개인 순위가 없습니다.
-            </p>
-          ) : (
-            <RankLeaderboard bordered>
-              {results.rankedMembers.map((member) => (
-                <RankLeaderboardItem key={member.playerId}>
-                  <RankListRow
-                    title={member.nickname}
-                    rank={member.rank}
-                    score={`${member.improvementPoints}점`}
-                  />
-                </RankLeaderboardItem>
-              ))}
-            </RankLeaderboard>
-          )}
-        </PhaseSection>
+      <PhaseSection
+        title={RESULTS_COPY.teamRank}
+        heading="section"
+        as="h2"
+        className={cn("h-fit w-full", sectionCenterClass)}
+      >
+        <div className="flex flex-col gap-2">
+          {results.rankedTeams.map((team) => (
+            <RankResultTile
+              key={team.groupId}
+              label={formatGroupDisplayName(team.groupName)}
+              rank={team.rank}
+              score={`${team.teamScore}점`}
+            />
+          ))}
+        </div>
+      </PhaseSection>
     </div>
   );
 }

@@ -6,7 +6,7 @@
  */
 
 /** 연습 문제 최고 점수 */
-export const PRACTICE_MAX_SCORE = 100;
+const PRACTICE_MAX_SCORE = 100;
 /** 연습 문제 오답 1회당 차감 점수 */
 export const PRACTICE_WRONG_PENALTY = 30;
 /** 연습 문제 최대 시도 횟수 */

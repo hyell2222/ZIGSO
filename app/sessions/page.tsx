@@ -25,6 +25,9 @@ import { parseAssignedRoleIds } from "@/lib/api/play";
 import { groupPlayersByGroup } from "@/lib/teacher/group-players-by-group";
 import { isPlayerPhaseComplete } from "@/lib/teacher/phase-completion";
 import { SessionHostLayout } from "@/components/teacher/session-host-layout";
+import { activityViewportRoot } from "@/components/activity/activity-layout-chrome";
+import { activityBannerButtonClass } from "@/components/activity/activity-layout-chrome";
+import { GuideModalScope } from "@/components/play/guide-modal-scope";
 import { SessionHostWaitingRoster } from "@/components/teacher/session-host-waiting-roster";
 import { PhaseTimerContent } from "@/components/teacher/phase-timer-content";
 import {
@@ -48,6 +51,7 @@ import {
 import { hasSupabaseEnv, supabase } from "@/lib/supabase";
 import { isSessionEnded, isTimedPhase, type TimedPhase } from "@/lib/activity-phases";
 import { hostSessionNextPhaseLabel } from "@/lib/api/sessions";
+import { cn } from "@/lib/utils";
 
 function SessionHostContent() {
   const router = useRouter();
@@ -379,23 +383,11 @@ function SessionHostContent() {
   }
 
   if (teacherSession.isLoading || (teacherSession.isFetching && !teacherSession.data)) {
-    return (
-      <div className="@container min-h-screen">
-        <main className="flex flex-col items-center justify-center mx-auto w-full max-w-5xl px-4 py-8">
-          <LoadingState variant="page" />
-        </main>
-      </div>
-    );
+    return <LoadingState variant="page" />;
   }
 
   if (sessionQuery.isLoading) {
-    return (
-      <div className="@container min-h-screen">
-        <main className="mx-auto flex w-full max-w-5xl flex-col px-4 py-8">
-          <LoadingState variant="page" />
-        </main>
-      </div>
-    );
+    return <LoadingState variant="page" />;
   }
 
   if (sessionQuery.isError || !sessionQuery.data) {
@@ -426,7 +418,8 @@ function SessionHostContent() {
     <Button
       type="button"
       variant="secondary"
-      className="shrink-0 gap-2"
+      size="sm"
+      className={cn("shrink-0", activityBannerButtonClass)}
       aria-haspopup="dialog"
       aria-expanded={timerToolOpen}
       onClick={openTimerModal}
@@ -439,9 +432,10 @@ function SessionHostContent() {
   const startButton = !sessionStarted ? (
     <Button
       type="button"
+      size="sm"
+      className={activityBannerButtonClass}
       onClick={() => beginMutation.mutate()}
       disabled={beginMutation.isPending}
-      className="gap-2"
     >
       {beginMutation.isPending ? (
         <>
@@ -457,9 +451,10 @@ function SessionHostContent() {
     sessionStarted && !sessionEnded && nextPhase ? (
       <Button
         type="button"
+        size="sm"
+        className={activityBannerButtonClass}
         onClick={() => nextPhaseMutation.mutate()}
         disabled={nextPhaseMutation.isPending}
-        className="gap-2"
       >
         {nextPhaseMutation.isPending ? (
           <>
@@ -472,7 +467,7 @@ function SessionHostContent() {
     ) : null;
 
   return (
-    <div className="@container h-dvh min-h-0">
+    <GuideModalScope className={activityViewportRoot}>
       <SessionHostLayout
         activityTitle={row.activities?.title ?? null}
         playerCount={playercount}
@@ -499,7 +494,6 @@ function SessionHostContent() {
           <GroupAssignmentDashboard
             groups={assignmentGroups}
             loading={playersQuery.isLoading || groupsQuery.isLoading}
-            phase={phase}
             groupBy={phase === "expert_group" ? "item" : "group"}
           />
         ) : null}
@@ -525,20 +519,14 @@ function SessionHostContent() {
       >
         <PhaseTimerContent key={phase} phase={phase as TimedPhase} />
       </Modal>
-    </div>
+    </GuideModalScope>
   );
 }
 
 export default function SessionHostPage() {
   return (
     <Suspense
-      fallback={
-        <div className="@container min-h-screen">
-          <main className="mx-auto flex w-full max-w-5xl flex-col px-4 py-8">
-            <LoadingState variant="page" />
-          </main>
-        </div>
-      }
+      fallback={<LoadingState variant="page" />}
     >
       <SessionHostContent />
     </Suspense>

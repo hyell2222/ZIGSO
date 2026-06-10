@@ -93,7 +93,7 @@ export default function ActivitiesPage() {
     const title = row.title?.trim() || "제목 없는 활동";
     if (
       !window.confirm(
-        `「${title}」활동을 삭제할까요?\n연결된 수업 기록·진행 데이터도 함께 삭제되며 되돌릴 수 없습니다.`,
+        `「${title}」활동을 삭제할까요?\n연결된 활동 기록·진행 데이터도 함께 삭제되며 되돌릴 수 없습니다.`,
       )
     ) {
       return;
@@ -179,7 +179,7 @@ export default function ActivitiesPage() {
                             시뮬레이션
                           </Button>
 
-                          <div className="ml-auto shrink-0">
+                          <div className="ml-auto shrink-0 flex flex-col justify-center">
                             <KebabMenu
                               disabled={isDeleting}
                               onEdit={() => handleEdit(row)}

@@ -79,7 +79,7 @@ export function PlayJoinForm({
   pending = false,
   titleId = "play-join-form",
   submitLabel = "참가하기",
-  pendingLabel = "확인 중…",
+  pendingLabel = "불러오는 중…",
   showMissingCodeClue = true,
   joinCodeEditable = false,
   onJoinCodeChange,

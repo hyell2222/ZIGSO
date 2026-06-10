@@ -3,7 +3,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { activityPageShell, activityLoaderRegion } from "@/components/activity/activity-layout-chrome";
+import {
+  activityBodyPaddingBottomContained,
+  activityBodyPaddingY,
+  activityLayoutFrame,
+  activityPageColumn,
+} from "@/components/activity/activity-layout-chrome";
 import { ExpertPhasePanel } from "@/components/play/expert-group-panel";
 import { GroupPhasePanel, type GroupMember } from "@/components/play/home-group-panel";
 import { IndividualQuizPanel } from "@/components/play/individual-quiz-panel";
@@ -11,7 +16,6 @@ import { OverviewPhasePanel } from "@/components/play/overview-phase-panel";
 import { ResultsPhasePanel } from "@/components/play/results-phase-panel";
 import { PlayPhaseShell } from "@/components/play/play-phase-shell";
 import { PlayAtmosphere, playSurfaceCool } from "@/components/play/play-atmosphere";
-import { WaitingLobbyBlock } from "@/components/play/waiting-lobby-block";
 import { LoadingState } from "@/components/ui/loading-state";
 import { PlayJoinModal } from "@/components/play/play-join-modal";
 import { PlayResumeModal } from "@/components/play/play-resume-modal";
@@ -42,9 +46,11 @@ import {
   saveResumeRecord,
   type ResumeRecord,
 } from "@/lib/play-resume";
+import { resolveHomeGroupMembers } from "@/lib/play/home-group-members";
 import { getSessionRoomChannelName } from "@/lib/realtime/session-presence";
 import { hasSupabaseEnv, supabase } from "@/lib/supabase";
 import { formatAssignedRoleLabels } from "@/lib/activity-pack/roles";
+import { LOADING_COPY } from "@/lib/activity-phases";
 import { cn } from "@/lib/utils";
 
 export function PlaySessionShell({
@@ -317,14 +323,8 @@ export function PlaySessionShell({
   });
 
   const groupMembers: GroupMember[] = useMemo(
-    () =>
-      (groupMembersQuery.data ?? []).map((m) => ({
-        id: m.id,
-        nickname: m.nickname,
-        assigned_role_id: m.assigned_role_id,
-        created_at: m.created_at,
-      })),
-    [groupMembersQuery.data],
+    () => resolveHomeGroupMembers(groupMembersQuery.data ?? [], playerId),
+    [groupMembersQuery.data, playerId],
   );
 
   const resultsQuery = useQuery({
@@ -369,7 +369,6 @@ export function PlaySessionShell({
     return (
       <ResultsPhasePanel
         loading={resultsQuery.isLoading}
-        title={sessionQuery.data?.activities?.title ?? null}
         results={sessionResults}
         highlightGroupId={groupId}
         groupName={groupName}
@@ -483,16 +482,14 @@ export function PlaySessionShell({
   }
 
   if (hasSupabaseEnv && hasJoinedSession && isWaitingLobby) {
+    const label =
+      waitingLobbyState === "session_loading"
+        ? LOADING_COPY.default
+        : LOADING_COPY.sessionStarting;
+
     return (
-      <PlayPhaseShell>
-        <div className={activityLoaderRegion}>
-          <WaitingLobbyBlock
-            joinCode={joinCode}
-            nickname={nickname}
-            sessionTitle={sessionQuery.data?.activities?.title ?? null}
-            state={waitingLobbyState}
-          />
-        </div>
+      <PlayPhaseShell mainClassName="flex min-h-0 flex-1 flex-col">
+        <LoadingState variant="section" label={label} className="min-h-0 flex-1" />
       </PlayPhaseShell>
     );
   }
@@ -500,7 +497,7 @@ export function PlaySessionShell({
   if (!hasSupabaseEnv) {
     return (
       <PlayAtmosphere>
-        <main className={cn(activityPageShell, "py-8")}>
+        <main className={cn(activityPageColumn, "py-8")}>
           <Card className={cn("w-full", playSurfaceCool)}>
             <CardHeader>
               <CardTitle className="text-[var(--foreground)]">환경 설정 필요</CardTitle>
@@ -525,17 +522,31 @@ export function PlaySessionShell({
       resumeQuery.isFetching ||
       joinAndRegisterMutation.isPending);
 
-  const showJoinLoading = awaitingAutoJoin;
+  const showJoinLoading = awaitingAutoJoin && !showResumeModal;
+
+  if (showJoinLoading) {
+    return (
+      <PlayPhaseShell mainClassName="flex min-h-0 flex-1 flex-col">
+        <LoadingState
+          variant="section"
+          label={LOADING_COPY.verifying}
+          className="min-h-0 flex-1"
+        />
+      </PlayPhaseShell>
+    );
+  }
 
   const showNicknameModal = !hasJoinedSession && !showResumeModal && !awaitingAutoJoin;
 
   return (
     <PlayAtmosphere>
-      <div className="flex min-h-dvh flex-col">
+      <div className={activityLayoutFrame}>
         <main
           className={cn(
-            activityPageShell,
-            "flex min-h-0 flex-1 flex-col py-6 pb-[max(3rem,env(safe-area-inset-bottom,0px))] sm:py-8",
+            activityPageColumn,
+            activityBodyPaddingY,
+            "flex min-h-0 flex-1 flex-col",
+            activityBodyPaddingBottomContained,
           )}
         >
           {showResumeModal && resumeQuery.data ? (
@@ -546,17 +557,6 @@ export function PlaySessionShell({
               onContinue={() => handleContinueAsPlayer(resumeQuery.data!)}
               onNew={handleJoinAsNewPlayer}
             />
-          ) : null}
-
-          {showJoinLoading ? (
-            <section
-              className={cn(
-                activityLoaderRegion,
-                "motion-safe:animate-[playRevealUp_0.5s_ease-out_both]",
-              )}
-            >
-              <LoadingState variant="page" tone="play" label="확인 중…" className="min-h-0 py-0" />
-            </section>
           ) : null}
 
           <PlayJoinModal

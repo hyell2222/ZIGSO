@@ -112,15 +112,7 @@ export default function HomePage() {
                 size="lg"
                 className="w-full sm:w-auto sm:min-w-[13.5rem]"
               >
-                교사로 시작하기
-              </ButtonLink>
-              <ButtonLink
-                href={ROUTES.play}
-                variant="outline"
-                size="lg"
-                className="w-full sm:w-auto sm:min-w-[13.5rem]"
-              >
-                학생으로 입장하기
+                지금 시작하기
               </ButtonLink>
             </div>
 

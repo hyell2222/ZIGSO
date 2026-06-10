@@ -15,11 +15,9 @@ export default function ActivityEditPage() {
   return (
     <Suspense
       fallback={
-        <div className="app-page flex min-h-dvh flex-col">
+        <div className="app-page">
           <TopNav />
-          <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-4 py-8">
-            <LoadingState variant="page" />
-          </main>
+          <LoadingState variant="page" className="min-h-0 flex-1" />
         </div>
       }
     >
@@ -47,11 +45,9 @@ function ActivityEditContent() {
 
   if (dataQuery.isLoading) {
     return (
-      <div className="app-page flex min-h-dvh flex-col">
+      <div className="app-page">
         <TopNav />
-        <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-4 py-8">
-          <LoadingState variant="page" />
-        </main>
+        <LoadingState variant="page" className="min-h-0 flex-1" />
       </div>
     );
   }

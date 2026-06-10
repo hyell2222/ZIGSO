@@ -1,34 +1,64 @@
 import { Z } from "@/lib/ui/z-index";
 import { cn } from "@/lib/utils";
 
-export const ACTIVITY_LAYOUT_MAX = "max-w-5xl";
+export const ACTIVITY_LAYOUT_MAX = "max-w-3xl";
 
-/** 페이지 좌우 여백 — 헤더·본문·푸터 동일 */
-export const activityPageGutter = "px-4 @sm:px-5 @md:px-6";
+/** TopNav·교사 서브내비와 동일한 가로 폭 */
+export const appNavContentShell = "mx-auto w-full max-w-5xl px-4";
 
-export const activityPageGutterContained = "px-3 @sm:px-4";
-
-/** 페이지 본문·조인 화면 등 — 최대 너비 + 좌우 여백 */
-export const activityPageShell = cn("mx-auto w-full", ACTIVITY_LAYOUT_MAX, activityPageGutter);
-
-/** 단계 헤더 바 */
-export const activityPhaseHeaderShell = cn(
-  "shrink-0 border-b border-[color-mix(in_srgb,var(--primary)_18%,var(--border))]",
-  "bg-[var(--surface)]",
-  "shadow-[0_1px_0_color-mix(in_srgb,var(--primary)_8%,transparent)]",
-  "motion-safe:animate-[playRevealUp_0.45s_cubic-bezier(0.22,1,0.36,1)_both]",
+/** GuideModalScope — play/session/sandbox 패널 루트 */
+export const activityGuideModalScope = cn(
+  "@container flex h-full min-h-0 w-full flex-col overflow-hidden",
 );
 
-export const activityPhaseHeaderInner = cn(
-  "mx-auto w-full",
-  ACTIVITY_LAYOUT_MAX,
-  activityPageGutter,
-  "py-3 @sm:py-3.5 @md:py-4",
+/** 실세션·play 뷰포트 루트 — 샌드박스 패널과 동일 full-bleed */
+export const activityViewportRoot = cn(
+  activityGuideModalScope,
+  "h-dvh pt-[env(safe-area-inset-top,0px)]",
 );
 
-export const activityPhaseHeaderInnerContained = cn(
-  activityPageGutterContained,
-  "py-2.5 @sm:py-3",
+/** 실세션·play — 배너·본문·푸터 공통 full-bleed (폭은 appNavContentShell) */
+export const activityLayoutFrame = cn(
+  "flex h-full min-h-0 w-full flex-col overflow-hidden",
+);
+
+/** 배너·본문·푸터 — TopNav와 동일 폭 */
+export const activityPageColumn = appNavContentShell;
+
+/** 프레임 없이 단독 사용 (조인·랜딩 등) */
+export const activityPageShell = appNavContentShell;
+
+export const activitySessionHeaderPaddingContained = "py-2.5 @sm:py-3";
+
+export const activitySessionHeaderRowContained = cn(
+  "flex w-full flex-wrap items-center gap-4",
+  "min-h-12",
+  activitySessionHeaderPaddingContained,
+);
+
+/** 학생 play 상단 배너 — 교사 헤더보다 얇게 */
+export const activityPlayStudentHeaderPaddingContained = "py-1.5 @sm:py-2";
+
+export const activityPlayStudentHeaderRowContained = cn(
+  "flex w-full flex-wrap items-center gap-2.5",
+  activityPlayStudentHeaderPaddingContained,
+);
+
+/** 배너 액션 버튼 — 좁은 화면 sm, @md 이상 default (Button size="sm"과 함께) */
+export const activityBannerButtonClass =
+  "gap-2 @md:h-10 @md:min-h-10 @md:px-4 @md:text-base";
+
+/** 배너 ? 안내 버튼 — 좁은 화면 축소 */
+export const activityBannerHelpButtonClass =
+  "h-4 w-4 [&_svg]:h-3 [&_svg]:w-3 @md:h-5 @md:w-5 @md:[&_svg]:h-3.5 @md:[&_svg]:w-3.5";
+
+/** overview — 모둠·역할 안내 카드 (중앙 강조) */
+export const activityOverviewAssignmentCard = cn(
+  "w-[min(100%,20rem)] @sm:w-[min(100%,24rem)] @md:w-[min(100%,26rem)]",
+  "rounded-2xl border-2 border-[color-mix(in_srgb,var(--primary)_38%,var(--border))]",
+  "bg-[linear-gradient(180deg,color-mix(in_srgb,var(--primary)_12%,var(--play-panel)),color-mix(in_srgb,var(--play-panel)_96%,var(--surface)))]",
+  "shadow-[var(--play-shadow-lift),0_0_0_1px_color-mix(in_srgb,var(--primary)_6%,transparent)]",
+  "motion-safe:animate-[playRevealUp_0.48s_cubic-bezier(0.22,1,0.36,1)_both]",
 );
 
 /** 교사 — 활동 제목·참가 코드 행 (①) */
@@ -39,6 +69,7 @@ export const activitySessionMetaShell = cn(
 
 /** 교사 — 배정 현황 그리드 카드 (④) */
 export const activityTeacherGroupCard = cn(
+  "w-full min-w-0",
   "rounded-xl border border-[color-mix(in_srgb,var(--primary)_8%,var(--border))]",
   "bg-[var(--surface-overlay)] p-3.5 shadow-[var(--elevation-sm)] @md:p-4",
 );
@@ -55,80 +86,44 @@ export const activityTeacherPresenceChip = cn(
   "bg-[var(--surface-overlay)] px-3 py-1.5 shadow-[var(--elevation-sm)]",
 );
 
-/** 교사 헤더 — QR(좌) · 제목·접속(중) · 단계 버튼(우) */
-export const activitySessionMetaInner = cn(
-  "mx-auto flex w-full flex-wrap items-center gap-3",
-  ACTIVITY_LAYOUT_MAX,
-  activityPageGutter,
-  "py-3 @sm:gap-4 @sm:py-3.5 @md:py-4",
-);
+/** 교사 헤더 — TopNav와 동일 max-w-5xl · px-4 */
+export const activitySessionMetaInner = cn(appNavContentShell, activitySessionHeaderRowContained);
 
-export const activitySessionMetaInnerContained = cn(
-  activityPageGutterContained,
-  "gap-2 py-2.5 @sm:py-3",
-);
+/** 본문 세로 여백 — 좌우 gutter는 pageColumn에서 */
+export const activityBodyPaddingY = "py-6 @sm:py-8 @md:py-10";
+
+/** 본문 하단 — safe-area 포함 */
+export const activityBodyPaddingBottomContained =
+  "pb-[max(1rem,env(safe-area-inset-bottom,0px))] @sm:pb-[max(1.25rem,env(safe-area-inset-bottom,0px))]";
 
 /** 교사 본문 래퍼 (④ 배정 현황) */
 export const activityPageBody = cn(
-  "mx-auto w-full space-y-4",
-  ACTIVITY_LAYOUT_MAX,
-  activityPageGutter,
-  "py-5 @sm:space-y-5 @sm:py-6 @md:py-7",
+  activityPageColumn,
+  "space-y-3 pt-4 @sm:pt-5",
+  activityBodyPaddingBottomContained,
 );
 
-export const activityPageBodyContained = cn(
-  "space-y-3 py-3",
-  activityPageGutterContained,
+/** 배너·푸터 사이 full-bleed 스크롤 — 패딩·max-width 없음 (스크롤바는 패널 가장자리) */
+export const activityScrollBodyShell = cn(
+  "flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto overscroll-y-contain",
+  "w-full [-webkit-overflow-scrolling:touch]",
 );
-
-/** 학생 play 스크롤 본문 */
-export const activityMainContent = cn(
-  "mx-auto w-full min-h-0",
-  ACTIVITY_LAYOUT_MAX,
-  activityPageGutter,
-  "py-4 @sm:py-5 @md:py-6",
-);
-
-export const activityMainContentContained = cn(activityPageGutterContained, "py-3 @sm:py-3");
-
-export const activityMainInner = "w-full min-h-0 flex-1 overflow-y-auto overscroll-y-contain";
 
 export const activityFooterChrome = cn(
-  "sticky bottom-0 shrink-0 border-t border-[color-mix(in_srgb,var(--primary)_18%,var(--border))]",
+  "shrink-0 border-t border-[color-mix(in_srgb,var(--primary)_18%,var(--border))]",
   Z.dropdown,
   "bg-[var(--surface)]",
   "shadow-[0_-1px_0_color-mix(in_srgb,var(--primary)_8%,transparent)]",
 );
 
 export const activityFooterInner = cn(
-  "mx-auto w-full",
-  ACTIVITY_LAYOUT_MAX,
-  activityPageGutter,
-  "py-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]",
+  activityPageColumn,
+  "py-4 pb-[max(1rem,env(safe-area-inset-bottom,0px))]",
 );
 
-export const activityLoaderRegion = cn(
-  "mx-auto flex w-full min-h-0 flex-1 flex-col items-center justify-center",
-  ACTIVITY_LAYOUT_MAX,
-  activityPageGutter,
-  "py-10",
-);
-
-/** 세로 간격 */
-export const activityStack = "space-y-4";
-export const activityStackTight = "space-y-3";
-
-/** 대시보드·대기 목록 등 섹션 카드 */
-export const activitySectionCard = cn(
-  activityStackTight,
-  "rounded-lg border border-[var(--border)] bg-[var(--card-bg)] p-4 shadow-[var(--elevation-sm)]",
-);
-
-/** 학생 단계 본문 패널 카드 */
-export const activityPanelCard = cn(
-  activityStack,
-  "rounded-lg border border-[var(--border)] bg-[var(--card-bg)] p-4 shadow-[var(--elevation-sm)]",
-);
+/** PlayPhaseShell 등 이미 본문 여백이 있는 영역 안 — gutter 중복 없음 */
+export const activityLoaderRegionInset =
+  "flex w-full min-h-0 flex-1 flex-col items-center justify-center";
 
 /** 단계 본문 — 모달과 동일한 섹션 카드 껍데기 */
 export const playPhaseSectionShell =
@@ -142,46 +137,22 @@ export const playPhaseSectionBody = "px-4 py-4 @md:px-5 @md:py-4";
 /** 섹션 카드 세로 스택 (3단계 등) */
 export const playPhasePanelStack = "flex flex-col gap-4";
 
-/** 그리드 안 모둠·아이템 카드 */
-export const activityNestedCard = cn(
-  "rounded-md border border-[var(--border)] bg-[var(--muted)] p-3 shadow-sm",
+/** 2단계 — 지문·연습 문제 좌우 2열 (좁은 화면은 세로 스택) */
+export const playPhaseDualSectionGrid =
+  "grid w-full grid-cols-1 items-start gap-4 @md:grid-cols-2 @md:gap-5";
+
+export const playPhaseTripleSectionGrid =
+  "grid w-full grid-cols-1 items-start gap-4 @md:grid-cols-3 @md:gap-5";
+
+export const activityCardGrid = cn(
+  "grid w-full grid-cols-1 gap-3 @md:grid-cols-2 @md:gap-4 @lg:grid-cols-3",
 );
 
-export const activityCardGrid = "grid grid-cols-1 gap-3 @sm:gap-4 @md:grid-cols-2 @lg:grid-cols-3";
-
-/** 목록 한 줄(학생 칩·배정 행) */
-export const activityListRow = cn(
-  "flex items-center justify-between gap-2 rounded-md border border-[color-mix(in_srgb,var(--primary)_16%,var(--border))]",
-  "bg-[var(--tint-primary-weak)] px-3 py-1.5",
-);
-
-export const activityCallout = cn(
-  "rounded-lg border border-[color-mix(in_srgb,var(--primary)_30%,var(--border))]",
-  "bg-[var(--tint-primary-weak)] p-4",
-);
-
-export const activityEmptyState = cn(
-  "rounded-lg border border-dashed border-[color-mix(in_srgb,var(--primary)_20%,var(--border))] bg-[var(--muted)] p-6 text-center",
-);
-
-/** stepper 안내 밴드 — 부모 좌우 패딩 상쇄 */
-export function activityPhaseGuideBandBleed(contained = false) {
-  return contained
-    ? "-mx-3 px-3 @sm:-mx-4 @sm:px-4"
-    : "-mx-4 px-4 @sm:-mx-5 @sm:px-5 @md:-mx-6 @md:px-6";
-}
-
-export function activityLayoutClasses(contained = false) {
+export function activityLayoutClasses() {
   return {
-    phaseHeaderInner: cn(
-      activityPhaseHeaderInner,
-      contained && activityPhaseHeaderInnerContained,
-    ),
-    sessionMetaInner: cn(
-      activitySessionMetaInner,
-      contained && activitySessionMetaInnerContained,
-    ),
-    pageBody: cn(activityPageBody, contained && activityPageBodyContained),
-    mainContent: cn(activityMainContent, contained && activityMainContentContained),
+    layoutFrame: activityLayoutFrame,
+    pageColumn: activityPageColumn,
+    sessionMetaInner: activitySessionMetaInner,
+    pageBody: activityPageBody,
   };
 }

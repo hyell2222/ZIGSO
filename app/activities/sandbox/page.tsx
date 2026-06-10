@@ -24,7 +24,6 @@ import {
   buildSandboxAssignments,
   createInitialSandboxState,
   nextSandboxPhase,
-  SANDBOX_REAL_STUDENT_PLAYER_ID,
   type SandboxState,
 } from "@/lib/sandbox/state";
 import { cn } from "@/lib/utils";
@@ -60,21 +59,10 @@ function SandboxPageContent() {
     });
   }, []);
 
-  const resetSandbox = useCallback(() => {
-    setState((prev) => ({
-      ...createInitialSandboxState(),
-      realStudentNickname: prev.realStudentNickname,
-    }));
-  }, []);
-
   const joinAsStudent = useCallback((nickname: string) => {
     const trimmed = nickname.trim();
     if (!trimmed) return;
     setState((prev) => ({ ...prev, realStudentNickname: trimmed }));
-  }, []);
-
-  const leaveAsStudent = useCallback(() => {
-    setState((prev) => ({ ...prev, realStudentNickname: null }));
   }, []);
 
   const handleSubmitPractice = useCallback(
@@ -204,19 +192,11 @@ function SandboxPageContent() {
   }
 
   if (teacherSession.isLoading || (teacherSession.isFetching && !teacherSession.data)) {
-    return (
-      <SandboxFullPageMessage>
-        <LoadingState variant="page" />
-      </SandboxFullPageMessage>
-    );
+    return <LoadingState variant="page"/>;
   }
 
   if (activityQuery.isLoading) {
-    return (
-      <SandboxFullPageMessage>
-        <LoadingState variant="page" />
-      </SandboxFullPageMessage>
-    );
+    return <LoadingState variant="page" />;
   }
 
   if (activityQuery.isError || !activityQuery.data || !pack) {
@@ -253,7 +233,6 @@ function SandboxPageContent() {
           realStudentNickname={state.realStudentNickname}
           onBegin={beginSandbox}
           onAdvance={advancePhase}
-          onResetPhase={resetSandbox}
         />
       </BrowserWindow>
 
@@ -267,8 +246,6 @@ function SandboxPageContent() {
           players={state.players}
           realStudentNickname={state.realStudentNickname}
           onJoinAsStudent={joinAsStudent}
-          onLeaveAsStudent={leaveAsStudent}
-          realStudentPlayerId={SANDBOX_REAL_STUDENT_PLAYER_ID}
           onSubmitPractice={handleSubmitPractice}
           onSubmitIndividualQuiz={handleSubmitIndividualQuiz}
           onPeerQuestionComplete={handlePeerQuestionComplete}
@@ -324,7 +301,7 @@ function BrowserWindow({
           {title}
         </span>
       </header>
-      <div className="@container relative flex min-h-0 flex-1 flex-col overflow-hidden bg-[var(--background)]">
+      <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
         {children}
       </div>
     </section>
@@ -333,7 +310,7 @@ function BrowserWindow({
 
 function SandboxFullPageMessage({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex h-dvh w-full items-center justify-center bg-[var(--background)] p-8">
+    <div className="flex min-h-dvh w-full flex-col items-center justify-center bg-[var(--background)] p-8">
       {children}
     </div>
   );
@@ -342,11 +319,7 @@ function SandboxFullPageMessage({ children }: { children: React.ReactNode }) {
 export default function SandboxPage() {
   return (
     <Suspense
-      fallback={
-        <div className="flex h-dvh w-full items-center justify-center bg-[var(--background)]">
-          <LoadingState variant="page" />
-        </div>
-      }
+      fallback={<LoadingState variant="page" className="bg-[var(--background)]" />}
     >
       <SandboxPageContent />
     </Suspense>

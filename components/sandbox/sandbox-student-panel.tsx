@@ -2,6 +2,13 @@
 
 import { useMemo, useState } from "react";
 
+import {
+  activityBodyPaddingBottomContained,
+  activityBodyPaddingY,
+  activityGuideModalScope,
+  activityLayoutFrame,
+  activityPageColumn,
+} from "@/components/activity/activity-layout-chrome";
 import { ExpertPhasePanel } from "@/components/play/expert-group-panel";
 import { GroupPhasePanel, type GroupMember } from "@/components/play/home-group-panel";
 import { IndividualQuizPanel } from "@/components/play/individual-quiz-panel";
@@ -11,9 +18,9 @@ import type { PracticeQuestionResult } from "@/lib/activity-pack/types";
 import { ResultsPhasePanel } from "@/components/play/results-phase-panel";
 import { buildSessionResults } from "@/lib/activity-pack/session-results";
 import { PlayAtmosphere } from "@/components/play/play-atmosphere";
-import { activityLoaderRegion } from "@/components/activity/activity-layout-chrome";
 import { PlayPhaseShell } from "@/components/play/play-phase-shell";
-import { WaitingLobbyBlock } from "@/components/play/waiting-lobby-block";
+import { GuideModalScope } from "@/components/play/guide-modal-scope";
+import { LoadingState } from "@/components/ui/loading-state";
 import type { ActivityPhase } from "@/lib/api/activities";
 import type { ActivityPack, QuizAnswer } from "@/lib/activity-pack/types";
 import {
@@ -21,7 +28,9 @@ import {
   type SandboxPlayer,
   type SandboxGroup,
 } from "@/lib/sandbox/state";
+import { LOADING_COPY } from "@/lib/activity-phases";
 import { formatAssignedRoleLabels } from "@/lib/activity-pack/roles";
+import { cn } from "@/lib/utils";
 
 type Props = {
   activityId: string;
@@ -31,9 +40,7 @@ type Props = {
   groups: SandboxGroup[];
   players: SandboxPlayer[];
   realStudentNickname: string | null;
-  realStudentPlayerId: string;
   onJoinAsStudent: (nickname: string) => void;
-  onLeaveAsStudent: () => void;
   onSubmitPractice: (playerId: string, results: PracticeQuestionResult[], baseScore: number) => void;
   onSubmitIndividualQuiz: (playerId: string, answers: QuizAnswer[]) => void;
   onPeerQuestionComplete: (playerId: string, questionId: string) => void;
@@ -42,9 +49,9 @@ type Props = {
 
 export function SandboxStudentPanel(props: Props) {
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden">
+    <GuideModalScope className={activityGuideModalScope}>
       <SandboxStudentPanelView {...props} />
-    </div>
+    </GuideModalScope>
   );
 }
 
@@ -57,13 +64,11 @@ function SandboxStudentPanelView({
   players,
   realStudentNickname,
   onJoinAsStudent,
-  onLeaveAsStudent,
   onSubmitPractice,
   onSubmitIndividualQuiz,
   onPeerQuestionComplete,
   onEnsureHomeGroupComplete,
 }: Props) {
-  void onLeaveAsStudent;
   const [nickname, setNickname] = useState("");
   const [joined, setJoined] = useState(Boolean(realStudentNickname?.trim()));
 
@@ -121,38 +126,46 @@ function SandboxStudentPanelView({
 
   if (showJoinModal) {
     return (
-      <PlayAtmosphere variant="contained">
-        <PlayJoinModal
-          open
-          titleId="sandbox-play-join"
-          joinCode={SANDBOX_JOIN_CODE}
-          nickname={nickname}
-          modalVariant="contained"
-          joinCodeEditable={false}
-          showMissingCodeClue={false}
-          onNicknameChange={setNickname}
-          onSubmit={() => {
-            const nick = nickname.trim();
-            if (!nick) return;
-            onJoinAsStudent(nick);
-            setJoined(true);
-          }}
-        />
+      <PlayAtmosphere className="relative min-h-0 flex-1">
+        <div className={activityLayoutFrame}>
+          <main
+            className={cn(
+              activityPageColumn,
+              activityBodyPaddingY,
+              "flex min-h-0 flex-1 flex-col",
+              activityBodyPaddingBottomContained,
+            )}
+          >
+            <PlayJoinModal
+              open
+              titleId="sandbox-play-join"
+              joinCode={SANDBOX_JOIN_CODE}
+              nickname={nickname}
+              modalVariant="contained"
+              joinCodeEditable={false}
+              showMissingCodeClue={false}
+              onNicknameChange={setNickname}
+              onSubmit={() => {
+                const nick = nickname.trim();
+                if (!nick) return;
+                onJoinAsStudent(nick);
+                setJoined(true);
+              }}
+            />
+          </main>
+        </div>
       </PlayAtmosphere>
     );
   }
 
   if (phase === "waiting") {
     return (
-      <PlayPhaseShell contained>
-        <div className={activityLoaderRegion}>
-          <WaitingLobbyBlock
-            joinCode={SANDBOX_JOIN_CODE}
-            nickname={activeNickname}
-            sessionTitle={activityTitle}
-            state="waiting"
-          />
-        </div>
+      <PlayPhaseShell mainClassName="flex min-h-0 flex-1 flex-col">
+        <LoadingState
+          variant="section"
+          label={LOADING_COPY.sessionStarting}
+          className="min-h-0 flex-1"
+        />
       </PlayPhaseShell>
     );
   }
@@ -171,7 +184,6 @@ function SandboxStudentPanelView({
         practiceSubmitted={Boolean(primaryPlayer.practice_submitted_at)}
         practiceResults={primaryPlayer.practice_results ?? []}
         practiceBaseScore={primaryPlayer.base_score ?? null}
-        contained
       />
     );
   }
@@ -193,7 +205,6 @@ function SandboxStudentPanelView({
           onPeerQuestionComplete(primaryPlayer.id, questionId)
         }
         onEnsureHomeGroupComplete={() => onEnsureHomeGroupComplete(primaryPlayer.id)}
-        contained
       />
     );
   }
@@ -209,7 +220,6 @@ function SandboxStudentPanelView({
         submittedAnswers={primaryPlayer.individual_quiz_answers}
         submittedAt={primaryPlayer.individual_quiz_submitted_at ?? null}
         onSubmit={(answers) => onSubmitIndividualQuiz(primaryPlayer.id, answers)}
-        contained
       />
     );
   }
@@ -217,7 +227,6 @@ function SandboxStudentPanelView({
   if (phase === "overview") {
     return (
       <OverviewPhasePanel
-        contained
         groupName={group?.name ?? null}
         roleLabel={roleLabel}
       />
@@ -227,9 +236,7 @@ function SandboxStudentPanelView({
   if (phase === "results" && primaryPlayer) {
     return (
       <ResultsPhasePanel
-        contained
         loading={false}
-        title={activityTitle}
         results={sessionResults}
         highlightGroupId={primaryPlayer.groupId}
         groupName={group?.name ?? null}

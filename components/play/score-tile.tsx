@@ -18,29 +18,27 @@ export function ScoreTile({
   highlight?: boolean;
   labelExtra?: ReactNode;
 }) {
+  const highlightClass =
+    "border-[color-mix(in_srgb,var(--primary)_38%,var(--border))] bg-[color-mix(in_srgb,var(--primary)_8%,var(--card-bg))]";
+  const defaultClass = "border-[var(--border)] bg-[var(--card-bg)]";
+
   return (
     <div
       className={cn(
-        "rounded-xl border px-3 py-3 text-center",
-        highlight
-          ? "border-[color-mix(in_srgb,var(--primary)_38%,var(--border))] bg-[color-mix(in_srgb,var(--primary)_8%,var(--card-bg))]"
-          : "border-[var(--border)] bg-[var(--card-bg)]",
+        "flex w-full items-center justify-between gap-3 rounded-lg border px-4 py-2.5",
+        highlight ? highlightClass : defaultClass,
       )}
     >
-      <div className="flex items-center justify-center">
-        <span className="relative inline-block">
-          <p className={cn("text-xs font-light text-[var(--muted-foreground)]", t.caption)}>{label}</p>
-          {labelExtra ? (
-            <span className="absolute left-full top-1/2 ml-1 -translate-y-1/2">{labelExtra}</span>
-          ) : null}
-        </span>
+      <div className="flex min-w-0 items-center gap-0.5">
+        <p className={cn("text-xs font-light text-[var(--muted-foreground)]", t.caption)}>
+          {label}
+        </p>
+        {labelExtra}
       </div>
       <p
         className={cn(
-          "mt-1 tabular-nums",
-          highlight
-            ? "text-xl font-extrabold text-[var(--primary)]"
-            : "text-lg font-bold text-[var(--foreground)]",
+          "shrink-0 tabular-nums text-base font-bold",
+          highlight ? "text-[var(--primary)]" : "text-[var(--foreground)]",
         )}
       >
         {value}

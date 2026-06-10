@@ -10,7 +10,6 @@ import {
 import { activityLayoutType } from "@/components/activity/activity-layout-typography";
 import { LoadingState } from "@/components/ui/loading-state";
 import { formatGroupDisplayName } from "@/lib/activity-pack/engine";
-import type { ActivityPhase } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 export type GroupAssignmentMember = {
@@ -18,15 +17,39 @@ export type GroupAssignmentMember = {
   nickname: string | null;
   zoneName: string | null;
   groupName?: string | null;
+  /** 0–100. null이면 해당 단계에서 진행 표시 없음 */
+  phaseProgress?: number | null;
+  /** 현재 단계 제출·완료 여부 */
   phaseComplete?: boolean;
 };
+
+function isMemberPhaseComplete(member: GroupAssignmentMember): boolean {
+  if (member.phaseComplete != null) return member.phaseComplete;
+  return member.phaseProgress != null && member.phaseProgress >= 100;
+}
+
+function PhaseCompleteMark({ show }: { show: boolean }) {
+  if (!show) return null;
+
+  return (
+    <span
+      className={cn(
+        activityLayoutType.caption,
+        "shrink-0 leading-none tabular-nums text-[0.625rem] font-light text-[var(--primary)] rounded-full px-1.5 py-0.125 border border-[var(--primary)]",
+      )}
+      aria-label="단계 완료"
+    >
+      완료
+    </span>
+  );
+}
 
 export type GroupAssignmentGroup = {
   group: { id: string; name: string | null };
   members: GroupAssignmentMember[];
 };
 
-export type ItemAssignmentBucket = {
+type ItemAssignmentBucket = {
   itemKey: string;
   itemName: string;
   members: GroupAssignmentMember[];
@@ -61,17 +84,9 @@ function AssignmentMemberRow({
 }) {
   return (
     <li className={activityTeacherMemberRow}>
-      <span className={cn(activityLayoutType.listRowPrimary, "flex min-w-0 flex-1 items-center gap-1.5")}>
+      <span className={cn(activityLayoutType.listRowPrimary, "flex min-w-0 flex-1 items-center gap-3")}>
         <span className="min-w-0 truncate">{member.nickname ?? "참가자"}</span>
-        {member.phaseComplete ? (
-          <span
-            className={cn(
-              "shrink-0 rounded-full bg-[var(--primary)] px-1.5 py-0.5 text-xs font-semibold text-[var(--on-primary)] @md:text-sm",
-            )}
-          >
-            완료
-          </span>
-        ) : null}
+        <PhaseCompleteMark show={isMemberPhaseComplete(member)} />
       </span>
       <span className={activityLayoutType.listRowSecondary}>{secondary}</span>
     </li>
@@ -81,18 +96,12 @@ function AssignmentMemberRow({
 export function GroupAssignmentDashboard({
   groups,
   loading,
-  phase,
   groupBy = "group",
-  contained = false,
 }: {
   groups: GroupAssignmentGroup[];
   loading: boolean;
-  phase: ActivityPhase;
   groupBy?: "group" | "item";
-  contained?: boolean;
 }) {
-  void contained;
-
   const itemBuckets = useMemo(
     () => (groupBy === "item" ? buildItemBuckets(groups) : []),
     [groupBy, groups],
@@ -101,12 +110,10 @@ export function GroupAssignmentDashboard({
   const isItemView = groupBy === "item";
   const isEmpty = isItemView ? itemBuckets.length === 0 : groups.length === 0;
 
-  void phase;
-
   return (
-    <div>
+    <div className="flex w-full min-h-0 flex-1 flex-col">
       {loading ? (
-        <LoadingState variant="section" label="불러오는 중…" />
+        <LoadingState variant="section" label="불러오는 중…" className="min-h-0 flex-1" />
       ) : isEmpty ? (
         <p className={activityLayoutType.bodyMuted}>
           {isItemView ? "배정된 역할이 없습니다." : "배정된 모둠이 없습니다."}

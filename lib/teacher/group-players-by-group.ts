@@ -1,6 +1,6 @@
 import type { SessionPlayerRow, GroupRow } from "@/lib/api/play";
 
-export type GroupGroup = {
+type GroupGroup = {
   group: GroupRow;
   members: SessionPlayerRow[];
 };

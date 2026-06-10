@@ -102,5 +102,4 @@ export {
   type HostSessionListRow,
   type ActivityPhase,
   type SessionStatus,
-  type StartedSession,
 } from "@/lib/api/sessions";

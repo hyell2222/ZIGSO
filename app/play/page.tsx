@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 
 import { StudentJoinPage } from "@/components/play/student-join-page";
+import { PlayAtmosphere } from "@/components/play/play-atmosphere";
 import { LoadingState } from "@/components/ui/loading-state";
 
 function PlayPageContent() {
@@ -22,9 +23,9 @@ export default function PlayPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-dvh flex-col items-center justify-center px-4">
-          <LoadingState variant="page" tone="play" className="min-h-0 py-8" />
-        </div>
+        <PlayAtmosphere>
+          <LoadingState variant="page" className="min-h-0 flex-1" />
+        </PlayAtmosphere>
       }
     >
       <PlayPageContent />

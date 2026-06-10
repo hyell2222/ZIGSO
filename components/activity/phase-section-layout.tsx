@@ -1,9 +1,8 @@
 "use client";
 
-import type { HTMLAttributes, ReactNode } from "react";
+import type { ReactNode } from "react";
 
 import {
-  activityEmptyState,
   playPhasePanelStack,
   playPhaseSectionBody,
   playPhaseSectionHeader,
@@ -85,10 +84,6 @@ export function PhaseSection({
   );
 }
 
-export function PhaseSectionCard(props: Omit<React.ComponentProps<typeof PhaseSection>, "heading">) {
-  return <PhaseSection heading="panel" {...props} />;
-}
-
 export function PhaseSectionBadge({
   children,
   className,
@@ -107,66 +102,6 @@ export function PhaseSectionBadge({
     >
       {children}
     </span>
-  );
-}
-
-export const phaseSectionTwoColumnGrid = "grid grid-cols-1 gap-4 @md:grid-cols-2 @md:gap-5";
-
-export function PhaseSectionCallout({
-  title,
-  children,
-  centered,
-  className,
-  heading = "panel",
-}: {
-  title?: string;
-  children: ReactNode;
-  centered?: boolean;
-  className?: string;
-  heading?: PhaseSectionHeading;
-}) {
-  return (
-    <div
-      className={cn(
-        playPhaseSectionShell,
-        "border-[color-mix(in_srgb,var(--primary)_30%,var(--border))] bg-[var(--tint-accent-weak)]",
-        className,
-      )}
-    >
-      {title ? (
-        <div className={playPhaseSectionHeader}>
-          <p className={cn(sectionTitleClass(heading), "min-w-0 flex-1")}>{title}</p>
-        </div>
-      ) : null}
-      <div className={cn(playPhaseSectionBody, centered && "text-center", !title && "pt-4")}>
-        <div className="space-y-2">{children}</div>
-      </div>
-    </div>
-  );
-}
-
-export function PhaseSectionEmptyState({
-  children,
-  className,
-}: {
-  children: ReactNode;
-  className?: string;
-}) {
-  return <div className={cn(activityEmptyState, className)}>{children}</div>;
-}
-
-export const phaseSectionListRowClass =
-  "flex w-full items-center gap-2 rounded-lg border border-[var(--border)] px-3 py-2 text-left transition";
-
-export function PhaseSectionListRow({
-  className,
-  children,
-  ...props
-}: HTMLAttributes<HTMLDivElement>) {
-  return (
-    <div className={cn(phaseSectionListRowClass, className)} {...props}>
-      {children}
-    </div>
   );
 }
 

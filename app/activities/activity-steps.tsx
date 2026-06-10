@@ -110,7 +110,7 @@ export function ActivitySteps(props: Props) {
         <div className="mt-5 flex justify-end">
           <Button type="button" onClick={handleSave} disabled={saveMutation.isPending}>
             {saveMutation.isPending ? (
-              <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+              <Loader2 className="mr-1.5 h-4 w-4 animate-spin text-[var(--primary)]" />
             ) : (
               <Save className="mr-1.5 h-4 w-4" />
             )}

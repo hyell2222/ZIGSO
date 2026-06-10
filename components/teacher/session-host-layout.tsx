@@ -4,11 +4,12 @@ import type { ReactNode } from "react";
 
 import {
   activityLayoutClasses,
+  activityScrollBodyShell,
   activitySessionMetaShell,
 } from "@/components/activity/activity-layout-chrome";
 import { activityLayoutType } from "@/components/activity/activity-layout-typography";
 import { PhaseGuideCard } from "@/components/teacher/phase-guide-card";
-import { SessionHostJoinCard } from "@/components/teacher/session-host-join-card";
+import { PlayJoinQr } from "@/components/teacher/play-join-qr";
 import type { ActivityPhase } from "@/lib/api/activities";
 import { isTimedPhase } from "@/lib/activity-phases";
 import { cn } from "@/lib/utils";
@@ -23,7 +24,6 @@ type Props = {
   startButton?: ReactNode;
   nextButton?: ReactNode;
   children: ReactNode;
-  contained?: boolean;
 };
 
 /** 실세션 호스트·샌드박스 교사 패널 공통 레이아웃 */
@@ -37,9 +37,8 @@ export function SessionHostLayout({
   startButton,
   nextButton,
   children,
-  contained = false,
 }: Props) {
-  const layout = activityLayoutClasses(contained);
+  const layout = activityLayoutClasses();
   const showPhaseGuide = isTimedPhase(phase);
   const phaseActions = (
     <>
@@ -53,51 +52,45 @@ export function SessionHostLayout({
   return (
     <main
       className={cn(
-        "relative mx-auto flex w-full flex-col space-y-0 overflow-hidden bg-[var(--background)]",
-        contained ? "h-full min-h-0" : "h-dvh min-h-0",
+        layout.layoutFrame,
+        "bg-[var(--background)]",
+        "flex min-h-0 flex-1 flex-col",
       )}
     >
-      <header
-        className={cn(
-          "w-full shrink-0",
-          activitySessionMetaShell,
-          !contained && "pt-[env(safe-area-inset-top,0px)]",
-        )}
-      >
+      <header className={cn("w-full shrink-0", activitySessionMetaShell)}>
         <div className={layout.sessionMetaInner}>
-          <SessionHostJoinCard joinCode={joinCode} sessionEnded={sessionEnded} contained={contained} />
-          <div className="min-w-0 flex-1 basis-full space-y-0.5 @sm:basis-auto">
-            <h1
-              className={cn(
-                contained
-                  ? activityLayoutType.activityTitleContained
-                  : activityLayoutType.activityTitle,
-              )}
-            >
+          <div className="min-w-0 flex-1 basis-full space-y-2 @sm:basis-auto">
+            <h1 className={activityLayoutType.activityTitleContained}>
               {activityTitle ?? "시뮬레이션"}
             </h1>
-            <p
+            <div
               className={cn(
-                "inline-flex items-center gap-1.5",
-                contained ? activityLayoutType.activityMetaContained : activityLayoutType.activityMeta,
+                "inline-flex flex-wrap items-center gap-x-3 gap-y-2",
+                activityLayoutType.activityMetaContained,
               )}
             >
-              <span
-                className="h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--primary)]"
-                aria-hidden
-              />
-              접속{" "}
-              <span className={activityLayoutType.activityMetaStrong}>
-                {playerCount}
+              {!sessionEnded ? (
+                <PlayJoinQr joinCode={joinCode} variant="button" className="ml-0.5" />
+              ) : null}
+
+              <span className="inline-flex items-center gap-1.5">
+                <span
+                  className="h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--primary)]"
+                  aria-hidden
+                />
+                접속{" "}
+                <span className={activityLayoutType.activityMetaStrong}>
+                  {playerCount}
+                </span>
+                명
               </span>
-              명
-            </p>
+            </div>
           </div>
           {hasPhaseActions ? (
             <div
               className={cn(
                 "ml-auto flex w-full flex-wrap items-stretch justify-end gap-2 @sm:w-auto",
-                "[&_button]:min-h-10 [&_button]:touch-manipulation @md:[&_button]:min-h-11",
+                "[&_button]:touch-manipulation",
               )}
             >
               {phaseActions}
@@ -106,21 +99,17 @@ export function SessionHostLayout({
         </div>
       </header>
 
-      <div
-        className={cn(
-          layout.pageBody,
-          "min-h-0 flex-1 overflow-y-auto overscroll-y-contain",
-          contained
-            ? "pb-[max(1.5rem,env(safe-area-inset-bottom,0px))]"
-            : "pb-[max(2.5rem,env(safe-area-inset-bottom,0px))]",
-          phase === "waiting" &&
-            "flex flex-col items-center p-5 text-center @sm:p-6",
-        )}
-      >
-        {showPhaseGuide ? (
-          <PhaseGuideCard phase={phase} contained={contained} />
-        ) : null}
-        {children}
+      <div className={activityScrollBodyShell}>
+        <div
+          className={cn(
+            layout.pageBody,
+            "flex flex-col",
+            phase === "waiting" && "items-center py-5 text-center @sm:py-6",
+          )}
+        >
+          {showPhaseGuide ? <PhaseGuideCard phase={phase} /> : null}
+          {children}
+        </div>
       </div>
     </main>
   );

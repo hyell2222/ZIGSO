@@ -12,11 +12,12 @@ import {
 } from "@/components/play/play-phase-layout";
 import { BaseScoreGuideModal } from "@/components/play/base-score-guide-modal";
 import { PracticeCompleteSummary } from "@/components/play/practice-complete-summary";
-import { PlayScoreModal } from "@/components/play/play-score-modal";
+import { GuideInfoModal } from "@/components/play/guide-info-modal";
 import {
   PracticeQuestionCard,
   type PracticeResult,
 } from "@/components/play/practice-question-card";
+import { playPhaseDualSectionGrid } from "@/components/activity/activity-layout-chrome";
 import { activityLayoutType } from "@/components/activity/activity-layout-typography";
 import { Button } from "@/components/ui/button";
 import {
@@ -41,7 +42,6 @@ type Props = {
   practiceResults?: PracticeQuestionResult[];
   practiceBaseScore?: number | null;
   pending?: boolean;
-  contained?: boolean;
 };
 
 const t = activityLayoutType;
@@ -57,7 +57,6 @@ export function ExpertPhasePanel({
   practiceResults: savedResults = [],
   practiceBaseScore,
   pending,
-  contained = false,
 }: Props) {
   const [completed, setCompleted] = useState<Record<string, PracticeQuestionResult>>(() => {
     const map: Record<string, PracticeQuestionResult> = {};
@@ -117,7 +116,7 @@ export function ExpertPhasePanel({
 
   return (
     <PlayPhaseShell
-      contained={contained}
+      mainClassName="flex min-h-0 flex-1 flex-col"
       topBanner={
         <PlayStudentTopBanner
           phase="expert_group"
@@ -125,29 +124,26 @@ export function ExpertPhasePanel({
           placeName={roleLabel}
           placeLabel="역할"
           pending={pending}
-          contained={contained}
         />
       }
       overlay={
         <>
           {phaseComplete && baseScore != null ? (
-            <PlayScoreModal
+            <GuideInfoModal
               open={scoreModalOpen}
               onClose={() => setScoreModalOpen(false)}
               title="2단계 완료!"
               titleId={scoreModalTitleId}
-              contained={contained}
             >
               <PracticeCompleteSummary
                 baseScore={baseScore}
                 onOpenBaseScoreGuide={() => setBaseScoreGuideOpen(true)}
               />
-            </PlayScoreModal>
+            </GuideInfoModal>
           ) : null}
           <BaseScoreGuideModal
             open={baseScoreGuideOpen}
             onClose={() => setBaseScoreGuideOpen(false)}
-            contained={contained}
           />
         </>
       }
@@ -157,62 +153,65 @@ export function ExpertPhasePanel({
           <PlayPhaseMessage message={PLAYER_MESSAGES.unknownRole} />
         ) : (
           <>
-            <PlayPhaseSection title="내가 맡은 부분" variant="active">
-              <p
-                className={cn(
-                  "whitespace-pre-line rounded-xl border border-[var(--border)] bg-[var(--card-bg)] p-4 leading-relaxed @md:p-6",
-                  t.playPanelBody,
-                )}
-              >
-                {role.segment}
-              </p>
-            </PlayPhaseSection>
+            <div className={playPhaseDualSectionGrid}>
+              <PlayPhaseSection title="내가 맡은 부분" variant="active" className="min-h-0">
+                <p
+                  className={cn(
+                    "whitespace-pre-line rounded-xl border border-[var(--border)] bg-[var(--card-bg)] p-4 leading-relaxed @md:p-5",
+                    t.playPanelBody,
+                  )}
+                >
+                  {role.segment}
+                </p>
+              </PlayPhaseSection>
 
-            <PlayPhaseSection
-              title="연습 문제"
-              variant="active"
-              headerExtra={
-                <div className="flex items-center gap-2">
-                  {phaseComplete ? (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="h-7 px-2 text-xs"
-                      onClick={() => setScoreModalOpen(true)}
-                    >
-                      점수 보기
-                    </Button>
-                  ) : null}
-                  <PlayPhaseSectionBadge>
-                    {doneCount}/{practiceQuestions.length} 문항
-                  </PlayPhaseSectionBadge>
+              <PlayPhaseSection
+                title="연습 문제"
+                variant="active"
+                className="min-h-0"
+                headerExtra={
+                  <div className="flex items-center gap-2">
+                    {phaseComplete ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-7 px-2 text-xs"
+                        onClick={() => setScoreModalOpen(true)}
+                      >
+                        점수 보기
+                      </Button>
+                    ) : null}
+                    <PlayPhaseSectionBadge>
+                      {doneCount}/{practiceQuestions.length} 문항
+                    </PlayPhaseSectionBadge>
+                  </div>
+                }
+              >
+                <div className="space-y-4">
+                  {practiceQuestions.map((q) => {
+                    const stored = completed[q.id];
+                    const initialResult = stored
+                      ? {
+                          wrongAttempts: stored.wrongAttempts,
+                          baseScore: practiceQuestionScore(stored.wrongAttempts),
+                        }
+                      : null;
+                    const locked = practiceSubmitted || Boolean(stored) || submitting;
+                    return (
+                      <div key={q.id}>
+                        <PracticeQuestionCard
+                          question={q}
+                          onComplete={(r) => handleQuestionComplete(q.id, r)}
+                          initialResult={initialResult}
+                          disabled={locked && !stored}
+                        />
+                      </div>
+                    );
+                  })}
                 </div>
-              }
-            >
-              <div className="space-y-4">
-                {practiceQuestions.map((q) => {
-                  const stored = completed[q.id];
-                  const initialResult = stored
-                    ? {
-                        wrongAttempts: stored.wrongAttempts,
-                        baseScore: practiceQuestionScore(stored.wrongAttempts),
-                      }
-                    : null;
-                  const locked = practiceSubmitted || Boolean(stored) || submitting;
-                  return (
-                    <div key={q.id}>
-                      <PracticeQuestionCard
-                        question={q}
-                        onComplete={(r) => handleQuestionComplete(q.id, r)}
-                        initialResult={initialResult}
-                        disabled={locked && !stored}
-                      />
-                    </div>
-                  );
-                })}
-              </div>
-            </PlayPhaseSection>
+              </PlayPhaseSection>
+            </div>
             {message ? <PlayPhaseMessage message={message} /> : null}
           </>
         )}

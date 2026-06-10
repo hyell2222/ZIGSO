@@ -47,8 +47,6 @@ export type SessionDetailsRow = {
   } | null;
 };
 
-export type HostSessionDetailsRow = SessionDetailsRow;
-
 const SESSION_SELECT =
   "id,join_code,host_id,phase,status,created_at,activity_id,activities(title,description,activity_pack)";
 
@@ -132,17 +130,34 @@ export async function listSessionPlayers(sessionId: string) {
 }
 
 export async function joinPlayerSession(input: { session_id: string; nickname: string }) {
+  const nickname = input.nickname.trim();
+  if (!nickname) throw new Error("닉네임을 입력해 주세요.");
+
+  const { data: existingRows, error: findError } = await supabase
+    .from("players")
+    .select(PLAYER_SELECT)
+    .eq("session_id", input.session_id)
+    .eq("nickname", nickname)
+    .order("created_at", { ascending: false });
+  if (findError) throw findError;
+
+  const existing = (existingRows ?? [])[0] as PlayerSelfRow | undefined;
+  if (existing) {
+    await setPlayerOnline(existing.id, true);
+    return { player: normalizePlayerRow(existing) };
+  }
+
   const { data: joinedPlayer, error } = await supabase
     .from("players")
     .insert({
       session_id: input.session_id,
-      nickname: input.nickname,
+      nickname,
       is_online: true,
     })
     .select(PLAYER_SELECT)
     .single();
   if (error) throw error;
-  return { player: joinedPlayer as PlayerSelfRow };
+  return { player: normalizePlayerRow(joinedPlayer as PlayerSelfRow) };
 }
 
 export async function assignOrphanPlayersForOngoingSession(sessionId: string) {

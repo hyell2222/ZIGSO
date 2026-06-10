@@ -1,18 +1,22 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 import {
-  RankLeaderboard,
-  RankLeaderboardItem,
-  RankListRow,
+  RankResultTile,
 } from "@/components/activity/rank-display";
+import { playPhaseTripleSectionGrid } from "@/components/activity/activity-layout-chrome";
 import { activityLayoutType } from "@/components/activity/activity-layout-typography";
 import { PhaseSection } from "@/components/activity/phase-section-layout";
+import { BaseScoreGuideModal } from "@/components/play/base-score-guide-modal";
 import { PlayPhaseShell } from "@/components/play/play-phase-shell";
+import { PlayStudentTopBanner } from "@/components/play/play-student-top-banner";
 import { StudentResultsSummary } from "@/components/play/student-results-summary";
+import { StadImprovementModal } from "@/components/play/stad-improvement-modal";
+import { TestScoreGuideModal } from "@/components/play/test-score-guide-modal";
 import { LoadingState } from "@/components/ui/loading-state";
 import { formatGroupDisplayName } from "@/lib/activity-pack/engine";
+import { RESULTS_COPY } from "@/lib/activity-phases";
 import {
   getStudentResultsSnapshot,
   type SessionResultsSummary,
@@ -21,13 +25,11 @@ import { cn } from "@/lib/utils";
 
 type Props = {
   loading: boolean;
-  title: string | null;
   results: SessionResultsSummary | null;
   highlightGroupId?: string | null;
   groupName?: string | null;
   roleLabel?: string | null;
   currentPlayerId?: string | null;
-  contained?: boolean;
 };
 
 const sectionCenterClass =
@@ -38,9 +40,13 @@ export function ResultsPhasePanel({
   results,
   highlightGroupId,
   groupName,
+  roleLabel,
   currentPlayerId,
-  contained = false,
 }: Props) {
+  const [baseScoreGuideOpen, setBaseScoreGuideOpen] = useState(false);
+  const [testScoreGuideOpen, setTestScoreGuideOpen] = useState(false);
+  const [stadGuideOpen, setStadGuideOpen] = useState(false);
+
   const snapshot = useMemo(
     () =>
       results
@@ -54,68 +60,87 @@ export function ResultsPhasePanel({
   );
 
   return (
-    <PlayPhaseShell contained={contained} mainClassName="flex flex-1 flex-col">
-      <div
-        className={cn(
-          "flex flex-1 flex-col items-center px-4 py-6 @sm:px-6 @sm:py-10",
-          contained ? "min-h-[min(14rem,38dvh)]" : "min-h-[min(20rem,52dvh)]",
-        )}
-      >
-        {loading ? (
-          <div className="flex w-full flex-1 items-center justify-center">
-            <LoadingState variant="section" tone="play" label="순위 집계 중…" />
-          </div>
-        ) : !snapshot ? (
-          <p className={cn("text-center", activityLayoutType.bodyMuted)}>
-            순위를 불러오지 못했어요. 잠시 후 다시 확인해 주세요.
-          </p>
-        ) : (
-          <div className="mx-auto flex w-full max-w-xs flex-col items-center gap-5">
+    <PlayPhaseShell
+      mainClassName="flex min-h-0 flex-col"
+      topBanner={
+        <PlayStudentTopBanner
+          phase="results"
+          groupName={groupName ?? snapshot?.groupName ?? null}
+          placeName={roleLabel ?? "—"}
+          placeLabel="역할"
+        />
+      }
+      overlay={
+        <>
+          <BaseScoreGuideModal
+            open={baseScoreGuideOpen}
+            onClose={() => setBaseScoreGuideOpen(false)}
+          />
+          <StadImprovementModal
+            open={stadGuideOpen}
+            onClose={() => setStadGuideOpen(false)}
+          />
+          <TestScoreGuideModal
+            open={testScoreGuideOpen}
+            onClose={() => setTestScoreGuideOpen(false)}
+          />
+        </>
+      }
+    >
+      {loading ? (
+        <LoadingState
+          variant="section"
+          label={RESULTS_COPY.loading}
+          className="min-h-0 flex-1"
+        />
+      ) : !snapshot ? (
+        <p className={cn("text-center", activityLayoutType.bodyMuted)}>
+          {RESULTS_COPY.loadError}
+        </p>
+      ) : (
+        <div className={playPhaseTripleSectionGrid}>
             <PhaseSection
-              title="내 점수"
+              title={RESULTS_COPY.myScores}
               heading="section"
               as="h2"
               className={cn("w-full", sectionCenterClass)}
             >
-              <StudentResultsSummary snapshot={snapshot} />
+              <StudentResultsSummary
+                snapshot={snapshot}
+                onOpenBaseScoreGuide={() => setBaseScoreGuideOpen(true)}
+                onOpenTestScoreGuide={() => setTestScoreGuideOpen(true)}
+                onOpenStadGuide={() => setStadGuideOpen(true)}
+              />
             </PhaseSection>
 
             <PhaseSection
-              title="개인 순위"
+              title={RESULTS_COPY.personalRank}
               heading="section"
               as="h2"
-              className={cn("w-full", sectionCenterClass)}
+              className={cn("w-full h-fit", sectionCenterClass)}
             >
-              <RankLeaderboard bordered>
-                <RankLeaderboardItem>
-                  <RankListRow
-                    title="나"
-                    rank={snapshot.personalRank}
-                    score={`${snapshot.improvementPoints}점`}
-                  />
-                </RankLeaderboardItem>
-              </RankLeaderboard>
+              <RankResultTile
+                label="나"
+                rank={snapshot.personalRank}
+                score={`${snapshot.improvementPoints}점`}
+                highlight
+              />
             </PhaseSection>
 
             <PhaseSection
-              title="모둠 순위"
+              title={RESULTS_COPY.teamRank}
               heading="section"
               as="h2"
-              className={cn("w-full", sectionCenterClass)}
+              className={cn("w-full h-fit", sectionCenterClass)}
             >
-              <RankLeaderboard bordered>
-                <RankLeaderboardItem>
-                  <RankListRow
-                    title={teamTitle}
-                    rank={snapshot.teamRank}
-                    score={`${snapshot.teamScore}점`}
-                  />
-                </RankLeaderboardItem>
-              </RankLeaderboard>
+              <RankResultTile
+                label={teamTitle}
+                rank={snapshot.teamRank}
+                score={`${snapshot.teamScore}점`}
+              />
             </PhaseSection>
           </div>
         )}
-      </div>
     </PlayPhaseShell>
   );
 }

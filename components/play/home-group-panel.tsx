@@ -11,6 +11,7 @@ import {
   PlayStudentTopBanner,
 } from "@/components/play/play-phase-layout";
 import { PracticeQuestionCard } from "@/components/play/practice-question-card";
+import { LoadingState } from "@/components/ui/loading-state";
 import { activityLayoutType } from "@/components/activity/activity-layout-typography";
 import type { PlayerSelfRow } from "@/lib/api/play";
 import {
@@ -19,10 +20,12 @@ import {
   isPeerPracticeComplete,
   PLAYER_MESSAGES,
 } from "@/lib/activity-pack/engine";
+import { LOADING_COPY } from "@/lib/activity-phases";
 import { codenameForRole } from "@/lib/play/role-codenames";
 import { practiceBaseScore as practiceQuestionScore } from "@/lib/activity-pack/scoring";
 import type { ActivityPack, PracticeQuestionResult } from "@/lib/activity-pack/types";
 import { cn } from "@/lib/utils";
+import { playPhaseDualSectionGrid } from "../activity/activity-layout-chrome";
 
 const t = activityLayoutType;
 
@@ -47,7 +50,6 @@ type Props = {
   onPeerQuestionComplete?: (questionId: string) => void | Promise<void>;
   onEnsureHomeGroupComplete?: () => void | Promise<void>;
   pending?: boolean;
-  contained?: boolean;
 };
 
 export function GroupPhasePanel({
@@ -63,7 +65,6 @@ export function GroupPhasePanel({
   onPeerQuestionComplete,
   onEnsureHomeGroupComplete,
   pending,
-  contained = false,
 }: Props) {
   const [completed, setCompleted] = useState<Record<string, true>>(() => {
     const map: Record<string, true> = {};
@@ -169,7 +170,6 @@ export function GroupPhasePanel({
 
   return (
     <PlayPhaseShell
-      contained={contained}
       topBanner={
         <PlayStudentTopBanner
           phase="home_group"
@@ -177,62 +177,67 @@ export function GroupPhasePanel({
           placeName={roleLabelFor(ownRoleId)}
           placeLabel="역할"
           pending={pending}
-          contained={contained}
         />
       }
     >
       <PlayPhasePanel>
         {cards.length === 0 ? (
-          <PlayPhaseMessage message="모둠원 정보를 불러오는 중이에요." />
+          <LoadingState
+            variant="section"
+            label={LOADING_COPY.loadingGroupMembers}
+            className="min-h-0 flex-1"
+          />
         ) : activeCard ? (
           <>
-            <div
-              className="flex gap-2 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-              role="tablist"
-              aria-label="모둠원 파트 선택"
-            >
-              {cards.map((card) => {
-                const isActive = card.key === resolvedMemberId;
-                const done = memberPeerDone(card);
-                const label = roleLabelFor(card.roleId);
-                return (
-                  <button
-                    key={card.key}
-                    type="button"
-                    role="tab"
-                    aria-selected={isActive}
-                    onClick={() => setActiveMemberId(card.key)}
-                    className={cn(
-                      playChipClass,
-                      isActive
-                        ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--on-primary)]"
-                        : "border-[var(--border)] bg-[var(--card-bg)] text-[var(--foreground)] hover:border-[color-mix(in_srgb,var(--primary)_35%,var(--border))]",
-                    )}
-                  >
-                    <span
+            {cards.length > 1 ? (
+              <div
+                className="flex gap-2 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                role="tablist"
+                aria-label="모둠원 파트 선택"
+              >
+                {cards.map((card) => {
+                  const isActive = card.key === resolvedMemberId;
+                  const done = memberPeerDone(card);
+                  const label = roleLabelFor(card.roleId);
+                  return (
+                    <button
+                      key={card.key}
+                      type="button"
+                      role="tab"
+                      aria-selected={isActive}
+                      onClick={() => setActiveMemberId(card.key)}
                       className={cn(
-                        "h-1.5 w-1.5 rounded-full",
-                        done
-                          ? isActive
-                            ? "bg-[var(--on-primary)]"
-                            : "bg-[var(--primary)]"
-                          : isActive
-                            ? "bg-[var(--on-primary)]/50"
-                            : "bg-[var(--border)]",
+                        playChipClass,
+                        isActive
+                          ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--on-primary)]"
+                          : "border-[var(--border)] bg-[var(--card-bg)] text-[var(--foreground)] hover:border-[color-mix(in_srgb,var(--primary)_35%,var(--border))]",
                       )}
-                      aria-hidden
-                    />
-                    {label} · {card.nickname}
-                    {card.isMe ? " (나)" : ""}
-                  </button>
-                );
-              })}
-            </div>
+                    >
+                      <span
+                        className={cn(
+                          "h-1.5 w-1.5 rounded-full",
+                          done
+                            ? isActive
+                              ? "bg-[var(--on-primary)]"
+                              : "bg-[var(--primary)]"
+                            : isActive
+                              ? "bg-[var(--on-primary)]/50"
+                              : "bg-[var(--border)]",
+                        )}
+                        aria-hidden
+                      />
+                      {label} · {card.nickname}
+                      {card.isMe ? " (나)" : ""}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : null}
 
             {!activeRole ? (
               <p className={t.playPanelBody}>아직 역할이 배정되지 않았어요.</p>
             ) : (
-              <>
+              <div className={playPhaseDualSectionGrid}>
                 <PlayPhaseSection title={segmentTitle} variant="active">
                   <p
                     className={cn(
@@ -292,7 +297,7 @@ export function GroupPhasePanel({
                     </div>
                   </PlayPhaseSection>
                 ) : null}
-              </>
+              </div>
             )}
           </>
         ) : null}

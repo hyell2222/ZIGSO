@@ -1,6 +1,11 @@
 "use client";
 
-import { ACTIVITY_LAYOUT_MAX, activityPageGutter, activityPageGutterContained } from "@/components/activity/activity-layout-chrome";
+import { PhaseGuideHelpButton } from "@/components/activity/phase-guide-help-button";
+import {
+  activityBannerHelpButtonClass,
+  appNavContentShell,
+  activityPlayStudentHeaderRowContained,
+} from "@/components/activity/activity-layout-chrome";
 import { activityLayoutType } from "@/components/activity/activity-layout-typography";
 import { PlayHeaderGroupPlace } from "@/components/play/play-header-group-place";
 import {
@@ -19,7 +24,6 @@ type Props = {
   placeName: string | null;
   placeLabel?: string;
   pending?: boolean;
-  contained?: boolean;
   completeTitle?: string;
   completeMessage?: string;
   className?: string;
@@ -32,7 +36,6 @@ export function PlayStudentTopBanner({
   placeName,
   placeLabel = "역할",
   pending,
-  contained = false,
   completeTitle,
   completeMessage,
   className,
@@ -53,40 +56,24 @@ export function PlayStudentTopBanner({
       )}
     >
       <div
-        className={cn(
-          "mx-auto flex w-full items-center justify-between gap-3",
-          ACTIVITY_LAYOUT_MAX,
-          contained ? activityPageGutterContained : activityPageGutter,
-          contained ? "py-2 @sm:py-2.5" : "py-2.5 @sm:gap-4 @sm:py-3",
-        )}
+        className={cn(appNavContentShell, activityPlayStudentHeaderRowContained, "justify-between")}
       >
         <div className="flex min-w-0 flex-1 items-center gap-2 @sm:gap-2.5">
-          <span
-            className={cn(
-              "flex shrink-0 items-center justify-center rounded-full border-2 border-[var(--primary)] bg-[var(--primary)] font-bold text-[var(--on-primary)] tabular-nums",
-              contained ? "h-7 w-7 text-xs" : "h-8 w-8 text-sm @md:h-9 @md:w-9",
-            )}
-          >
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 border-[var(--primary)] bg-[var(--primary)] text-[0.75rem] font-bold tabular-nums text-[var(--on-primary)]">
             {step.number}
           </span>
-          <div className="min-w-0">
-            <p
-              className={cn(
-                "truncate font-bold text-[var(--foreground)]",
-                contained ? "text-base @sm:text-lg" : "text-base @sm:text-lg @md:text-xl",
-              )}
-            >
+          <div className="flex min-w-0 flex-1 items-center gap-1.5 @sm:gap-2">
+            <p className="truncate text-base font-bold text-[var(--foreground)] @sm:text-lg">
               {step.title}
             </p>
+            <PhaseGuideHelpButton phase={phase} className={activityBannerHelpButtonClass} />
           </div>
         </div>
         <PlayHeaderGroupPlace
-          variant="banner"
           groupName={groupName}
           placeName={placeName}
           placeLabel={placeLabel}
           pending={pending}
-          contained={contained}
         />
       </div>
       {hasStatus ? (
@@ -95,25 +82,15 @@ export function PlayStudentTopBanner({
           className={cn(
             "border-t border-[color-mix(in_srgb,var(--primary)_18%,var(--border))]",
             "bg-[color-mix(in_srgb,var(--primary)_6%,var(--play-panel))]",
-            "text-center",
-            contained ? "px-3 py-2" : "px-4 py-2 @sm:px-5 @sm:py-2.5",
+            "py-2 text-center",
+            appNavContentShell,
           )}
         >
-          <p
-            className={cn(
-              "font-bold text-[var(--primary)]",
-              contained ? activityLayoutType.playPanelChip : "text-sm @sm:text-base",
-            )}
-          >
+          <p className={cn("font-bold text-[var(--primary)]", activityLayoutType.playPanelChip)}>
             {completeTitle}
           </p>
           {completeMessage ? (
-            <p
-              className={cn(
-                "mt-1 text-[var(--muted-foreground)]",
-                contained ? activityLayoutType.caption : activityLayoutType.playPanelBody,
-              )}
-            >
+            <p className={cn("mt-1 text-[var(--muted-foreground)]", activityLayoutType.caption)}>
               {completeMessage}
             </p>
           ) : null}

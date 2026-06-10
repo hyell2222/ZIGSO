@@ -3,8 +3,10 @@
 import { Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-import { PLAY_PAGE_BLACK_BG } from "@/components/play/play-atmosphere";
+import { PlayAtmosphere } from "@/components/play/play-atmosphere";
 import { PlaySessionShell } from "@/components/play/play-session-shell";
+import { activityViewportRoot } from "@/components/activity/activity-layout-chrome";
+import { GuideModalScope } from "@/components/play/guide-modal-scope";
 import { LoadingState } from "@/components/ui/loading-state";
 import { ROUTES } from "@/lib/routes";
 
@@ -22,28 +24,26 @@ function PlaySessionPageContent() {
 
   if (!code) {
     return (
-      <div
-        className="play-shell flex min-h-dvh flex-col items-center justify-center px-4"
-        style={PLAY_PAGE_BLACK_BG}
-      >
-        <LoadingState variant="page" tone="play" className="min-h-0 py-8" />
-      </div>
+      <PlayAtmosphere>
+        <LoadingState variant="page" className="min-h-0 flex-1" />
+      </PlayAtmosphere>
     );
   }
 
-  return <PlaySessionShell joinCode={code.toUpperCase()} initialNickname={nick} />;
+  return (
+    <GuideModalScope className={activityViewportRoot}>
+      <PlaySessionShell joinCode={code.toUpperCase()} initialNickname={nick} />
+    </GuideModalScope>
+  );
 }
 
 export default function PlaySessionPage() {
   return (
     <Suspense
       fallback={
-        <div
-          className="play-shell flex min-h-dvh flex-col items-center justify-center px-4"
-          style={PLAY_PAGE_BLACK_BG}
-        >
-          <LoadingState variant="page" tone="play" className="min-h-0 py-8" />
-        </div>
+        <PlayAtmosphere>
+          <LoadingState variant="page" className="min-h-0 flex-1" />
+        </PlayAtmosphere>
       }
     >
       <PlaySessionPageContent />

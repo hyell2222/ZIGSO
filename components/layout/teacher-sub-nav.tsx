@@ -21,7 +21,7 @@ const TABS: {
   },
   {
     href: ROUTES.reports,
-    label: "수업 기록",
+    label: "활동 기록",
     icon: FileText,
     match: (path) => path === ROUTES.reports || path.startsWith(`${ROUTES.reports}/`),
   },

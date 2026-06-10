@@ -1,7 +1,5 @@
 "use client";
 
-import type { ReactNode } from "react";
-
 import { PhaseStepGuideCard } from "@/components/activity/phase-step-guide-card";
 import type { ActivityPhase } from "@/lib/api/activities";
 import { isTimedPhase } from "@/lib/activity-phases";
@@ -9,25 +7,12 @@ import { isTimedPhase } from "@/lib/activity-phases";
 /** 호스트 화면 — stepper + 단계 안내 카드 */
 export function PhaseGuideCard({
   phase,
-  contained = false,
-  rightSlot,
   className,
 }: {
   phase: ActivityPhase;
-  contained?: boolean;
-  rightSlot?: ReactNode;
   className?: string;
 }) {
   if (!isTimedPhase(phase)) return null;
 
-  return (
-    <PhaseStepGuideCard
-      phase={phase}
-      contained={contained}
-      audience="teacher"
-      surface="band"
-      rightSlot={rightSlot}
-      className={className}
-    />
-  );
+  return <PhaseStepGuideCard phase={phase} surface="band" className={className} />;
 }

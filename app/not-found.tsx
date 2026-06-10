@@ -26,12 +26,6 @@ export default function NotFound() {
         >
           로그인
         </Link>
-        <Link
-          href={ROUTES.play}
-          className="inline-flex h-10 items-center rounded-md border border-[var(--mystery)]/45 px-5 text-sm font-semibold text-[var(--mystery)] hover:bg-[var(--tint-mystery)]"
-        >
-          학생 참가하기
-        </Link>
       </nav>
     </main>
   );

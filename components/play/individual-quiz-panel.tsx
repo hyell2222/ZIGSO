@@ -14,9 +14,10 @@ import {
 } from "@/components/play/play-phase-layout";
 import { PlayQuestionHelperText } from "@/components/play/play-question-support";
 import { BaseScoreGuideModal } from "@/components/play/base-score-guide-modal";
-import { PlayScoreModal } from "@/components/play/play-score-modal";
+import { GuideInfoModal } from "@/components/play/guide-info-modal";
 import { QuizSubmitSummary } from "@/components/play/quiz-submit-summary";
 import { StadImprovementModal } from "@/components/play/stad-improvement-modal";
+import { TestScoreGuideModal } from "@/components/play/test-score-guide-modal";
 import {
   QuizQuestionList,
   answersToSelected,
@@ -39,7 +40,6 @@ type Props = {
   onSubmit: (answers: QuizAnswer[]) => void | Promise<void>;
   onUpdate?: () => void;
   pending?: boolean;
-  contained?: boolean;
 };
 
 const scoreModalTitleId = "individual-quiz-score-modal";
@@ -54,7 +54,6 @@ export function IndividualQuizPanel({
   onSubmit,
   onUpdate,
   pending,
-  contained = false,
 }: Props) {
   const questions = useMemo(() => getTestQuestions(pack), [pack]);
   const submitted = Boolean(submittedAt);
@@ -63,6 +62,7 @@ export function IndividualQuizPanel({
   const [scoreModalOpen, setScoreModalOpen] = useState(false);
   const [stadGuideOpen, setStadGuideOpen] = useState(false);
   const [baseScoreGuideOpen, setBaseScoreGuideOpen] = useState(false);
+  const [testScoreGuideOpen, setTestScoreGuideOpen] = useState(false);
 
   const [selected, setSelected] = useState<Record<string, number>>(() =>
     submittedAnswers ? answersToSelected(submittedAnswers) : {},
@@ -105,7 +105,6 @@ export function IndividualQuizPanel({
 
   return (
     <PlayPhaseShell
-      contained={contained}
       topBanner={
         <PlayStudentTopBanner
           phase="individual_quiz"
@@ -113,35 +112,36 @@ export function IndividualQuizPanel({
           placeName={roleLabel ?? "—"}
           placeLabel="역할"
           pending={pending}
-          contained={contained}
         />
       }
       overlay={
         <>
           {isSubmitted ? (
-            <PlayScoreModal
+            <GuideInfoModal
               open={scoreModalOpen}
               onClose={() => setScoreModalOpen(false)}
               title="제출 완료!"
               titleId={scoreModalTitleId}
-              contained={contained}
             >
               <QuizSubmitSummary
                 snapshot={scoreSnapshot}
                 onOpenBaseScoreGuide={() => setBaseScoreGuideOpen(true)}
+                onOpenTestScoreGuide={() => setTestScoreGuideOpen(true)}
                 onOpenStadGuide={() => setStadGuideOpen(true)}
               />
-            </PlayScoreModal>
+            </GuideInfoModal>
           ) : null}
           <BaseScoreGuideModal
             open={baseScoreGuideOpen}
             onClose={() => setBaseScoreGuideOpen(false)}
-            contained={contained}
           />
           <StadImprovementModal
             open={stadGuideOpen}
             onClose={() => setStadGuideOpen(false)}
-            contained={contained}
+          />
+          <TestScoreGuideModal
+            open={testScoreGuideOpen}
+            onClose={() => setTestScoreGuideOpen(false)}
           />
         </>
       }
@@ -194,7 +194,7 @@ export function IndividualQuizPanel({
                 >
                   {busy ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin text-[var(--primary)]" aria-hidden />
                       제출 중…
                     </>
                   ) : (

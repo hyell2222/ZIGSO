@@ -1,23 +1,23 @@
 "use client";
 
 import { Loader2 } from "lucide-react";
-import type { CSSProperties, ReactNode } from "react";
+import type { ReactNode } from "react";
 
+import { activityLoaderRegionInset } from "@/components/activity/activity-layout-chrome";
 import { cn } from "@/lib/utils";
 
 export type LoadingStateProps = {
   label?: ReactNode;
   variant?: "page" | "section" | "compact" | "inline";
-  tone?: "default" | "play" | "onPrimary";
   className?: string;
   spinnerClassName?: string;
 };
 
-const VARIANT_WRAPPER = {
-  page: "flex w-full flex-col items-center justify-center gap-4 px-4 py-16 min-h-[50vh]",
-  section: "flex w-full flex-col items-center justify-center gap-3 py-10 min-h-[12rem]",
-  compact: "flex w-full flex-col items-center justify-center gap-2 py-8 min-h-[8rem]",
-  inline: "inline-flex w-full flex-row flex-wrap items-center justify-center gap-3 py-6",
+const VARIANT_INNER = {
+  page: "flex flex-col items-center justify-center gap-4",
+  section: "flex flex-col items-center justify-center gap-3",
+  compact: "flex flex-col items-center justify-center gap-2",
+  inline: "inline-flex flex-row flex-wrap items-center justify-center gap-3",
 } as const;
 
 const VARIANT_SPINNER = {
@@ -34,38 +34,63 @@ const VARIANT_LABEL = {
   inline: "text-sm",
 } as const;
 
+function outerClass(variant: NonNullable<LoadingStateProps["variant"]>, className?: string) {
+  switch (variant) {
+    case "page":
+      return cn(
+        activityLoaderRegionInset,
+        "mx-auto w-full max-w-5xl min-h-dvh flex-1 px-4 py-8",
+        className,
+      );
+    case "section":
+      return cn(activityLoaderRegionInset, "w-full min-h-0 flex-1 px-4", className);
+    case "compact":
+      return cn(activityLoaderRegionInset, "w-full min-h-0 px-4 py-4", className);
+    case "inline":
+      return cn(
+        "inline-flex w-full flex-row flex-wrap items-center justify-center gap-3 py-0",
+        className,
+      );
+  }
+}
+
 export function LoadingState({
   label = "불러오는 중…",
   variant = "section",
-  tone = "default",
   className,
   spinnerClassName,
 }: LoadingStateProps) {
-  const isPlay = tone === "play";
-  const isOnPrimary = tone === "onPrimary";
+  const labelNode =
+    label !== null ? (
+      <p className={cn(VARIANT_LABEL[variant], "text-[var(--muted-foreground)]")}>{label}</p>
+    ) : null;
 
-  const labelTone = isPlay
-    ? "tracking-wide text-[color-mix(in_srgb,var(--entry-parchment)_88%,white)]"
-    : isOnPrimary
-      ? "font-medium text-[var(--on-primary)]/90"
-      : "text-[var(--muted-foreground)]";
+  const spinner = (
+    <Loader2
+      className={cn(
+        "animate-spin text-[var(--primary)]",
+        VARIANT_SPINNER[variant],
+        spinnerClassName,
+      )}
+      aria-hidden
+    />
+  );
 
-  const spinnerStyle: CSSProperties | undefined = undefined;
-
-  const spinnerColor = isOnPrimary
-    ? "text-[var(--on-primary)]"
-    : isPlay
-      ? "text-[color-mix(in_srgb,var(--on-primary)_82%,var(--primary))]"
-      : "text-[var(--primary)]";
+  if (variant === "inline") {
+    return (
+      <div className={outerClass(variant, className)} role="status" aria-live="polite">
+        {spinner}
+        {labelNode}
+      </div>
+    );
+  }
 
   return (
-    <div className={cn(VARIANT_WRAPPER[variant], className)} role="status" aria-live="polite">
-      <Loader2
-        className={cn("animate-spin", spinnerColor, VARIANT_SPINNER[variant], spinnerClassName)}
-        style={spinnerStyle}
-        aria-hidden
-      />
-      {label !== null ? <p className={cn(VARIANT_LABEL[variant], labelTone)}>{label}</p> : null}
+    <div className={outerClass(variant, className)} role="status" aria-live="polite">
+      <div className={VARIANT_INNER[variant]}>
+        {spinner}
+        {labelNode}
+      </div>
     </div>
   );
 }
