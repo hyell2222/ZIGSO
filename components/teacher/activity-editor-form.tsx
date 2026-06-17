@@ -57,6 +57,7 @@ function serializeEditorHints(hint1: string, hint2: string) {
 function mergeGeneratedQuestion(current: EditorQuestion, generated: EditorQuestion): EditorQuestion {
   return {
     ...current,
+    id: generated.id,
     prompt: generated.prompt,
     choices: generated.choices,
     correctIndex: generated.correctIndex,
@@ -98,7 +99,7 @@ function QuestionAIGenerateButton({
         existingQuestions: existingPrompts,
       });
       const [generated] = questionsToEditor(questions);
-      if (!generated) throw new Error("생성된 문항이 없습니다.");
+      if (!generated?.prompt.trim()) throw new Error("생성된 문항이 없습니다.");
       onGenerated(generated);
     } catch (e) {
       setError(e instanceof Error ? e.message : "생성에 실패했습니다.");

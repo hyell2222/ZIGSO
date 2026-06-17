@@ -18,7 +18,7 @@ export function PlayJoinModal({
   title = "활동 참가",
   titleId = "play-join-modal",
   submitLabel = "참가하기",
-  pendingLabel = "확인 중…",
+  pendingLabel = "불러오는 중…",
   ...formProps
 }: Props) {
   return (

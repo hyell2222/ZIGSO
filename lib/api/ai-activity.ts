@@ -17,6 +17,26 @@ export type AIRoleQuestionsResponse = {
   questions: QuizQuestion[];
 };
 
+function formatAIErrorPayload(json: { error?: string; detail?: string }) {
+  const parts = [json.error, json.detail].filter(
+    (part): part is string => typeof part === "string" && part.trim().length > 0,
+  );
+  return parts.join(": ");
+}
+
+function parseAIQuestionsResponse(json: unknown): AIRoleQuestionsResponse {
+  if (!json || typeof json !== "object" || !("questions" in json)) {
+    throw new Error("AI 응답 형식이 올바르지 않습니다.");
+  }
+
+  const questions = (json as { questions?: unknown }).questions;
+  if (!Array.isArray(questions) || questions.length === 0) {
+    throw new Error("생성된 문항이 없습니다.");
+  }
+
+  return { questions: questions as QuizQuestion[] };
+}
+
 export async function generateRoleQuestionsWithAI(
   body: AIRoleQuestionsRequest,
 ): Promise<AIRoleQuestionsResponse> {
@@ -25,15 +45,18 @@ export async function generateRoleQuestionsWithAI(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
+
   if (!res.ok) {
-    let detail = "";
+    let message = "";
     try {
       const json = (await res.json()) as { error?: string; detail?: string };
-      detail = json.error ?? json.detail ?? "";
+      message = formatAIErrorPayload(json);
     } catch {
-      detail = await res.text().catch(() => "");
+      message = await res.text().catch(() => "");
     }
-    throw new Error(detail || `AI 호출 실패 (HTTP ${res.status})`);
+    throw new Error(message || `AI 호출 실패 (HTTP ${res.status})`);
   }
-  return (await res.json()) as AIRoleQuestionsResponse;
+
+  const json: unknown = await res.json();
+  return parseAIQuestionsResponse(json);
 }
