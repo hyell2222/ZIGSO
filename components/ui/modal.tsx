@@ -93,7 +93,6 @@ export type ModalProps = ModalPanelProps & {
   variant?: "viewport" | "contained";
   zIndexClassName?: string;
   overlayClassName?: string;
-  closeOnBackdrop?: boolean;
   closeOnEscape?: boolean;
   /** 모바일 하단 시트 → `sm:`에서 중앙 */
   sheetOnNarrow?: boolean;
@@ -101,7 +100,7 @@ export type ModalProps = ModalPanelProps & {
 
 /**
  * 공통 모달 — Card 패널 + 선택적 스크림 오버레이.
- * 로그인·참가·타이머·QR·AI 생성 등 모든 다이얼로그에 사용.
+ * 닫기: X 버튼·Esc 키만 (배경 클릭으로는 닫히지 않음).
  */
 export function Modal({
   open,
@@ -113,7 +112,6 @@ export function Modal({
   variant = "viewport",
   zIndexClassName,
   overlayClassName,
-  closeOnBackdrop,
   closeOnEscape = true,
   sheetOnNarrow = false,
   hideCloseButton = false,
@@ -124,7 +122,6 @@ export function Modal({
 }: ModalProps) {
   const isOverlay = open !== undefined;
   const canDismiss = Boolean(onClose);
-  const dismissOnBackdrop = canDismiss && (closeOnBackdrop ?? true);
 
   useEffect(() => {
     if (!isOverlay || !open || !canDismiss || !closeOnEscape) return;
@@ -163,19 +160,21 @@ export function Modal({
       className={cn(
         variant === "contained" ? "absolute inset-0" : "fixed inset-0",
         zIndexClassName,
-        "flex backdrop-blur-[2px]",
+        "flex",
         "px-4 py-6",
         "pb-[max(1.5rem,env(safe-area-inset-bottom,0px))] pt-[max(1.5rem,env(safe-area-inset-top,0px))]",
         sheetOnNarrow ? "items-end justify-center sm:items-center" : "items-center justify-center",
-        overlayClassName ?? "bg-[var(--overlay-scrim)]/85",
-        dismissOnBackdrop && "cursor-pointer",
       )}
       role="presentation"
-      onClick={(event) => {
-        if (event.target === event.currentTarget && dismissOnBackdrop) onClose?.();
-      }}
     >
-      <div className="w-full cursor-default motion-safe:animate-[playModalRise_0.4s_cubic-bezier(0.22,1,0.36,1)_both]">
+      <div
+        className={cn(
+          "absolute inset-0",
+          overlayClassName ?? "bg-[var(--overlay-scrim)]/85 backdrop-blur-[2px]",
+        )}
+        aria-hidden
+      />
+      <div className="relative z-10 w-fit max-w-full cursor-default motion-safe:animate-[playModalRise_0.4s_cubic-bezier(0.22,1,0.36,1)_both]">
         {panel}
       </div>
     </div>

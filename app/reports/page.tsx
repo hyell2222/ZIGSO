@@ -1,36 +1,31 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { FileText, Radio } from "lucide-react";
+import { ArrowLeft, FileText, Radio } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Suspense, useMemo } from "react";
+import { Suspense, useState, type ReactNode } from "react";
 
 import { deleteSession, listHostSessions, type HostSessionListRow } from "@/lib/api/activities";
-import {
-  getHostSessionDetails,
-  listSessionPlayers,
-  listSessionGroups,
-} from "@/lib/api/play";
 import { useRequireTeacherSession } from "@/lib/auth/use-require-teacher-session";
+import { GroupAssignmentDashboard } from "@/components/teacher/group-assignment-dashboard";
 import {
-  GroupAssignmentDashboard,
-  type GroupAssignmentGroup,
-} from "@/components/teacher/group-assignment-dashboard";
-import { parseActivityPack } from "@/lib/api/activities";
-import { formatAssignedRoleLabels } from "@/lib/activity-pack/roles";
-import { parseAssignedRoleIds } from "@/lib/api/play";
+  SessionStudentReportList,
+} from "@/components/teacher/session-student-reports";
 import { KebabMenu } from "@/components/ui/kebab-menu";
 import { PageHeader } from "@/components/layout/page-header";
 import { TopNav } from "@/components/layout/top-nav";
 import { LoadingState } from "@/components/ui/loading-state";
-import { groupPlayersByGroup } from "@/lib/teacher/group-players-by-group";
-import { isPlayerPhaseComplete } from "@/lib/teacher/phase-completion";
 import { ACTIVITY_PHASE_LABELS } from "@/lib/activity-phases";
 import type { ActivityPhase } from "@/lib/types";
 import { ROUTES } from "@/lib/routes";
+import { useSessionReportData } from "@/lib/teacher/use-session-report-data";
+import { activityLayoutType } from "@/components/activity/activity-layout-typography";
+import { cn } from "@/lib/utils";
 
 const PHASE_KR = ACTIVITY_PHASE_LABELS;
+
+type SessionTab = "scores" | "roster";
 
 function formatWhen(iso: string | null) {
   if (!iso) return "—";
@@ -39,6 +34,65 @@ function formatWhen(iso: string | null) {
   } catch {
     return "—";
   }
+}
+
+function ReportBackLink({ href, label }: { href: string; label: string }) {
+  return (
+    <Link
+      href={href}
+      className="inline-flex items-center gap-1.5 text-sm text-[var(--muted-foreground)] transition-colors hover:text-[var(--foreground)]"
+    >
+      <ArrowLeft className="h-4 w-4" aria-hidden />
+      {label}
+    </Link>
+  );
+}
+
+function ReportSection({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description?: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className="space-y-3">
+      <div>
+        <h3 className={cn(activityLayoutType.sectionTitle, "text-[var(--foreground)]")}>{title}</h3>
+        {description ? (
+          <p className={cn(activityLayoutType.bodyMuted, "mt-1")}>{description}</p>
+        ) : null}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function SessionReportHeader({
+  title,
+  joinCode,
+  createdAt,
+  phase,
+  studentCount,
+  teamCount,
+}: {
+  title: string;
+  joinCode: string;
+  createdAt: string | null;
+  phase: ActivityPhase;
+  studentCount: number;
+  teamCount: number;
+}) {
+  return (
+    <div>
+      <h2 className="font-mono text-2xl font-semibold text-[var(--accent)]">{title}</h2>
+      <p className="text-sm text-[var(--muted-foreground)]">
+        코드 {joinCode} · {formatWhen(createdAt)} · 학생 {studentCount}명 · 모둠 {teamCount}개
+      </p>
+    </div>
+  );
 }
 
 function ReportsSessionsListPanel({ teacherUserId }: { teacherUserId: string }) {
@@ -103,7 +157,7 @@ function ReportsSessionsListPanel({ teacherUserId }: { teacherUserId: string }) 
                   className="inline-flex h-10 items-center gap-1.5 rounded-md bg-[var(--primary)] px-3 text-sm font-semibold text-[var(--on-primary)]"
                 >
                   <FileText className="h-3.5 w-3.5" aria-hidden />
-                  요약 보기
+                  리포트 보기
                 </Link>
                 <KebabMenu onDelete={() => handleDelete(row)} />
               </div>
@@ -115,82 +169,46 @@ function ReportsSessionsListPanel({ teacherUserId }: { teacherUserId: string }) 
   );
 }
 
-function ReportsSessionDetailPanel({ sessionId, teacherUserId }: { sessionId: string; teacherUserId: string }) {
-  const sessionQuery = useQuery({
-    queryKey: ["host-session", sessionId],
-    queryFn: () => getHostSessionDetails(sessionId),
-    enabled: Boolean(sessionId),
-  });
+function ReportsSessionOverviewPanel({
+  sessionId,
+  teacherUserId,
+}: {
+  sessionId: string;
+  teacherUserId: string;
+}) {
+  const [tab, setTab] = useState<SessionTab>("scores");
+  const report = useSessionReportData(sessionId);
 
-  const playersQuery = useQuery({
-    queryKey: ["host-session-players", sessionId],
-    queryFn: () => listSessionPlayers(sessionId),
-    enabled: Boolean(sessionId),
-  });
-
-  const groupsQuery = useQuery({
-    queryKey: ["host-session-groups", sessionId],
-    queryFn: () => listSessionGroups(sessionId),
-    enabled: Boolean(sessionId),
-  });
-
-  const activityPack = useMemo(
-    () => parseActivityPack(sessionQuery.data?.activities?.activity_pack),
-    [sessionQuery.data?.activities?.activity_pack],
-  );
-
-  const reportPhase =
-    (sessionQuery.data?.phase as ActivityPhase | undefined) ?? "waiting";
-
-  const assignmentGroups = useMemo<GroupAssignmentGroup[]>(() => {
-    const groups = groupsQuery.data ?? [];
-    const grouped = groupPlayersByGroup(playersQuery.data ?? [], groups);
-    return grouped.map((g) => {
-      const memberRoleIds = g.members.map((m) => m.assigned_role_id);
-      return {
-        group: { id: g.group.id, name: g.group.name },
-        members: g.members.map((m) => ({
-          id: m.id,
-          nickname: m.nickname,
-          zoneName: activityPack
-            ? formatAssignedRoleLabels(activityPack, parseAssignedRoleIds(m), sessionId)
-            : null,
-          phaseComplete: isPlayerPhaseComplete(reportPhase, m, {
-            pack: activityPack,
-            memberRoleIds,
-          }),
-        })),
-      };
-    });
-  }, [playersQuery.data, groupsQuery.data, activityPack, sessionId, reportPhase]);
-
-  if (sessionQuery.isLoading) {
+  if (report.sessionQuery.isLoading) {
     return <LoadingState variant="section" label="불러오는 중…" className="min-h-[min(32rem,55dvh)]" />;
   }
 
-  if (sessionQuery.isError || !sessionQuery.data) {
+  if (report.sessionQuery.isError || !report.sessionQuery.data) {
     return <p className="text-sm text-[var(--danger)]">활동 기록을 불러오지 못했습니다.</p>;
   }
 
-  if (sessionQuery.data.host_id !== teacherUserId) {
+  if (report.sessionQuery.data.host_id !== teacherUserId) {
     return <p className="text-sm text-[var(--accent)]">이 활동 기록을 볼 권한이 없습니다.</p>;
   }
 
+  const session = report.sessionQuery.data;
+  const phase = (session.phase ?? "waiting") as ActivityPhase;
+
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="mt-2 font-mono text-2xl font-semibold text-[var(--accent)]">
-          {sessionQuery.data.activities?.title ?? "세션"}
-        </h2>
-        <p className="text-sm text-[var(--muted-foreground)]">
-          코드 {sessionQuery.data.join_code} · {formatWhen(sessionQuery.data.created_at ?? null)} ·{" "}
-          {PHASE_KR[(sessionQuery.data.phase ?? "waiting") as ActivityPhase] ??
-            sessionQuery.data.phase}
-        </p>
-      </div>
-      <GroupAssignmentDashboard
-        groups={assignmentGroups}
-        loading={playersQuery.isLoading || groupsQuery.isLoading}
+
+      <SessionReportHeader
+        title={session.activities?.title ?? "세션"}
+        joinCode={session.join_code}
+        createdAt={session.created_at ?? null}
+        phase={phase}
+        studentCount={report.players.length}
+        teamCount={report.groupRows.length}
+      />
+
+      <SessionStudentReportList
+        students={report.studentRows}
+        loading={report.dataLoading}
       />
     </div>
   );
@@ -212,11 +230,9 @@ function ReportsPageInner() {
     <div className="min-h-screen">
       <TopNav />
       <main className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8">
-        <PageHeader
-          title="활동 기록"
-        />
+        <PageHeader title="활동 기록" />
         {sessionId ? (
-          <ReportsSessionDetailPanel sessionId={sessionId} teacherUserId={teacherUserId} />
+          <ReportsSessionOverviewPanel sessionId={sessionId} teacherUserId={teacherUserId} />
         ) : listQuery.isLoading ? (
           <LoadingState variant="section" label="불러오는 중…" />
         ) : (listQuery.data?.length ?? 0) === 0 ? (

@@ -31,7 +31,7 @@ export const activityPageShell = appNavContentShell;
 export const activitySessionHeaderPaddingContained = "py-2.5 @sm:py-3";
 
 export const activitySessionHeaderRowContained = cn(
-  "flex w-full flex-wrap items-center gap-4",
+  "flex w-full flex-wrap items-end gap-4",
   "min-h-12",
   activitySessionHeaderPaddingContained,
 );

@@ -28,7 +28,6 @@ export function PlayJoinModal({
       title={title}
       titleId={titleId}
       zIndexClassName={modalVariant === "contained" ? Z.containedOverlay : Z.modal}
-      closeOnBackdrop={false}
       closeOnEscape={false}
       hideCloseButton
     >

@@ -32,7 +32,6 @@ export function PlayResumeModal({
       title="활동 참가"
       titleId={titleId}
       zIndexClassName={modalVariant === "contained" ? Z.containedOverlay : Z.modal}
-      closeOnBackdrop={false}
       closeOnEscape={false}
       hideCloseButton
     >

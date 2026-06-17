@@ -89,7 +89,7 @@ export function SessionHostLayout({
           {hasPhaseActions ? (
             <div
               className={cn(
-                "ml-auto flex w-full flex-wrap items-stretch justify-end gap-2 @sm:w-auto",
+                "ml-auto flex w-full flex-wrap items-end justify-end gap-2 @sm:w-auto",
                 "[&_button]:touch-manipulation",
               )}
             >

@@ -39,6 +39,15 @@ export function getTestQuestions(pack: ActivityPack): QuizQuestion[] {
   return pack.roles.flatMap((r) => r.testQuestions);
 }
 
+/** 해설 모달에 표시할 문항이 있는지 */
+export function hasReviewQuestions(pack: ActivityPack): boolean {
+  const practiceCount = pack.roles.reduce(
+    (sum, role) => sum + role.practiceQuestions.length,
+    0,
+  );
+  return practiceCount + getTestQuestions(pack).length > 0;
+}
+
 /** 연습 문항별 결과 → 기준 점수(평균). 문항 점수는 오답 횟수에서 파생한다. */
 export function computeBaseScoreFromPracticeResults(results: PracticeQuestionResult[]): number {
   return averagePracticeBaseScore(results.map((r) => practiceBaseScore(r.wrongAttempts)));

@@ -14,6 +14,7 @@ import {
 import { SessionHostLayout } from "@/components/teacher/session-host-layout";
 import { SessionHostWaitingRoster } from "@/components/teacher/session-host-waiting-roster";
 import { PhaseTimerContent } from "@/components/teacher/phase-timer-content";
+import { SessionQuestionsReviewModal } from "@/components/teacher/session-questions-review-modal";
 import { activityBannerButtonClass, activityGuideModalScope } from "@/components/activity/activity-layout-chrome";
 import { GuideModalScope } from "@/components/play/guide-modal-scope";
 import { Button } from "@/components/ui/button";
@@ -22,6 +23,7 @@ import { Z } from "@/lib/ui/z-index";
 import { cn } from "@/lib/utils";
 import type { ActivityPhase } from "@/lib/api/activities";
 import type { ActivityPack } from "@/lib/activity-pack/types";
+import { hasReviewQuestions } from "@/lib/activity-pack/engine";
 import {
   SANDBOX_JOIN_CODE,
   buildSandboxWaitingRoster,
@@ -29,7 +31,7 @@ import {
   type SandboxGroup,
 } from "@/lib/sandbox/state";
 import type { SessionStatus } from "@/lib/types";
-import { isSessionEnded, isTimedPhase, type TimedPhase } from "@/lib/activity-phases";
+import { isSessionEnded, isTimedPhase, RESULTS_COPY, type TimedPhase } from "@/lib/activity-phases";
 import { hostSessionNextPhaseLabel } from "@/lib/api/sessions";
 import { buildRoleCodenameMap } from "@/lib/play/role-codenames";
 import { formatAssignedRoleLabels } from "@/lib/activity-pack/roles";
@@ -64,6 +66,7 @@ export function SandboxTeacherPanel({
     open: boolean;
     phaseAtOpen: ActivityPhase | null;
   }>({ open: false, phaseAtOpen: null });
+  const [questionsReviewOpen, setQuestionsReviewOpen] = useState(false);
 
   const sessionStarted = phase !== "waiting";
   const sessionEnded = isSessionEnded(sessionStatus);
@@ -182,6 +185,20 @@ export function SandboxTeacherPanel({
       </Button>
     ) : null;
 
+  const reviewQuestionsButton =
+    phase === "results" && hasReviewQuestions(pack) ? (
+      <Button
+        type="button"
+        size="sm"
+        className={activityBannerButtonClass}
+        onClick={() => setQuestionsReviewOpen(true)}
+      >
+        {RESULTS_COPY.reviewQuestions}
+      </Button>
+    ) : null;
+
+  const headerActionButton = reviewQuestionsButton ?? nextButton;
+
   return (
     <GuideModalScope className={activityGuideModalScope}>
       <SessionHostLayout
@@ -192,7 +209,7 @@ export function SandboxTeacherPanel({
         phase={phase}
         timerButton={timerButton}
         startButton={startButton}
-        nextButton={nextButton}
+        nextButton={headerActionButton}
       >
         {phase === "waiting" ? (
           <SessionHostWaitingRoster players={waitingOnlinePlayers} />
@@ -230,6 +247,13 @@ export function SandboxTeacherPanel({
       >
         <PhaseTimerContent key={phase} phase={phase as TimedPhase} />
       </Modal>
+
+      <SessionQuestionsReviewModal
+        open={questionsReviewOpen}
+        onClose={() => setQuestionsReviewOpen(false)}
+        pack={pack}
+        roleScopeKey={`sandbox-${activityId}`}
+      />
     </GuideModalScope>
   );
 }

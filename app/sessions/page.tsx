@@ -21,6 +21,7 @@ import {
 } from "@/lib/api/activities";
 import { useRequireTeacherSession } from "@/lib/auth/use-require-teacher-session";
 import { formatAssignedRoleLabels } from "@/lib/activity-pack/roles";
+import { hasReviewQuestions } from "@/lib/activity-pack/engine";
 import { parseAssignedRoleIds } from "@/lib/api/play";
 import { groupPlayersByGroup } from "@/lib/teacher/group-players-by-group";
 import { isPlayerPhaseComplete } from "@/lib/teacher/phase-completion";
@@ -30,6 +31,7 @@ import { activityBannerButtonClass } from "@/components/activity/activity-layout
 import { GuideModalScope } from "@/components/play/guide-modal-scope";
 import { SessionHostWaitingRoster } from "@/components/teacher/session-host-waiting-roster";
 import { PhaseTimerContent } from "@/components/teacher/phase-timer-content";
+import { SessionQuestionsReviewModal } from "@/components/teacher/session-questions-review-modal";
 import {
   GroupAssignmentDashboard,
   type GroupAssignmentGroup,
@@ -49,7 +51,7 @@ import {
   type SessionPresenceRow,
 } from "@/lib/realtime/session-presence";
 import { hasSupabaseEnv, supabase } from "@/lib/supabase";
-import { isSessionEnded, isTimedPhase, type TimedPhase } from "@/lib/activity-phases";
+import { isSessionEnded, isTimedPhase, RESULTS_COPY, type TimedPhase } from "@/lib/activity-phases";
 import { hostSessionNextPhaseLabel } from "@/lib/api/sessions";
 import { cn } from "@/lib/utils";
 
@@ -64,6 +66,7 @@ function SessionHostContent() {
     open: false,
     phaseAtOpen: null,
   });
+  const [questionsReviewOpen, setQuestionsReviewOpen] = useState(false);
 
   const teacherSession = useRequireTeacherSession();
 
@@ -466,6 +469,20 @@ function SessionHostContent() {
       </Button>
     ) : null;
 
+  const reviewQuestionsButton =
+    phase === "results" && activityPack && hasReviewQuestions(activityPack) ? (
+      <Button
+        type="button"
+        size="sm"
+        className={activityBannerButtonClass}
+        onClick={() => setQuestionsReviewOpen(true)}
+      >
+        {RESULTS_COPY.reviewQuestions}
+      </Button>
+    ) : null;
+
+  const headerActionButton = reviewQuestionsButton ?? nextButton;
+
   return (
     <GuideModalScope className={activityViewportRoot}>
       <SessionHostLayout
@@ -476,7 +493,7 @@ function SessionHostContent() {
         phase={phase}
         timerButton={timerButton}
         startButton={startButton}
-        nextButton={nextButton}
+        nextButton={headerActionButton}
       >
         {phase === "waiting" ? (
           <SessionHostWaitingRoster
@@ -519,6 +536,16 @@ function SessionHostContent() {
       >
         <PhaseTimerContent key={phase} phase={phase as TimedPhase} />
       </Modal>
+
+      {activityPack ? (
+        <SessionQuestionsReviewModal
+          open={questionsReviewOpen}
+          onClose={() => setQuestionsReviewOpen(false)}
+          pack={activityPack}
+          roleScopeKey={sessionId ?? undefined}
+          contained={false}
+        />
+      ) : null}
     </GuideModalScope>
   );
 }

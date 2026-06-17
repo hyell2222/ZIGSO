@@ -77,7 +77,7 @@ export function TopNav() {
                 size="sm"
                 className="max-sm:hidden"
               >
-                지금 시작하기
+                로그인
               </ButtonLink>
             )}
           </nav>

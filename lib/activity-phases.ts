@@ -158,6 +158,8 @@ export const RESULTS_COPY = {
   loadError: "잠시 후 다시 확인해 주세요.",
   noTeamRank: "아직 모둠 순위를 표시할 수 없어요.",
   noPersonalRank: "아직 개인 순위를 표시할 수 없어요.",
+  reviewQuestions: "문제 다시 보기",
+  reviewQuestionsTitle: "문제 해설",
 } as const;
 
 export const TEACHER_PHASE_MINUTES: Record<TimedPhaseKey, number> = {
