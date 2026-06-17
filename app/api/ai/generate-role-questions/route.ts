@@ -78,33 +78,55 @@ function getLanguageRule(contentLanguage: ContentLanguage): string {
 }
 
 const READING_DEPTH_RULES = [
-  "Question quality rules:",
-  "- Do NOT create simple matching, true/false, or 'which statement is directly mentioned?' questions.",
-  "- Do NOT ask for isolated numbers, names, dates, terms, or facts that can be copied from one sentence.",
-  "- Avoid prompts like 'What is mentioned in the text?', 'Which is correct?', or 'What number is given?'.",
-  "- Prefer deeper reading comprehension: main idea, purpose, cause-effect, inference, comparison, author's intention, relationship between ideas, condition/result, problem/solution, or applying the segment to a new situation.",
-  "- The correct answer should require connecting at least TWO pieces of information from the segment.",
-  "- Wrong choices should be plausible but clearly wrong because of reversed cause-effect, overgeneralization, missing condition, distorted purpose, or confusion between similar ideas.",
-  "- The question must still be answerable from the given segment only. Do not require outside knowledge.",
+  "Question quality rules (CORE COMPREHENSION FOCUS):",
+  "- Focus on the CORE message, main narrative arc, critical events, and logical flow (cause-and-effect, problem-solution) of the segment.",
+  "- Do NOT ask for isolated facts (e.g., specific years, names, numbers) or simple vocabulary lookups that miss the bigger picture.",
+  "- Avoid lazy prompt formats like 'Which of the following is true/false?' or 'What is mentioned?'. Instead, ask specific, context-rich questions (e.g., 'What was the primary reason for...', 'What is the main impact of...', 'Why did the author mention...').",
+  "- Distractors (wrong choices) MUST be high-quality: use partial truths, reversed cause-and-effect, overgeneralizations, or plausible misconceptions derived from the text. They should not be obviously silly or irrelevant.",
+  "- The correct answer must clearly demonstrate a true understanding of the text's central point or critical context.",
+  "- Keep the language of the prompt and choices concise, clear, and unambiguous.",
 ].join("\n");
 
-const DISTINCTNESS_RULE = [
-  "Distinctness rules:",
-  "- Existing questions, if provided, belong to the SAME question set currently being generated.",
-  "- Compare ONLY with the existing questions listed in this request.",
-  "- Do NOT duplicate, paraphrase, or re-test the same concept as those existing questions.",
-  "- Do NOT avoid overlap with another set that is not listed here. For example, practice questions and test questions are separated by the caller.",
-].join("\n");
+function buildSetLabel(kind: "practice" | "test") {
+  return kind === "practice" ? "PRACTICE" : "FORMATIVE TEST";
+}
 
-const VARIETY_RULE = [
-  "Variety rules:",
-  "- When generating multiple questions, each question must target a different sub-concept of the segment.",
-  "- Do not reuse the same correct answer idea across generated questions.",
-  "- Mix question types when possible: inference, cause-effect, author's purpose, best summary, application, comparison.",
-].join("\n");
+function buildDistinctnessRule(kind: "practice" | "test"): string {
+  const setLabel = buildSetLabel(kind);
+  const otherSetLabel = kind === "practice" ? "formative test" : "practice";
+
+  return [
+    `Distinctness rules — ${setLabel} set ONLY:`,
+    `- You are writing for the ${setLabel} question pool of this role segment.`,
+    `- The ${otherSetLabel} pool is a completely separate set. It is NOT provided and must NOT influence your question.`,
+    `- Compare ONLY against existing ${setLabel} questions listed in this request (if any).`,
+    `- Treat as DUPLICATE (forbidden) if the new question matches ANY listed question in ANY of these ways:`,
+    "  • same question intent or same reading-comprehension skill being tested",
+    "  • same main idea, fact, relationship, or inference target",
+    "  • same correct-answer concept (even with different wording)",
+    "  • same focus on the same sentence, paragraph, or detail in the segment",
+    "  • obvious paraphrase or minor rewording of a listed prompt or answer idea",
+    `- Each new ${setLabel} question MUST probe a different sub-topic, angle, or skill from every listed question.`,
+    `- Rotate comprehension angles across questions: inference, cause-effect, purpose, comparison, application, problem-solution, condition-result, best summary.`,
+    `- If several ${setLabel} questions already exist, deliberately choose the least-covered part of the segment.`,
+  ].join("\n");
+}
+
+function buildVarietyRule(kind: "practice" | "test"): string {
+  const setLabel = buildSetLabel(kind);
+
+  return [
+    `Variety rules — ${setLabel} set:`,
+    `- When generating multiple questions in one response, every question must be mutually distinct under the distinctness rules above.`,
+    `- Never reuse the same correct-answer idea across questions in this response.`,
+    `- Spread questions across different portions or ideas in the segment when possible.`,
+  ].join("\n");
+}
 
 function buildSystemPrompt(kind: "practice" | "test", contentLanguage: ContentLanguage): string {
   const langRule = getLanguageRule(contentLanguage);
+  const distinctnessRule = buildDistinctnessRule(kind);
+  const varietyRule = buildVarietyRule(kind);
 
   if (kind === "practice") {
     return [
@@ -122,9 +144,10 @@ function buildSystemPrompt(kind: "practice" | "test", contentLanguage: ContentLa
       "Content rules:",
       "- Questions must test understanding of the given segment only.",
       "- Exactly one correct choice per question.",
+      "- You are filling the PRACTICE set only. Do not imitate or avoid formative test questions; that other set is irrelevant here.",
       READING_DEPTH_RULES,
-      DISTINCTNESS_RULE,
-      VARIETY_RULE,
+      distinctnessRule,
+      varietyRule,
     ].join("\n");
   }
 
@@ -142,9 +165,10 @@ function buildSystemPrompt(kind: "practice" | "test", contentLanguage: ContentLa
     "Content rules:",
     "- Questions must test understanding of the given segment only.",
     "- Exactly one correct choice per question.",
+    "- You are filling the FORMATIVE TEST set only. Do not imitate or avoid practice questions; that other set is irrelevant here.",
     READING_DEPTH_RULES,
-    DISTINCTNESS_RULE,
-    VARIETY_RULE,
+    distinctnessRule,
+    varietyRule,
   ].join("\n");
 }
 
@@ -156,12 +180,14 @@ function buildUserPrompt(opts: {
   contentLanguage: ContentLanguage;
   existingQuestions: string[];
 }): string {
+  const setLabel = buildSetLabel(opts.kind);
   const lines = [
-    `Generate exactly ${opts.questionCount} ${
-      opts.kind === "practice" ? "practice" : "formative test"
-    } question(s) as JSON.`,
-    `Current question set: ${opts.kind}.`,
+    `Generate exactly ${opts.questionCount} ${opts.kind === "practice" ? "practice" : "formative test"} question(s) as JSON.`,
+    `Target pool: ${setLabel} questions for this role segment.`,
     `Content language: ${opts.contentLanguage === "ko" ? "Korean" : "English"}.`,
+    "",
+    `IMPORTANT: Only avoid duplication within the ${setLabel} pool listed below (if any).`,
+    `Do NOT consider ${opts.kind === "practice" ? "formative test" : "practice"} questions — they are a separate set and not shown here.`,
   ];
 
   if (opts.activityTitle.trim()) {
@@ -173,16 +199,25 @@ function buildUserPrompt(opts: {
   if (opts.existingQuestions.length > 0) {
     lines.push(
       "",
-      `Existing questions already in this SAME ${opts.kind} set — do NOT overlap with these:`,
+      `Existing ${setLabel} questions in this role — your output MUST NOT overlap with ANY of these:`,
       ...opts.existingQuestions.map((q, i) => `${i + 1}. ${q}`),
+      "",
+      `Before finalizing, verify the new question(s):`,
+      `- test a different concept/skill than every item above`,
+      `- use a different comprehension angle than every item above`,
+      `- would not share the same correct-answer idea as any item above`,
     );
+  } else {
+    lines.push("", `No existing ${setLabel} questions yet — this is the first question in this pool.`);
   }
 
+  // --- 개선된 Reminder 부분 ---
   lines.push(
     "",
-    "Reminder:",
-    "- Make deeper reading-comprehension questions, not simple factual lookup questions.",
-    "- The answer should require inference, relationship understanding, or application based on the segment.",
+    "Reminder for Core Comprehension:",
+    "- Identify the EXACT CORE of the text. What is the most important concept or takeaway the reader must learn?",
+    "- Ensure your questions test the *understanding* of this core message, not visual scanning or memory of trivia.",
+    `- Within the ${setLabel} pool, every question must stand alone as a meaningful and highly relevant assessment of the segment.`,
   );
 
   return lines.join("\n");

@@ -367,7 +367,6 @@ function QuestionListEditor({
                   activityTitle={activityTitle}
                   kind={aiKind}
                   existingPrompts={questions
-                    .filter((item) => item.localId !== q.localId)
                     .map((item) => item.prompt.trim())
                     .filter(Boolean)}
                   onGenerated={(generated) =>
