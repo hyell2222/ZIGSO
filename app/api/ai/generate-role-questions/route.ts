@@ -21,8 +21,12 @@ const MAX_EXISTING_QUESTIONS = 20;
 const PRACTICE_QUESTION_SCHEMA = {
   type: "object",
   additionalProperties: false,
-  required: ["prompt", "choices", "correctIndex", "hints", "explanation"],
+  required: ["thoughtProcess", "prompt", "choices", "correctIndex", "hints", "explanation"],
   properties: {
+    thoughtProcess: {
+      type: "string",
+      description: "Step 1: Identify the core message. Step 2: Determine the most important concept to test. Step 3: Design plausible distractors based on the text.",
+    },
     prompt: { type: "string" },
     choices: {
       type: "array",
@@ -44,8 +48,12 @@ const PRACTICE_QUESTION_SCHEMA = {
 const TEST_QUESTION_SCHEMA = {
   type: "object",
   additionalProperties: false,
-  required: ["prompt", "choices", "correctIndex"],
+  required: ["thoughtProcess", "prompt", "choices", "correctIndex"],
   properties: {
+    thoughtProcess: {
+      type: "string",
+      description: "Step 1: Identify the core message. Step 2: Determine the most important concept to test. Step 3: Design plausible distractors based on the text.",
+    },
     prompt: { type: "string" },
     choices: {
       type: "array",
@@ -79,10 +87,12 @@ function getLanguageRule(contentLanguage: ContentLanguage): string {
 
 const READING_DEPTH_RULES = [
   "Question quality rules (CORE COMPREHENSION FOCUS):",
+  "- First, use the 'thoughtProcess' field to analyze the segment's main idea and map out your distractors.",
   "- Focus on the CORE message, main narrative arc, critical events, and logical flow (cause-and-effect, problem-solution) of the segment.",
   "- Do NOT ask for isolated facts (e.g., specific years, names, numbers) or simple vocabulary lookups that miss the bigger picture.",
-  "- Avoid lazy prompt formats like 'Which of the following is true/false?' or 'What is mentioned?'. Instead, ask specific, context-rich questions (e.g., 'What was the primary reason for...', 'What is the main impact of...', 'Why did the author mention...').",
-  "- Distractors (wrong choices) MUST be high-quality: use partial truths, reversed cause-and-effect, overgeneralizations, or plausible misconceptions derived from the text. They should not be obviously silly or irrelevant.",
+  "- Avoid lazy prompt formats like 'Which of the following is true/false?' or 'What is mentioned?'. Instead, ask specific, context-rich questions (e.g., 'What was the primary reason for...', 'What is the main impact of...').",
+  "- Distractor Rule 1 (NO STEREOTYPES): Never use obvious, outside-knowledge distractors that don't require reading the text.",
+  "- Distractor Rule 2 (PLAUSIBILITY): All wrong choices MUST be built using information actually mentioned in the text, but twisted logically. (e.g., mixing up the order of events, applying a cause to the wrong effect).",
   "- The correct answer must clearly demonstrate a true understanding of the text's central point or critical context.",
   "- Keep the language of the prompt and choices concise, clear, and unambiguous.",
 ].join("\n");
@@ -135,6 +145,7 @@ function buildSystemPrompt(kind: "practice" | "test", contentLanguage: ContentLa
       langRule,
       "",
       "Required format for each practice question:",
+      "- thoughtProcess: Your logical reasoning before writing the question.",
       "- prompt: one clear reading-comprehension question.",
       "- choices: 3–4 answer choices.",
       "- correctIndex: 0-based index of the only correct choice.",
@@ -157,6 +168,7 @@ function buildSystemPrompt(kind: "practice" | "test", contentLanguage: ContentLa
     langRule,
     "",
     "Required format for each test question:",
+    "- thoughtProcess: Your logical reasoning before writing the question.",
     "- prompt: one clear reading-comprehension question.",
     "- choices: 3–4 answer choices.",
     "- correctIndex: 0-based index of the only correct choice.",
@@ -211,7 +223,6 @@ function buildUserPrompt(opts: {
     lines.push("", `No existing ${setLabel} questions yet — this is the first question in this pool.`);
   }
 
-  // --- 개선된 Reminder 부분 ---
   lines.push(
     "",
     "Reminder for Core Comprehension:",
@@ -377,7 +388,7 @@ export async function POST(req: NextRequest) {
       },
       body: JSON.stringify({
         model: OPENAI_MODEL,
-        temperature: 0.65,
+        temperature: 0.4,
         messages: [
           {
             role: "system",
