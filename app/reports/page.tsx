@@ -137,18 +137,13 @@ function ReportsSessionsListPanel({ teacherUserId }: { teacherUserId: string }) 
             key={row.id}
             className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4 shadow-sm"
           >
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
               <div className="min-w-0 flex-1 space-y-1">
                 <p className="font-medium text-[var(--foreground)]">{title}</p>
                 <p className="text-xs text-[var(--muted-foreground)]">
                   <span className="font-mono text-[var(--accent)]">{row.join_code}</span>
                   {" · "}
                   {formatWhen(row.created_at)}
-                  {" · "}
-                  <span className="inline-flex items-center gap-0.5">
-                    <Radio className="h-3 w-3" aria-hidden />
-                    {phase}
-                  </span>
                 </p>
               </div>
               <div className="flex items-center gap-1 sm:ml-auto">

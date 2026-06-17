@@ -242,7 +242,8 @@ export function SandboxTeacherPanel({
         onClose={() => setTimerModalOpen({ open: false, phaseAtOpen: null })}
         title="타이머"
         titleId="sandbox-timer-heading"
-        zIndexClassName={Z.hostTool}
+        variant="contained"
+        zIndexClassName={Z.containedOverlay}
         contentClassName="py-5"
       >
         <PhaseTimerContent key={phase} phase={phase as TimedPhase} />

@@ -25,21 +25,25 @@ export const PHASE_STEP_DEFS = [
     key: "overview" as const,
     number: 1,
     title: ACTIVITY_PHASE_LABELS.overview,
+    recommendedMinutes: 8,
   },
   {
     key: "expert_group" as const,
     number: 2,
     title: ACTIVITY_PHASE_LABELS.expert_group,
+    recommendedMinutes: 12,
   },
   {
     key: "home_group" as const,
     number: 3,
     title: ACTIVITY_PHASE_LABELS.home_group,
+    recommendedMinutes: 15,
   },
   {
     key: "individual_quiz" as const,
     number: 4,
     title: ACTIVITY_PHASE_LABELS.individual_quiz,
+    recommendedMinutes: 10,
   },
 ] as const;
 
@@ -162,12 +166,10 @@ export const RESULTS_COPY = {
   reviewQuestionsTitle: "문제 해설",
 } as const;
 
-export const TEACHER_PHASE_MINUTES: Record<TimedPhaseKey, number> = {
-  overview: 8,
-  expert_group: 15,
-  home_group: 12,
-  individual_quiz: 10,
-};
+/** 단계별 추천·타이머 기본 시간(분) */
+export const TEACHER_PHASE_MINUTES: Record<TimedPhaseKey, number> = Object.fromEntries(
+  PHASE_STEP_DEFS.map((step) => [step.key, step.recommendedMinutes]),
+) as Record<TimedPhaseKey, number>;
 
 export function isTimedPhase(phase: ActivityPhase): phase is TimedPhaseKey {
   return phase !== "waiting" && phase !== "results";

@@ -4,7 +4,11 @@ import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { TEACHER_PHASE_MINUTES, type TimedPhase } from "@/lib/activity-phases";
+import {
+  getPhaseStepDef,
+  TEACHER_PHASE_MINUTES,
+  type TimedPhase,
+} from "@/lib/activity-phases";
 
 function formatHhMmSs(totalSeconds: number) {
   const s = Math.max(0, Math.floor(totalSeconds));
@@ -46,20 +50,32 @@ function secondsToTimerDigits(totalSeconds: number) {
 /**
  * 호스트 타이머 — 단계별 기본값 + 직접 편집 가능. 순수 클라이언트 상태로만 동작합니다.
  */
+function phaseDefaultSeconds(phase: TimedPhase) {
+  return TEACHER_PHASE_MINUTES[phase] * 60;
+}
+
 export function PhaseTimerContent({ phase }: { phase: TimedPhase }) {
-  const defaultMinutes = TEACHER_PHASE_MINUTES[phase];
-  const [timerRemainingSec, setTimerRemainingSec] = useState<number>(
-    defaultMinutes * 60,
-  );
-  const [resetBaselineSec, setResetBaselineSec] = useState<number>(
-    defaultMinutes * 60,
-  );
+  const step = getPhaseStepDef(phase);
+  const defaultMinutes = step.recommendedMinutes;
+  const defaultSeconds = phaseDefaultSeconds(phase);
+
+  const [timerRemainingSec, setTimerRemainingSec] = useState(defaultSeconds);
+  const [resetBaselineSec, setResetBaselineSec] = useState(defaultSeconds);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [timerInputDigits, setTimerInputDigits] = useState(
-    secondsToTimerDigits(defaultMinutes * 60),
+    secondsToTimerDigits(defaultSeconds),
   );
   const timerInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    const nextSeconds = phaseDefaultSeconds(phase);
+    setTimerRemainingSec(nextSeconds);
+    setResetBaselineSec(nextSeconds);
+    setTimerInputDigits(secondsToTimerDigits(nextSeconds));
+    setIsTimerRunning(false);
+    setIsEditing(false);
+  }, [phase]);
 
   useEffect(() => {
     if (!isTimerRunning) return;
