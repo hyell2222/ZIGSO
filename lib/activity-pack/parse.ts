@@ -57,7 +57,7 @@ function readRole(
   return {
     id: roleId,
     name: String(r.name ?? "").trim(),
-    segment: String(r.segment ?? "").trim(),
+    segment: String(r.segment ?? ""),
     practiceQuestions,
     testQuestions,
   };
@@ -109,7 +109,7 @@ function readQuestion(
 
   return {
     id,
-    prompt: String(q.prompt ?? "").trim(),
+    prompt: String(q.prompt ?? ""),
     choices,
     correctIndex,
     hints,

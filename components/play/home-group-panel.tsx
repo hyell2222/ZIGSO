@@ -10,6 +10,7 @@ import {
   PlayPhaseSectionBadge,
   PlayStudentTopBanner,
 } from "@/components/play/play-phase-layout";
+import { PlaySegmentText } from "@/components/play/play-question-support";
 import { PracticeQuestionCard } from "@/components/play/practice-question-card";
 import { LoadingState } from "@/components/ui/loading-state";
 import { activityLayoutType } from "@/components/activity/activity-layout-typography";
@@ -239,14 +240,7 @@ export function GroupPhasePanel({
             ) : (
               <div className={playPhaseDualSectionGrid}>
                 <PlayPhaseSection title={segmentTitle} variant="active">
-                  <p
-                    className={cn(
-                      "whitespace-pre-line rounded-xl border border-[var(--border)] bg-[var(--card-bg)] p-4 leading-relaxed @md:p-6",
-                      t.playPanelBody,
-                    )}
-                  >
-                    {activeRole.segment}
-                  </p>
+                  <PlaySegmentText className="@md:p-6">{activeRole.segment}</PlaySegmentText>
                 </PlayPhaseSection>
 
                 {practiceQuestions.length > 0 ? (

@@ -39,6 +39,23 @@ export function getTestQuestions(pack: ActivityPack): QuizQuestion[] {
   return pack.roles.flatMap((r) => r.testQuestions);
 }
 
+/** 실전 문제 — 역할별 지문 + 문항 묶음 */
+export type TestQuestionRoleSection = {
+  roleId: string;
+  segment: string;
+  questions: QuizQuestion[];
+};
+
+export function getTestQuestionSections(pack: ActivityPack): TestQuestionRoleSection[] {
+  return pack.roles
+    .filter((role) => role.testQuestions.length > 0)
+    .map((role) => ({
+      roleId: role.id,
+      segment: role.segment,
+      questions: role.testQuestions,
+    }));
+}
+
 /** 해설 모달에 표시할 문항이 있는지 */
 export function hasReviewQuestions(pack: ActivityPack): boolean {
   const practiceCount = pack.roles.reduce(

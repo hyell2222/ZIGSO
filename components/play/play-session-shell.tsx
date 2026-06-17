@@ -453,6 +453,7 @@ export function PlaySessionShell({
         pack={activityPack}
         groupName={groupName}
         roleLabel={assignedRoleLabel}
+        roleScopeKey={sessionId ?? ""}
         baseScore={playerQuery.data?.base_score ?? null}
         submittedAnswers={playerQuery.data?.individual_quiz_answers ?? undefined}
         submittedAt={playerQuery.data?.individual_quiz_submitted_at ?? null}

@@ -1,6 +1,7 @@
 "use client";
 
 import { activityLayoutType } from "@/components/activity/activity-layout-typography";
+import { playPreservedTextClass } from "@/components/play/play-question-support";
 import { CHOICE_LABELS } from "@/lib/activity-pack/validate";
 import type { QuizQuestion } from "@/lib/activity-pack/types";
 import { cn } from "@/lib/utils";
@@ -15,9 +16,18 @@ type Props = {
   disabled?: boolean;
   /** 정답/오답 표시 (결과·복기용) */
   reveal?: boolean;
+  /** 문항 번호 시작값 (역할별 묶음일 때 이어서 번호 매기기) */
+  startIndex?: number;
 };
 
-export function QuizQuestionList({ questions, selected, onSelect, disabled, reveal }: Props) {
+export function QuizQuestionList({
+  questions,
+  selected,
+  onSelect,
+  disabled,
+  reveal,
+  startIndex = 0,
+}: Props) {
   return (
     <ol className="space-y-4">
       {questions.map((q, qi) => {
@@ -27,8 +37,8 @@ export function QuizQuestionList({ questions, selected, onSelect, disabled, reve
             key={q.id}
             className="rounded-xl border border-[var(--border)] bg-[var(--card-bg)] p-4 @md:p-5"
           >
-            <p className={cn("mb-3 font-medium", t.playPanelBody)}>
-              <span className="mr-1.5 text-[var(--muted-foreground)]">{qi + 1}.</span>
+            <p className={cn("mb-3 font-medium", playPreservedTextClass)}>
+              <span className="mr-1.5 text-[var(--muted-foreground)]">{startIndex + qi + 1}.</span>
               {q.prompt}
             </p>
             <div className="space-y-2">

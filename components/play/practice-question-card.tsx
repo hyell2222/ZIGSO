@@ -8,6 +8,7 @@ import {
   PlayQuestionExplanation,
   PlayQuestionHelperText,
   PlayQuestionHints,
+  playPreservedTextClass,
 } from "@/components/play/play-question-support";
 import { Button } from "@/components/ui/button";
 import {
@@ -122,7 +123,7 @@ export function PracticeQuestionCard({
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--card-bg)] p-4 @md:p-5">
       <div className="mb-3 flex items-center justify-between gap-2">
-        <p className={cn("font-medium", t.playPanelBody)}>{question.prompt}</p>
+        <p className={cn("font-medium", playPreservedTextClass)}>{question.prompt}</p>
       </div>
 
       <div className="space-y-2">

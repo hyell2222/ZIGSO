@@ -12,7 +12,7 @@ import {
   PlayStudentTopBanner,
   playPhaseFormActions,
 } from "@/components/play/play-phase-layout";
-import { PlayQuestionHelperText } from "@/components/play/play-question-support";
+import { PlayQuestionHelperText, PlaySegmentText } from "@/components/play/play-question-support";
 import { BaseScoreGuideModal } from "@/components/play/base-score-guide-modal";
 import { GuideInfoModal } from "@/components/play/guide-info-modal";
 import { QuizSubmitSummary } from "@/components/play/quiz-submit-summary";
@@ -24,14 +24,16 @@ import {
   selectedToAnswers,
 } from "@/components/play/quiz-question-list";
 import { Button } from "@/components/ui/button";
-import { PLAYER_MESSAGES, gradeQuiz, getTestQuestions } from "@/lib/activity-pack/engine";
+import { PLAYER_MESSAGES, gradeQuiz, getTestQuestionSections, getTestQuestions } from "@/lib/activity-pack/engine";
 import { buildStadScoreSnapshot } from "@/lib/activity-pack/stad-guide";
+import { codenameForRole } from "@/lib/play/role-codenames";
 import type { ActivityPack, QuizAnswer } from "@/lib/activity-pack/types";
 
 type Props = {
   pack: ActivityPack;
   groupName: string | null;
   roleLabel?: string | null;
+  roleScopeKey?: string;
   /** 2단계 연습으로 정해진 기준 점수 (0~100) */
   baseScore?: number | null;
   /** 이미 제출한 응답 (있으면 결과 표시) */
@@ -48,6 +50,7 @@ export function IndividualQuizPanel({
   pack,
   groupName,
   roleLabel,
+  roleScopeKey = "",
   baseScore,
   submittedAnswers,
   submittedAt,
@@ -56,6 +59,16 @@ export function IndividualQuizPanel({
   pending,
 }: Props) {
   const questions = useMemo(() => getTestQuestions(pack), [pack]);
+  const testSections = useMemo(() => getTestQuestionSections(pack), [pack]);
+  const roleIds = useMemo(() => pack.roles.map((r) => r.id), [pack.roles]);
+  const questionOffsets = useMemo(() => {
+    let offset = 0;
+    return testSections.map((section) => {
+      const start = offset;
+      offset += section.questions.length;
+      return start;
+    });
+  }, [testSections]);
   const submitted = Boolean(submittedAt);
   const [justSubmitted, setJustSubmitted] = useState(false);
   const isSubmitted = submitted || justSubmitted;
@@ -171,13 +184,28 @@ export function IndividualQuizPanel({
             </div>
           }
         >
-          <QuizQuestionList
-            questions={questions}
-            selected={selected}
-            onSelect={(qid, ci) => setSelected((prev) => ({ ...prev, [qid]: ci }))}
-            disabled={busy || isSubmitted}
-            reveal={isSubmitted}
-          />
+          <div className="space-y-5">
+            {testSections.map((section, sectionIndex) => {
+              const sectionLabel = codenameForRole(roleScopeKey, section.roleId, roleIds);
+              return (
+                <PlayPhaseSection
+                  key={section.roleId}
+                  title={sectionLabel}
+                  variant="active"
+                >
+                  <PlaySegmentText className="mb-4">{section.segment}</PlaySegmentText>
+                  <QuizQuestionList
+                    questions={section.questions}
+                    selected={selected}
+                    onSelect={(qid, ci) => setSelected((prev) => ({ ...prev, [qid]: ci }))}
+                    disabled={busy || isSubmitted}
+                    reveal={isSubmitted}
+                    startIndex={questionOffsets[sectionIndex] ?? 0}
+                  />
+                </PlayPhaseSection>
+              );
+            })}
+          </div>
           {!isSubmitted ? (
             <>
               <PlayQuestionHelperText className="mt-4">

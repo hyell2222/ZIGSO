@@ -216,6 +216,7 @@ function SandboxStudentPanelView({
         pack={pack}
         groupName={group?.name ?? null}
         roleLabel={roleLabel}
+        roleScopeKey={scopeKey}
         baseScore={primaryPlayer.base_score ?? null}
         submittedAnswers={primaryPlayer.individual_quiz_answers}
         submittedAt={primaryPlayer.individual_quiz_submitted_at ?? null}

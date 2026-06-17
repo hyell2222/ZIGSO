@@ -19,6 +19,7 @@ import {
 } from "@/components/play/practice-question-card";
 import { playPhaseDualSectionGrid } from "@/components/activity/activity-layout-chrome";
 import { activityLayoutType } from "@/components/activity/activity-layout-typography";
+import { PlaySegmentText } from "@/components/play/play-question-support";
 import { Button } from "@/components/ui/button";
 import {
   computeBaseScoreFromPracticeResults,
@@ -155,14 +156,7 @@ export function ExpertPhasePanel({
           <>
             <div className={playPhaseDualSectionGrid}>
               <PlayPhaseSection title="내가 맡은 부분" variant="active" className="min-h-0">
-                <p
-                  className={cn(
-                    "whitespace-pre-line rounded-xl border border-[var(--border)] bg-[var(--card-bg)] p-4 leading-relaxed @md:p-5",
-                    t.playPanelBody,
-                  )}
-                >
-                  {role.segment}
-                </p>
+                <PlaySegmentText>{role.segment}</PlaySegmentText>
               </PlayPhaseSection>
 
               <PlayPhaseSection

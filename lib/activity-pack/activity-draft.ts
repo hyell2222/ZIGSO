@@ -142,7 +142,7 @@ export function editorDraftToPack(draft: ActivityEditorDraft): ActivityPack {
     const explanation = includeScaffold ? raw.explanation.trim() : "";
     return {
       id,
-      prompt: raw.prompt.trim(),
+      prompt: raw.prompt,
       choices,
       correctIndex,
       hints,
@@ -170,7 +170,7 @@ export function editorDraftToPack(draft: ActivityEditorDraft): ActivityPack {
     return {
       id: roleId,
       name: "",
-      segment: rawRole.segment.trim(),
+      segment: String(rawRole.segment ?? ""),
       practiceQuestions: toQuestions(rawRole.practiceQuestions, `${roleId}_practice`, true),
       testQuestions: toQuestions(rawRole.testQuestions, `${roleId}_test`, false),
     };
