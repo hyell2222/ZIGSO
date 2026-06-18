@@ -110,8 +110,10 @@ export const ACTIVITY_FLOW_STEPS = PHASE_STEP_DEFS.map((s) => ({
   title: s.title,
 }));
 
-/** 활동 에디터 — 문항 유형 힌트 */
+/** 활동 에디터 — 문항·지문 유형 힌트 */
 export const EDITOR_QUESTION_HINTS = {
+  segment:
+    "2단계(깊게 파고들기)에서 이 역할의 전문가가 읽고 학습할 지문입니다. 홈 집단에서 팀원에게 설명할 내용이므로 핵심 개념과 흐름이 분명한 글로 작성하세요.",
   practice:
     "2단계(깊게 파고들기) 연습 문제입니다. 문항당 최대 3번까지 제출할 수 있고, 틀릴 때마다 30점씩 감점됩니다(100·70·40·10점). 문항별 점수의 평균이 STAD 기준 점수가 됩니다.",
   test:
