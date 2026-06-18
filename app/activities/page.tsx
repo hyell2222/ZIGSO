@@ -110,12 +110,8 @@ export default function ActivitiesPage() {
           setPendingDeleteRow(null);
         }}
       >
-        <p className="text-sm text-[var(--foreground)]">
-          <span className="font-semibold">「{pendingDeleteTitle}」</span> 활동을 삭제할까요?
-        </p>
-        <p className="mt-2 text-sm text-[var(--muted-foreground)]">
-          연결된 활동 기록·진행 데이터도 함께 삭제되며 되돌릴 수 없습니다.
-        </p>
+        <p>「{pendingDeleteTitle}」 활동을 삭제할까요?</p>
+        <p>연결된 활동 기록·진행 데이터도 함께 삭제되며 되돌릴 수 없습니다.</p>
       </ConfirmModal>
       <main className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8">
         {sessionQuery.data ? (

@@ -134,13 +134,8 @@ function ReportsSessionsListPanel({ teacherUserId }: { teacherUserId: string }) 
           setPendingDeleteRow(null);
         }}
       >
-        <p className="text-sm text-[var(--foreground)]">
-          <span className="font-semibold">「{pendingDeleteTitle}」</span> 활동 기록을
-          삭제할까요?
-        </p>
-        <p className="mt-2 text-sm text-[var(--muted-foreground)]">
-          모둠·참가 데이터가 삭제되며 되돌릴 수 없습니다. 활동 원본은 유지됩니다.
-        </p>
+        <p>「{pendingDeleteTitle}」 활동 기록을 삭제할까요?</p>
+        <p>모둠·참가 데이터가 삭제되며 되돌릴 수 없습니다. 활동 원본은 유지됩니다.</p>
       </ConfirmModal>
 
       <ul className="space-y-3">

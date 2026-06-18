@@ -253,10 +253,8 @@ function RoleTabList({
         onClose={() => setPendingDeleteId(null)}
         onConfirm={handleConfirmDelete}
       >
-        <p className="text-sm text-[var(--foreground)]">
-          <span className="font-semibold">{pendingDeleteLabel}</span>을(를) 삭제할까요?
-        </p>
-        <p className="mt-2 text-sm text-[var(--muted-foreground)]">
+        <p>{pendingDeleteLabel}을(를) 삭제할까요?</p>
+        <p>
           {pendingDeleteRole && roleHasContent(pendingDeleteRole)
             ? "작성된 학습 지문과 문항도 함께 삭제됩니다. 이 작업은 되돌릴 수 없습니다."
             : "이 작업은 되돌릴 수 없습니다."}
@@ -667,10 +665,8 @@ function QuestionListEditor({
       onClose={() => setPendingDeleteQuestionId(null)}
       onConfirm={handleConfirmDeleteQuestion}
     >
-      <p className="text-sm text-[var(--foreground)]">
-        <span className="font-semibold">{pendingDeleteLabel}</span>을(를) 삭제할까요?
-      </p>
-      <p className="mt-2 text-sm text-[var(--muted-foreground)]">
+      <p>{pendingDeleteLabel}을(를) 삭제할까요?</p>
+      <p>
         {pendingDeleteQuestion && questionHasContent(pendingDeleteQuestion)
           ? "작성된 발문·보기·힌트·해설도 함께 삭제됩니다. 이 작업은 되돌릴 수 없습니다."
           : "이 작업은 되돌릴 수 없습니다."}
