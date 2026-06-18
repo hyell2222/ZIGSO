@@ -15,6 +15,7 @@ import { FormField, formLabelClass } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { generateRoleQuestionsWithAI } from "@/lib/api/ai-activity";
+import { LearningContentAIModal } from "@/components/teacher/learning-content-ai-modal";
 import {
   createEmptyQuestion,
   createEmptyRole,
@@ -423,6 +424,8 @@ function LearningContentBlock({
   onChange: (role: EditorRole) => void;
   onRemove: () => void;
 }) {
+  const [aiModalOpen, setAiModalOpen] = useState(false);
+
   return (
     <article className="rounded-xl border border-[var(--border)] bg-[var(--card-bg)] p-4">
       <div className="mb-4 flex items-center justify-between gap-2">
@@ -440,7 +443,26 @@ function LearningContentBlock({
       </div>
 
       <div className="space-y-5">
-        <FormField label="학습 내용" htmlFor={`segment-${role.localId}`} required>
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between gap-2">
+            <label htmlFor={`segment-${role.localId}`} className={formLabelClass}>
+              학습 내용
+              <span className="text-[var(--danger)]" aria-hidden>
+                {" "}
+                *
+              </span>
+            </label>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="h-8 gap-1 px-2 text-xs"
+              onClick={() => setAiModalOpen(true)}
+            >
+              <Sparkles className="h-3.5 w-3.5 text-[var(--primary)]" />
+              AI 생성
+            </Button>
+          </div>
           <Textarea
             id={`segment-${role.localId}`}
             rows={8}
@@ -449,7 +471,14 @@ function LearningContentBlock({
             placeholder="학습할 내용을 입력하세요."
             className={cn(textareaClass, "min-h-[5rem]")}
           />
-        </FormField>
+        </div>
+
+        <LearningContentAIModal
+          open={aiModalOpen}
+          onClose={() => setAiModalOpen(false)}
+          activityTitle={activityTitle}
+          onGenerated={(segment) => onChange({ ...role, segment })}
+        />
 
         <div className="space-y-5">
           <QuestionListEditor

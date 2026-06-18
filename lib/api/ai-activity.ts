@@ -1,5 +1,19 @@
+import type { ContentDifficulty } from "@/lib/activity-pack/content-difficulty";
 import type { ContentLanguage } from "@/lib/activity-pack/content-language";
 import type { QuizQuestion } from "@/lib/activity-pack/types";
+
+/** POST /api/ai/generate-learning-content — 학습 주제 기반 학습 내용 생성 */
+
+export type AILearningContentRequest = {
+  topic: string;
+  activityTitle?: string;
+  contentLanguage?: ContentLanguage;
+  difficulty?: ContentDifficulty;
+};
+
+export type AILearningContentResponse = {
+  segment: string;
+};
 
 /** POST /api/ai/generate-role-questions — 학습 내용 기반 문항 생성 */
 
@@ -35,6 +49,43 @@ function parseAIQuestionsResponse(json: unknown): AIRoleQuestionsResponse {
   }
 
   return { questions: questions as QuizQuestion[] };
+}
+
+function parseAILearningContentResponse(json: unknown): AILearningContentResponse {
+  if (!json || typeof json !== "object" || !("segment" in json)) {
+    throw new Error("AI 응답 형식이 올바르지 않습니다.");
+  }
+
+  const segment = String((json as { segment?: unknown }).segment ?? "").trim();
+  if (!segment) {
+    throw new Error("생성된 학습 내용이 없습니다.");
+  }
+
+  return { segment };
+}
+
+export async function generateLearningContentWithAI(
+  body: AILearningContentRequest,
+): Promise<AILearningContentResponse> {
+  const res = await fetch("/api/ai/generate-learning-content/", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    let message = "";
+    try {
+      const json = (await res.json()) as { error?: string; detail?: string };
+      message = formatAIErrorPayload(json);
+    } catch {
+      message = await res.text().catch(() => "");
+    }
+    throw new Error(message || `AI 호출 실패 (HTTP ${res.status})`);
+  }
+
+  const json: unknown = await res.json();
+  return parseAILearningContentResponse(json);
 }
 
 export async function generateRoleQuestionsWithAI(
