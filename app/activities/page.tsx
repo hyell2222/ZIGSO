@@ -17,6 +17,7 @@ import { LoadingState } from "@/components/ui/loading-state";
 import { PageHeader } from "@/components/layout/page-header";
 import { TopNav } from "@/components/layout/top-nav";
 import { Button } from "@/components/ui/button";
+import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { ROUTES } from "@/lib/routes";
 
 export default function ActivitiesPage() {
@@ -24,6 +25,7 @@ export default function ActivitiesPage() {
   const queryClient = useQueryClient();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [pendingDeleteRow, setPendingDeleteRow] = useState<ActivityListRow | null>(null);
 
   const sessionQuery = useRequireTeacherSession();
 
@@ -90,20 +92,31 @@ export default function ActivitiesPage() {
   };
 
   const handleDelete = (row: ActivityListRow) => {
-    const title = row.title?.trim() || "제목 없는 활동";
-    if (
-      !window.confirm(
-        `「${title}」활동을 삭제할까요?\n연결된 활동 기록·진행 데이터도 함께 삭제되며 되돌릴 수 없습니다.`,
-      )
-    ) {
-      return;
-    }
-    deleteMutation.mutate(row.id);
+    setPendingDeleteRow(row);
   };
+
+  const pendingDeleteTitle = pendingDeleteRow?.title?.trim() || "제목 없는 활동";
 
   return (
     <div className="min-h-screen">
       <TopNav />
+      <ConfirmModal
+        open={pendingDeleteRow !== null}
+        title="활동 삭제"
+        onClose={() => setPendingDeleteRow(null)}
+        onConfirm={() => {
+          if (!pendingDeleteRow) return;
+          deleteMutation.mutate(pendingDeleteRow.id);
+          setPendingDeleteRow(null);
+        }}
+      >
+        <p className="text-sm text-[var(--foreground)]">
+          <span className="font-semibold">「{pendingDeleteTitle}」</span> 활동을 삭제할까요?
+        </p>
+        <p className="mt-2 text-sm text-[var(--muted-foreground)]">
+          연결된 활동 기록·진행 데이터도 함께 삭제되며 되돌릴 수 없습니다.
+        </p>
+      </ConfirmModal>
       <main className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8">
         {sessionQuery.data ? (
           <div className="space-y-6">

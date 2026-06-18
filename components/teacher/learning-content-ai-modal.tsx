@@ -19,6 +19,7 @@ import {
   type ContentLanguage,
 } from "@/lib/activity-pack/content-language";
 import { cn } from "@/lib/utils";
+import { Z } from "@/lib/ui/z-index";
 
 const modalTitleId = "learning-content-ai-modal-title";
 
@@ -111,6 +112,7 @@ export function LearningContentAIModal({ open, onClose, activityTitle, onGenerat
       onClose={handleClose}
       title="AI 학습 내용 생성"
       titleId={modalTitleId}
+      zIndexClassName={Z.modal}
       contentClassName="space-y-4 px-5 py-4"
       footer={
         <>
@@ -145,24 +147,19 @@ export function LearningContentAIModal({ open, onClose, activityTitle, onGenerat
         />
       </FormField>
 
-      <div className="space-y-4 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4">
-        <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted-foreground)]">
-          생성 옵션
-        </p>
-        <OptionButtonGroup
-          label="언어"
-          options={CONTENT_LANGUAGE_OPTIONS}
-          value={contentLanguage}
-          onChange={setContentLanguage}
-        />
+      <OptionButtonGroup
+        label="언어"
+        options={CONTENT_LANGUAGE_OPTIONS}
+        value={contentLanguage}
+        onChange={setContentLanguage}
+      />
 
-        <OptionButtonGroup
-          label="난이도"
-          options={CONTENT_DIFFICULTY_OPTIONS}
-          value={difficulty}
-          onChange={setDifficulty}
-        />
-      </div>
+      <OptionButtonGroup
+        label="난이도"
+        options={CONTENT_DIFFICULTY_OPTIONS}
+        value={difficulty}
+        onChange={setDifficulty}
+      />
 
       {error ? <p className="text-sm text-[var(--danger)]">{error}</p> : null}
     </Modal>

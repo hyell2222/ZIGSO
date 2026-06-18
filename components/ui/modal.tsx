@@ -6,6 +6,7 @@ import { useEffect, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { Z } from "@/lib/ui/z-index";
 
 /** 다이얼로그·인라인 폼 공통 최대 너비 */
 const MODAL_DEFAULT_MAX_WIDTH = "w-full max-w-[min(100%,28rem)]";
@@ -110,7 +111,7 @@ export function Modal({
   children,
   footer,
   variant = "viewport",
-  zIndexClassName,
+  zIndexClassName = Z.modal,
   overlayClassName,
   closeOnEscape = true,
   sheetOnNarrow = false,

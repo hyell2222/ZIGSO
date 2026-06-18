@@ -4,6 +4,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import {
   Plus,
   Trash2,
+  X,
   CheckCircle2,
   Circle,
   Sparkles,
@@ -12,6 +13,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { FormField, formLabelClass } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -152,12 +154,24 @@ function RoleTabList({
   onAdd: () => void;
   onRemove: (localId: string) => void;
 }) {
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+
+  const pendingDeleteIndex = pendingDeleteId
+    ? roles.findIndex((r) => r.localId === pendingDeleteId)
+    : -1;
+  const pendingDeleteRole = pendingDeleteIndex >= 0 ? roles[pendingDeleteIndex] : null;
+  const pendingDeleteLabel =
+    pendingDeleteIndex >= 0 ? editorRoleLabel(pendingDeleteIndex) : "";
+
+  const handleConfirmDelete = () => {
+    if (!pendingDeleteId) return;
+    onRemove(pendingDeleteId);
+    setPendingDeleteId(null);
+  };
+
   return (
-    <div
-      className="flex flex-wrap items-center gap-2"
-      role="tablist"
-      aria-label="역할 선택"
-    >
+    <>
+      <div className="flex flex-wrap items-end gap-1" role="tablist" aria-label="역할 선택">
       {roles.map((role, rIdx) => {
         const isActive = role.localId === activeRoleId;
         const done = roleHasContent(role);
@@ -167,34 +181,31 @@ function RoleTabList({
           <div
             key={role.localId}
             className={cn(
-              "inline-flex shrink-0 items-stretch overflow-hidden rounded-md border transition-colors",
+              "group/tab inline-flex shrink-0 items-center rounded-t-lg border transition-colors",
               isActive
-                ? "border-[var(--primary)] shadow-[var(--elevation-sm)]"
-                : "border-[var(--border)] bg-[var(--card-bg)]",
+                ? "relative z-10 -mb-px border-[var(--border)] border-b-[var(--card-bg)] bg-[var(--card-bg)]"
+                : "border-transparent",
             )}
           >
             <button
               type="button"
               role="tab"
               aria-selected={isActive}
+              id={`role-tab-${role.localId}`}
+              aria-controls={`role-panel-${role.localId}`}
               onClick={() => onSelect(role.localId)}
               className={cn(
-                "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-colors",
+                "inline-flex items-center gap-1.5 py-2.5 pl-4 text-xs font-semibold transition-colors",
+                canRemoveRole ? "pr-1.5" : "pr-4",
                 isActive
-                  ? "bg-[var(--primary)] text-[var(--on-primary)]"
-                  : "text-[var(--foreground)] hover:bg-[color-mix(in_srgb,var(--primary)_6%,transparent)]",
+                  ? "text-[var(--primary)]"
+                  : "rounded-t-lg text-[var(--muted-foreground)] hover:text-[var(--foreground)]",
               )}
             >
               <span
                 className={cn(
                   "h-1.5 w-1.5 rounded-full",
-                  done
-                    ? isActive
-                      ? "bg-[var(--on-primary)]"
-                      : "bg-[var(--primary)]"
-                    : isActive
-                      ? "bg-[var(--on-primary)]/50"
-                      : "bg-[var(--border)]",
+                  done ? "bg-[var(--primary)]" : "bg-[var(--border)]",
                 )}
                 aria-hidden
               />
@@ -203,36 +214,63 @@ function RoleTabList({
             {canRemoveRole ? (
               <button
                 type="button"
-                onClick={() => onRemove(role.localId)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setPendingDeleteId(role.localId);
+                }}
                 aria-label={`${label} 삭제`}
                 className={cn(
-                  "inline-flex items-center border-l px-2 transition-colors",
+                  "mr-2 rounded-sm p-0.5 text-[var(--muted-foreground)] transition-opacity hover:bg-[color-mix(in_srgb,var(--danger)_10%,transparent)] hover:text-[var(--danger)]",
                   isActive
-                    ? "border-[color-mix(in_srgb,var(--on-primary)_22%,transparent)] text-[var(--on-primary)] hover:bg-[color-mix(in_srgb,var(--danger)_30%,var(--primary))]"
-                    : "border-[var(--border)] text-[var(--muted-foreground)] hover:bg-[color-mix(in_srgb,var(--danger)_8%,transparent)] hover:text-[var(--danger)]",
+                    ? "opacity-70 hover:opacity-100"
+                    : "opacity-0 group-hover/tab:opacity-70 group-hover/tab:hover:opacity-100",
                 )}
               >
-                <Trash2 className="h-3.5 w-3.5" />
+                <X className="h-3 w-3" strokeWidth={2.5} />
               </button>
-            ) : null}
+            ) : (
+              <span className="w-1" aria-hidden />
+            )}
           </div>
         );
       })}
 
       {canAddRole ? (
-        <Button
+        <button
           type="button"
-          size="sm"
-          variant="ghost"
-          className="h-8 shrink-0 gap-1 px-2 text-xs text-[var(--primary)]"
+          className="mb-0.5 inline-flex shrink-0 items-center gap-1 rounded-t-md px-3 py-2 text-xs font-semibold text-[var(--primary)] transition-colors hover:bg-[color-mix(in_srgb,var(--primary)_6%,var(--card-bg))]"
           onClick={onAdd}
         >
           <Plus className="h-3.5 w-3.5" />
           역할 추가
-        </Button>
+        </button>
       ) : null}
-    </div>
+      </div>
+
+      <ConfirmModal
+        open={pendingDeleteId !== null}
+        title="역할 삭제"
+        onClose={() => setPendingDeleteId(null)}
+        onConfirm={handleConfirmDelete}
+      >
+        <p className="text-sm text-[var(--foreground)]">
+          <span className="font-semibold">{pendingDeleteLabel}</span>을(를) 삭제할까요?
+        </p>
+        <p className="mt-2 text-sm text-[var(--muted-foreground)]">
+          {pendingDeleteRole && roleHasContent(pendingDeleteRole)
+            ? "작성된 학습 지문과 문항도 함께 삭제됩니다. 이 작업은 되돌릴 수 없습니다."
+            : "이 작업은 되돌릴 수 없습니다."}
+        </p>
+      </ConfirmModal>
+    </>
   );
+}
+
+function questionHasContent(question: EditorQuestion): boolean {
+  if (question.prompt.trim()) return true;
+  if (question.choices.some((choice) => choice.trim())) return true;
+  if (question.hints.trim() || question.explanation.trim()) return true;
+  return false;
 }
 
 function parseEditorHints(hints: string) {
@@ -543,12 +581,28 @@ function QuestionListEditor({
   onChange: (next: EditorQuestion[]) => void;
 }) {
   const canRemove = questions.length > MIN_QUESTIONS_PER_ROLE;
+  const [pendingDeleteQuestionId, setPendingDeleteQuestionId] = useState<string | null>(null);
+
+  const pendingDeleteIndex = pendingDeleteQuestionId
+    ? questions.findIndex((q) => q.localId === pendingDeleteQuestionId)
+    : -1;
+  const pendingDeleteQuestion =
+    pendingDeleteIndex >= 0 ? questions[pendingDeleteIndex] : null;
+  const pendingDeleteLabel =
+    pendingDeleteIndex >= 0 ? editorQuestionLabel(pendingDeleteIndex) : "";
 
   const updateQuestion = (localId: string, updater: (q: EditorQuestion) => EditorQuestion) => {
     onChange(questions.map((q) => (q.localId === localId ? updater(q) : q)));
   };
 
+  const handleConfirmDeleteQuestion = () => {
+    if (!pendingDeleteQuestionId) return;
+    onChange(questions.filter((item) => item.localId !== pendingDeleteQuestionId));
+    setPendingDeleteQuestionId(null);
+  };
+
   return (
+    <>
     <EditorSectionBlock
       variant={variant}
       label={label}
@@ -576,7 +630,7 @@ function QuestionListEditor({
                 {canRemove ? (
                   <button
                     type="button"
-                    onClick={() => onChange(questions.filter((item) => item.localId !== q.localId))}
+                    onClick={() => setPendingDeleteQuestionId(q.localId)}
                     className="rounded p-1.5 text-[var(--muted-foreground)] hover:bg-[color-mix(in_srgb,var(--danger)_8%,transparent)] hover:text-[var(--danger)]"
                     title="문항 삭제"
                   >
@@ -606,6 +660,23 @@ function QuestionListEditor({
         </Button>
       </div>
     </EditorSectionBlock>
+
+    <ConfirmModal
+      open={pendingDeleteQuestionId !== null}
+      title="문항 삭제"
+      onClose={() => setPendingDeleteQuestionId(null)}
+      onConfirm={handleConfirmDeleteQuestion}
+    >
+      <p className="text-sm text-[var(--foreground)]">
+        <span className="font-semibold">{pendingDeleteLabel}</span>을(를) 삭제할까요?
+      </p>
+      <p className="mt-2 text-sm text-[var(--muted-foreground)]">
+        {pendingDeleteQuestion && questionHasContent(pendingDeleteQuestion)
+          ? "작성된 발문·보기·힌트·해설도 함께 삭제됩니다. 이 작업은 되돌릴 수 없습니다."
+          : "이 작업은 되돌릴 수 없습니다."}
+      </p>
+    </ConfirmModal>
+    </>
   );
 }
 
@@ -707,7 +778,7 @@ export function ActivityEditorForm({ draft, onChange }: Props) {
 
       <Card>
         <CardContent className="space-y-0 p-0">
-          <div className="space-y-2 border-b border-[var(--border)] bg-[color-mix(in_srgb,var(--tint-primary-weak)_35%,var(--card-bg))] px-5 py-4">
+          <div className="border-b border-[var(--border)] bg-[color-mix(in_srgb,var(--tint-primary-weak)_28%,var(--card-bg))] px-5 pt-4">
             <RoleTabList
               roles={draft.roles}
               activeRoleId={activeRoleId}
@@ -717,13 +788,19 @@ export function ActivityEditorForm({ draft, onChange }: Props) {
               onAdd={addRole}
               onRemove={removeRole}
             />
-            <p className="text-xs leading-relaxed text-[var(--muted-foreground)]">
-              각 역할마다 학습 지문, 연습 문제, 실전 문제를 작성하세요.
-            </p>
           </div>
 
+          <p className="px-5 pt-5 text-xs leading-relaxed text-[var(--muted-foreground)]">
+            각 역할마다 학습 지문, 연습 문제, 실전 문제를 작성하세요.
+          </p>
+
           {activeRole && activeIndex >= 0 ? (
-            <div className="space-y-4 p-5">
+            <div
+              id={`role-panel-${activeRole.localId}`}
+              role="tabpanel"
+              aria-labelledby={`role-tab-${activeRole.localId}`}
+              className="space-y-4 p-5"
+            >
               <LearningContentBlock
                 key={activeRole.localId}
                 role={activeRole}

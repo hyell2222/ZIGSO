@@ -12,6 +12,7 @@ import { GroupAssignmentDashboard } from "@/components/teacher/group-assignment-
 import {
   SessionStudentReportList,
 } from "@/components/teacher/session-student-reports";
+import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { KebabMenu } from "@/components/ui/kebab-menu";
 import { PageHeader } from "@/components/layout/page-header";
 import { TopNav } from "@/components/layout/top-nav";
@@ -97,6 +98,7 @@ function SessionReportHeader({
 
 function ReportsSessionsListPanel({ teacherUserId }: { teacherUserId: string }) {
   const queryClient = useQueryClient();
+  const [pendingDeleteRow, setPendingDeleteRow] = useState<HostSessionListRow | null>(null);
 
   const listQuery = useQuery({
     queryKey: ["host-sessions", teacherUserId],
@@ -114,19 +116,34 @@ function ReportsSessionsListPanel({ teacherUserId }: { teacherUserId: string }) 
   });
 
   const handleDelete = (row: HostSessionListRow) => {
-    const label = row.activities?.title?.trim() || "제목 없는 활동";
-    if (
-      !window.confirm(
-        `「${label}」활동 기록을 삭제할까요?\n모둠·참가 데이터가 삭제되며 되돌릴 수 없습니다. 활동 원본은 유지됩니다.`,
-      )
-    ) {
-      return;
-    }
-    deleteMutation.mutate(row.id);
+    setPendingDeleteRow(row);
   };
 
+  const pendingDeleteTitle =
+    pendingDeleteRow?.activities?.title?.trim() || "제목 없는 활동";
+
   return (
-    <ul className="space-y-3">
+    <>
+      <ConfirmModal
+        open={pendingDeleteRow !== null}
+        title="활동 기록 삭제"
+        onClose={() => setPendingDeleteRow(null)}
+        onConfirm={() => {
+          if (!pendingDeleteRow) return;
+          deleteMutation.mutate(pendingDeleteRow.id);
+          setPendingDeleteRow(null);
+        }}
+      >
+        <p className="text-sm text-[var(--foreground)]">
+          <span className="font-semibold">「{pendingDeleteTitle}」</span> 활동 기록을
+          삭제할까요?
+        </p>
+        <p className="mt-2 text-sm text-[var(--muted-foreground)]">
+          모둠·참가 데이터가 삭제되며 되돌릴 수 없습니다. 활동 원본은 유지됩니다.
+        </p>
+      </ConfirmModal>
+
+      <ul className="space-y-3">
       {listQuery.data?.map((row) => {
         const title = row.activities?.title?.trim() || "제목 없는 활동";
         const phase = row.phase
@@ -161,6 +178,7 @@ function ReportsSessionsListPanel({ teacherUserId }: { teacherUserId: string }) 
         );
       })}
     </ul>
+    </>
   );
 }
 
