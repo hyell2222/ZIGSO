@@ -12,7 +12,7 @@ import {
   PlayStudentTopBanner,
   playPhaseFormActions,
 } from "@/components/play/play-phase-layout";
-import { PlayQuestionHelperText, PlaySegmentText } from "@/components/play/play-question-support";
+import { PlayQuestionHelperText } from "@/components/play/play-question-support";
 import { BaseScoreGuideModal } from "@/components/play/base-score-guide-modal";
 import { GuideInfoModal } from "@/components/play/guide-info-modal";
 import { QuizSubmitSummary } from "@/components/play/quiz-submit-summary";
@@ -28,6 +28,7 @@ import { PLAYER_MESSAGES, gradeQuiz, getTestQuestionSections, getTestQuestions }
 import { buildStadScoreSnapshot } from "@/lib/activity-pack/stad-guide";
 import { codenameForRole } from "@/lib/play/role-codenames";
 import type { ActivityPack, QuizAnswer } from "@/lib/activity-pack/types";
+import { cn } from "@/lib/utils";
 
 type Props = {
   pack: ActivityPack;
@@ -61,14 +62,7 @@ export function IndividualQuizPanel({
   const questions = useMemo(() => getTestQuestions(pack), [pack]);
   const testSections = useMemo(() => getTestQuestionSections(pack), [pack]);
   const roleIds = useMemo(() => pack.roles.map((r) => r.id), [pack.roles]);
-  const questionOffsets = useMemo(() => {
-    let offset = 0;
-    return testSections.map((section) => {
-      const start = offset;
-      offset += section.questions.length;
-      return start;
-    });
-  }, [testSections]);
+
   const submitted = Boolean(submittedAt);
   const [justSubmitted, setJustSubmitted] = useState(false);
   const isSubmitted = submitted || justSubmitted;
@@ -87,10 +81,9 @@ export function IndividualQuizPanel({
   const answeredCount = answers.length;
   const allAnswered = answeredCount >= questions.length && questions.length > 0;
 
-  const resultAnswers = isSubmitted ? (submittedAnswers ?? answers) : [];
   const grade = useMemo(
-    () => gradeQuiz(questions, resultAnswers),
-    [questions, resultAnswers],
+    () => gradeQuiz(questions, isSubmitted ? (submittedAnswers ?? answers) : []),
+    [questions, isSubmitted, submittedAnswers, answers],
   );
 
   const scoreSnapshot = useMemo(
@@ -160,79 +153,87 @@ export function IndividualQuizPanel({
       }
     >
       <PlayPhasePanel>
-        <PlayPhaseSection
-          title={isSubmitted ? "제출한 답" : "실전 문제"}
-          variant="active"
-          headerExtra={
-            <div className="flex items-center gap-2">
-              {isSubmitted ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="h-7 px-2 text-xs"
-                  onClick={() => setScoreModalOpen(true)}
-                >
-                  점수 보기
-                </Button>
-              ) : null}
-              <PlayPhaseSectionBadge>
-                {isSubmitted
-                  ? `${grade.correctCount}/${questions.length} 정답`
-                  : `${answeredCount}/${questions.length} 문항`}
-              </PlayPhaseSectionBadge>
-            </div>
-          }
-        >
-          <div className="space-y-5">
-            {testSections.map((section, sectionIndex) => {
-              const sectionLabel = codenameForRole(roleScopeKey, section.roleId, roleIds);
-              return (
-                <PlayPhaseSection
-                  key={section.roleId}
-                  title={sectionLabel}
-                  variant="active"
-                >
-                  <PlaySegmentText className="mb-4">{section.segment}</PlaySegmentText>
-                  <QuizQuestionList
-                    questions={section.questions}
-                    selected={selected}
-                    onSelect={(qid, ci) => setSelected((prev) => ({ ...prev, [qid]: ci }))}
-                    disabled={busy || isSubmitted}
-                    reveal={isSubmitted}
-                    startIndex={questionOffsets[sectionIndex] ?? 0}
-                  />
-                </PlayPhaseSection>
-              );
-            })}
-          </div>
-          {!isSubmitted ? (
-            <>
-              <PlayQuestionHelperText className="mt-4">
-                {allAnswered
-                  ? "답을 모두 골랐어요. 제출 후에는 수정할 수 없어요."
-                  : "모든 문항에 답하면 제출할 수 있어요. 실전 문제는 한 번만 응시합니다."}
-              </PlayQuestionHelperText>
-              <div className={playPhaseFormActions}>
-                <Button
-                  type="button"
-                  className="shrink-0 gap-2 min-h-10 touch-manipulation @md:min-h-11"
-                  onClick={() => void handleSubmit()}
-                  disabled={busy || !allAnswered}
-                >
-                  {busy ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin text-[var(--primary)]" aria-hidden />
-                      제출 중…
-                    </>
-                  ) : (
-                    "제출"
-                  )}
-                </Button>
+        <div className="grid items-start gap-4 lg:grid-cols-2">
+          {/* Left Column: Combined passages */}
+          <div className="lg:sticky lg:top-4">
+            <PlayPhaseSection title="학습 지문" variant="active" className="min-h-0">
+              <div className="space-y-6 rounded-xl border border-[var(--border)] bg-[var(--card-bg)] p-4 leading-relaxed @md:p-5">
+                {testSections.map((section, sectionIndex) => {
+                  const sectionLabel = codenameForRole(roleScopeKey, section.roleId, roleIds);
+                  return (
+                    <div key={section.roleId} className={cn(sectionIndex > 0 && "border-t border-[var(--border)] pt-6")}>
+                      <h4 className="text-sm font-semibold mb-2 text-[var(--primary)]">{sectionLabel}</h4>
+                      <p className="whitespace-pre-wrap text-sm leading-relaxed text-[var(--foreground)]">{section.segment}</p>
+                    </div>
+                  );
+                })}
               </div>
-            </>
-          ) : null}
-        </PlayPhaseSection>
+            </PlayPhaseSection>
+          </div>
+
+          {/* Right Column: Quiz questions */}
+          <PlayPhaseSection
+            title={isSubmitted ? "제출한 답" : "실전 문제"}
+            variant="active"
+            headerExtra={
+              <div className="flex items-center gap-2">
+                {isSubmitted ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-7 px-2 text-xs"
+                    onClick={() => setScoreModalOpen(true)}
+                  >
+                    점수 보기
+                  </Button>
+                ) : null}
+                <PlayPhaseSectionBadge>
+                  {isSubmitted
+                    ? `${grade.correctCount}/${questions.length} 정답`
+                    : `${answeredCount}/${questions.length} 문항`}
+                </PlayPhaseSectionBadge>
+              </div>
+            }
+          >
+            <div className="space-y-5">
+              <QuizQuestionList
+                questions={questions}
+                selected={selected}
+                onSelect={(qid, ci) => setSelected((prev) => ({ ...prev, [qid]: ci }))}
+                disabled={busy || isSubmitted}
+                reveal={isSubmitted}
+                startIndex={0}
+              />
+            </div>
+            {!isSubmitted ? (
+              <>
+                <PlayQuestionHelperText className="mt-4">
+                  {allAnswered
+                    ? "답을 모두 골랐어요. 제출 후에는 수정할 수 없어요."
+                    : "모든 문항에 답하면 제출할 수 있어요. 실전 문제는 한 번만 응시합니다."}
+                </PlayQuestionHelperText>
+                <div className={playPhaseFormActions}>
+                  <Button
+                    type="button"
+                    className="shrink-0 gap-2 min-h-10 touch-manipulation @md:min-h-11"
+                    onClick={() => void handleSubmit()}
+                    disabled={busy || !allAnswered}
+                  >
+                    {busy ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin text-[var(--primary)]" aria-hidden />
+                        제출 중…
+                      </>
+                    ) : (
+                      "제출"
+                    )}
+                  </Button>
+                </div>
+              </>
+            ) : null}
+          </PlayPhaseSection>
+        </div>
 
         {message ? <PlayPhaseMessage message={message} /> : null}
       </PlayPhasePanel>

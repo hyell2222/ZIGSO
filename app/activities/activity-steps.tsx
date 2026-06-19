@@ -151,7 +151,7 @@ export function ActivitySteps(props: Props) {
                 id="activity-title"
                 value={draft.title}
                 onChange={(e) => setDraft({ ...draft, title: e.target.value })}
-                placeholder="활동 제목을 입력하세요"
+                placeholder="활동 제목을 입력하세요."
                 aria-label="활동 제목"
               />
             </div>
