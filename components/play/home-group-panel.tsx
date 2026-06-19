@@ -26,7 +26,6 @@ import { codenameForRole } from "@/lib/play/role-codenames";
 import { practiceBaseScore as practiceQuestionScore } from "@/lib/activity-pack/scoring";
 import type { ActivityPack, PracticeQuestionResult } from "@/lib/activity-pack/types";
 import { cn } from "@/lib/utils";
-import { playPhaseDualSectionGrid } from "../activity/activity-layout-chrome";
 
 const t = activityLayoutType;
 
@@ -238,10 +237,14 @@ export function GroupPhasePanel({
             {!activeRole ? (
               <p className={t.playPanelBody}>아직 역할이 배정되지 않았어요.</p>
             ) : (
-              <div className={playPhaseDualSectionGrid}>
-                <PlayPhaseSection title={segmentTitle} variant="active">
-                  <PlaySegmentText className="@md:p-6">{activeRole.segment}</PlaySegmentText>
-                </PlayPhaseSection>
+              <div className="grid items-start gap-4 lg:grid-cols-2">
+                <div className="lg:sticky lg:top-4">
+                  <PlayPhaseSection title={segmentTitle} variant="active">
+                    <PlaySegmentText className="@md:p-6">
+                      {activeRole.segment}
+                    </PlaySegmentText>
+                  </PlayPhaseSection>
+                </div>
 
                 {practiceQuestions.length > 0 ? (
                   <PlayPhaseSection

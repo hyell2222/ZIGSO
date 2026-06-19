@@ -17,7 +17,6 @@ import {
   PracticeQuestionCard,
   type PracticeResult,
 } from "@/components/play/practice-question-card";
-import { playPhaseDualSectionGrid } from "@/components/activity/activity-layout-chrome";
 import { activityLayoutType } from "@/components/activity/activity-layout-typography";
 import { PlaySegmentText } from "@/components/play/play-question-support";
 import { Button } from "@/components/ui/button";
@@ -154,10 +153,12 @@ export function ExpertPhasePanel({
           <PlayPhaseMessage message={PLAYER_MESSAGES.unknownRole} />
         ) : (
           <>
-            <div className={playPhaseDualSectionGrid}>
-              <PlayPhaseSection title="내가 맡은 부분" variant="active" className="min-h-0">
-                <PlaySegmentText>{role.segment}</PlaySegmentText>
-              </PlayPhaseSection>
+            <div className="grid items-start gap-4 lg:grid-cols-2">
+              <div className="lg:sticky lg:top-4">
+                <PlayPhaseSection title="내가 맡은 부분" variant="active" className="min-h-0">
+                  <PlaySegmentText>{role.segment}</PlaySegmentText>
+                </PlayPhaseSection>
+              </div>
 
               <PlayPhaseSection
                 title="연습 문제"
