@@ -313,7 +313,8 @@ function SessionHostContent() {
   const phase = (sessionQuery.data?.phase as ActivityPhase) ?? "waiting";
 
   const assignmentGroups = useMemo<GroupAssignmentGroup[]>(() => {
-    return groupPlayersByGroup(onlinePlayers, groupRows).map((g) => {
+    const allPlayers = playersQuery.data ?? [];
+    return groupPlayersByGroup(allPlayers, groupRows).map((g) => {
       const memberRoleIds = g.members.map((m) => m.assigned_role_id);
       return {
         group: { id: g.group.id, name: g.group.name },
@@ -327,6 +328,8 @@ function SessionHostContent() {
                 sessionId ?? "",
               )
             : null,
+          assignedRoleId: m.assigned_role_id,
+          isOnline: m.is_online !== false,
           phaseComplete: isPlayerPhaseComplete(phase, m, {
             pack: activityPack,
             memberRoleIds,
@@ -334,7 +337,7 @@ function SessionHostContent() {
         })),
       };
     });
-  }, [onlinePlayers, groupRows, activityPack, sessionId, phase]);
+  }, [playersQuery.data, groupRows, activityPack, sessionId, phase]);
 
   const resultsMembers = useMemo<SessionResultsMember[]>(
     () =>
@@ -512,6 +515,7 @@ function SessionHostContent() {
             groups={assignmentGroups}
             loading={playersQuery.isLoading || groupsQuery.isLoading}
             groupBy={phase === "expert_group" ? "item" : "group"}
+            pack={activityPack}
           />
         ) : null}
 

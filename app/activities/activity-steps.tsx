@@ -20,15 +20,16 @@ import {
 import type { ActivityPack } from "@/lib/activity-pack/types";
 import { useRequireTeacherSession } from "@/lib/auth/use-require-teacher-session";
 import { ROUTES } from "@/lib/routes";
+import { LoadingState } from "@/components/ui/loading-state";
 
 type Props =
   | { mode: "create"; pageTitle?: string }
   | {
-      mode: "edit";
-      activityId: string;
-      initialPack: ActivityPack;
-      pageTitle?: string;
-    };
+    mode: "edit";
+    activityId: string;
+    initialPack: ActivityPack;
+    pageTitle?: string;
+  };
 
 function leaveEditor(router: ReturnType<typeof useRouter>) {
   if (typeof window !== "undefined" && window.opener && !window.opener.closed) {
@@ -133,11 +134,7 @@ export function ActivitySteps(props: Props) {
   const modeLabel = props.mode === "edit" ? "활동 수정" : "새 활동";
 
   if (!draft) {
-    return (
-      <div className="flex h-dvh items-center justify-center bg-[var(--background)] text-sm text-[var(--muted-foreground)]">
-        에디터를 준비하고 있습니다.
-      </div>
-    );
+    return <LoadingState variant="page" />;
   }
 
   return (

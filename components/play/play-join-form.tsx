@@ -7,6 +7,7 @@ import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { ROUTES } from "@/lib/routes";
 import { cn } from "@/lib/utils";
+import { Loader2 } from "lucide-react";
 
 export type PlayJoinFormProps = {
   joinCode: string;
@@ -79,7 +80,7 @@ export function PlayJoinForm({
   pending = false,
   titleId = "play-join-form",
   submitLabel = "참가하기",
-  pendingLabel = "불러오는 중…",
+  pendingLabel,
   showMissingCodeClue = true,
   joinCodeEditable = false,
   onJoinCodeChange,
@@ -136,7 +137,11 @@ export function PlayJoinForm({
       </FormField>
       <div className="flex justify-center pt-4">
         <Button type="submit" className="w-full" disabled={!canSubmit || pending}>
-          {pending ? pendingLabel : submitLabel}
+          {pending ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            submitLabel
+          )}
         </Button>
       </div>
       {showMissingCodeClue && !code ? (
@@ -156,7 +161,7 @@ export function PlayJoinForm({
             (message.includes("확인할 수 없") ||
               message.includes("입력") ||
               message.includes("실패")) &&
-              "text-[var(--danger)]",
+            "text-[var(--danger)]",
           )}
         >
           {message}

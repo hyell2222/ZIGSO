@@ -108,6 +108,8 @@ export function SandboxTeacherPanel({
             formatAssignedRoleLabels(pack, [m.roleId], `sandbox-${activityId}`) ??
             roleCodenameById.get(m.roleId) ??
             null,
+          assignedRoleId: m.roleId,
+          isOnline: true,
           phaseComplete: isPlayerPhaseComplete(
             phase,
             {
@@ -223,6 +225,7 @@ export function SandboxTeacherPanel({
             groups={assignmentGroups}
             loading={false}
             groupBy={phase === "expert_group" ? "item" : "group"}
+            pack={pack}
           />
         ) : null}
 

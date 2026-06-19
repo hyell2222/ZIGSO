@@ -13,17 +13,11 @@ export function PlayJoinCard({
   title = "활동 참가",
   titleId = "play-join-card",
   submitLabel = "참가하기",
-  pendingLabel = "불러오는 중…",
   ...formProps
 }: PlayJoinCardProps) {
   return (
     <Modal title={title} titleId={titleId}>
-      <PlayJoinForm
-        titleId={titleId}
-        submitLabel={submitLabel}
-        pendingLabel={pendingLabel}
-        {...formProps}
-      />
+      <PlayJoinForm titleId={titleId} submitLabel={submitLabel} {...formProps} />
     </Modal>
   );
 }
