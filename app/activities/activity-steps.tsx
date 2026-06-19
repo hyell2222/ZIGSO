@@ -5,10 +5,9 @@ import { Loader2, Save } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
-import { PageHeader } from "@/components/layout/page-header";
-import { TopNav } from "@/components/layout/top-nav";
 import { ActivityEditorForm } from "@/components/teacher/activity-editor-form";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { createActivity, updateActivity } from "@/lib/api/activities";
 import {
   createDefaultActivityDraft,
@@ -19,10 +18,19 @@ import {
 import type { ActivityPack } from "@/lib/activity-pack/types";
 import { useRequireTeacherSession } from "@/lib/auth/use-require-teacher-session";
 import { ROUTES } from "@/lib/routes";
+import { cn } from "@/lib/utils";
 
 type Props =
   | { mode: "create"; pageTitle?: string }
   | { mode: "edit"; activityId: string; initialPack: ActivityPack; pageTitle?: string };
+
+function leaveEditor(router: ReturnType<typeof useRouter>) {
+  if (typeof window !== "undefined" && window.opener && !window.opener.closed) {
+    window.close();
+    return;
+  }
+  router.push(ROUTES.activities);
+}
 
 export function ActivitySteps(props: Props) {
   const router = useRouter();
@@ -66,7 +74,7 @@ export function ActivitySteps(props: Props) {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["teacher-activities"] });
-      router.push(ROUTES.activities);
+      leaveEditor(router);
     },
     onError: (e: Error) => setErrorMessage(e.message),
   });
@@ -82,42 +90,62 @@ export function ActivitySteps(props: Props) {
     saveMutation.mutate();
   };
 
-  return (
-    <div className="app-page">
-      <TopNav />
+  const modeLabel = props.mode === "edit" ? "활동 수정" : "새 활동";
 
-      <main className="mx-auto w-full min-w-0 max-w-5xl flex-1 overflow-x-hidden px-4 py-6 pb-10 sm:py-8">
-        <div className="mb-6">
-          <PageHeader
-            title={
-              props.pageTitle ?? (props.mode === "edit" ? "활동 수정" : "활동 만들기")
-            }
-          />
+  return (
+    <div className="flex h-dvh min-h-0 flex-col overflow-hidden bg-[var(--background)]">
+      <header className="flex shrink-0 items-center gap-4 border-b border-[var(--border)] bg-[var(--surface-overlay)] px-5 py-3">
+        <span className="hidden shrink-0 text-xs font-semibold uppercase tracking-wide text-[var(--muted-foreground)] sm:inline">
+          {modeLabel}
+        </span>
+
+        <div className="min-w-0 flex-1">
+          <div className="w-full max-w-sm">
+            <Input
+              id="activity-title"
+              value={draft.title}
+              onChange={(e) => setDraft({ ...draft, title: e.target.value })}
+              placeholder="활동 제목을 입력하세요"
+              aria-label="활동 제목"
+            />
+          </div>
         </div>
 
-        <div className="mb-6 w-full min-w-0 overflow-x-hidden">
-          <ActivityEditorForm draft={draft} onChange={setDraft} />
+        <div className="ml-auto flex shrink-0 items-center gap-2">
           {errorMessage ? (
             <p
-              className="mt-4 rounded-lg border border-[var(--panel-warn-border)] bg-[var(--panel-warn-bg)] px-3 py-2 text-sm text-[var(--entry-warn-ink)]"
+              className="hidden max-w-[12rem] truncate text-xs text-[var(--danger)] lg:block"
               role="alert"
+              title={errorMessage}
             >
               {errorMessage}
             </p>
           ) : null}
-        </div>
-
-        <div className="mt-5 flex justify-end">
-          <Button type="button" onClick={handleSave} disabled={saveMutation.isPending}>
+          <Button type="button" onClick={handleSave} disabled={saveMutation.isPending} size="sm">
             {saveMutation.isPending ? (
-              <Loader2 className="mr-1.5 h-4 w-4 animate-spin text-[var(--primary)]" />
+              <Loader2 className="mr-1.5 h-4 w-4 animate-spin" aria-hidden />
             ) : (
-              <Save className="mr-1.5 h-4 w-4" />
+              <Save className="mr-1.5 h-4 w-4" aria-hidden />
             )}
             저장
           </Button>
         </div>
-      </main>
+      </header>
+
+      {errorMessage ? (
+        <p
+          className={cn(
+            "shrink-0 border-b border-[var(--panel-warn-border)] bg-[var(--panel-warn-bg)] px-5 py-2 text-sm text-[var(--entry-warn-ink)] lg:hidden",
+          )}
+          role="alert"
+        >
+          {errorMessage}
+        </p>
+      ) : null}
+
+      <div className="min-h-0 flex-1 overflow-hidden">
+        <ActivityEditorForm draft={draft} onChange={setDraft} />
+      </div>
     </div>
   );
 }

@@ -87,8 +87,17 @@ export default function ActivitiesPage() {
     window.open(url, "_blank", "noopener,noreferrer");
   };
 
+  const openEditorTab = (url: string) => {
+    if (typeof window === "undefined") return;
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
+
+  const handleNewActivity = () => {
+    openEditorTab(ROUTES.activitiesNew);
+  };
+
   const handleEdit = (row: ActivityListRow) => {
-    router.push(ROUTES.activitiesEdit(row.id));
+    openEditorTab(ROUTES.activitiesEdit(row.id));
   };
 
   const handleDelete = (row: ActivityListRow) => {
@@ -122,7 +131,7 @@ export default function ActivitiesPage() {
                 (activitiesQuery.data?.length ?? 0) > 0 ? (
                   <Button
                     type="button"
-                    onClick={() => router.push(ROUTES.activitiesNew)}
+                    onClick={handleNewActivity}
                     className="flex items-center gap-2"
                   >
                     <PlusIcon className="h-4 w-4" />
@@ -135,7 +144,7 @@ export default function ActivitiesPage() {
               <LoadingState variant="section" label="불러오는 중…" />
             ) : (activitiesQuery.data?.length ?? 0) === 0 ? (
               <div className="flex justify-center py-10">
-                <Button type="button" onClick={() => router.push(ROUTES.activitiesNew)} className="flex items-center gap-2">
+                <Button type="button" onClick={handleNewActivity} className="flex items-center gap-2">
                   <PlusIcon className="h-4 w-4" />
                   새 활동 만들기
                 </Button>

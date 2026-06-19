@@ -1,18 +1,16 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState } from "react";
 import {
-  Plus,
-  Trash2,
-  X,
   CheckCircle2,
   Circle,
-  Sparkles,
   Loader2,
+  Plus,
+  Sparkles,
+  Trash2,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { FormField, formLabelClass } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
@@ -35,9 +33,24 @@ import {
   type ActivityEditorDraft,
 } from "@/lib/activity-pack/activity-draft";
 import { DEFAULT_CONTENT_LANGUAGE } from "@/lib/activity-pack/content-language";
-import { EDITOR_QUESTION_HINTS } from "@/lib/activity-phases";
 import { cn } from "@/lib/utils";
 import { LearningContentAIModal } from "@/components/teacher/learning-content-ai-modal";
+import {
+  activityEditorChipActive,
+  activityEditorChoiceCorrect,
+  activityEditorChoicePreviewCorrect,
+  activityEditorHeaderBg,
+  activityEditorNumberBadge,
+  activityEditorQuestionCard,
+  activityEditorQuestionCardEditing,
+  activityEditorQuestionCardToolbar,
+  activityEditorQuestionHeaderBorder,
+  activityEditorQuestionPanelBg,
+  activityEditorSegmentFieldClass,
+  activityEditorSegmentHeaderBorder,
+  activityEditorSegmentPanelBg,
+  playPhaseSectionShell,
+} from "@/components/activity/activity-layout-chrome";
 
 type Props = {
   draft: ActivityEditorDraft;
@@ -49,102 +62,50 @@ type QuestionKind = "practice" | "test";
 const inputClass = "h-9 w-full text-sm";
 const textareaClass = "resize-y text-sm";
 
-const editorSectionStyles = {
-  segment: {
-    badge: "bg-[var(--tint-accent-medium)] text-[var(--accent)]",
-    badgeLabel: "지문",
-    accent: "border-l-[var(--accent)]",
-  },
-  practice: {
-    badge: "bg-[var(--tint-primary-medium)] text-[var(--primary)]",
-    badgeLabel: "연습",
-    accent: "border-l-[var(--primary)]",
-  },
-  test: {
-    badge: "bg-[var(--tint-highlight-medium)] text-[color-mix(in_srgb,var(--highlight)_85%,var(--foreground))]",
-    badgeLabel: "실전",
-    accent: "border-l-[var(--highlight)]",
-  },
-} as const;
-
-type EditorSectionVariant = keyof typeof editorSectionStyles;
-
-function EditorSectionBlock({
-  variant,
+function EditorDeleteButton({
   label,
-  hint,
-  headingId,
-  headerActions,
-  children,
+  onClick,
+  className,
 }: {
-  variant: EditorSectionVariant;
   label: string;
-  hint: string;
-  headingId: string;
-  headerActions?: ReactNode;
-  children: ReactNode;
+  onClick: () => void;
+  className?: string;
 }) {
-  const section = editorSectionStyles[variant];
-
   return (
-    <Card
-      aria-labelledby={headingId}
-      className={cn("border-l-4 shadow-none", section.accent)}
+    <Button
+      type="button"
+      variant="ghost"
+      size="icon"
+      onClick={onClick}
+      aria-label={label}
+      title={label}
+      className={cn(
+        "shrink-0 text-[var(--muted-foreground)] hover:bg-[color-mix(in_srgb,var(--danger)_12%,transparent)] hover:text-[var(--danger)]",
+        className,
+      )}
     >
-      <CardContent className="space-y-4 py-4">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0 space-y-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <span
-                className={cn(
-                  "inline-block rounded-md px-2 py-0.5 text-xs font-bold tracking-wide",
-                  section.badge,
-                )}
-              >
-                {section.badgeLabel}
-              </span>
-              <h3 id={headingId} className="text-sm font-semibold text-[var(--foreground)]">
-                {label}
-              </h3>
-            </div>
-            <p className="text-xs leading-relaxed text-[var(--muted-foreground)]">{hint}</p>
-          </div>
-          {headerActions ? <div className="flex shrink-0 items-center gap-1">{headerActions}</div> : null}
-        </div>
-        {children}
-      </CardContent>
-    </Card>
+      <Trash2 className="h-3.5 w-3.5" />
+    </Button>
   );
 }
 
-function QuestionBlock({
-  title,
-  actions,
-  children,
-}: {
-  title: string;
-  actions?: ReactNode;
-  children: ReactNode;
-}) {
-  return (
-    <div className="space-y-3 rounded-lg bg-[color-mix(in_srgb,var(--tint-primary-weak)_45%,var(--card-bg))] p-4">
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-xs font-semibold text-[var(--foreground)]">{title}</span>
-        {actions ? <div className="flex items-center gap-1">{actions}</div> : null}
-      </div>
-      {children}
-    </div>
+function roleNavTabShellClass(isActive: boolean) {
+  return cn(
+    "relative -mb-px inline-flex shrink-0 items-center rounded-t-lg border border-b-0",
+    isActive
+      ? "z-10 border-[var(--border)] border-b-[var(--background)] bg-[var(--background)]"
+      : "border-transparent",
   );
 }
 
-function RoleTabList({
+function RoleNav({
   roles,
   activeRoleId,
   canAddRole,
   canRemoveRole,
   onSelect,
   onAdd,
-  onRemove,
+  onRequestDelete,
 }: {
   roles: EditorRole[];
   activeRoleId: string;
@@ -152,121 +113,104 @@ function RoleTabList({
   canRemoveRole: boolean;
   onSelect: (localId: string) => void;
   onAdd: () => void;
-  onRemove: (localId: string) => void;
+  onRequestDelete: (localId: string) => void;
 }) {
-  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
-
-  const pendingDeleteIndex = pendingDeleteId
-    ? roles.findIndex((r) => r.localId === pendingDeleteId)
-    : -1;
-  const pendingDeleteRole = pendingDeleteIndex >= 0 ? roles[pendingDeleteIndex] : null;
-  const pendingDeleteLabel =
-    pendingDeleteIndex >= 0 ? editorRoleLabel(pendingDeleteIndex) : "";
-
-  const handleConfirmDelete = () => {
-    if (!pendingDeleteId) return;
-    onRemove(pendingDeleteId);
-    setPendingDeleteId(null);
-  };
+  const completedCount = roles.filter((role) => roleHasContent(role)).length;
 
   return (
-    <>
-      <div className="flex flex-wrap items-end gap-1" role="tablist" aria-label="역할 선택">
-      {roles.map((role, rIdx) => {
-        const isActive = role.localId === activeRoleId;
-        const done = roleHasContent(role);
-        const label = editorRoleLabel(rIdx);
+    <nav
+      className={cn(
+        "flex shrink-0 items-end justify-between gap-3 border-b border-[var(--border)] px-3 pt-1.5 sm:px-4",
+        activityEditorHeaderBg,
+      )}
+      aria-label="학습 내용 선택"
+    >
+      <div
+        className="flex min-w-0 flex-1 items-end gap-0 overflow-x-auto overscroll-x-contain pb-px"
+        role="tablist"
+      >
+        {roles.map((role, rIdx) => {
+          const isActive = role.localId === activeRoleId;
+          const label = editorRoleLabel(rIdx);
+          const done = roleHasContent(role);
 
-        return (
-          <div
-            key={role.localId}
-            className={cn(
-              "group/tab inline-flex shrink-0 items-center rounded-t-lg border transition-colors",
-              isActive
-                ? "relative z-10 -mb-px border-[var(--border)] border-b-[var(--card-bg)] bg-[var(--card-bg)]"
-                : "border-transparent",
-            )}
-          >
-            <button
-              type="button"
-              role="tab"
-              aria-selected={isActive}
-              id={`role-tab-${role.localId}`}
-              aria-controls={`role-panel-${role.localId}`}
-              onClick={() => onSelect(role.localId)}
-              className={cn(
-                "inline-flex items-center gap-1.5 py-2.5 pl-4 text-xs font-semibold transition-colors",
-                canRemoveRole ? "pr-1.5" : "pr-4",
-                isActive
-                  ? "text-[var(--primary)]"
-                  : "rounded-t-lg text-[var(--muted-foreground)] hover:text-[var(--foreground)]",
-              )}
-            >
-              <span
-                className={cn(
-                  "h-1.5 w-1.5 rounded-full",
-                  done ? "bg-[var(--primary)]" : "bg-[var(--border)]",
-                )}
-                aria-hidden
-              />
-              {label}
-            </button>
-            {canRemoveRole ? (
+          return (
+            <div key={role.localId} className={roleNavTabShellClass(isActive)}>
               <button
                 type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setPendingDeleteId(role.localId);
-                }}
-                aria-label={`${label} 삭제`}
+                role="tab"
+                aria-selected={isActive}
+                id={`role-tab-${role.localId}`}
+                aria-controls={`role-panel-${role.localId}`}
+                onClick={() => onSelect(role.localId)}
                 className={cn(
-                  "mr-2 rounded-sm p-0.5 text-[var(--muted-foreground)] transition-opacity hover:bg-[color-mix(in_srgb,var(--danger)_10%,transparent)] hover:text-[var(--danger)]",
-                  isActive
-                    ? "opacity-70 hover:opacity-100"
-                    : "opacity-0 group-hover/tab:opacity-70 group-hover/tab:hover:opacity-100",
+                  "inline-flex items-center gap-2 py-2.5 text-sm font-semibold",
+                  canRemoveRole && isActive ? "pl-3.5 pr-1 sm:pl-4" : "px-3.5 sm:px-4",
+                  isActive ? "text-[var(--primary)]" : "text-[var(--muted-foreground)]",
                 )}
               >
-                <X className="h-3 w-3" strokeWidth={2.5} />
+                <TabStatusDot done={done} />
+                <span className="whitespace-nowrap">{label}</span>
               </button>
-            ) : (
-              <span className="w-1" aria-hidden />
-            )}
-          </div>
-        );
-      })}
-
-      {canAddRole ? (
-        <button
-          type="button"
-          className="mb-0.5 inline-flex shrink-0 items-center gap-1 rounded-t-md px-3 py-2 text-xs font-semibold text-[var(--primary)] transition-colors hover:bg-[color-mix(in_srgb,var(--primary)_6%,var(--card-bg))]"
-          onClick={onAdd}
-        >
-          <Plus className="h-3.5 w-3.5" />
-          역할 추가
-        </button>
-      ) : null}
+              {canRemoveRole && isActive ? (
+                <EditorDeleteButton
+                  label={`${label} 삭제`}
+                  onClick={() => onRequestDelete(role.localId)}
+                  className="mr-2 h-7 w-7"
+                />
+              ) : null}
+            </div>
+          );
+        })}
       </div>
 
-      <ConfirmModal
-        open={pendingDeleteId !== null}
-        title="역할 삭제"
-        onClose={() => setPendingDeleteId(null)}
-        onConfirm={handleConfirmDelete}
-      >
-        <p>{pendingDeleteLabel}을(를) 삭제할까요?</p>
-        <p>
-          {pendingDeleteRole && roleHasContent(pendingDeleteRole)
-            ? "작성된 학습 지문과 문항도 함께 삭제됩니다. 이 작업은 되돌릴 수 없습니다."
-            : "이 작업은 되돌릴 수 없습니다."}
-        </p>
-      </ConfirmModal>
-    </>
+      <div className="flex shrink-0 items-center gap-2 pb-2">
+        <span
+          className={cn(
+            "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs tabular-nums",
+            completedCount === roles.length
+              ? "bg-[var(--tint-primary-medium)] font-medium text-[var(--primary)]"
+              : "border border-[var(--border)] bg-[var(--surface)] text-[var(--primary-muted)]",
+          )}
+        >
+          {completedCount}/{roles.length}
+        </span>
+        {canAddRole ? (
+          <Button type="button" variant="outline" size="sm" onClick={onAdd} className="mb-0.5 h-7 gap-1 px-2.5 text-xs">
+            <Plus className="h-3.5 w-3.5" />
+            역할 추가
+          </Button>
+        ) : null}
+      </div>
+    </nav>
   );
+}
+
+function QuestionNumber({ index, className }: { index: number; className?: string }) {
+  return (
+    <span className={cn(activityEditorNumberBadge, className)} aria-hidden>
+      {index + 1}
+    </span>
+  );
+}
+
+function TabStatusDot({ done }: { done: boolean }) {
+  return (
+    <span
+      className={cn("h-1.5 w-1.5 rounded-full", done ? "bg-[var(--primary)]" : "bg-[var(--border)]")}
+      aria-hidden
+    />
+  );
+}
+
+function roleHasContent(role: EditorRole): boolean {
+  if (role.segment.trim()) return true;
+  return [...role.practiceQuestions, ...role.testQuestions].some((q) => q.prompt.trim());
 }
 
 function questionHasContent(question: EditorQuestion): boolean {
   if (question.prompt.trim()) return true;
-  if (question.choices.some((choice) => choice.trim())) return true;
+  if (question.choices.some((c) => c.trim())) return true;
   if (question.hints.trim() || question.explanation.trim()) return true;
   return false;
 }
@@ -292,27 +236,30 @@ function mergeGeneratedQuestion(current: EditorQuestion, generated: EditorQuesti
   };
 }
 
-function QuestionAIGenerateButton({
+function AIGenerateButton({
   segment,
   activityTitle,
   kind,
   existingPrompts,
   onGenerated,
+  label = "AI 생성",
 }: {
   segment: string;
   activityTitle: string;
-  kind: QuestionKind;
-  existingPrompts: string[];
+  kind?: QuestionKind;
+  existingPrompts?: string[];
   onGenerated: (question: EditorQuestion) => void;
+  label?: string;
 }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleGenerate = async () => {
     if (!segment.trim()) {
-      setError("학습 내용을 먼저 입력하세요.");
+      setError("학습 지문을 먼저 입력하세요.");
       return;
     }
+    if (!kind || !existingPrompts) return;
     setError(null);
     setLoading(true);
     try {
@@ -334,6 +281,8 @@ function QuestionAIGenerateButton({
     }
   };
 
+  if (!kind) return null;
+
   return (
     <div className="flex flex-col items-end gap-0.5">
       <Button
@@ -345,11 +294,11 @@ function QuestionAIGenerateButton({
         onClick={() => void handleGenerate()}
       >
         {loading ? (
-          <Loader2 className="h-3.5 w-3.5 animate-spin text-[var(--primary)]" />
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
         ) : (
-          <Sparkles className="h-3.5 w-3.5 text-[var(--primary)]" />
+          <Sparkles className="h-3.5 w-3.5" />
         )}
-        AI 생성
+        {label}
       </Button>
       {error ? <p className="text-xs text-[var(--danger)]">{error}</p> : null}
     </div>
@@ -358,154 +307,469 @@ function QuestionAIGenerateButton({
 
 function SingleQuestionEditor({
   question: q,
+  qIdx,
   withScaffold,
+  showNumber = true,
   onUpdate,
+  className,
 }: {
   question: EditorQuestion;
+  qIdx: number;
   withScaffold?: boolean;
+  showNumber?: boolean;
   onUpdate: (updater: (q: EditorQuestion) => EditorQuestion) => void;
+  className?: string;
 }) {
   const canAddChoice = q.choices.length < MAX_CHOICES_PER_QUESTION;
   const canRemoveChoice = q.choices.length > MIN_CHOICES_PER_QUESTION;
   const { hint1, hint2 } = parseEditorHints(q.hints);
 
   return (
-    <div className="space-y-3">
-      <FormField label="발문" htmlFor={`q-prompt-${q.localId}`} required>
+    <div className={cn(showNumber ? "flex items-start gap-3" : "min-w-0", className)}>
+      {showNumber ? <QuestionNumber index={qIdx} /> : null}
+      <div className="min-w-0 flex-1 space-y-3">
         <Textarea
           id={`q-prompt-${q.localId}`}
           rows={2}
           value={q.prompt}
           onChange={(e) => onUpdate((cur) => ({ ...cur, prompt: e.target.value }))}
-          placeholder="발문을 입력하세요."
-          className={cn(textareaClass, "min-h-[2.5rem]")}
+          placeholder="발문을 입력하세요"
+          aria-label={`${qIdx + 1}번 발문`}
+          className={cn(textareaClass, "min-h-[2.75rem]")}
         />
-      </FormField>
 
-      <div className="space-y-1.5">
-        <p className={formLabelClass}>
-          보기
-          <span className="text-[var(--danger)]" aria-hidden>
-            {" "}
-            *
-          </span>
-        </p>
-        {q.choices.map((choice, ci) => {
-          const isCorrect = q.correctIndex === ci;
-          return (
-            <div key={ci} className="flex items-center gap-2">
-              <button
-                type="button"
-                aria-pressed={isCorrect}
-                aria-label={`${CHOICE_LABELS[ci] ?? ci + 1}번 정답`}
-                onClick={() => onUpdate((cur) => ({ ...cur, correctIndex: ci }))}
-                className={cn(
-                  "flex h-8 w-8 shrink-0 items-center justify-center rounded-md border",
-                  isCorrect
-                    ? "border-[var(--primary)] bg-[var(--tint-accent-strong)] text-[var(--primary)]"
-                    : "border-[var(--border)] text-[var(--muted-foreground)]",
-                )}
-              >
-                {isCorrect ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Circle className="h-3.5 w-3.5" />}
-              </button>
-              <span className="w-4 text-xs font-medium text-[var(--muted-foreground)]">
-                {CHOICE_LABELS[ci] ?? ci + 1}
-              </span>
-              <Input
-                value={choice}
-                onChange={(e) =>
-                  onUpdate((cur) => ({
-                    ...cur,
-                    choices: cur.choices.map((c, i) => (i === ci ? e.target.value : c)),
-                  }))
-                }
-                className={inputClass}
-              />
-              {canRemoveChoice ? (
+        <div className="space-y-1.5">
+          {q.choices.map((choice, ci) => {
+            const isCorrect = q.correctIndex === ci;
+            return (
+              <div key={ci} className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() =>
-                    onUpdate((cur) => {
-                      const choices = cur.choices.filter((_, i) => i !== ci);
-                      let correctIndex = cur.correctIndex;
-                      if (ci === cur.correctIndex) correctIndex = 0;
-                      else if (ci < cur.correctIndex) correctIndex -= 1;
-                      return { ...cur, choices, correctIndex };
-                    })
-                  }
-                  className="text-[var(--muted-foreground)] hover:text-[var(--danger)]"
+                  aria-pressed={isCorrect}
+                  aria-label={`${CHOICE_LABELS[ci] ?? ci + 1}번 정답`}
+                  onClick={() => onUpdate((cur) => ({ ...cur, correctIndex: ci }))}
+                  className={cn(
+                    "flex h-8 w-8 shrink-0 items-center justify-center rounded-md border",
+                    isCorrect ? activityEditorChoiceCorrect : "border-[var(--border)] text-[var(--muted-foreground)]",
+                  )}
                 >
-                  <Trash2 className="h-3.5 w-3.5" />
+                  {isCorrect ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Circle className="h-3.5 w-3.5" />}
                 </button>
-              ) : null}
+                <span className="w-4 text-xs font-medium text-[var(--muted-foreground)]">
+                  {CHOICE_LABELS[ci] ?? ci + 1}
+                </span>
+                <Input
+                  value={choice}
+                  onChange={(e) =>
+                    onUpdate((cur) => ({
+                      ...cur,
+                      choices: cur.choices.map((c, i) => (i === ci ? e.target.value : c)),
+                    }))
+                  }
+                  className={inputClass}
+                />
+                {canRemoveChoice ? (
+                  <EditorDeleteButton
+                    label="보기 삭제"
+                    onClick={() =>
+                      onUpdate((cur) => {
+                        const choices = cur.choices.filter((_, i) => i !== ci);
+                        let correctIndex = cur.correctIndex;
+                        if (ci === cur.correctIndex) correctIndex = 0;
+                        else if (ci < cur.correctIndex) correctIndex -= 1;
+                        return { ...cur, choices, correctIndex };
+                      })
+                    }
+                    className="h-8 w-8"
+                  />
+                ) : null}
+              </div>
+            );
+          })}
+          {canAddChoice ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              className="h-8 gap-1 px-2 text-xs text-[var(--primary)]"
+              onClick={() => onUpdate((cur) => ({ ...cur, choices: [...cur.choices, ""] }))}
+            >
+              <Plus className="h-3.5 w-3.5" />
+              보기 추가
+            </Button>
+          ) : null}
+        </div>
+
+        {withScaffold ? (
+          <details className="rounded-md border border-[var(--border)] px-3 py-1">
+            <summary className={cn("cursor-pointer py-2", formLabelClass, "text-[var(--muted-foreground)]")}>
+              힌트·해설
+            </summary>
+            <div className="space-y-3 pb-2">
+              <FormField label="1차 오답 힌트" htmlFor={`q-h1-${q.localId}`} required>
+                <Input
+                  id={`q-h1-${q.localId}`}
+                  value={hint1}
+                  onChange={(e) =>
+                    onUpdate((cur) => ({
+                      ...cur,
+                      hints: serializeEditorHints(e.target.value, parseEditorHints(cur.hints).hint2),
+                    }))
+                  }
+                  className={inputClass}
+                />
+              </FormField>
+              <FormField label="2차 오답 힌트" htmlFor={`q-h2-${q.localId}`} required>
+                <Input
+                  id={`q-h2-${q.localId}`}
+                  value={hint2}
+                  onChange={(e) =>
+                    onUpdate((cur) => ({
+                      ...cur,
+                      hints: serializeEditorHints(parseEditorHints(cur.hints).hint1, e.target.value),
+                    }))
+                  }
+                  className={inputClass}
+                />
+              </FormField>
+              <FormField label="해설" htmlFor={`q-ex-${q.localId}`} required>
+                <Textarea
+                  id={`q-ex-${q.localId}`}
+                  rows={2}
+                  value={q.explanation}
+                  onChange={(e) => onUpdate((cur) => ({ ...cur, explanation: e.target.value }))}
+                  className={cn(textareaClass, "min-h-[2.5rem]")}
+                />
+              </FormField>
             </div>
-          );
-        })}
-        {canAddChoice ? (
-          <Button
-            type="button"
-            size="sm"
-            variant="ghost"
-            className="h-8 gap-1 px-2 text-xs text-[var(--primary)]"
-            onClick={() => onUpdate((cur) => ({ ...cur, choices: [...cur.choices, ""] }))}
-          >
-            <Plus className="h-3.5 w-3.5" />
-            보기 추가
-          </Button>
+          </details>
         ) : null}
       </div>
-
-      {withScaffold ? (
-        <details open className="rounded-md border border-dashed border-[var(--border)] px-3 py-1">
-          <summary className={cn("cursor-pointer py-2", formLabelClass, "text-[var(--muted-foreground)]")}>
-            힌트·해설
-          </summary>
-          <div className="space-y-3 pb-2">
-            <FormField label="1차 오답 힌트" htmlFor={`q-hint1-${q.localId}`} required>
-              <Input
-                id={`q-hint1-${q.localId}`}
-                value={hint1}
-                onChange={(e) =>
-                  onUpdate((cur) => ({
-                    ...cur,
-                    hints: serializeEditorHints(e.target.value, parseEditorHints(cur.hints).hint2),
-                  }))
-                }
-                placeholder="첫 번째 오답 시 보여줄 힌트"
-                className={inputClass}
-              />
-            </FormField>
-            <FormField label="2차 오답 힌트" htmlFor={`q-hint2-${q.localId}`} required>
-              <Input
-                id={`q-hint2-${q.localId}`}
-                value={hint2}
-                onChange={(e) =>
-                  onUpdate((cur) => ({
-                    ...cur,
-                    hints: serializeEditorHints(parseEditorHints(cur.hints).hint1, e.target.value),
-                  }))
-                }
-                placeholder="두 번째 오답 시 보여줄 힌트"
-                className={inputClass}
-              />
-            </FormField>
-            <FormField label="해설" htmlFor={`q-explanation-${q.localId}`} required>
-              <Textarea
-                id={`q-explanation-${q.localId}`}
-                rows={2}
-                value={q.explanation}
-                onChange={(e) => onUpdate((cur) => ({ ...cur, explanation: e.target.value }))}
-                className={cn(textareaClass, "min-h-[2.5rem]")}
-              />
-            </FormField>
-          </div>
-        </details>
-      ) : null}
     </div>
   );
 }
 
-function SegmentEditor({
+function QuestionPreview({
+  question,
+  qIdx,
+  withScaffold,
+  showNumber = true,
+}: {
+  question: EditorQuestion;
+  qIdx: number;
+  withScaffold?: boolean;
+  showNumber?: boolean;
+}) {
+  const promptEmpty = !question.prompt.trim();
+  const { hint1, hint2 } = parseEditorHints(question.hints);
+  const hasScaffold = Boolean(hint1.trim() || hint2.trim() || question.explanation.trim());
+
+  return (
+    <div className={cn(showNumber ? "flex items-start gap-3 select-none" : "select-none")}>
+      {showNumber ? <QuestionNumber index={qIdx} /> : null}
+      <div className="min-w-0 flex-1 space-y-3">
+        <p
+          className={cn(
+            "text-sm leading-relaxed text-[var(--foreground)]",
+            promptEmpty && "italic text-[var(--muted-foreground)]",
+          )}
+        >
+          {promptEmpty ? "발문을 입력하세요" : question.prompt}
+        </p>
+        <div className="space-y-2">
+        {question.choices.map((choice, ci) => {
+          const isCorrect = question.correctIndex === ci;
+          const choiceEmpty = !choice.trim();
+          return (
+            <div key={ci} className="flex items-center gap-3">
+              <span
+                className={cn(
+                  "flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2",
+                  isCorrect ? activityEditorChoicePreviewCorrect : "border-[var(--border)] bg-[var(--surface)]",
+                )}
+                aria-hidden
+              >
+                {isCorrect ? (
+                  <span className="h-2 w-2 rounded-full bg-[var(--primary)]" />
+                ) : null}
+              </span>
+              <span
+                className={cn(
+                  "text-sm text-[var(--foreground)]",
+                  choiceEmpty && "italic text-[var(--muted-foreground)]",
+                )}
+              >
+                {choiceEmpty ? `${CHOICE_LABELS[ci] ?? ci + 1}번 보기` : choice}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+      {withScaffold && hasScaffold ? (
+        <p className="text-xs text-[var(--muted-foreground)]">힌트·해설 설정됨</p>
+      ) : null}
+      </div>
+    </div>
+  );
+}
+
+function QuestionCard({
+  question,
+  qIdx,
+  isEditing,
+  withScaffold,
+  segment,
+  activityTitle,
+  aiKind,
+  canRemove,
+  existingPrompts,
+  onEdit,
+  onUpdate,
+  onDeleteRequest,
+}: {
+  question: EditorQuestion;
+  qIdx: number;
+  isEditing: boolean;
+  withScaffold?: boolean;
+  segment: string;
+  activityTitle: string;
+  aiKind: QuestionKind;
+  canRemove: boolean;
+  existingPrompts: string[];
+  onEdit: () => void;
+  onUpdate: (updater: (q: EditorQuestion) => EditorQuestion) => void;
+  onDeleteRequest: () => void;
+}) {
+  const cardClass = cn(
+    activityEditorQuestionCard,
+    isEditing && activityEditorQuestionCardEditing,
+    !isEditing &&
+      "cursor-pointer transition-[box-shadow] hover:shadow-[var(--elevation-md)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ring-focus)]",
+  );
+
+  const toolbar = (
+    <div className={activityEditorQuestionCardToolbar}>
+      <QuestionNumber index={qIdx} className="mt-0" />
+      {isEditing ? (
+        <div className="flex shrink-0 items-center gap-1">
+          <AIGenerateButton
+            segment={segment}
+            activityTitle={activityTitle}
+            kind={aiKind}
+            existingPrompts={existingPrompts}
+            onGenerated={(generated) => onUpdate((cur) => mergeGeneratedQuestion(cur, generated))}
+          />
+          {canRemove ? (
+            <EditorDeleteButton
+              label={`${qIdx + 1}번 문항 삭제`}
+              onClick={onDeleteRequest}
+              className="h-8 w-8"
+            />
+          ) : null}
+        </div>
+      ) : (
+        <span className="text-xs text-[var(--muted-foreground)]">클릭하여 편집</span>
+      )}
+    </div>
+  );
+
+  const content = isEditing ? (
+    <SingleQuestionEditor
+      question={question}
+      qIdx={qIdx}
+      withScaffold={withScaffold}
+      showNumber={false}
+      onUpdate={onUpdate}
+      className="p-4"
+    />
+  ) : (
+    <QuestionPreview
+      question={question}
+      qIdx={qIdx}
+      withScaffold={withScaffold}
+      showNumber={false}
+    />
+  );
+
+  if (isEditing) {
+    return (
+      <div className={cardClass} onClick={(e) => e.stopPropagation()}>
+        {toolbar}
+        {content}
+      </div>
+    );
+  }
+
+  return (
+    <button type="button" onClick={onEdit} className={cn(cardClass, "w-full text-left")} aria-label={`${qIdx + 1}번 문항 편집`}>
+      {toolbar}
+      <div className="p-4 pt-3">{content}</div>
+    </button>
+  );
+}
+
+function QuestionListEditor({
+  questions,
+  withScaffold,
+  segment,
+  activityTitle,
+  aiKind,
+  onChange,
+}: {
+  questions: EditorQuestion[];
+  withScaffold?: boolean;
+  segment: string;
+  activityTitle: string;
+  aiKind: QuestionKind;
+  onChange: (next: EditorQuestion[]) => void;
+}) {
+  const canRemove = questions.length > MIN_QUESTIONS_PER_ROLE;
+  const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (editingQuestionId && !questions.some((q) => q.localId === editingQuestionId)) {
+      setEditingQuestionId(questions[0]?.localId ?? null);
+    }
+  }, [questions, editingQuestionId]);
+
+  const pendingIndex = pendingDeleteId ? questions.findIndex((q) => q.localId === pendingDeleteId) : -1;
+  const pendingQuestion = pendingIndex >= 0 ? questions[pendingIndex] : null;
+  const pendingLabel = pendingIndex >= 0 ? editorQuestionLabel(pendingIndex) : "";
+
+  const updateQuestion = (localId: string, updater: (q: EditorQuestion) => EditorQuestion) => {
+    onChange(questions.map((q) => (q.localId === localId ? updater(q) : q)));
+  };
+
+  const addQuestion = () => {
+    const question = createEmptyQuestion();
+    onChange([...questions, question]);
+    setEditingQuestionId(question.localId);
+  };
+
+  const handleConfirmDelete = () => {
+    if (!pendingDeleteId) return;
+    const next = questions.filter((q) => q.localId !== pendingDeleteId);
+    onChange(next);
+    if (editingQuestionId === pendingDeleteId) {
+      setEditingQuestionId(next[0]?.localId ?? null);
+    }
+    setPendingDeleteId(null);
+  };
+
+  const existingPrompts = questions.map((item) => item.prompt.trim()).filter(Boolean);
+
+  return (
+    <>
+      <div className="flex flex-col gap-4">
+        {questions.map((q, qIdx) => (
+          <QuestionCard
+            key={q.localId}
+            question={q}
+            qIdx={qIdx}
+            isEditing={editingQuestionId === q.localId}
+            withScaffold={withScaffold}
+            segment={segment}
+            activityTitle={activityTitle}
+            aiKind={aiKind}
+            canRemove={canRemove}
+            existingPrompts={existingPrompts}
+            onEdit={() => setEditingQuestionId(q.localId)}
+            onUpdate={(updater) => updateQuestion(q.localId, updater)}
+            onDeleteRequest={() => setPendingDeleteId(q.localId)}
+          />
+        ))}
+
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="h-10 w-full gap-1.5 border-dashed bg-[var(--surface-overlay)] text-sm"
+          onClick={addQuestion}
+        >
+          <Plus className="h-4 w-4" />
+          문항 추가
+        </Button>
+      </div>
+
+      <ConfirmModal
+        open={pendingDeleteId !== null}
+        title="문항 삭제"
+        onClose={() => setPendingDeleteId(null)}
+        onConfirm={handleConfirmDelete}
+      >
+        <p>{pendingLabel}을(를) 삭제할까요?</p>
+        <p>
+          {pendingQuestion && questionHasContent(pendingQuestion)
+            ? "작성 내용이 함께 삭제되며 되돌릴 수 없습니다."
+            : "이 작업은 되돌릴 수 없습니다."}
+        </p>
+      </ConfirmModal>
+    </>
+  );
+}
+
+function questionsHaveContent(questions: EditorQuestion[]): boolean {
+  return questions.some((q) => questionHasContent(q));
+}
+
+function QuestionSectionTabs({
+  active,
+  practiceQuestions,
+  testQuestions,
+  onSelect,
+}: {
+  active: QuestionKind;
+  practiceQuestions: EditorQuestion[];
+  testQuestions: EditorQuestion[];
+  onSelect: (kind: QuestionKind) => void;
+}) {
+  const tabs: { key: QuestionKind; label: string; done: boolean; count: number }[] = [
+    {
+      key: "practice",
+      label: "연습 문제",
+      done: questionsHaveContent(practiceQuestions),
+      count: practiceQuestions.length,
+    },
+    {
+      key: "test",
+      label: "실전 문제",
+      done: questionsHaveContent(testQuestions),
+      count: testQuestions.length,
+    },
+  ];
+
+  return (
+    <div className="flex flex-wrap items-center gap-2" role="tablist" aria-label="문제 유형">
+      {tabs.map(({ key, label, done, count }) => {
+        const isActive = active === key;
+        return (
+          <Button
+            key={key}
+            type="button"
+            role="tab"
+            aria-selected={isActive}
+            id={`question-tab-${key}`}
+            aria-controls={`question-panel-${key}`}
+            variant="chip"
+            size="sm"
+            onClick={() => onSelect(key)}
+            className={cn(
+              "gap-1.5",
+              isActive ? activityEditorChipActive : "hover:border-[var(--border)] hover:bg-[var(--tint-primary-weak)]",
+            )}
+          >
+            <TabStatusDot done={done} />
+            {label}
+            <span className="text-xs opacity-70">{count}</span>
+          </Button>
+        );
+      })}
+    </div>
+  );
+}
+
+function RoleContent({
   role,
   activityTitle,
   onChange,
@@ -515,214 +779,111 @@ function SegmentEditor({
   onChange: (role: EditorRole) => void;
 }) {
   const [aiModalOpen, setAiModalOpen] = useState(false);
+  const [activeQuestionKind, setActiveQuestionKind] = useState<QuestionKind>("practice");
+
+  const cardClass = cn(playPhaseSectionShell, "flex min-h-0 flex-col");
 
   return (
     <>
-      <EditorSectionBlock
-        variant="segment"
-        label="학습 지문"
-        hint={EDITOR_QUESTION_HINTS.segment}
-        headingId={`segment-${role.localId}-heading`}
-        headerActions={
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            className="h-8 gap-1 px-2 text-xs"
-            onClick={() => setAiModalOpen(true)}
+      <div className="flex h-full min-h-0 flex-1 gap-3 overflow-hidden p-3 sm:gap-4 sm:p-4">
+        <section
+          className={cn(
+            cardClass,
+            activityEditorSegmentPanelBg,
+            "h-full w-[34%] max-w-sm shrink-0",
+          )}
+        >
+          <div className={cn("flex shrink-0 items-start justify-between gap-3 border-b px-4 py-3", activityEditorSegmentHeaderBorder)}>
+            <div>
+              <p className="mt-1 text-base leading-relaxed">
+                학습 지문
+              </p>
+              <p className="mt-1 text-xs leading-relaxed text-[var(--muted-foreground)]">
+                전문가 집단에서 학습할 내용입니다.
+              </p>
+            </div>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="h-8 shrink-0 gap-1.5 px-3 text-xs"
+              onClick={() => setAiModalOpen(true)}
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              AI 생성
+            </Button>
+          </div>
+          <div className="flex min-h-0 flex-1 flex-col px-4 py-4">
+            <Textarea
+              id={`segment-${role.localId}`}
+              value={role.segment}
+              onChange={(e) => onChange({ ...role, segment: e.target.value })}
+              placeholder="학습 내용을 입력하세요."
+              aria-label="학습 지문"
+              className={cn(
+                textareaClass,
+                activityEditorSegmentFieldClass,
+                "min-h-[20rem] flex-1 resize-none text-sm leading-relaxed",
+              )}
+            />
+          </div>
+        </section>
+
+        <section className={cn(cardClass, activityEditorQuestionPanelBg, "h-full min-w-0 flex-1")}>
+          <div className={cn("shrink-0 space-y-3 border-b px-4 py-3", activityEditorQuestionHeaderBorder)}>
+            <QuestionSectionTabs
+              active={activeQuestionKind}
+              practiceQuestions={role.practiceQuestions}
+              testQuestions={role.testQuestions}
+              onSelect={setActiveQuestionKind}
+            />
+            <p className="mt-1 text-xs leading-relaxed text-[var(--muted-foreground)]">
+            {activeQuestionKind === "practice" ? "전문가 집단에서 학습할 연습 문제입니다." : "마지막에 개별적으로 풀 실전 문제입니다."}
+            </p>
+          </div>
+          <div
+            id={`question-panel-${activeQuestionKind}`}
+            role="tabpanel"
+            aria-labelledby={`question-tab-${activeQuestionKind}`}
+            className="min-h-0 flex-1 overflow-y-auto px-4 py-4"
           >
-            <Sparkles className="h-3.5 w-3.5 text-[var(--primary)]" />
-            AI 생성
-          </Button>
-        }
-      >
-        <Textarea
-          id={`segment-${role.localId}`}
-          rows={8}
-          value={role.segment}
-          onChange={(e) => onChange({ ...role, segment: e.target.value })}
-          placeholder="학습할 내용을 입력하세요."
-          aria-label="학습 내용"
-          className={cn(textareaClass, "min-h-[5rem]")}
-        />
-      </EditorSectionBlock>
+            {activeQuestionKind === "practice" ? (
+              <QuestionListEditor
+                key="practice"
+                questions={role.practiceQuestions}
+                withScaffold
+                segment={role.segment}
+                activityTitle={activityTitle}
+                aiKind="practice"
+                onChange={(next) => onChange({ ...role, practiceQuestions: next })}
+              />
+            ) : (
+              <QuestionListEditor
+                key="test"
+                questions={role.testQuestions}
+                segment={role.segment}
+                activityTitle={activityTitle}
+                aiKind="test"
+                onChange={(next) => onChange({ ...role, testQuestions: next })}
+              />
+            )}
+          </div>
+        </section>
+      </div>
 
       <LearningContentAIModal
         open={aiModalOpen}
         onClose={() => setAiModalOpen(false)}
         activityTitle={activityTitle}
-        onGenerated={(segment: string) => onChange({ ...role, segment })}
+        onGenerated={(segment) => onChange({ ...role, segment })}
       />
     </>
   );
-}
-
-function QuestionListEditor({
-  variant,
-  label,
-  hint,
-  questions,
-  withScaffold,
-  segment,
-  activityTitle,
-  aiKind,
-  onChange,
-}: {
-  variant: Exclude<EditorSectionVariant, "segment">;
-  label: string;
-  hint: string;
-  questions: EditorQuestion[];
-  withScaffold?: boolean;
-  segment: string;
-  activityTitle: string;
-  aiKind: QuestionKind;
-  onChange: (next: EditorQuestion[]) => void;
-}) {
-  const canRemove = questions.length > MIN_QUESTIONS_PER_ROLE;
-  const [pendingDeleteQuestionId, setPendingDeleteQuestionId] = useState<string | null>(null);
-
-  const pendingDeleteIndex = pendingDeleteQuestionId
-    ? questions.findIndex((q) => q.localId === pendingDeleteQuestionId)
-    : -1;
-  const pendingDeleteQuestion =
-    pendingDeleteIndex >= 0 ? questions[pendingDeleteIndex] : null;
-  const pendingDeleteLabel =
-    pendingDeleteIndex >= 0 ? editorQuestionLabel(pendingDeleteIndex) : "";
-
-  const updateQuestion = (localId: string, updater: (q: EditorQuestion) => EditorQuestion) => {
-    onChange(questions.map((q) => (q.localId === localId ? updater(q) : q)));
-  };
-
-  const handleConfirmDeleteQuestion = () => {
-    if (!pendingDeleteQuestionId) return;
-    onChange(questions.filter((item) => item.localId !== pendingDeleteQuestionId));
-    setPendingDeleteQuestionId(null);
-  };
-
-  return (
-    <>
-    <EditorSectionBlock
-      variant={variant}
-      label={label}
-      hint={hint}
-      headingId={`${variant}-questions-heading`}
-    >
-      <div className="space-y-3">
-        {questions.map((q, qIdx) => (
-          <QuestionBlock
-            key={q.localId}
-            title={editorQuestionLabel(qIdx)}
-            actions={
-              <>
-                <QuestionAIGenerateButton
-                  segment={segment}
-                  activityTitle={activityTitle}
-                  kind={aiKind}
-                  existingPrompts={questions
-                    .map((item) => item.prompt.trim())
-                    .filter(Boolean)}
-                  onGenerated={(generated) =>
-                    updateQuestion(q.localId, (cur) => mergeGeneratedQuestion(cur, generated))
-                  }
-                />
-                {canRemove ? (
-                  <button
-                    type="button"
-                    onClick={() => setPendingDeleteQuestionId(q.localId)}
-                    className="rounded p-1.5 text-[var(--muted-foreground)] hover:bg-[color-mix(in_srgb,var(--danger)_8%,transparent)] hover:text-[var(--danger)]"
-                    title="문항 삭제"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                ) : null}
-              </>
-            }
-          >
-            <SingleQuestionEditor
-              question={q}
-              withScaffold={withScaffold}
-              onUpdate={(updater) => updateQuestion(q.localId, updater)}
-            />
-          </QuestionBlock>
-        ))}
-
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          className="h-8 w-full gap-1 border-dashed text-xs"
-          onClick={() => onChange([...questions, createEmptyQuestion()])}
-        >
-          <Plus className="h-3.5 w-3.5" />
-          {label} 추가
-        </Button>
-      </div>
-    </EditorSectionBlock>
-
-    <ConfirmModal
-      open={pendingDeleteQuestionId !== null}
-      title="문항 삭제"
-      onClose={() => setPendingDeleteQuestionId(null)}
-      onConfirm={handleConfirmDeleteQuestion}
-    >
-      <p>{pendingDeleteLabel}을(를) 삭제할까요?</p>
-      <p>
-        {pendingDeleteQuestion && questionHasContent(pendingDeleteQuestion)
-          ? "작성된 발문·보기·힌트·해설도 함께 삭제됩니다. 이 작업은 되돌릴 수 없습니다."
-          : "이 작업은 되돌릴 수 없습니다."}
-      </p>
-    </ConfirmModal>
-    </>
-  );
-}
-
-function LearningContentBlock({
-  role,
-  activityTitle,
-  onChange,
-}: {
-  role: EditorRole;
-  activityTitle: string;
-  onChange: (role: EditorRole) => void;
-}) {
-  return (
-    <div className="space-y-4">
-      <SegmentEditor role={role} activityTitle={activityTitle} onChange={onChange} />
-
-      <QuestionListEditor
-        variant="practice"
-        label="연습 문제"
-        hint={EDITOR_QUESTION_HINTS.practice}
-        questions={role.practiceQuestions}
-        withScaffold
-        segment={role.segment}
-        activityTitle={activityTitle}
-        aiKind="practice"
-        onChange={(next) => onChange({ ...role, practiceQuestions: next })}
-      />
-
-      <QuestionListEditor
-        variant="test"
-        label="실전 문제"
-        hint={EDITOR_QUESTION_HINTS.test}
-        questions={role.testQuestions}
-        segment={role.segment}
-        activityTitle={activityTitle}
-        aiKind="test"
-        onChange={(next) => onChange({ ...role, testQuestions: next })}
-      />
-    </div>
-  );
-}
-
-function roleHasContent(role: EditorRole): boolean {
-  if (role.segment.trim()) return true;
-  const questions = [...role.practiceQuestions, ...role.testQuestions];
-  return questions.some((q) => q.prompt.trim());
 }
 
 export function ActivityEditorForm({ draft, onChange }: Props) {
   const [activeRoleId, setActiveRoleId] = useState(draft.roles[0]?.localId ?? "");
+  const [pendingDeleteRoleId, setPendingDeleteRoleId] = useState<string | null>(null);
   const canAddRole = draft.roles.length < MAX_ROLES_PER_GROUP;
   const canRemoveRole = draft.roles.length > MIN_ROLES_PER_GROUP;
 
@@ -734,6 +895,13 @@ export function ActivityEditorForm({ draft, onChange }: Props) {
 
   const activeIndex = draft.roles.findIndex((r) => r.localId === activeRoleId);
   const activeRole = activeIndex >= 0 ? draft.roles[activeIndex] : draft.roles[0];
+
+  const pendingDeleteIndex = pendingDeleteRoleId
+    ? draft.roles.findIndex((r) => r.localId === pendingDeleteRoleId)
+    : -1;
+  const pendingDeleteRole = pendingDeleteIndex >= 0 ? draft.roles[pendingDeleteIndex] : null;
+  const pendingDeleteLabel =
+    pendingDeleteIndex >= 0 ? editorRoleLabel(pendingDeleteIndex) : "";
 
   const updateRole = (localId: string, role: EditorRole) => {
     onChange({
@@ -757,56 +925,51 @@ export function ActivityEditorForm({ draft, onChange }: Props) {
   };
 
   return (
-    <div className="w-full space-y-8">
-      <Card>
-        <CardContent className="py-5">
-          <FormField label="활동 제목" htmlFor="activity-title" required>
-            <Input
-              id="activity-title"
-              value={draft.title}
-              onChange={(e) => onChange({ ...draft, title: e.target.value })}
-              placeholder="활동 제목을 입력하세요"
-              className={inputClass}
-            />
-          </FormField>
-        </CardContent>
-      </Card>
+    <div className="flex h-full min-h-0 flex-col bg-[var(--background)]">
+      <ConfirmModal
+        open={pendingDeleteRoleId !== null}
+        title="역할 삭제"
+        onClose={() => setPendingDeleteRoleId(null)}
+        onConfirm={() => {
+          if (!pendingDeleteRoleId) return;
+          removeRole(pendingDeleteRoleId);
+          setPendingDeleteRoleId(null);
+        }}
+      >
+        <p>{pendingDeleteLabel}을(를) 삭제할까요?</p>
+        <p>
+          {pendingDeleteRole && roleHasContent(pendingDeleteRole)
+            ? "작성 내용이 함께 삭제되며 되돌릴 수 없습니다."
+            : "이 작업은 되돌릴 수 없습니다."}
+        </p>
+      </ConfirmModal>
 
-      <Card>
-        <CardContent className="space-y-0 p-0">
-          <div className="border-b border-[var(--border)] bg-[color-mix(in_srgb,var(--tint-primary-weak)_28%,var(--card-bg))] px-5 pt-4">
-            <RoleTabList
-              roles={draft.roles}
-              activeRoleId={activeRoleId}
-              canAddRole={canAddRole}
-              canRemoveRole={canRemoveRole}
-              onSelect={setActiveRoleId}
-              onAdd={addRole}
-              onRemove={removeRole}
+      <RoleNav
+        roles={draft.roles}
+        activeRoleId={activeRoleId}
+        canAddRole={canAddRole}
+        canRemoveRole={canRemoveRole}
+        onSelect={setActiveRoleId}
+        onAdd={addRole}
+        onRequestDelete={setPendingDeleteRoleId}
+      />
+
+      <div className="min-h-0 flex-1 overflow-hidden">
+        {activeRole ? (
+          <div
+            id={`role-panel-${activeRole.localId}`}
+            role="tabpanel"
+            aria-labelledby={`role-tab-${activeRole.localId}`}
+            className="flex h-full min-h-0 flex-col"
+          >
+            <RoleContent
+              role={activeRole}
+              activityTitle={draft.title}
+              onChange={(next) => updateRole(activeRole.localId, next)}
             />
           </div>
-
-          <p className="px-5 pt-5 text-xs leading-relaxed text-[var(--muted-foreground)]">
-            각 역할마다 학습 지문, 연습 문제, 실전 문제를 작성하세요.
-          </p>
-
-          {activeRole && activeIndex >= 0 ? (
-            <div
-              id={`role-panel-${activeRole.localId}`}
-              role="tabpanel"
-              aria-labelledby={`role-tab-${activeRole.localId}`}
-              className="space-y-4 p-5"
-            >
-              <LearningContentBlock
-                key={activeRole.localId}
-                role={activeRole}
-                activityTitle={draft.title}
-                onChange={(next) => updateRole(activeRole.localId, next)}
-              />
-            </div>
-          ) : null}
-        </CardContent>
-      </Card>
+        ) : null}
+      </div>
     </div>
   );
 }

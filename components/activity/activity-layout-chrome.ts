@@ -129,6 +129,51 @@ export const activityLoaderRegionInset =
 export const playPhaseSectionShell =
   "overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--card-bg)] shadow-[var(--elevation-sm)]";
 
+/** 교사 활동 에디터 — CardHeader·play 섹션과 동일한 톤 */
+export const activityEditorHeaderBg =
+  "bg-[color-mix(in_srgb,var(--tint-primary-weak)_55%,var(--surface))]";
+
+export const activityEditorPanelBg = "bg-[var(--card-bg)]";
+
+/** 지문 카드 — primary 계열 */
+export const activityEditorSegmentPanelBg =
+  "bg-[color-mix(in_srgb,var(--tint-primary-weak)_42%,var(--card-bg))]";
+
+export const activityEditorSegmentHeaderBorder = "border-[var(--border)]";
+
+export const activityEditorSegmentFieldClass =
+  "border-[var(--border)] bg-[var(--surface-overlay)]";
+
+/** 문제 카드 — accent 계열 */
+export const activityEditorQuestionPanelBg =
+  "bg-[color-mix(in_srgb,var(--tint-accent-weak)_48%,var(--card-bg))]";
+
+export const activityEditorQuestionHeaderBorder = "border-[var(--border)]";
+
+export const activityEditorInsetCard =
+  "rounded-lg border border-[var(--border)] bg-[var(--surface)] shadow-[var(--input-inset)]";
+
+export const activityEditorQuestionCard =
+  "overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface-overlay)] shadow-[var(--elevation-sm)]";
+
+export const activityEditorQuestionCardEditing =
+  "border-[var(--border-strong)] ring-1 ring-[var(--ring-focus)]";
+
+export const activityEditorQuestionCardToolbar =
+  "flex items-center justify-between gap-2 border-b border-[var(--border)] bg-[color-mix(in_srgb,var(--tint-accent-weak)_55%,var(--surface-overlay))] px-3 py-2";
+
+export const activityEditorNumberBadge =
+  "mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--tint-primary-weak)] text-sm font-bold tabular-nums text-[var(--primary-muted)]";
+
+export const activityEditorChipActive =
+  "border-[color-mix(in_srgb,var(--primary)_38%,var(--border))] bg-[var(--tint-primary-medium)] text-[var(--primary)]";
+
+export const activityEditorChoiceCorrect =
+  "border-[var(--primary)] bg-[var(--tint-primary-medium)] text-[var(--primary)]";
+
+export const activityEditorChoicePreviewCorrect =
+  "border-[var(--primary)] bg-[var(--tint-primary-medium)]";
+
 export const playPhaseSectionHeader =
   "flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-[var(--border)] px-4 py-3 @md:px-5 @md:py-3.5";
 
