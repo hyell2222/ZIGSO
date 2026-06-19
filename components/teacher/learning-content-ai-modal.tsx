@@ -24,6 +24,19 @@ import { Z } from "@/lib/ui/z-index";
 
 const modalTitleId = "learning-content-ai-modal-title";
 
+type ContentLength = "short" | "medium" | "long";
+
+const CONTENT_LENGTH_OPTIONS: ReadonlyArray<{
+  value: ContentLength;
+  label: string;
+}> = [
+  { value: "short", label: "짧게" },
+  { value: "medium", label: "보통" },
+  { value: "long", label: "길게" },
+];
+
+const DEFAULT_CONTENT_LENGTH: ContentLength = "medium";
+
 type Props = {
   open: boolean;
   onClose: () => void;
@@ -82,6 +95,7 @@ export function LearningContentAIModal({
     useState<ContentLanguage>(DEFAULT_CONTENT_LANGUAGE);
   const [difficulty, setDifficulty] =
     useState<ContentDifficulty>(DEFAULT_CONTENT_DIFFICULTY);
+  const [length, setLength] = useState<ContentLength>(DEFAULT_CONTENT_LENGTH);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -110,6 +124,7 @@ export function LearningContentAIModal({
         achievementStandard: trimmedAchievementStandard || undefined,
         contentLanguage,
         difficulty,
+        length,
       });
 
       onGenerated(segment);
@@ -194,6 +209,13 @@ export function LearningContentAIModal({
         options={CONTENT_DIFFICULTY_OPTIONS}
         value={difficulty}
         onChange={setDifficulty}
+      />
+
+      <OptionButtonGroup
+        label="분량"
+        options={CONTENT_LENGTH_OPTIONS}
+        value={length}
+        onChange={setLength}
       />
 
       {error ? <p className="text-sm text-[var(--danger)]">{error}</p> : null}

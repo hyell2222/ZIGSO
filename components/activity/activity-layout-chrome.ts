@@ -156,9 +156,6 @@ export const activityEditorInsetCard =
 export const activityEditorQuestionCard =
   "overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface-overlay)] shadow-[var(--elevation-sm)]";
 
-export const activityEditorQuestionCardEditing =
-  "border-[var(--border-strong)] ring-1 ring-[var(--ring-focus)]";
-
 export const activityEditorQuestionCardToolbar =
   "flex items-center justify-between gap-2 border-b border-[var(--border)] bg-[color-mix(in_srgb,var(--tint-accent-weak)_55%,var(--surface-overlay))] px-3 py-2";
 

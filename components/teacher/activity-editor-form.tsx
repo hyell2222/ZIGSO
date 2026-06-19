@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CheckCircle2, Loader2, Plus, Sparkles, Trash2 } from "lucide-react";
+import { CheckCircle2, CirclePlus, Loader2, Plus, Sparkles, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
@@ -32,7 +32,6 @@ import {
   activityEditorChipActive,
   activityEditorHeaderBg,
   activityEditorQuestionCard,
-  activityEditorQuestionCardEditing,
   activityEditorQuestionHeaderBorder,
   activityEditorQuestionPanelBg,
   activityEditorSegmentFieldClass,
@@ -159,18 +158,16 @@ function RoleNav({
   onAdd: () => void;
   onRequestDelete: (localId: string) => void;
 }) {
-  const completedCount = roles.filter((role) => roleHasContent(role)).length;
-
   return (
     <nav
       className={cn(
-        "flex shrink-0 items-end justify-between gap-3 border-b border-[var(--border)] px-3 pt-1.5 sm:px-4",
+        "flex shrink-0 border-b border-[var(--border)]",
         activityEditorHeaderBg,
       )}
       aria-label="학습 내용 선택"
     >
       <div
-        className="flex min-w-0 flex-1 items-end gap-0 overflow-x-auto overscroll-x-contain pb-px"
+        className="mx-auto flex w-full max-w-5xl items-end justify-start gap-1 px-3 pt-1.5 sm:px-4"
         role="tablist"
       >
         {roles.map((role, rIdx) => {
@@ -211,30 +208,17 @@ function RoleNav({
             </div>
           );
         })}
-      </div>
-
-      <div className="flex shrink-0 items-center gap-2 pb-2">
-        <span
-          className={cn(
-            "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs tabular-nums",
-            completedCount === roles.length
-              ? "bg-[var(--tint-primary-medium)] font-medium text-[var(--primary)]"
-              : "border border-[var(--border)] bg-[var(--surface)] text-[var(--primary-muted)]",
-          )}
-        >
-          {completedCount}/{roles.length}
-        </span>
 
         {canAddRole ? (
           <Button
             type="button"
-            variant="outline"
-            size="sm"
+            variant="ghost"
+            size="icon"
             onClick={onAdd}
-            className="mb-0.5 h-7 gap-1 px-2.5 text-xs"
+            aria-label="추가"
+            className="h-8 w-8 mb-1.5 ml-1 rounded-full text-[var(--primary)] hover:bg-[var(--tint-primary-weak)] hover:text-[var(--primary)]"
           >
-            <Plus className="h-3.5 w-3.5" />
-            역할 추가
+            <CirclePlus className="h-5 w-5" strokeWidth={2} />
           </Button>
         ) : null}
       </div>
@@ -435,7 +419,7 @@ function SingleQuestionEditor({
       {withScaffold ? (
         <details
           open
-          className="rounded-md border border-[var(--border)] px-3 py-1"
+          className="rounded-md border border-dashed border-[var(--border)] px-3 py-1"
         >
           <summary
             className={cn(
@@ -538,7 +522,6 @@ function QuestionCard({
     <div
       className={cn(
         activityEditorQuestionCard,
-        activityEditorQuestionCardEditing,
         "p-4",
       )}
     >
@@ -651,7 +634,7 @@ function QuestionListEditor({
           type="button"
           size="sm"
           variant="outline"
-          className="w-full gap-1.5 border-dashed bg-[var(--surface-overlay)] text-sm"
+          className="w-full gap-1.5 text-sm"
           onClick={addQuestion}
         >
           <Plus className="h-4 w-4" />
@@ -752,120 +735,123 @@ function RoleContent({
   const [activeQuestionKind, setActiveQuestionKind] =
     useState<QuestionKind>("practice");
 
-  const cardClass = cn(playPhaseSectionShell, "flex min-h-0 flex-col");
+  const cardClass = cn(playPhaseSectionShell, "flex flex-col");
 
   return (
     <>
-      <div className="flex h-full min-h-0 flex-1 gap-3 overflow-hidden p-3 sm:gap-4 sm:p-4">
-        <section
-          className={cn(
-            cardClass,
-            activityEditorSegmentPanelBg,
-            "h-full w-[34%] max-w-sm shrink-0 overflow-hidden",
-          )}
-        >
-          <div
-            className={cn(
-              "flex shrink-0 items-center justify-between border-b px-4 py-3",
-              activityEditorSegmentHeaderBorder,
-            )}
-          >
-            <div>
-              <h3 className="text-sm font-semibold text-[var(--foreground)]">
-                학습 지문
-              </h3>
-              <p className="mt-1 text-xs text-[var(--muted-foreground)]">
-                전문가 집단에서 학습할 내용입니다.
-              </p>
-            </div>
-
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              className={aiButtonClass}
-              onClick={() => setAiModalOpen(true)}
-            >
-              <Sparkles className="h-3.5 w-3.5" />
-              AI 생성
-            </Button>
-          </div>
-
-          <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
-            <Textarea
-              id={`segment-${role.localId}`}
-              value={role.segment}
-              onChange={(e) => onChange({ ...role, segment: e.target.value })}
-              placeholder="학습 내용을 입력하세요."
-              aria-label="학습 지문"
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <div className="mx-auto w-full max-w-5xl p-3 sm:p-4">
+          <div className="flex items-start gap-3 sm:gap-4">
+            <section
               className={cn(
-                textareaClass,
-                activityEditorSegmentFieldClass,
-                "min-h-[32rem] resize-y text-sm leading-relaxed",
+                cardClass,
+                activityEditorSegmentPanelBg,
+                "min-w-0 flex-1 basis-1/2 self-start sm:sticky sm:top-4",
               )}
-            />
-          </div>
-        </section>
+            >
+              <div
+                className={cn(
+                  "flex shrink-0 items-center justify-between border-b px-4 py-3",
+                  activityEditorSegmentHeaderBorder,
+                )}
+              >
+                <div>
+                  <h3 className="text-sm font-semibold text-[var(--foreground)]">
+                    학습 지문
+                  </h3>
+                  <p className="mt-1 text-xs text-[var(--muted-foreground)]">
+                    전문가 집단에서 학습할 내용입니다.
+                  </p>
+                </div>
 
-        <section
-          className={cn(
-            cardClass,
-            activityEditorQuestionPanelBg,
-            "h-full min-w-0 flex-1 overflow-hidden",
-          )}
-        >
-          <div
-            className={cn(
-              "shrink-0 space-y-3 border-b px-4 py-3",
-              activityEditorQuestionHeaderBorder,
-            )}
-          >
-            <QuestionSectionTabs
-              active={activeQuestionKind}
-              practiceQuestions={role.practiceQuestions}
-              testQuestions={role.testQuestions}
-              onSelect={setActiveQuestionKind}
-            />
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className={aiButtonClass}
+                  onClick={() => setAiModalOpen(true)}
+                >
+                  <Sparkles className="h-3.5 w-3.5" />
+                  AI 생성
+                </Button>
+              </div>
 
-            <p className="mt-1 text-xs leading-relaxed text-[var(--muted-foreground)]">
-              {activeQuestionKind === "practice"
-                ? "전문가 집단에서 학습할 연습 문제입니다."
-                : "마지막에 개별적으로 풀 실전 문제입니다."}
-            </p>
-          </div>
+              <div className="px-4 py-4">
+                <Textarea
+                  id={`segment-${role.localId}`}
+                  value={role.segment}
+                  onChange={(e) => onChange({ ...role, segment: e.target.value })}
+                  placeholder="학습 내용을 입력하세요."
+                  aria-label="학습 지문"
+                  rows={16}
+                  className={cn(
+                    textareaClass,
+                    activityEditorSegmentFieldClass,
+                    "text-sm leading-relaxed",
+                  )}
+                />
+              </div>
+            </section>
 
-          <div
-            id={`question-panel-${activeQuestionKind}`}
-            role="tabpanel"
-            aria-labelledby={`question-tab-${activeQuestionKind}`}
-            className="min-h-0 flex-1 overflow-y-auto px-4 py-4"
-          >
-            {activeQuestionKind === "practice" ? (
-              <QuestionListEditor
-                key="practice"
-                questions={role.practiceQuestions}
-                withScaffold
-                segment={role.segment}
-                activityTitle={activityTitle}
-                aiKind="practice"
-                onChange={(next) =>
-                  onChange({ ...role, practiceQuestions: next })
-                }
-              />
-            ) : (
-              <QuestionListEditor
-                key="test"
-                questions={role.testQuestions}
-                segment={role.segment}
-                activityTitle={activityTitle}
-                aiKind="test"
-                onChange={(next) =>
-                  onChange({ ...role, testQuestions: next })
-                }
-              />
-            )}
+            <section
+              className={cn(
+                cardClass,
+                activityEditorQuestionPanelBg,
+                "min-w-0 flex-1 basis-1/2",
+              )}
+            >
+              <div
+                className={cn(
+                  "shrink-0 space-y-3 border-b px-4 py-3",
+                  activityEditorQuestionHeaderBorder,
+                )}
+              >
+                <QuestionSectionTabs
+                  active={activeQuestionKind}
+                  practiceQuestions={role.practiceQuestions}
+                  testQuestions={role.testQuestions}
+                  onSelect={setActiveQuestionKind}
+                />
+
+                <p className="mt-1 text-xs leading-relaxed text-[var(--muted-foreground)]">
+                  {activeQuestionKind === "practice"
+                    ? "전문가 집단에서 학습할 연습 문제입니다."
+                    : "마지막에 개별적으로 풀 실전 문제입니다."}
+                </p>
+              </div>
+
+              <div
+                id={`question-panel-${activeQuestionKind}`}
+                role="tabpanel"
+                aria-labelledby={`question-tab-${activeQuestionKind}`}
+                className="px-4 py-4"
+              >
+                {activeQuestionKind === "practice" ? (
+                  <QuestionListEditor
+                    key="practice"
+                    questions={role.practiceQuestions}
+                    withScaffold
+                    segment={role.segment}
+                    activityTitle={activityTitle}
+                    aiKind="practice"
+                    onChange={(next) =>
+                      onChange({ ...role, practiceQuestions: next })
+                    }
+                  />
+                ) : (
+                  <QuestionListEditor
+                    key="test"
+                    questions={role.testQuestions}
+                    segment={role.segment}
+                    activityTitle={activityTitle}
+                    aiKind="test"
+                    onChange={(next) => onChange({ ...role, testQuestions: next })}
+                  />
+                )}
+              </div>
+            </section>
           </div>
-        </section>
+        </div>
       </div>
 
       <LearningContentAIModal

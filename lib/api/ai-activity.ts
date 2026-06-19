@@ -2,6 +2,8 @@ import type { ContentDifficulty } from "@/lib/activity-pack/content-difficulty";
 import type { ContentLanguage } from "@/lib/activity-pack/content-language";
 import type { QuizQuestion } from "@/lib/activity-pack/types";
 
+export type ContentLength = "short" | "medium" | "long";
+
 /** POST /api/ai/generate-learning-content — 학습 주제 기반 학습 내용 생성 */
 
 export type AILearningContentRequest = {
@@ -10,10 +12,12 @@ export type AILearningContentRequest = {
   achievementStandard?: string;
   contentLanguage?: ContentLanguage;
   difficulty?: ContentDifficulty;
+  length?: ContentLength;
 };
 
 export type AILearningContentResponse = {
   segment: string;
+  length?: ContentLength;
 };
 
 export type AIRoleQuestionsRequest = {
@@ -36,30 +40,42 @@ function formatAIErrorPayload(json: { error?: string; detail?: string }) {
   return parts.join(": ");
 }
 
+function parseAILearningContentResponse(
+  json: unknown,
+): AILearningContentResponse {
+  if (!json || typeof json !== "object" || !("segment" in json)) {
+    throw new Error("AI 응답 형식이 올바르지 않습니다.");
+  }
+
+  const segment = String((json as { segment?: unknown }).segment ?? "").trim();
+
+  if (!segment) {
+    throw new Error("생성된 학습 내용이 없습니다.");
+  }
+
+  const length = (json as { length?: unknown }).length;
+
+  return {
+    segment,
+    length:
+      length === "short" || length === "medium" || length === "long"
+        ? length
+        : undefined,
+  };
+}
+
 function parseAIQuestionsResponse(json: unknown): AIRoleQuestionsResponse {
   if (!json || typeof json !== "object" || !("questions" in json)) {
     throw new Error("AI 응답 형식이 올바르지 않습니다.");
   }
 
   const questions = (json as { questions?: unknown }).questions;
+
   if (!Array.isArray(questions) || questions.length === 0) {
     throw new Error("생성된 문항이 없습니다.");
   }
 
   return { questions: questions as QuizQuestion[] };
-}
-
-function parseAILearningContentResponse(json: unknown): AILearningContentResponse {
-  if (!json || typeof json !== "object" || !("segment" in json)) {
-    throw new Error("AI 응답 형식이 올바르지 않습니다.");
-  }
-
-  const segment = String((json as { segment?: unknown }).segment ?? "").trim();
-  if (!segment) {
-    throw new Error("생성된 학습 내용이 없습니다.");
-  }
-
-  return { segment };
 }
 
 export async function generateLearningContentWithAI(
@@ -73,12 +89,14 @@ export async function generateLearningContentWithAI(
 
   if (!res.ok) {
     let message = "";
+
     try {
       const json = (await res.json()) as { error?: string; detail?: string };
       message = formatAIErrorPayload(json);
     } catch {
       message = await res.text().catch(() => "");
     }
+
     throw new Error(message || `AI 호출 실패 (HTTP ${res.status})`);
   }
 
@@ -97,12 +115,14 @@ export async function generateRoleQuestionsWithAI(
 
   if (!res.ok) {
     let message = "";
+
     try {
       const json = (await res.json()) as { error?: string; detail?: string };
       message = formatAIErrorPayload(json);
     } catch {
       message = await res.text().catch(() => "");
     }
+
     throw new Error(message || `AI 호출 실패 (HTTP ${res.status})`);
   }
 

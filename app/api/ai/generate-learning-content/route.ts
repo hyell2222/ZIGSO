@@ -21,6 +21,10 @@ const MAX_ACHIEVEMENT_STANDARD_LENGTH = 1000;
 const MIN_SEGMENT_LENGTH = 80;
 const MAX_SEGMENT_LENGTH = 6000;
 
+type ContentLength = "short" | "medium" | "long";
+
+const DEFAULT_CONTENT_LENGTH: ContentLength = "medium";
+
 const SEGMENT_SCHEMA = {
   type: "object",
   additionalProperties: false,
@@ -28,7 +32,8 @@ const SEGMENT_SCHEMA = {
   properties: {
     segment: {
       type: "string",
-      description: "A self-contained educational reading passage for zigso expert-group learning.",
+      description:
+        "A self-contained educational reading passage for zigso expert-group learning.",
     },
   },
 } as const;
@@ -46,29 +51,66 @@ function getDifficultyRule(difficulty: ContentDifficulty): string {
         "Difficulty: LOW (하).",
         "- Use simple vocabulary and short, clear sentences.",
         "- Target middle-school readers who are still building reading stamina.",
-        "- Length: about 150–250 words (or equivalent character count in Korean).",
         "- Focus on one main idea with concrete, easy-to-follow examples.",
       ].join("\n");
+
     case "high":
       return [
         "Difficulty: HIGH (상).",
         "- Use advanced vocabulary, nuanced ideas, and varied sentence structures.",
         "- Target strong high-school or adult learners.",
-        "- Length: about 400–550 words (or equivalent character count in Korean).",
         "- Include cause-effect relationships, comparisons, or subtle implications worth discussing.",
       ].join("\n");
+
     default:
       return [
         "Difficulty: MEDIUM (중).",
         "- Use grade-appropriate academic vocabulary and moderately complex sentences.",
         "- Target general high-school readers.",
-        "- Length: about 250–400 words (or equivalent character count in Korean).",
         "- Present a clear central theme with supporting details students can explain to peers.",
       ].join("\n");
   }
 }
 
-function buildSystemPrompt(contentLanguage: ContentLanguage, difficulty: ContentDifficulty): string {
+function getLengthRule(length: ContentLength): string {
+  switch (length) {
+    case "short":
+      return [
+        "Length: SHORT.",
+        "- Write about 150–250 English words, or the Korean equivalent.",
+        "- Keep the passage concise and focused.",
+        "- Use 1–2 paragraphs.",
+      ].join("\n");
+
+    case "long":
+      return [
+        "Length: LONG.",
+        "- Write about 450–650 English words, or the Korean equivalent.",
+        "- Develop the topic in more depth.",
+        "- Use 3–5 paragraphs.",
+      ].join("\n");
+
+    default:
+      return [
+        "Length: MEDIUM.",
+        "- Write about 250–400 English words, or the Korean equivalent.",
+        "- Provide enough detail for comprehension questions.",
+        "- Use 2–3 paragraphs.",
+      ].join("\n");
+  }
+}
+
+function normalizeContentLength(raw: unknown): ContentLength {
+  return raw === "short" || raw === "medium" || raw === "long"
+    ? raw
+    : DEFAULT_CONTENT_LENGTH;
+}
+
+function buildSystemPrompt(
+  contentLanguage: ContentLanguage,
+  difficulty: ContentDifficulty,
+  length: ContentLength,
+): string {
   return [
     "You write educational reading passages for a zigso cooperative-learning classroom activity.",
     "Each student in an expert group will read and master ONE passage, then teach teammates in a home group.",
@@ -77,12 +119,15 @@ function buildSystemPrompt(contentLanguage: ContentLanguage, difficulty: Content
     "",
     getDifficultyRule(difficulty),
     "",
+    getLengthRule(length),
+    "",
     "Content rules:",
-    "- Write a single self-contained passage (no title line, no bullet lists, no section headings).",
+    "- Write a single self-contained passage.",
+    "- Do not include a title line, bullet lists, or section headings.",
     "- The text must be factual, age-appropriate, and suitable for school use.",
-    "- Include a clear main idea, supporting details, and logical flow (e.g., problem-solution, cause-effect, or chronological development).",
+    "- Include a clear main idea, supporting details, and logical flow.",
     "- Do NOT include quiz questions, vocabulary lists, or meta commentary.",
-    "- Do NOT address the reader directly (avoid 'you will learn' or 'in this passage').",
+    "- Do NOT address the reader directly.",
     "- Use paragraph breaks (\\n\\n) between paragraphs when the passage has multiple paragraphs.",
     "- If an achievement standard is provided, align the passage with it naturally without explicitly naming the standard.",
   ].join("\n");
@@ -94,16 +139,18 @@ function buildUserPrompt(opts: {
   achievementStandard: string;
   contentLanguage: ContentLanguage;
   difficulty: ContentDifficulty;
+  length: ContentLength;
 }): string {
   const lines = [
     "Generate one learning-content passage as JSON.",
     `Topic: ${opts.topic}`,
     `Content language: ${opts.contentLanguage === "ko" ? "Korean" : "English"}.`,
-    `Difficulty: ${opts.difficulty === "high" ? "high" : opts.difficulty === "low" ? "low" : "medium"}.`,
+    `Difficulty: ${opts.difficulty}.`,
+    `Length: ${opts.length}.`,
   ];
 
   if (opts.activityTitle.trim()) {
-    lines.push("", "Activity title (context only):", opts.activityTitle.trim());
+    lines.push("", "Activity title context:", opts.activityTitle.trim());
   }
 
   if (opts.achievementStandard.trim()) {
@@ -137,7 +184,9 @@ function getOpenAIErrorText(text: string) {
     const type = parsed.error?.type;
     const code = parsed.error?.code;
 
-    return [message, type && `type=${type}`, code && `code=${code}`].filter(Boolean).join(" / ");
+    return [message, type && `type=${type}`, code && `code=${code}`]
+      .filter(Boolean)
+      .join(" / ");
   } catch {
     return text.slice(0, 500);
   }
@@ -193,9 +242,13 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const activityTitle = typeof input.activityTitle === "string" ? input.activityTitle.trim() : "";
+  const activityTitle =
+    typeof input.activityTitle === "string" ? input.activityTitle.trim() : "";
 
-  const achievementStandard = typeof input.achievementStandard === "string" ? input.achievementStandard.trim() : "";
+  const achievementStandard =
+    typeof input.achievementStandard === "string"
+      ? input.achievementStandard.trim()
+      : "";
 
   if (achievementStandard.length > MAX_ACHIEVEMENT_STANDARD_LENGTH) {
     return NextResponse.json(
@@ -210,9 +263,13 @@ export async function POST(req: NextRequest) {
       : DEFAULT_CONTENT_LANGUAGE;
 
   const difficulty: ContentDifficulty =
-    input.difficulty === "high" || input.difficulty === "medium" || input.difficulty === "low"
+    input.difficulty === "high" ||
+    input.difficulty === "medium" ||
+    input.difficulty === "low"
       ? input.difficulty
       : DEFAULT_CONTENT_DIFFICULTY;
+
+  const length = normalizeContentLength(input.length);
 
   let openaiResponse: Response;
 
@@ -229,7 +286,7 @@ export async function POST(req: NextRequest) {
         messages: [
           {
             role: "system",
-            content: buildSystemPrompt(contentLanguage, difficulty),
+            content: buildSystemPrompt(contentLanguage, difficulty, length),
           },
           {
             role: "user",
@@ -239,6 +296,7 @@ export async function POST(req: NextRequest) {
               achievementStandard,
               contentLanguage,
               difficulty,
+              length,
             }),
           },
         ],
@@ -307,7 +365,11 @@ export async function POST(req: NextRequest) {
 
   try {
     const segment = normalizeSegment(parsed);
-    return NextResponse.json({ segment });
+
+    return NextResponse.json({
+      segment,
+      length,
+    });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "정규화 실패";
 
