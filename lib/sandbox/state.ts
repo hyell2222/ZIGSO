@@ -48,7 +48,7 @@ export type SandboxState = {
 };
 
 export const SANDBOX_REAL_STUDENT_PLAYER_ID = "sandbox-real-student";
-export const SANDBOX_JOIN_CODE = "JIGSAW";
+export const SANDBOX_JOIN_CODE = "ZIGSO";
 
 export type SandboxWaitingChip = {
   id: string;

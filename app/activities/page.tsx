@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, PlusIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { toast } from "sonner";
 
 import {
   deleteActivity,
@@ -23,7 +24,6 @@ import { ROUTES } from "@/lib/routes";
 export default function ActivitiesPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [pendingDeleteRow, setPendingDeleteRow] = useState<ActivityListRow | null>(null);
 
@@ -42,7 +42,6 @@ export default function ActivitiesPage() {
       activityRow: ActivityListRow;
       newTab: Window | null;
     }) => startSession(activityRow, sessionQuery.data?.user.id),
-    onMutate: () => setErrorMessage(null),
     onSuccess: async (data, variables) => {
       await queryClient.invalidateQueries({ queryKey: ["host-sessions"] });
       const url = ROUTES.sessionHost(data.sessionId);
@@ -56,7 +55,6 @@ export default function ActivitiesPage() {
       if (variables?.newTab && !variables.newTab.closed) {
         variables.newTab.close();
       }
-      setErrorMessage(error.message);
     },
   });
 
@@ -69,11 +67,10 @@ export default function ActivitiesPage() {
         setPendingDeleteId(null);
       }
     },
-    onMutate: () => setErrorMessage(null),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["teacher-activities"] });
     },
-    onError: (error: Error) => setErrorMessage(error.message),
+    onError: (error: Error) => toast.error(error.message),
   });
 
   const handleStartGame = (activityRow: ActivityListRow) => {
@@ -212,9 +209,6 @@ export default function ActivitiesPage() {
                 })}
               </div>
             )}
-            {errorMessage ? (
-              <p className="text-sm text-[var(--danger)]">{errorMessage}</p>
-            ) : null}
           </div>
         ) : null}
       </main>

@@ -1,5 +1,5 @@
 -- =====================================================================
--- Jigsaw STAD — single upgrade migration (current schema)
+-- Zigso STAD — single upgrade migration (current schema)
 --
 -- Run once on an existing Supabase project (vocabulary/worksheet, quiz,
 -- or partial STAD). Idempotent: safe to re-run.

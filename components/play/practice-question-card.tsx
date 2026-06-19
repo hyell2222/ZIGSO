@@ -30,6 +30,7 @@ export type PracticeResult = {
 
 type Props = {
   question: QuizQuestion;
+  index: number;
   /** 연습 종료(정답 또는 3회 오답) 시 1회 호출 */
   onComplete: (result: PracticeResult) => void | Promise<void>;
   /** 이미 완료된 경우(복귀 등) 표시용 */
@@ -51,6 +52,7 @@ function initialWrongChoices(initialResult: Props["initialResult"]): number[] {
 
 export function PracticeQuestionCard({
   question,
+  index,
   onComplete,
   initialResult,
   disabled,
@@ -123,7 +125,9 @@ export function PracticeQuestionCard({
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--card-bg)] p-4 @md:p-5">
       <div className="mb-3 flex items-center justify-between gap-2">
-        <p className={cn("font-medium", playPreservedTextClass)}>{question.prompt}</p>
+        <p className={cn("font-medium", playPreservedTextClass)}>
+          {index + 1}. {question.prompt}
+        </p>
       </div>
 
       <div className="space-y-2">

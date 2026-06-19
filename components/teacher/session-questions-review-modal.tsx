@@ -73,15 +73,16 @@ export function SessionQuestionsReviewModal({
             heading="section"
           >
             <div className="space-y-4">
-              {questions.map((question) => (
+              {questions.map((q, idx) => (
                 <PracticeQuestionCard
-                  key={question.id}
-                  question={question}
+                  key={q.id}
+                  question={q}
+                  index={idx}
                   onComplete={() => {}}
                   initialResult={{
                     wrongAttempts: 0,
                     baseScore: 100,
-                    choiceIndex: question.correctIndex,
+                    choiceIndex: q.correctIndex,
                   }}
                   disabled
                   scored={false}

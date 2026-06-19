@@ -1,4 +1,4 @@
-# Jigsaw Submission Guide
+# Zigso Submission Guide
 
 The competition requires this structure:
 

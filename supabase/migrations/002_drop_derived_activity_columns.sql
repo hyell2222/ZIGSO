@@ -1,5 +1,5 @@
 -- =====================================================================
--- Jigsaw — drop derived/duplicate activity columns
+-- Zigso — drop derived/duplicate activity columns
 --
 -- `group_size` (= activity_pack.roles.length) and `task_count`
 -- (= number of test questions in activity_pack) are always derivable

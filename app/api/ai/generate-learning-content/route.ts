@@ -17,6 +17,7 @@ export const maxDuration = 60;
 const OPENAI_MODEL = process.env.OPENAI_MODEL?.trim() || "gpt-4o-mini";
 
 const MAX_TOPIC_LENGTH = 500;
+const MAX_ACHIEVEMENT_STANDARD_LENGTH = 1000;
 const MIN_SEGMENT_LENGTH = 80;
 const MAX_SEGMENT_LENGTH = 6000;
 
@@ -27,7 +28,7 @@ const SEGMENT_SCHEMA = {
   properties: {
     segment: {
       type: "string",
-      description: "A self-contained educational reading passage for jigsaw expert-group learning.",
+      description: "A self-contained educational reading passage for zigso expert-group learning.",
     },
   },
 } as const;
@@ -69,7 +70,7 @@ function getDifficultyRule(difficulty: ContentDifficulty): string {
 
 function buildSystemPrompt(contentLanguage: ContentLanguage, difficulty: ContentDifficulty): string {
   return [
-    "You write educational reading passages for a jigsaw cooperative-learning classroom activity.",
+    "You write educational reading passages for a zigso cooperative-learning classroom activity.",
     "Each student in an expert group will read and master ONE passage, then teach teammates in a home group.",
     "Output JSON only.",
     getLanguageRule(contentLanguage),
@@ -83,12 +84,14 @@ function buildSystemPrompt(contentLanguage: ContentLanguage, difficulty: Content
     "- Do NOT include quiz questions, vocabulary lists, or meta commentary.",
     "- Do NOT address the reader directly (avoid 'you will learn' or 'in this passage').",
     "- Use paragraph breaks (\\n\\n) between paragraphs when the passage has multiple paragraphs.",
+    "- If an achievement standard is provided, align the passage with it naturally without explicitly naming the standard.",
   ].join("\n");
 }
 
 function buildUserPrompt(opts: {
   topic: string;
   activityTitle: string;
+  achievementStandard: string;
   contentLanguage: ContentLanguage;
   difficulty: ContentDifficulty;
 }): string {
@@ -101,6 +104,17 @@ function buildUserPrompt(opts: {
 
   if (opts.activityTitle.trim()) {
     lines.push("", "Activity title (context only):", opts.activityTitle.trim());
+  }
+
+  if (opts.achievementStandard.trim()) {
+    lines.push(
+      "",
+      "Achievement standard to align with:",
+      opts.achievementStandard.trim(),
+      "",
+      "Use this achievement standard to decide the reading focus, text structure, and thinking skills required.",
+      "Do not quote or label the achievement standard directly in the passage.",
+    );
   }
 
   lines.push(
@@ -181,6 +195,15 @@ export async function POST(req: NextRequest) {
 
   const activityTitle = typeof input.activityTitle === "string" ? input.activityTitle.trim() : "";
 
+  const achievementStandard = typeof input.achievementStandard === "string" ? input.achievementStandard.trim() : "";
+
+  if (achievementStandard.length > MAX_ACHIEVEMENT_STANDARD_LENGTH) {
+    return NextResponse.json(
+      { error: `성취 기준은 ${MAX_ACHIEVEMENT_STANDARD_LENGTH}자 이내로 입력하세요.` },
+      { status: 400 },
+    );
+  }
+
   const contentLanguage: ContentLanguage =
     input.contentLanguage === "en" || input.contentLanguage === "ko"
       ? input.contentLanguage
@@ -213,6 +236,7 @@ export async function POST(req: NextRequest) {
             content: buildUserPrompt({
               topic,
               activityTitle,
+              achievementStandard,
               contentLanguage,
               difficulty,
             }),

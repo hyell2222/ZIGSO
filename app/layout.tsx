@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import { Toaster } from "sonner";
+
 import "./globals.css";
 import { QueryProvider } from "@/providers/query-provider";
 
@@ -31,8 +33,8 @@ const kerisBaeum = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Jigsaw",
-  description: `직소 모형 기반 온라인 협동학습 게임`,
+  title: "Zigso",
+  description: "직소 모형 기반 온라인 협동학습 게임",
   icons: {
     icon: "/window.svg",
   },
@@ -49,7 +51,22 @@ export default function RootLayout({
       className={`${kerisBaeum.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col text-[var(--foreground)]">
-        <QueryProvider>{children}</QueryProvider>
+        <QueryProvider>
+          {children}
+          <Toaster
+            position="top-center"
+            richColors
+            duration={3000}
+            expand
+            closeButton={false}
+            toastOptions={{
+              classNames: {
+                toast:
+                  "mx-auto font-[family-name:var(--font-kerisbaeum)] rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-lg",
+              },
+            }}
+          />
+        </QueryProvider>
       </body>
     </html>
   );

@@ -57,7 +57,7 @@ export function TopNav() {
               href={ROUTES.home}
               className="block whitespace-nowrap text-3xl font-extrabold tracking-tight text-[var(--on-primary)] transition hover:brightness-110"
             >
-              Jigsaw
+              Zigso
             </Link>
           </div>
           <nav className="flex shrink-0 items-center justify-end gap-2 text-sm">

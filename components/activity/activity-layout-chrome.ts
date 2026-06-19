@@ -168,9 +168,6 @@ export const activityEditorNumberBadge =
 export const activityEditorChipActive =
   "border-[color-mix(in_srgb,var(--primary)_38%,var(--border))] bg-[var(--tint-primary-medium)] text-[var(--primary)]";
 
-export const activityEditorChoiceCorrect =
-  "border-[var(--primary)] bg-[var(--tint-primary-medium)] text-[var(--primary)]";
-
 export const activityEditorChoicePreviewCorrect =
   "border-[var(--primary)] bg-[var(--tint-primary-medium)]";
 

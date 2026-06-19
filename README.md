@@ -1,6 +1,6 @@
-# Jigsaw
+# Zigso
 
-**Jigsaw** is a teacher tool for running jigsaw cooperative group activities in the classroom. Teachers design activities, host live sessions with join codes, and track group progress through expert-group, home-group, and individual-quiz phases.
+**Zigso** is a teacher tool for running zigso cooperative group activities in the classroom. Teachers design activities, host live sessions with join codes, and track group progress through expert-group, home-group, and individual-quiz phases.
 
 The repository ships with one built-in activity example — **Textbook Reading: Save Our Planet**. Experts master a passage segment, the home group solves a shared multiple-choice quiz, and each student takes an individual multiple-choice quiz. The data model and editor target that flow; additional topics follow the same `activity_pack` structure.
 

@@ -7,6 +7,7 @@ import type { QuizQuestion } from "@/lib/activity-pack/types";
 export type AILearningContentRequest = {
   topic: string;
   activityTitle?: string;
+  achievementStandard?: string;
   contentLanguage?: ContentLanguage;
   difficulty?: ContentDifficulty;
 };
@@ -15,15 +16,12 @@ export type AILearningContentResponse = {
   segment: string;
 };
 
-/** POST /api/ai/generate-role-questions — 학습 내용 기반 문항 생성 */
-
 export type AIRoleQuestionsRequest = {
   segment: string;
   activityTitle?: string;
   kind: "practice" | "test";
   questionCount?: number;
   contentLanguage?: ContentLanguage;
-  /** 같은 세트의 기존 문항 발문 — 중복 생성을 피하기 위한 컨텍스트 */
   existingQuestions?: string[];
 };
 

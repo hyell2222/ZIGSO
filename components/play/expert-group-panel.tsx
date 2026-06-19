@@ -183,7 +183,7 @@ export function ExpertPhasePanel({
                 }
               >
                 <div className="space-y-4">
-                  {practiceQuestions.map((q) => {
+                  {practiceQuestions.map((q, idx) => {
                     const stored = completed[q.id];
                     const initialResult = stored
                       ? {
@@ -196,6 +196,7 @@ export function ExpertPhasePanel({
                       <div key={q.id}>
                         <PracticeQuestionCard
                           question={q}
+                          index={idx}
                           onComplete={(r) => handleQuestionComplete(q.id, r)}
                           initialResult={initialResult}
                           disabled={locked && !stored}

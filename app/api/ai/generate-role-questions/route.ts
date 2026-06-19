@@ -140,7 +140,7 @@ function buildSystemPrompt(kind: "practice" | "test", contentLanguage: ContentLa
 
   if (kind === "practice") {
     return [
-      "You write multiple-choice PRACTICE reading-comprehension questions for a jigsaw expert-group segment.",
+      "You write multiple-choice PRACTICE reading-comprehension questions for a zigso expert-group segment.",
       "Output JSON only.",
       langRule,
       "",
@@ -163,7 +163,7 @@ function buildSystemPrompt(kind: "practice" | "test", contentLanguage: ContentLa
   }
 
   return [
-    "You write multiple-choice FORMATIVE TEST reading-comprehension questions for a jigsaw expert-group segment.",
+    "You write multiple-choice FORMATIVE TEST reading-comprehension questions for a zigso expert-group segment.",
     "Output JSON only.",
     langRule,
     "",

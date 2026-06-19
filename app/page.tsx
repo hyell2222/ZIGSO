@@ -21,7 +21,7 @@ const bulletClass =
 
 const LANDING_EYEBROW = "직소 모형 기반 온라인 협동학습 게임";
 const LANDING_TAGLINE = "복잡한 직소 활동 설계는 그만! 학생 랜덤 배정부터 점수 계산까지 알아서 해드립니다";
-const LANDING_RESEARCH_TITLE = "중·고 협동학습 수업을 위한 직소·STAD 온라인 활동 플랫폼 Jigsaw 개발 및 적용"
+const LANDING_RESEARCH_TITLE = "중·고 협동학습 수업을 위한 직소·STAD 온라인 활동 플랫폼 Zigso 개발 및 적용"
 const LANDING_FEATURES = [
   {
     title: "AI로 활동 생성",
@@ -93,7 +93,7 @@ export default function HomePage() {
               </div>
 
               <h1 className="mt-2.5 bg-[linear-gradient(165deg,var(--primary)_0%,color-mix(in_srgb,var(--primary)_72%,var(--mystery))_100%)] bg-clip-text text-4xl font-bold leading-[1.08] tracking-[-0.02em] text-transparent drop-shadow-[0_1px_0_color-mix(in_srgb,var(--on-primary)_35%,transparent)] sm:mt-3 sm:text-6xl sm:tracking-[-0.03em]">
-                Jigsaw
+                Zigso
               </h1>
 
               <p className="mx-auto mt-4 max-w-md text-balance text-base font-medium leading-snug text-[var(--foreground)] sm:mt-5 sm:text-lg sm:leading-snug">

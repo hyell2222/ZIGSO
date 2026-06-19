@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
+import { Textarea } from "@/components/ui/textarea";
 import { generateLearningContentWithAI } from "@/lib/api/ai-activity";
 import {
   CONTENT_DIFFICULTY_OPTIONS,
@@ -46,6 +47,7 @@ function OptionButtonGroup<T extends string>({
       <div className="flex flex-wrap gap-2" role="group" aria-label={label}>
         {options.map((option) => {
           const selected = option.value === value;
+
           return (
             <button
               key={option.value}
@@ -68,10 +70,18 @@ function OptionButtonGroup<T extends string>({
   );
 }
 
-export function LearningContentAIModal({ open, onClose, activityTitle, onGenerated }: Props) {
+export function LearningContentAIModal({
+  open,
+  onClose,
+  activityTitle,
+  onGenerated,
+}: Props) {
   const [topic, setTopic] = useState("");
-  const [contentLanguage, setContentLanguage] = useState<ContentLanguage>(DEFAULT_CONTENT_LANGUAGE);
-  const [difficulty, setDifficulty] = useState<ContentDifficulty>(DEFAULT_CONTENT_DIFFICULTY);
+  const [achievementStandard, setAchievementStandard] = useState("");
+  const [contentLanguage, setContentLanguage] =
+    useState<ContentLanguage>(DEFAULT_CONTENT_LANGUAGE);
+  const [difficulty, setDifficulty] =
+    useState<ContentDifficulty>(DEFAULT_CONTENT_DIFFICULTY);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -82,7 +92,10 @@ export function LearningContentAIModal({ open, onClose, activityTitle, onGenerat
   };
 
   const handleGenerate = async () => {
-    if (!topic.trim()) {
+    const trimmedTopic = topic.trim();
+    const trimmedAchievementStandard = achievementStandard.trim();
+
+    if (!trimmedTopic) {
       setError("학습 주제를 입력하세요.");
       return;
     }
@@ -92,11 +105,13 @@ export function LearningContentAIModal({ open, onClose, activityTitle, onGenerat
 
     try {
       const { segment } = await generateLearningContentWithAI({
-        topic: topic.trim(),
+        topic: trimmedTopic,
         activityTitle: activityTitle.trim() || undefined,
+        achievementStandard: trimmedAchievementStandard || undefined,
         contentLanguage,
         difficulty,
       });
+
       onGenerated(segment);
       onClose();
     } catch (e) {
@@ -116,7 +131,13 @@ export function LearningContentAIModal({ open, onClose, activityTitle, onGenerat
       contentClassName="space-y-4 px-5 py-4"
       footer={
         <>
-          <Button type="button" variant="outline" size="sm" disabled={loading} onClick={handleClose}>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={loading}
+            onClick={handleClose}
+          >
             취소
           </Button>
           <Button
@@ -143,6 +164,20 @@ export function LearningContentAIModal({ open, onClose, activityTitle, onGenerat
           onChange={(e) => setTopic(e.target.value)}
           placeholder="예: 기후 변화와 재생 에너지"
           className="h-9 w-full text-sm"
+          disabled={loading}
+        />
+      </FormField>
+
+      <FormField
+        label="성취기준"
+        htmlFor="learning-content-achievement-standard"
+      >
+        <Textarea
+          id="learning-content-achievement-standard"
+          value={achievementStandard}
+          onChange={(e) => setAchievementStandard(e.target.value)}
+          placeholder="예: 글의 중심 내용과 세부 정보를 파악하고, 글쓴이의 의도나 목적을 추론할 수 있다."
+          className="min-h-24 resize-none text-sm"
           disabled={loading}
         />
       </FormField>

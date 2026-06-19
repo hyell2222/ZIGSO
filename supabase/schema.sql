@@ -1,5 +1,5 @@
 -- =====================================================================
--- Jigsaw — fresh schema
+-- Zigso — fresh schema
 -- Apply on a clean database (or drop legacy tables first).
 -- =====================================================================
 

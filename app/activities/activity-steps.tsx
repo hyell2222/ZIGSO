@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Save } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 
 import { ActivityEditorForm } from "@/components/teacher/activity-editor-form";
 import { Button } from "@/components/ui/button";
@@ -18,7 +19,6 @@ import {
 import type { ActivityPack } from "@/lib/activity-pack/types";
 import { useRequireTeacherSession } from "@/lib/auth/use-require-teacher-session";
 import { ROUTES } from "@/lib/routes";
-import { cn } from "@/lib/utils";
 
 type Props =
   | { mode: "create"; pageTitle?: string }
@@ -29,15 +29,31 @@ function leaveEditor(router: ReturnType<typeof useRouter>) {
     window.close();
     return;
   }
+
   router.push(ROUTES.activities);
+}
+
+function compactValidationError(message: string) {
+  return message
+    .replace(/「학습 내용 (\d+)」연습 /g, "내용 $1 · 연습 ")
+    .replace(/「학습 내용 (\d+)」실전 /g, "내용 $1 · 실전 ")
+    .replace(/「학습 내용 (\d+)」/g, "내용 $1")
+    .replace(/(\d+)번 문항/g, "$1번");
+}
+
+function showValidationToast(errors: string[]) {
+  if (errors.length === 0) return;
+
+  const firstError = compactValidationError(errors[0] ?? "");
+  const restCount = errors.length - 1;
+
+  toast.error(restCount > 0 ? firstError + "\n외 " + restCount + "개 항목이 더 있습니다." : firstError);
 }
 
 export function ActivitySteps(props: Props) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const sessionQuery = useRequireTeacherSession();
-
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const initialDraft = useMemo(
     () =>
@@ -51,11 +67,6 @@ export function ActivitySteps(props: Props) {
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      const validationErrors = validateEditorDraft(draft);
-      if (validationErrors.length > 0) {
-        throw new Error(validationErrors[0]);
-      }
-
       const activityPack = editorDraftToPack(draft);
 
       const payload = {
@@ -67,6 +78,7 @@ export function ActivitySteps(props: Props) {
       if (props.mode === "create") {
         const uid = sessionQuery.data?.user?.id;
         if (!uid) throw new Error("로그인이 필요합니다.");
+
         await createActivity({ ...payload, creator_id: uid });
       } else {
         await updateActivity(props.activityId, payload);
@@ -74,19 +86,25 @@ export function ActivitySteps(props: Props) {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["teacher-activities"] });
+
+      toast.success("활동이 저장되었습니다.");
       leaveEditor(router);
     },
-    onError: (e: Error) => setErrorMessage(e.message),
+    onError: (e: Error) => {
+      toast.error("저장에 실패했습니다.", {
+        description: e.message,
+      });
+    },
   });
 
   const handleSave = () => {
-    const allErrors = validateEditorDraft(draft);
-    if (allErrors.length > 0) {
-      setErrorMessage(allErrors[0] ?? null);
+    const validationErrors = validateEditorDraft(draft);
+
+    if (validationErrors.length > 0) {
+      showValidationToast(validationErrors);
       return;
     }
 
-    setErrorMessage(null);
     saveMutation.mutate();
   };
 
@@ -112,16 +130,12 @@ export function ActivitySteps(props: Props) {
         </div>
 
         <div className="ml-auto flex shrink-0 items-center gap-2">
-          {errorMessage ? (
-            <p
-              className="hidden max-w-[12rem] truncate text-xs text-[var(--danger)] lg:block"
-              role="alert"
-              title={errorMessage}
-            >
-              {errorMessage}
-            </p>
-          ) : null}
-          <Button type="button" onClick={handleSave} disabled={saveMutation.isPending} size="sm">
+          <Button
+            type="button"
+            onClick={handleSave}
+            disabled={saveMutation.isPending}
+            size="sm"
+          >
             {saveMutation.isPending ? (
               <Loader2 className="mr-1.5 h-4 w-4 animate-spin" aria-hidden />
             ) : (
@@ -131,17 +145,6 @@ export function ActivitySteps(props: Props) {
           </Button>
         </div>
       </header>
-
-      {errorMessage ? (
-        <p
-          className={cn(
-            "shrink-0 border-b border-[var(--panel-warn-border)] bg-[var(--panel-warn-bg)] px-5 py-2 text-sm text-[var(--entry-warn-ink)] lg:hidden",
-          )}
-          role="alert"
-        >
-          {errorMessage}
-        </p>
-      ) : null}
 
       <div className="min-h-0 flex-1 overflow-hidden">
         <ActivityEditorForm draft={draft} onChange={setDraft} />

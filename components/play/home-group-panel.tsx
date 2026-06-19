@@ -254,7 +254,7 @@ export function GroupPhasePanel({
                     }
                   >
                     <div className="space-y-4">
-                      {practiceQuestions.map((pq) => {
+                      {practiceQuestions.map((pq, idx) => {
                         if (activeCard.isMe) {
                           const stored = ownPracticeResults[pq.id];
                           const initialResult = stored
@@ -267,6 +267,7 @@ export function GroupPhasePanel({
                             <div key={pq.id}>
                               <PracticeQuestionCard
                                 question={pq}
+                                index={idx}
                                 initialResult={initialResult}
                                 disabled
                                 onComplete={() => {}}
@@ -280,6 +281,7 @@ export function GroupPhasePanel({
                           <div key={pq.id}>
                             <PracticeQuestionCard
                               question={pq}
+                              index={idx}
                               scored={false}
                               initialResult={done ? { wrongAttempts: 0, baseScore: 0 } : null}
                               disabled={done || busyId === pq.id}
