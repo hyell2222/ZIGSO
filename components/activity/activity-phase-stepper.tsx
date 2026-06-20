@@ -3,7 +3,11 @@
 import { Check } from "lucide-react";
 
 import { PhaseGuideHelpButton } from "@/components/activity/phase-guide-help-button";
-import { PHASE_STEP_DEFS, TIMED_PHASE_ORDER, type TimedPhaseKey } from "@/lib/activity-phases";
+import {
+  PHASE_STEP_DEFS,
+  TIMED_PHASE_ORDER,
+  type TimedPhaseKey,
+} from "@/lib/activity-phases";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -27,46 +31,36 @@ function connectorClass(active: boolean) {
     : "bg-[color-mix(in_srgb,var(--muted)_40%,var(--border))]";
 }
 
-const stepperStyles = {
-  circleSize: "h-8 w-8 text-sm",
-  checkSize: "h-4 w-4",
-  labelSize: "text-sm",
-  innerLineWidth: "w-5",
-  stepGap: "gap-2",
-} as const;
-
 function StepChip({
   step,
   state,
-  styles,
 }: {
   step: StepDef;
   state: StepState;
-  styles: typeof stepperStyles;
 }) {
-  const { circleSize, checkSize, labelSize, stepGap } = styles;
-
   return (
-    <div className={cn("flex shrink-0 items-center", stepGap)}>
+    <div className="flex shrink-0 items-center gap-2 text-left animate-fade-in">
       <span
         className={cn(
-          "flex shrink-0 items-center justify-center rounded-full border-2 font-semibold tabular-nums transition-colors",
-          circleSize,
+          "flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 text-sm font-semibold tabular-nums transition-colors",
           state === "current" &&
-            "border-[var(--primary)] bg-[var(--primary)] text-[var(--on-primary)] shadow-sm",
+          "border-[var(--primary)] bg-[var(--primary)] text-[var(--on-primary)] shadow-sm",
           state === "complete" &&
-            "border-[var(--primary)] bg-[color-mix(in_srgb,var(--primary)_12%,var(--card-bg))] text-[var(--primary)]",
+          "border-[var(--primary)] bg-[color-mix(in_srgb,var(--primary)_12%,var(--card-bg))] text-[var(--primary)]",
           state === "upcoming" &&
-            "border-[var(--border)] bg-[var(--surface-overlay)] text-[var(--muted-foreground)]",
+          "border-[var(--border)] bg-[var(--surface-overlay)] text-[var(--muted-foreground)]",
         )}
       >
-        {state === "complete" ? <Check className={checkSize} aria-hidden /> : step.number}
+        {state === "complete" ? (
+          <Check className="h-4 w-4" aria-hidden />
+        ) : (
+          step.number
+        )}
       </span>
 
       <span
         className={cn(
-          "flex shrink-0 items-center gap-0.5 pr-2.5 @sm:gap-1 @sm:pr-3",
-          labelSize,
+          "inline-flex items-center gap-1 whitespace-nowrap font-semibold text-sm sm:text-base",
           state === "current"
             ? "text-[var(--primary)]"
             : state === "complete"
@@ -74,10 +68,13 @@ function StepChip({
               : "text-[var(--muted-foreground)]",
         )}
       >
-        <span className="whitespace-nowrap font-semibold text-base @sm:text-lg">{step.title}</span>
+        {step.title}
         <PhaseGuideHelpButton
           phase={step.key}
-          className={cn("h-4 w-4 shrink-0", state === "upcoming" && "opacity-70")}
+          className={cn(
+            "h-4 w-4 shrink-0",
+            state === "upcoming" && "opacity-70",
+          )}
         />
       </span>
     </div>
@@ -85,19 +82,22 @@ function StepChip({
 }
 
 export function ActivityPhaseStepper({ currentPhase, className }: Props) {
-  const currentIndex = TIMED_PHASE_ORDER.indexOf(currentPhase);
-  const currentStep = PHASE_STEP_DEFS[currentIndex];
+  const currentIndex = Math.max(0, TIMED_PHASE_ORDER.indexOf(currentPhase));
+  const currentStep = PHASE_STEP_DEFS[currentIndex] ?? PHASE_STEP_DEFS[0];
 
   return (
     <nav
       aria-label="활동 단계"
-      className={cn("w-full py-1 @md:overflow-x-auto @md:pb-6 @md:py-1.5", className)}
+      className={cn(
+        "w-full border-b border-[var(--border)] bg-[var(--card-bg)] px-4 py-3 sm:px-2",
+        className,
+      )}
     >
-      <div className="@md:hidden" aria-current="step">
-        <StepChip step={currentStep} state="current" styles={stepperStyles} />
+      <div className="mx-auto max-w-5xl px-4 @md:hidden" aria-current="step">
+        <StepChip step={currentStep} state="current" />
       </div>
 
-      <ol className="hidden min-w-0 w-full items-center @md:flex">
+      <ol className="mx-auto hidden max-w-5xl items-center justify-start gap-4 px-4 @md:flex">
         {PHASE_STEP_DEFS.map((step, index) => {
           const state = stepStateAt(index, currentIndex);
           const isLast = index === PHASE_STEP_DEFS.length - 1;
@@ -107,16 +107,17 @@ export function ActivityPhaseStepper({ currentPhase, className }: Props) {
             <li
               key={step.key}
               className={cn(
-                "flex min-w-0 items-center",
-                isLast ? "shrink-0" : "min-w-[5rem] flex-1",
+                "flex items-center",
+                isLast ? "shrink-0" : "flex-1 max-w-[300px]",
               )}
               aria-current={state === "current" ? "step" : undefined}
             >
-              <StepChip step={step} state={state} styles={stepperStyles} />
+              <StepChip step={step} state={state} />
+
               {!isLast ? (
                 <div
                   className={cn(
-                    "h-0.5 min-w-3 flex-1 rounded-full",
+                    "ml-4 h-0.5 flex-1 rounded-full transition-colors",
                     connectorClass(connectorAfterActive),
                   )}
                   aria-hidden

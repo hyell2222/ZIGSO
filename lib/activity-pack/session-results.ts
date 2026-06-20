@@ -1,5 +1,5 @@
 import { formatGroupDisplayName, gradeTest } from "@/lib/activity-pack/engine";
-import { formatAssignedRoleLabels } from "@/lib/activity-pack/roles";
+import { formatAssignedRoleLabels } from "@/lib/play/role-codenames";
 import { stadImprovementPoints, testPercent } from "@/lib/activity-pack/scoring";
 import type { ActivityPack, QuizAnswer } from "@/lib/activity-pack/types";
 

@@ -29,12 +29,11 @@ import {
   type SandboxGroup,
 } from "@/lib/sandbox/state";
 import { LOADING_COPY } from "@/lib/activity-phases";
-import { formatAssignedRoleLabels } from "@/lib/activity-pack/roles";
+import { formatAssignedRoleLabels } from "@/lib/play/role-codenames";
 import { cn } from "@/lib/utils";
 
 type Props = {
   activityId: string;
-  activityTitle: string | null;
   pack: ActivityPack;
   phase: ActivityPhase;
   groups: SandboxGroup[];
@@ -57,7 +56,6 @@ export function SandboxStudentPanel(props: Props) {
 
 function SandboxStudentPanelView({
   activityId,
-  activityTitle,
   pack,
   phase,
   groups,
@@ -73,7 +71,6 @@ function SandboxStudentPanelView({
   const [joined, setJoined] = useState(Boolean(realStudentNickname?.trim()));
 
   const showJoinModal = !joined && !realStudentNickname;
-  const activeNickname = realStudentNickname?.trim() || nickname.trim();
   const scopeKey = `sandbox-${activityId}`;
 
   const primaryPlayer = useMemo(() => {
@@ -122,7 +119,7 @@ function SandboxStudentPanelView({
         })),
       scopeKey,
     );
-  }, [phase, pack, groups, players, showJoinModal, scopeKey]);
+  }, [pack, groups, players, scopeKey]);
 
   if (showJoinModal) {
     return (

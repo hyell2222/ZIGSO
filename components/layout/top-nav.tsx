@@ -7,7 +7,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { getCurrentSession, signOutTeacher } from "@/lib/api/auth";
 import { TeacherSubNav } from "@/components/layout/teacher-sub-nav";
 import { Button, ButtonLink } from "@/components/ui/button";
-import { AUTH_SESSION_QUERY_KEY } from "@/lib/auth-session-query";
+import { AUTH_SESSION_QUERY_KEY } from "@/lib/auth/use-require-teacher-session";
 import { ROUTES } from "@/lib/routes";
 import { hasSupabaseEnv } from "@/lib/supabase";
 import { Z } from "@/lib/ui/z-index";
@@ -54,8 +54,8 @@ export function TopNav() {
         <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-3 px-4 py-3">
           <div className="shrink-0">
             <Link
-              href={ROUTES.home}
-              className="block whitespace-nowrap text-3xl font-extrabold tracking-tight text-[var(--on-primary)] transition hover:brightness-110"
+              href={sessionQuery.data ? ROUTES.activities : ROUTES.home}
+              className="block whitespace-nowrap text-3xl font-extrabold tracking-tight text-[var(--on-primary)] transition"
             >
               Zigso
             </Link>

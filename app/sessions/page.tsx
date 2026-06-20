@@ -1,7 +1,6 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Timer } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 
@@ -20,14 +19,13 @@ import {
   type ActivityPhase,
 } from "@/lib/api/activities";
 import { useRequireTeacherSession } from "@/lib/auth/use-require-teacher-session";
-import { formatAssignedRoleLabels } from "@/lib/activity-pack/roles";
+import { formatAssignedRoleLabels } from "@/lib/play/role-codenames";
 import { hasReviewQuestions } from "@/lib/activity-pack/engine";
 import { parseAssignedRoleIds } from "@/lib/api/play";
 import { groupPlayersByGroup } from "@/lib/teacher/group-players-by-group";
 import { isPlayerPhaseComplete } from "@/lib/teacher/phase-completion";
 import { SessionHostLayout } from "@/components/teacher/session-host-layout";
 import { activityViewportRoot } from "@/components/activity/activity-layout-chrome";
-import { activityBannerButtonClass } from "@/components/activity/activity-layout-chrome";
 import { GuideModalScope } from "@/components/play/guide-modal-scope";
 import { SessionHostWaitingRoster } from "@/components/teacher/session-host-waiting-roster";
 import { PhaseTimerContent } from "@/components/teacher/phase-timer-content";
@@ -51,9 +49,8 @@ import {
   type SessionPresenceRow,
 } from "@/lib/realtime/session-presence";
 import { hasSupabaseEnv, supabase } from "@/lib/supabase";
-import { isSessionEnded, isTimedPhase, RESULTS_COPY, type TimedPhase } from "@/lib/activity-phases";
+import { isSessionEnded, isTimedPhase, type TimedPhase } from "@/lib/activity-phases";
 import { hostSessionNextPhaseLabel } from "@/lib/api/sessions";
-import { cn } from "@/lib/utils";
 
 function SessionHostContent() {
   const router = useRouter();
@@ -95,9 +92,9 @@ function SessionHostContent() {
   const hostUserId = teacherSession.data?.user?.id;
   const isVerifiedHost = Boolean(
     sessionId &&
-      hostUserId &&
-      sessionQuery.data &&
-      sessionQuery.data.host_id === hostUserId,
+    hostUserId &&
+    sessionQuery.data &&
+    sessionQuery.data.host_id === hostUserId,
   );
 
   useEffect(() => {
@@ -268,8 +265,8 @@ function SessionHostContent() {
       }
     }
 
-    if (toOnline.length > 0) void setPlayersOnline(toOnline, true).catch(() => {});
-    if (toOffline.length > 0) void setPlayersOnline(toOffline, false).catch(() => {});
+    if (toOnline.length > 0) void setPlayersOnline(toOnline, true).catch(() => { });
+    if (toOffline.length > 0) void setPlayersOnline(toOffline, false).catch(() => { });
   }, [presenceRows, playersQuery.data]);
 
   // presence 가 더 자주 바뀌어도 일정 주기로 재조정 (마지막 본 시각 기반 오프라인 판정용)
@@ -323,10 +320,10 @@ function SessionHostContent() {
           nickname: m.nickname,
           zoneName: activityPack
             ? formatAssignedRoleLabels(
-                activityPack,
-                parseAssignedRoleIds(m),
-                sessionId ?? "",
-              )
+              activityPack,
+              parseAssignedRoleIds(m),
+              sessionId ?? "",
+            )
             : null,
           assignedRoleId: m.assigned_role_id,
           isOnline: m.is_online !== false,
@@ -420,72 +417,6 @@ function SessionHostContent() {
     );
   }
 
-  const timerButton = shouldShowTimer ? (
-    <Button
-      type="button"
-      variant="secondary"
-      size="sm"
-      className={cn("shrink-0", activityBannerButtonClass)}
-      aria-haspopup="dialog"
-      aria-expanded={timerToolOpen}
-      onClick={openTimerModal}
-    >
-      <Timer className="h-4 w-4 shrink-0 text-[var(--accent)]" aria-hidden />
-      타이머
-    </Button>
-  ) : null;
-
-  const startButton = !sessionStarted ? (
-    <Button
-      type="button"
-      size="sm"
-      className={activityBannerButtonClass}
-      onClick={() => beginMutation.mutate()}
-      disabled={beginMutation.isPending}
-    >
-      {beginMutation.isPending ? (
-        <>
-          <Loader2 className="h-4 w-4 shrink-0 animate-spin text-[var(--primary)]" aria-hidden />
-        </>
-      ) : (
-        <>시작하기</>
-      )}
-    </Button>
-  ) : null;
-
-  const nextButton =
-    sessionStarted && !sessionEnded && nextPhase ? (
-      <Button
-        type="button"
-        size="sm"
-        className={activityBannerButtonClass}
-        onClick={() => nextPhaseMutation.mutate()}
-        disabled={nextPhaseMutation.isPending}
-      >
-        {nextPhaseMutation.isPending ? (
-          <>
-            <Loader2 className="h-4 w-4 shrink-0 animate-spin text-[var(--primary)]" aria-hidden />
-          </>
-        ) : (
-          <>{nextPhaseLabel}</>
-        )}
-      </Button>
-    ) : null;
-
-  const reviewQuestionsButton =
-    phase === "results" && activityPack && hasReviewQuestions(activityPack) ? (
-      <Button
-        type="button"
-        size="sm"
-        className={activityBannerButtonClass}
-        onClick={() => setQuestionsReviewOpen(true)}
-      >
-        {RESULTS_COPY.reviewQuestions}
-      </Button>
-    ) : null;
-
-  const headerActionButton = reviewQuestionsButton ?? nextButton;
-
   return (
     <GuideModalScope className={activityViewportRoot}>
       <SessionHostLayout
@@ -494,9 +425,18 @@ function SessionHostContent() {
         joinCode={row.join_code}
         sessionEnded={sessionEnded}
         phase={phase}
-        timerButton={timerButton}
-        startButton={startButton}
-        nextButton={headerActionButton}
+        buttonSize="default"
+        sessionStarted={sessionStarted}
+        hasNextPhase={Boolean(nextPhase)}
+        nextPhaseLabel={nextPhaseLabel}
+        hasReviewQuestions={activityPack ? hasReviewQuestions(activityPack) : false}
+        isTimerOpen={timerToolOpen}
+        startPending={beginMutation.isPending}
+        nextPending={nextPhaseMutation.isPending}
+        onTimerClick={openTimerModal}
+        onStart={() => beginMutation.mutate()}
+        onNext={() => nextPhaseMutation.mutate()}
+        onReviewClick={() => setQuestionsReviewOpen(true)}
       >
         {phase === "waiting" ? (
           <SessionHostWaitingRoster
@@ -508,9 +448,9 @@ function SessionHostContent() {
         ) : null}
 
         {phase === "overview" ||
-        phase === "expert_group" ||
-        phase === "home_group" ||
-        phase === "individual_quiz" ? (
+          phase === "expert_group" ||
+          phase === "home_group" ||
+          phase === "individual_quiz" ? (
           <GroupAssignmentDashboard
             groups={assignmentGroups}
             loading={playersQuery.isLoading || groupsQuery.isLoading}

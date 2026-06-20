@@ -18,6 +18,7 @@ type PlayJoinQrProps = {
   className?: string;
   /** thumbnail: QR 미리보기 · button: 헤더용 축소 버튼 */
   variant?: "thumbnail" | "button";
+  size?: "default" | "sm";
 };
 
 let playJoinOriginCache = "";
@@ -41,7 +42,12 @@ function getPlayJoinOriginServerSnapshot() {
 }
 
 /** 학생 참가 URL QR — 썸네일 또는 QR 공유 버튼, 탭 시 모달 */
-export function PlayJoinQr({ joinCode, className, variant = "thumbnail" }: PlayJoinQrProps) {
+export function PlayJoinQr({
+  joinCode,
+  className,
+  variant = "thumbnail",
+  size,
+}: PlayJoinQrProps) {
   const [modalOpen, setModalOpen] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
   const scopeRoot = useGuideModalScope();
@@ -100,7 +106,7 @@ export function PlayJoinQr({ joinCode, className, variant = "thumbnail" }: PlayJ
         <Button
           type="button"
           variant="secondary"
-          size="sm"
+          size={size}
           className={cn(
             activityBannerButtonClass,
             "shrink-0 text-[var(--foreground)]",

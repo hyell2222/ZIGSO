@@ -10,7 +10,7 @@ import {
   listSessionPlayers,
   parseAssignedRoleIds,
 } from "@/lib/api/play";
-import { formatAssignedRoleLabels } from "@/lib/activity-pack/roles";
+import { formatAssignedRoleLabels } from "@/lib/play/role-codenames";
 import {
   buildSessionResults,
   getStudentResultsSnapshot,

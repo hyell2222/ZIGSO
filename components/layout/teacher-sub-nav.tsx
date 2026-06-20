@@ -7,25 +7,25 @@ import { FileText, LucideIcon, Puzzle } from "lucide-react";
 import { ROUTES } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 
-const TABS: { 
-  href: string; 
-  label: string; 
+const TABS: {
+  href: string;
+  label: string;
   icon: LucideIcon;
-  match: (path: string) => boolean 
+  match: (path: string) => boolean
 }[] = [
-  {
-    href: ROUTES.activities,
-    label: "내 활동",
-    icon: Puzzle,
-    match: (path) => path === ROUTES.activities || path.startsWith(`${ROUTES.activities}/`),
-  },
-  {
-    href: ROUTES.reports,
-    label: "활동 기록",
-    icon: FileText,
-    match: (path) => path === ROUTES.reports || path.startsWith(`${ROUTES.reports}/`),
-  },
-];
+    {
+      href: ROUTES.activities,
+      label: "내 활동",
+      icon: Puzzle,
+      match: (path) => path === ROUTES.activities || path.startsWith(`${ROUTES.activities}/`),
+    },
+    {
+      href: ROUTES.reports,
+      label: "활동 기록",
+      icon: FileText,
+      match: (path) => path === ROUTES.reports || path.startsWith(`${ROUTES.reports}/`),
+    },
+  ];
 
 export function TeacherSubNav() {
   const pathname = usePathname() ?? "";
@@ -43,28 +43,23 @@ export function TeacherSubNav() {
               href={tab.href}
               className={cn(
                 "group relative -mb-px flex items-center gap-2 px-4 py-4 text-base font-medium transition-colors",
-                active
-                  ? "text-[var(--primary)]"
-                  : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+                active ? "text-[var(--primary)]" : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
               )}
             >
-              <Icon 
-                size={18} 
+              <Icon
+                size={18}
                 className={cn(
                   "transition-colors",
-                  active ? "text-[var(--primary)]" : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
-                )} 
+                  active ? "text-[var(--primary)]" : "text-[var(--muted-foreground)] group-hover:text-[var(--foreground)]"
+                )}
               />
-              
+
               <span className="relative z-10">{tab.label}</span>
-              
-              {!active && (
-                <div className="absolute inset-x-1 inset-y-2 rounded-md bg-transparent transition-colors group-hover:bg-[var(--muted)]/60" />
-              )}
-              
-              {active && (
-                <div className="absolute inset-x-0 bottom-0 h-[3px] rounded-t-full bg-[var(--primary)]" />
-              )}
+
+              <div className={cn(
+                "absolute inset-x-0 bottom-0 h-[3px] rounded-t-full transition-all duration-200",
+                active ? "bg-[var(--primary)] opacity-100" : "bg-[var(--primary)]/40 opacity-0"
+              )} />
             </Link>
           );
         })}

@@ -1,14 +1,12 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, FileText, Radio } from "lucide-react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { Suspense, useState, type ReactNode } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
 
 import { deleteSession, listHostSessions, type HostSessionListRow } from "@/lib/api/activities";
 import { useRequireTeacherSession } from "@/lib/auth/use-require-teacher-session";
-import { GroupAssignmentDashboard } from "@/components/teacher/group-assignment-dashboard";
 import {
   SessionStudentReportList,
 } from "@/components/teacher/session-student-reports";
@@ -17,16 +15,11 @@ import { KebabMenu } from "@/components/ui/kebab-menu";
 import { PageHeader } from "@/components/layout/page-header";
 import { TopNav } from "@/components/layout/top-nav";
 import { LoadingState } from "@/components/ui/loading-state";
-import { ACTIVITY_PHASE_LABELS } from "@/lib/activity-phases";
-import type { ActivityPhase } from "@/lib/types";
 import { ROUTES } from "@/lib/routes";
 import { useSessionReportData } from "@/lib/teacher/use-session-report-data";
-import { activityLayoutType } from "@/components/activity/activity-layout-typography";
-import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
-const PHASE_KR = ACTIVITY_PHASE_LABELS;
 
-type SessionTab = "scores" | "roster";
 
 function formatWhen(iso: string | null) {
   if (!iso) return "—";
@@ -37,52 +30,18 @@ function formatWhen(iso: string | null) {
   }
 }
 
-function ReportBackLink({ href, label }: { href: string; label: string }) {
-  return (
-    <Link
-      href={href}
-      className="inline-flex items-center gap-1.5 text-sm text-[var(--muted-foreground)] transition-colors hover:text-[var(--foreground)]"
-    >
-      <ArrowLeft className="h-4 w-4" aria-hidden />
-      {label}
-    </Link>
-  );
-}
 
-function ReportSection({
-  title,
-  description,
-  children,
-}: {
-  title: string;
-  description?: string;
-  children: ReactNode;
-}) {
-  return (
-    <section className="space-y-3">
-      <div>
-        <h3 className={cn(activityLayoutType.sectionTitle, "text-[var(--foreground)]")}>{title}</h3>
-        {description ? (
-          <p className={cn(activityLayoutType.bodyMuted, "mt-1")}>{description}</p>
-        ) : null}
-      </div>
-      {children}
-    </section>
-  );
-}
 
 function SessionReportHeader({
   title,
   joinCode,
   createdAt,
-  phase,
   studentCount,
   teamCount,
 }: {
   title: string;
   joinCode: string;
   createdAt: string | null;
-  phase: ActivityPhase;
   studentCount: number;
   teamCount: number;
 }) {
@@ -97,6 +56,7 @@ function SessionReportHeader({
 }
 
 function ReportsSessionsListPanel({ teacherUserId }: { teacherUserId: string }) {
+  const router = useRouter();
   const queryClient = useQueryClient();
   const [pendingDeleteRow, setPendingDeleteRow] = useState<HostSessionListRow | null>(null);
 
@@ -139,40 +99,36 @@ function ReportsSessionsListPanel({ teacherUserId }: { teacherUserId: string }) 
       </ConfirmModal>
 
       <ul className="space-y-3">
-      {listQuery.data?.map((row) => {
-        const title = row.activities?.title?.trim() || "제목 없는 활동";
-        const phase = row.phase
-          ? (PHASE_KR[row.phase as ActivityPhase] ?? row.phase)
-          : "—";
-        return (
-          <li
-            key={row.id}
-            className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4 shadow-sm"
-          >
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <div className="min-w-0 flex-1 space-y-1">
-                <p className="font-medium text-[var(--foreground)]">{title}</p>
-                <p className="text-xs text-[var(--muted-foreground)]">
-                  <span className="font-mono text-[var(--accent)]">{row.join_code}</span>
-                  {" · "}
-                  {formatWhen(row.created_at)}
-                </p>
+        {listQuery.data?.map((row) => {
+          const title = row.activities?.title?.trim() || "제목 없는 활동";
+          return (
+            <li
+              key={row.id}
+              className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4 shadow-sm"
+            >
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <div className="min-w-0 flex-1 space-y-1">
+                  <p className="font-medium text-[var(--foreground)]">{title}</p>
+                  <p className="text-xs text-[var(--muted-foreground)]">
+                    <span className="font-mono text-[var(--accent)]">{row.join_code}</span>
+                    {" · "}
+                    {formatWhen(row.created_at)}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1 sm:ml-auto">
+                  <Button
+                    type="button"
+                    onClick={() => router.push(ROUTES.reportsForSession(row.id))}
+                  >
+                    리포트 보기
+                  </Button>
+                  <KebabMenu onDelete={() => handleDelete(row)} />
+                </div>
               </div>
-              <div className="flex items-center gap-1 sm:ml-auto">
-                <Link
-                  href={ROUTES.reportsForSession(row.id)}
-                  className="inline-flex h-10 items-center gap-1.5 rounded-md bg-[var(--primary)] px-3 text-sm font-semibold text-[var(--on-primary)]"
-                >
-                  <FileText className="h-3.5 w-3.5" aria-hidden />
-                  리포트 보기
-                </Link>
-                <KebabMenu onDelete={() => handleDelete(row)} />
-              </div>
-            </div>
-          </li>
-        );
-      })}
-    </ul>
+            </li>
+          );
+        })}
+      </ul>
     </>
   );
 }
@@ -184,7 +140,6 @@ function ReportsSessionOverviewPanel({
   sessionId: string;
   teacherUserId: string;
 }) {
-  const [tab, setTab] = useState<SessionTab>("scores");
   const report = useSessionReportData(sessionId);
 
   if (report.sessionQuery.isLoading) {
@@ -200,7 +155,6 @@ function ReportsSessionOverviewPanel({
   }
 
   const session = report.sessionQuery.data;
-  const phase = (session.phase ?? "waiting") as ActivityPhase;
 
   return (
     <div className="space-y-6">
@@ -209,7 +163,6 @@ function ReportsSessionOverviewPanel({
         title={session.activities?.title ?? "세션"}
         joinCode={session.join_code}
         createdAt={session.created_at ?? null}
-        phase={phase}
         studentCount={report.players.length}
         teamCount={report.groupRows.length}
       />

@@ -1,3 +1,5 @@
+import type { ActivityPack } from "@/lib/activity-pack/types";
+
 /**
  * 역할 표시용 라벨 — 정답 노출 방지를 위해 역할은 알파벳(A, B, C…)으로 표시한다.
  * pack.roles 순서를 기준으로 안정적으로 매핑된다.
@@ -41,4 +43,14 @@ export function formatRoleCodenames(
   const map = buildRoleCodenameMap(scopeKey, roleIdsInPack);
   const labels = unique.map((id) => map.get(id)).filter((name): name is string => Boolean(name));
   return labels.length ? labels.join(", ") : null;
+}
+
+/** 배정 역할(들) → 역할 코드명 (복수면 쉼표로 연결) */
+export function formatAssignedRoleLabels(
+  pack: ActivityPack,
+  roleIds: string[],
+  scopeKey: string,
+): string | null {
+  const roleIdsInPack = pack.roles.map((r) => r.id);
+  return formatRoleCodenames(roleIds, scopeKey, roleIdsInPack);
 }

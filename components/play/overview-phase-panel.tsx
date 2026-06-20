@@ -1,7 +1,7 @@
 "use client";
 
 import { activityOverviewAssignmentCard } from "@/components/activity/activity-layout-chrome";
-import { PlayStudentTopBanner } from "@/components/play/play-phase-layout";
+import { PlayStudentTopBanner } from "@/components/play/play-student-top-banner";
 import { PlayPhaseShell } from "@/components/play/play-phase-shell";
 import { LoadingState } from "@/components/ui/loading-state";
 import { groupNumberDisplay } from "@/lib/activity-pack/engine";
@@ -44,7 +44,7 @@ export function OverviewPhasePanel({ groupName, roleLabel, pending }: Props) {
           className="min-h-0 flex-1"
         />
       ) : (
-        <div className="flex min-h-0 w-full flex-1 flex-col items-center justify-start pt-2 text-center @sm:pt-3">
+        <div className="flex min-h-0 w-full flex-1 flex-col items-center justify-start text-center">
           <div className={activityOverviewAssignmentCard}>
             <div
               className={cn(

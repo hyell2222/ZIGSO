@@ -14,7 +14,7 @@ import {
   isPracticeCompleteForRole,
   isQuizComplete,
 } from "@/lib/activity-pack/engine";
-import { MIN_ROLES_PER_GROUP } from "@/lib/activity-pack/sizing";
+import { MIN_ROLES_PER_GROUP } from "@/lib/activity-pack/activity-draft";
 import type { ActivityPack, PracticeQuestionResult, QuizAnswer } from "@/lib/activity-pack/types";
 import { supabase } from "@/lib/supabase";
 

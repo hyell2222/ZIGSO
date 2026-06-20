@@ -5,7 +5,7 @@ import { ButtonHTMLAttributes, ComponentProps, forwardRef } from "react";
 import { cn } from "@/lib/utils";
 
 export const buttonVariants = cva(
-  "inline-flex max-w-full cursor-pointer touch-manipulation select-none items-center justify-center rounded-md text-base font-semibold transition duration-200 disabled:pointer-events-none disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ring-focus)] active:scale-[0.98]",
+  "inline-flex max-w-full cursor-pointer touch-manipulation select-none items-center justify-center rounded-md text-base font-medium transition duration-200 disabled:pointer-events-none disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ring-focus)] active:scale-[0.98]",
   {
     variants: {
       variant: {
@@ -26,7 +26,7 @@ export const buttonVariants = cva(
       },
       size: {
         default: "h-10 px-4 py-2",
-        sm: "h-8 px-3 text-sm",
+        sm: "h-8 px-3 text-sm font-light",
         lg: "h-11 px-6 text-base sm:h-12 sm:px-8 sm:text-lg",
         icon: "h-8 w-8 min-w-0 shrink-0 p-0",
       },

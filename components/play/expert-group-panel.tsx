@@ -3,21 +3,39 @@
 import { useMemo, useState } from "react";
 
 import { PlayPhaseShell } from "@/components/play/play-phase-shell";
+import { PlayStudentTopBanner } from "@/components/play/play-student-top-banner";
 import {
-  PlayPhaseMessage,
-  PlayPhasePanel,
-  PlayPhaseSection,
-  PlayPhaseSectionBadge,
-  PlayStudentTopBanner,
-} from "@/components/play/play-phase-layout";
+  PhaseSectionPanel as PlayPhasePanel,
+  PhaseSection as PlayPhaseSection,
+  PhaseSectionBadge as PlayPhaseSectionBadge,
+  PhaseSectionMessage as PlayPhaseMessage,
+} from "@/components/activity/phase-section-layout";
 import { BaseScoreGuideModal } from "@/components/play/base-score-guide-modal";
-import { PracticeCompleteSummary } from "@/components/play/practice-complete-summary";
+import { ScoreGuideHelpButton } from "@/components/play/score-guide-help-button";
+import { ScoreTile } from "@/components/play/score-tile";
+
+type PracticeCompleteSummaryProps = {
+  baseScore: number;
+  onOpenBaseScoreGuide: () => void;
+};
+
+function PracticeCompleteSummary({ baseScore, onOpenBaseScoreGuide }: PracticeCompleteSummaryProps) {
+  return (
+    <ScoreTile
+      label="기준 점수"
+      value={`${baseScore}점`}
+      highlight
+      labelExtra={
+        <ScoreGuideHelpButton ariaLabel="기준 점수 안내" onClick={onOpenBaseScoreGuide} />
+      }
+    />
+  );
+}
 import { GuideInfoModal } from "@/components/play/guide-info-modal";
 import {
   PracticeQuestionCard,
   type PracticeResult,
 } from "@/components/play/practice-question-card";
-import { activityLayoutType } from "@/components/activity/activity-layout-typography";
 import { PlaySegmentText, PlayQuestionExplanation } from "@/components/play/play-question-support";
 import { Button } from "@/components/ui/button";
 import { Loader2, Sparkles } from "lucide-react";
@@ -45,7 +63,6 @@ type Props = {
   pending?: boolean;
 };
 
-const t = activityLayoutType;
 const scoreModalTitleId = "expert-practice-score-modal";
 
 export function ExpertPhasePanel({

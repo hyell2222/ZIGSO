@@ -1,6 +1,5 @@
 "use client";
 
-import { Lightbulb, Sparkles } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { activityLayoutType } from "@/components/activity/activity-layout-typography";
@@ -41,52 +40,6 @@ export function PlayQuestionHelperText({
   className?: string;
 }) {
   return <p className={cn(t.caption, className)}>{children}</p>;
-}
-
-/** 연습 문항 정답·오답 결과 문구 */
-export function PlayQuestionResultText({
-  children,
-  correct,
-  className,
-}: {
-  children: ReactNode;
-  correct: boolean;
-  className?: string;
-}) {
-  return (
-    <p
-      className={cn(
-        "font-semibold",
-        correct ? "text-[var(--primary)]" : "text-[var(--danger)]",
-        t.playPanelBody,
-        className,
-      )}
-    >
-      {children}
-    </p>
-  );
-}
-
-/** 연습 문항 오답 힌트 목록 */
-export function PlayQuestionHints({ hints }: { hints: string[] }) {
-  if (hints.length === 0) return null;
-
-  return (
-    <ul className="mt-3 space-y-2">
-      {hints.map((hint, i) => (
-        <li
-          key={i}
-          className={cn(
-            "flex gap-2 border-[var(--primary)]/30 bg-[var(--tint-primary-weak)]",
-            playQuestionNoteClass,
-          )}
-        >
-          <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--primary)]" aria-hidden />
-          <span>{hint}</span>
-        </li>
-      ))}
-    </ul>
-  );
 }
 
 /** 연습 문항 해설 */

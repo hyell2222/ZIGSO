@@ -1,24 +1,39 @@
 import {
-  MAX_ROLES_PER_GROUP,
-  MIN_ROLES_PER_GROUP,
-  normalizePackSizing,
-} from "@/lib/activity-pack/sizing";
-import {
   CHOICE_LABELS,
   MIN_CHOICES_PER_QUESTION,
   MIN_QUESTIONS_PER_ROLE,
+  MIN_ROLES_PER_GROUP,
+  MAX_ROLES_PER_GROUP,
 } from "@/lib/activity-pack/validate";
 import type { ActivityPack, QuizQuestion, Role } from "@/lib/activity-pack/types";
 import { ACTIVITY_PACK_VERSION } from "@/lib/activity-pack/types";
-import { makeTempId } from "@/lib/temp-id";
+import { codenameForRole } from "@/lib/play/role-codenames";
 
-export { MAX_ROLES_PER_GROUP, MIN_ROLES_PER_GROUP } from "@/lib/activity-pack/sizing";
 export {
   CHOICE_LABELS,
   MAX_CHOICES_PER_QUESTION,
   MIN_CHOICES_PER_QUESTION,
   MIN_QUESTIONS_PER_ROLE,
+  MIN_ROLES_PER_GROUP,
+  MAX_ROLES_PER_GROUP,
 } from "@/lib/activity-pack/validate";
+
+export function normalizePackSizing(pack: ActivityPack): ActivityPack {
+  const scopeKey = pack.title.trim() || "activity";
+  const roleIds = pack.roles.map((r) => r.id);
+  const roles = pack.roles.map((role) => ({
+    ...role,
+    name: codenameForRole(scopeKey, role.id, roleIds),
+  }));
+  return {
+    ...pack,
+    roles,
+  };
+}
+
+function makeTempId(): string {
+  return Math.random().toString(36).slice(2, 10);
+}
 
 export const DEFAULT_CHOICE_COUNT = 4;
 

@@ -5,9 +5,10 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 import { getCurrentSession } from "@/lib/api/auth";
-import { AUTH_SESSION_QUERY_KEY } from "@/lib/auth-session-query";
 import { ROUTES } from "@/lib/routes";
 import { hasSupabaseEnv } from "@/lib/supabase";
+
+export const AUTH_SESSION_QUERY_KEY = ["auth-session"] as const;
 
 /**
  * 교사 페이지 공통 — Supabase 세션이 없으면 로그인으로 보냅니다.
@@ -27,10 +28,10 @@ export function useRequireTeacherSession() {
     if (sessionQuery.isLoading) return;
     if (sessionQuery.isFetching && !sessionQuery.data) return;
     if (!hasSupabaseEnv) {
-      router.replace(ROUTES.login);
+      router.replace(ROUTES.home);
       return;
     }
-    if (!sessionQuery.data) router.replace(ROUTES.login);
+    if (!sessionQuery.data) router.replace(ROUTES.home);
   }, [router, sessionQuery.data, sessionQuery.isLoading, sessionQuery.isFetching]);
 
   return sessionQuery;

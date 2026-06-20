@@ -1,4 +1,4 @@
-import { normalizePackSizing } from "@/lib/activity-pack/sizing";
+import { normalizePackSizing } from "@/lib/activity-pack/activity-draft";
 import { validateActivityPack } from "@/lib/activity-pack/validate";
 import type { ActivityPack, QuizQuestion, Role } from "@/lib/activity-pack/types";
 import { ACTIVITY_PACK_VERSION } from "@/lib/activity-pack/types";

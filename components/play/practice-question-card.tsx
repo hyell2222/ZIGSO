@@ -1,7 +1,7 @@
 "use client";
 
 import { CheckCircle2, Loader2, Sparkles, XCircle } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { activityLayoutType } from "@/components/activity/activity-layout-typography";
 import {
@@ -85,7 +85,7 @@ export function PracticeQuestionCard({
   } | null>(null);
   const [fetchedAtState, setFetchedAtState] = useState<"none" | "hint1" | "hint2" | "completed">("none");
 
-  const requestAiHelp = async (
+  const requestAiHelp = useCallback(async (
     targetState: "hint1" | "hint2" | "completed",
     currentWrongChoices: number[]
   ) => {
@@ -130,12 +130,12 @@ export function PracticeQuestionCard({
     } finally {
       setLoadingAi(false);
     }
-  };
+  }, [segment, question, onAiExplanationLoaded]);
 
-  const handleRequestAiHelp = async (targetState: "hint1" | "hint2" | "completed") => {
+  const handleRequestAiHelp = useCallback(async (targetState: "hint1" | "hint2" | "completed") => {
     if (loadingAi || busy) return;
     await requestAiHelp(targetState, wrongChoices);
-  };
+  }, [loadingAi, busy, requestAiHelp, wrongChoices]);
 
   const outOfAttempts = wrongAttempts >= PRACTICE_MAX_ATTEMPTS;
   const currentScore = practiceBaseScore(wrongAttempts);
@@ -145,9 +145,9 @@ export function PracticeQuestionCard({
     if (showOutcome && fetchedAtState !== "completed" && !loadingAi && segment) {
       void handleRequestAiHelp("completed");
     }
-  }, [showOutcome, fetchedAtState, loadingAi, segment]);
+  }, [showOutcome, fetchedAtState, loadingAi, segment, handleRequestAiHelp]);
 
-  const finish = async (result: PracticeResult) => {
+  const finish = useCallback(async (result: PracticeResult) => {
     setBusy(true);
     try {
       await onComplete(result);
@@ -155,7 +155,7 @@ export function PracticeQuestionCard({
     } finally {
       setBusy(false);
     }
-  };
+  }, [onComplete]);
 
   useEffect(() => {
     if (revealed && !done && busy) {
@@ -187,7 +187,7 @@ export function PracticeQuestionCard({
       };
       void loadAndFinish();
     }
-  }, [revealed, done, busy, aiResult, wrongChoices, wrongAttempts, correct, selected, question, onAiExplanationLoaded]);
+  }, [revealed, done, busy, aiResult, wrongChoices, wrongAttempts, correct, selected, question, onAiExplanationLoaded, finish, requestAiHelp]);
 
   const handleSubmit = async () => {
     if (selected === null || done || busy || loadingAi) return;

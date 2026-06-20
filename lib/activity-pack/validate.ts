@@ -1,6 +1,8 @@
-import { MAX_ROLES_PER_GROUP, MIN_ROLES_PER_GROUP } from "@/lib/activity-pack/sizing";
 import type { ActivityPack, QuizQuestion, Role } from "@/lib/activity-pack/types";
 import { ACTIVITY_PACK_VERSION } from "@/lib/activity-pack/types";
+
+export const MIN_ROLES_PER_GROUP = 2;
+export const MAX_ROLES_PER_GROUP = 12;
 
 export const MIN_CHOICES_PER_QUESTION = 2;
 export const MAX_CHOICES_PER_QUESTION = 6;

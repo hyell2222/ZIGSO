@@ -5,11 +5,30 @@ import { useRouter } from "next/navigation";
 
 import { activityPageShell } from "@/components/activity/activity-layout-chrome";
 import { PlayAtmosphere } from "@/components/play/play-atmosphere";
-import { PlayJoinCard } from "@/components/play/play-join-card";
+import { PlayJoinForm, type PlayJoinFormProps } from "@/components/play/play-join-form";
+import { Modal } from "@/components/ui/modal";
 import { getSessionByJoinCode } from "@/lib/api/play";
 import { ROUTES } from "@/lib/routes";
 import { hasSupabaseEnv } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
+
+type PlayJoinCardProps = Omit<PlayJoinFormProps, "className"> & {
+  title?: string;
+  description?: string;
+};
+
+function PlayJoinCard({
+  title = "활동 참가",
+  titleId = "play-join-card",
+  submitLabel = "참가하기",
+  ...formProps
+}: PlayJoinCardProps) {
+  return (
+    <Modal title={title} titleId={titleId}>
+      <PlayJoinForm titleId={titleId} submitLabel={submitLabel} {...formProps} />
+    </Modal>
+  );
+}
 
 type StudentJoinPageProps = {
   prefillJoinCode?: string;

@@ -6,7 +6,7 @@ import { useEffect } from "react";
 
 import { TeacherAuthForm } from "@/components/teacher/teacher-auth-form";
 import { getCurrentSession, signInTeacher } from "@/lib/api/auth";
-import { AUTH_SESSION_QUERY_KEY } from "@/lib/auth-session-query";
+import { AUTH_SESSION_QUERY_KEY } from "@/lib/auth/use-require-teacher-session";
 import { ROUTES } from "@/lib/routes";
 import { hasSupabaseEnv } from "@/lib/supabase";
 import { TopNav } from "@/components/layout/top-nav";

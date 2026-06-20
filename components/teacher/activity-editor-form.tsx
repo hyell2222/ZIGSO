@@ -25,7 +25,6 @@ import {
 import { cn } from "@/lib/utils";
 import {
   activityEditorQuestionCard,
-  activityEditorQuestionHeaderBorder,
   activityEditorQuestionPanelBg,
   activityEditorSegmentFieldClass,
   activityEditorSegmentHeaderBorder,
@@ -107,7 +106,7 @@ function SingleQuestionEditor({
 
         <Textarea
           id={`q-prompt-${q.localId}`}
-          rows={1}
+          rows={2}
           value={q.prompt}
           onChange={(e) =>
             onUpdate((cur) => ({ ...cur, prompt: e.target.value }))
@@ -430,7 +429,7 @@ function RoleChipNav({
 }) {
   return (
     <nav
-      className="flex shrink-0 bg-[var(--background)] pt-3"
+      className="flex shrink-0 bg-[var(--background)] py-3 border border-b border-[var(--border)]"
       aria-label="학습 내용 선택"
     >
       <div
@@ -479,7 +478,7 @@ function RoleChipNav({
                   aria-label={`${label} 삭제`}
                   title={`${label} 삭제`}
                   onClick={(e) => {
-                    e.stopPropagation(); // prevent tab click
+                    e.stopPropagation();
                     onRequestDelete(role.localId);
                   }}
                   className="ml-1 rounded-full p-0.5 hover:bg-[color-mix(in_srgb,var(--danger)_30%,var(--primary))] text-[var(--on-primary)] hover:text-white"
@@ -585,7 +584,6 @@ export function ActivityEditorForm({ draft, onChange }: Props) {
       }
     }
 
-    // Ensure every bucket has at least 1 question
     distributed.forEach((bucket) => {
       if (bucket.length === 0) {
         bucket.push(createEmptyQuestion());
@@ -708,16 +706,18 @@ export function ActivityEditorForm({ draft, onChange }: Props) {
                       >
                         <div
                           className={cn(
-                            "shrink-0 space-y-2 border-b px-4 py-3",
-                            activityEditorQuestionHeaderBorder,
+                            "flex shrink-0 items-center justify-between border-b px-4 py-3",
+                            activityEditorSegmentHeaderBorder,
                           )}
                         >
-                          <h3 className="text-sm font-semibold text-[var(--foreground)]">
-                            연습 문제
-                          </h3>
-                          <p className="mt-1 text-xs leading-relaxed text-[var(--muted-foreground)]">
-                            전문가 집단에서 학습할 연습 문제입니다.
-                          </p>
+                          <div>
+                            <h3 className="text-sm font-semibold text-[var(--foreground)]">
+                              연습 문제
+                            </h3>
+                            <p className="mt-1 text-xs text-[var(--muted-foreground)]">
+                              전문가 집단에서 학습할 연습 문제입니다.
+                            </p>
+                          </div>
                         </div>
 
                         <div className="px-4 py-4">
@@ -745,7 +745,6 @@ export function ActivityEditorForm({ draft, onChange }: Props) {
         <div className="min-h-0 flex-1 overflow-y-auto">
           <div className="mx-auto w-full max-w-5xl p-3 sm:p-4 animate-fade-in">
             <div className="flex items-start gap-3 sm:gap-4">
-              {/* Left Column: Combined passages */}
               <section
                 className={cn(
                   playPhaseSectionShell,
@@ -802,16 +801,18 @@ export function ActivityEditorForm({ draft, onChange }: Props) {
               >
                 <div
                   className={cn(
-                    "shrink-0 space-y-2 border-b px-4 py-3",
-                    activityEditorQuestionHeaderBorder,
+                    "flex shrink-0 items-center justify-between border-b px-4 py-3",
+                    activityEditorSegmentHeaderBorder,
                   )}
                 >
-                  <h3 className="text-sm font-semibold text-[var(--foreground)]">
-                    최종 실전 문제
-                  </h3>
-                  <p className="mt-1 text-xs leading-relaxed text-[var(--muted-foreground)]">
-                    마지막에 개별적으로 풀 실전 문제입니다.
-                  </p>
+                  <div>
+                    <h3 className="text-sm font-semibold text-[var(--foreground)]">
+                      최종 실전 문제
+                    </h3>
+                    <p className="mt-1 text-xs text-[var(--muted-foreground)]">
+                      마지막에 개별적으로 풀 실전 문제입니다.
+                    </p>
+                  </div>
                 </div>
 
                 <div className="px-4 py-4">

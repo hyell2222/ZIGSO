@@ -1,17 +1,17 @@
 "use client";
 
 import { Loader2, Sparkles } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { PlayPhaseShell } from "@/components/play/play-phase-shell";
+import { PlayStudentTopBanner } from "@/components/play/play-student-top-banner";
 import {
-  PlayPhaseMessage,
-  PlayPhasePanel,
-  PlayPhaseSection,
-  PlayPhaseSectionBadge,
-  PlayStudentTopBanner,
-  playPhaseFormActions,
-} from "@/components/play/play-phase-layout";
+  PhaseSectionPanel as PlayPhasePanel,
+  PhaseSection as PlayPhaseSection,
+  PhaseSectionBadge as PlayPhaseSectionBadge,
+  PhaseSectionMessage as PlayPhaseMessage,
+  phaseSectionFormActions as playPhaseFormActions,
+} from "@/components/activity/phase-section-layout";
 import { PlayQuestionHelperText, PlayQuestionExplanation } from "@/components/play/play-question-support";
 import { BaseScoreGuideModal } from "@/components/play/base-score-guide-modal";
 import { GuideInfoModal } from "@/components/play/guide-info-modal";
@@ -29,6 +29,8 @@ import { buildStadScoreSnapshot } from "@/lib/activity-pack/stad-guide";
 import { codenameForRole } from "@/lib/play/role-codenames";
 import type { ActivityPack, QuizAnswer } from "@/lib/activity-pack/types";
 import { cn } from "@/lib/utils";
+
+type AiExplanation = { hint1: string; hint2: string; explanation: string };
 
 type Props = {
   pack: ActivityPack;
@@ -99,16 +101,16 @@ export function IndividualQuizPanel({
     [baseScore, grade.correctCount, questions.length],
   );
 
-  const [aiExplanations, setAiExplanations] = useState<Record<string, { hint1: string; hint2: string; explanation: string }>>({});
+  const [aiExplanations, setAiExplanations] = useState<Record<string, AiExplanation>>({});
   const [loadingExplanations, setLoadingExplanations] = useState(false);
 
   const allExplanationsLoaded = useMemo(() => {
     return questions.every((q) => aiExplanations[q.id]);
   }, [questions, aiExplanations]);
 
-  const fetchAllExplanations = async (targetAnswers: QuizAnswer[]) => {
+  const fetchAllExplanations = useCallback(async (targetAnswers: QuizAnswer[]) => {
     setLoadingExplanations(true);
-    const newExplanations: Record<string, any> = {};
+    const newExplanations: Record<string, AiExplanation> = {};
 
     try {
       const promises = questions.map(async (q) => {
@@ -156,7 +158,7 @@ export function IndividualQuizPanel({
       setAiExplanations(newExplanations);
     } catch (e) {
       console.error("Failed to fetch AI explanations for quiz:", e);
-      const fallbackExplanations: Record<string, any> = {};
+      const fallbackExplanations: Record<string, AiExplanation> = {};
       questions.forEach((q) => {
         fallbackExplanations[q.id] = { hint1: "", hint2: "", explanation: "해설을 불러오는데 실패했습니다." };
       });
@@ -164,13 +166,13 @@ export function IndividualQuizPanel({
     } finally {
       setLoadingExplanations(false);
     }
-  };
+  }, [questions, pack.roles]);
 
   useEffect(() => {
     if (!isSubmitted || loadingExplanations || Object.keys(aiExplanations).length > 0) return;
 
     void fetchAllExplanations(submittedAnswers ?? answers);
-  }, [isSubmitted, questions, pack, submittedAnswers, answers, aiExplanations, loadingExplanations]);
+  }, [isSubmitted, loadingExplanations, aiExplanations, fetchAllExplanations, submittedAnswers, answers]);
 
   useEffect(() => {
     if (justSubmitted) setScoreModalOpen(true);
@@ -362,7 +364,7 @@ export function IndividualQuizPanel({
                     {busy ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin text-current" aria-hidden />
-                        {loadingExplanations ? "해설 생성 중…" : "제출 중…"}
+                        제출 중…
                       </>
                     ) : (
                       "제출"

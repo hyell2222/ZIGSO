@@ -99,7 +99,6 @@ export const activityBodyPaddingBottomContained =
 /** 교사 본문 래퍼 (④ 배정 현황) */
 export const activityPageBody = cn(
   activityPageColumn,
-  "space-y-3 pt-4 @sm:pt-5",
   activityBodyPaddingBottomContained,
 );
 

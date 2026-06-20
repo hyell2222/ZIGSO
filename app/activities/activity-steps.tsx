@@ -1,9 +1,9 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Save } from "lucide-react";
+import { Check, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 import { ActivityEditorForm } from "@/components/teacher/activity-editor-form";
@@ -66,23 +66,12 @@ export function ActivitySteps(props: Props) {
   const queryClient = useQueryClient();
   const sessionQuery = useRequireTeacherSession();
 
-  const editInitialDraft = useMemo(
-    () => (props.mode === "edit" ? packToEditorDraft(props.initialPack) : null),
-    [props],
-  );
-
-  const [draft, setDraft] = useState<ActivityEditorDraft | null>(
-    props.mode === "edit" ? editInitialDraft : null,
-  );
-
-  useEffect(() => {
+  const [draft, setDraft] = useState<ActivityEditorDraft>(() => {
     if (props.mode === "create") {
-      setDraft(createDefaultActivityDraft());
-      return;
+      return createDefaultActivityDraft();
     }
-
-    setDraft(packToEditorDraft(props.initialPack));
-  }, [props]);
+    return packToEditorDraft(props.initialPack);
+  });
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -167,9 +156,9 @@ export function ActivitySteps(props: Props) {
               {saveMutation.isPending ? (
                 <Loader2 className="mr-1.5 h-4 w-4 animate-spin" aria-hidden />
               ) : (
-                <Save className="mr-1.5 h-4 w-4" aria-hidden />
+                <Check className="mr-1.5 h-4 w-4" aria-hidden />
               )}
-              저장
+              {props.mode === "edit" ? "수정 완료" : "만들기 완료"}
             </Button>
           </div>
         </div>

@@ -6,7 +6,7 @@ import type {
   Role,
 } from "@/lib/activity-pack/types";
 import { averagePracticeBaseScore, practiceBaseScore } from "@/lib/activity-pack/scoring";
-import { MIN_ROLES_PER_GROUP } from "@/lib/activity-pack/sizing";
+import { MIN_ROLES_PER_GROUP } from "@/lib/activity-pack/activity-draft";
 import { isChoiceCorrect } from "@/lib/activity-pack/validate";
 
 /** activity-pack 엔진·API 공통 메시지 */

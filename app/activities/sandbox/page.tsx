@@ -239,7 +239,6 @@ function SandboxPageContent() {
       <BrowserWindow title="학생 화면" tone="accent" className="min-w-0">
         <SandboxStudentPanel
           activityId={activityId}
-          activityTitle={activity.title}
           pack={pack}
           phase={phase}
           groups={state.groups}

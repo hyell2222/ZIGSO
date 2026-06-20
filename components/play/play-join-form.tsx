@@ -16,7 +16,6 @@ export type PlayJoinFormProps = {
   pending?: boolean;
   titleId?: string;
   submitLabel?: string;
-  pendingLabel?: string;
   showMissingCodeClue?: boolean;
   joinCodeEditable?: boolean;
   onJoinCodeChange?: (value: string) => void;
@@ -80,7 +79,6 @@ export function PlayJoinForm({
   pending = false,
   titleId = "play-join-form",
   submitLabel = "참가하기",
-  pendingLabel,
   showMissingCodeClue = true,
   joinCodeEditable = false,
   onJoinCodeChange,

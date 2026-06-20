@@ -1,6 +1,5 @@
 "use client";
 
-import { Timer } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import {
@@ -15,12 +14,10 @@ import { SessionHostLayout } from "@/components/teacher/session-host-layout";
 import { SessionHostWaitingRoster } from "@/components/teacher/session-host-waiting-roster";
 import { PhaseTimerContent } from "@/components/teacher/phase-timer-content";
 import { SessionQuestionsReviewModal } from "@/components/teacher/session-questions-review-modal";
-import { activityBannerButtonClass, activityGuideModalScope } from "@/components/activity/activity-layout-chrome";
+import { activityGuideModalScope } from "@/components/activity/activity-layout-chrome";
 import { GuideModalScope } from "@/components/play/guide-modal-scope";
-import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { Z } from "@/lib/ui/z-index";
-import { cn } from "@/lib/utils";
 import type { ActivityPhase } from "@/lib/api/activities";
 import type { ActivityPack } from "@/lib/activity-pack/types";
 import { hasReviewQuestions } from "@/lib/activity-pack/engine";
@@ -31,10 +28,10 @@ import {
   type SandboxGroup,
 } from "@/lib/sandbox/state";
 import type { SessionStatus } from "@/lib/types";
-import { isSessionEnded, isTimedPhase, RESULTS_COPY, type TimedPhase } from "@/lib/activity-phases";
+import { isSessionEnded, isTimedPhase, type TimedPhase } from "@/lib/activity-phases";
 import { hostSessionNextPhaseLabel } from "@/lib/api/sessions";
 import { buildRoleCodenameMap } from "@/lib/play/role-codenames";
-import { formatAssignedRoleLabels } from "@/lib/activity-pack/roles";
+import { formatAssignedRoleLabels } from "@/lib/play/role-codenames";
 import { isPlayerPhaseComplete } from "@/lib/teacher/phase-completion";
 
 type Props = {
@@ -72,10 +69,10 @@ export function SandboxTeacherPanel({
   const sessionEnded = isSessionEnded(sessionStatus);
   const hasNextPhase = Boolean(
     phase === "waiting" ||
-      phase === "overview" ||
-      phase === "expert_group" ||
-      phase === "home_group" ||
-      phase === "individual_quiz",
+    phase === "overview" ||
+    phase === "expert_group" ||
+    phase === "home_group" ||
+    phase === "individual_quiz",
   );
 
   const waitingOnlinePlayers = useMemo(
@@ -159,48 +156,6 @@ export function SandboxTeacherPanel({
     timerModalOpen.phaseAtOpen === phase &&
     shouldShowTimer;
 
-  const timerButton = shouldShowTimer ? (
-    <Button
-      type="button"
-      variant="secondary"
-      size="sm"
-      className={cn("shrink-0", activityBannerButtonClass)}
-      aria-haspopup="dialog"
-      aria-expanded={timerToolOpen}
-      onClick={() => setTimerModalOpen({ open: true, phaseAtOpen: phase })}
-    >
-      <Timer className="h-4 w-4 shrink-0 text-[var(--accent)]" aria-hidden />
-      타이머
-    </Button>
-  ) : null;
-
-  const startButton = !sessionStarted ? (
-    <Button type="button" size="sm" className={activityBannerButtonClass} onClick={onBegin}>
-      시작하기
-    </Button>
-  ) : null;
-
-  const nextButton =
-    sessionStarted && !sessionEnded && hasNextPhase ? (
-      <Button type="button" size="sm" className={activityBannerButtonClass} onClick={onAdvance}>
-        {hostSessionNextPhaseLabel(phase)}
-      </Button>
-    ) : null;
-
-  const reviewQuestionsButton =
-    phase === "results" && hasReviewQuestions(pack) ? (
-      <Button
-        type="button"
-        size="sm"
-        className={activityBannerButtonClass}
-        onClick={() => setQuestionsReviewOpen(true)}
-      >
-        {RESULTS_COPY.reviewQuestions}
-      </Button>
-    ) : null;
-
-  const headerActionButton = reviewQuestionsButton ?? nextButton;
-
   return (
     <GuideModalScope className={activityGuideModalScope}>
       <SessionHostLayout
@@ -209,18 +164,25 @@ export function SandboxTeacherPanel({
         joinCode={SANDBOX_JOIN_CODE}
         sessionEnded={sessionEnded}
         phase={phase}
-        timerButton={timerButton}
-        startButton={startButton}
-        nextButton={headerActionButton}
+        buttonSize="sm"
+        sessionStarted={sessionStarted}
+        hasNextPhase={hasNextPhase}
+        nextPhaseLabel={hostSessionNextPhaseLabel(phase)}
+        hasReviewQuestions={hasReviewQuestions(pack)}
+        isTimerOpen={timerToolOpen}
+        onTimerClick={() => setTimerModalOpen({ open: true, phaseAtOpen: phase })}
+        onStart={onBegin}
+        onNext={onAdvance}
+        onReviewClick={() => setQuestionsReviewOpen(true)}
       >
         {phase === "waiting" ? (
           <SessionHostWaitingRoster players={waitingOnlinePlayers} />
         ) : null}
 
         {phase === "overview" ||
-        phase === "expert_group" ||
-        phase === "home_group" ||
-        phase === "individual_quiz" ? (
+          phase === "expert_group" ||
+          phase === "home_group" ||
+          phase === "individual_quiz" ? (
           <GroupAssignmentDashboard
             groups={assignmentGroups}
             loading={false}

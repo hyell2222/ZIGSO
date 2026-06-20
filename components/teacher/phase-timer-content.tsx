@@ -5,7 +5,6 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  getPhaseStepDef,
   TEACHER_PHASE_MINUTES,
   type TimedPhase,
 } from "@/lib/activity-phases";
@@ -55,8 +54,6 @@ function phaseDefaultSeconds(phase: TimedPhase) {
 }
 
 export function PhaseTimerContent({ phase }: { phase: TimedPhase }) {
-  const step = getPhaseStepDef(phase);
-  const defaultMinutes = step.recommendedMinutes;
   const defaultSeconds = phaseDefaultSeconds(phase);
 
   const [timerRemainingSec, setTimerRemainingSec] = useState(defaultSeconds);
@@ -68,14 +65,17 @@ export function PhaseTimerContent({ phase }: { phase: TimedPhase }) {
   );
   const timerInputRef = useRef<HTMLInputElement | null>(null);
 
-  useEffect(() => {
+  const [prevPhase, setPrevPhase] = useState(phase);
+
+  if (phase !== prevPhase) {
+    setPrevPhase(phase);
     const nextSeconds = phaseDefaultSeconds(phase);
     setTimerRemainingSec(nextSeconds);
     setResetBaselineSec(nextSeconds);
     setTimerInputDigits(secondsToTimerDigits(nextSeconds));
     setIsTimerRunning(false);
     setIsEditing(false);
-  }, [phase]);
+  }
 
   useEffect(() => {
     if (!isTimerRunning) return;

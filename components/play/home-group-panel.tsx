@@ -3,13 +3,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { PlayPhaseShell } from "@/components/play/play-phase-shell";
+import { PlayStudentTopBanner } from "@/components/play/play-student-top-banner";
 import {
-  PlayPhaseMessage,
-  PlayPhasePanel,
-  PlayPhaseSection,
-  PlayPhaseSectionBadge,
-  PlayStudentTopBanner,
-} from "@/components/play/play-phase-layout";
+  PhaseSectionPanel as PlayPhasePanel,
+  PhaseSection as PlayPhaseSection,
+  PhaseSectionBadge as PlayPhaseSectionBadge,
+  PhaseSectionMessage as PlayPhaseMessage,
+} from "@/components/activity/phase-section-layout";
 import { PlaySegmentText } from "@/components/play/play-question-support";
 import { PracticeQuestionCard } from "@/components/play/practice-question-card";
 import { LoadingState } from "@/components/ui/loading-state";

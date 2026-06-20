@@ -9,7 +9,7 @@ import { ACTIVITY_LAYOUT_MAX } from "@/components/activity/activity-layout-chrom
 import { TopNav } from "@/components/layout/top-nav";
 import { ButtonLink } from "@/components/ui/button";
 import { getCurrentSession } from "@/lib/api/auth";
-import { AUTH_SESSION_QUERY_KEY } from "@/lib/auth-session-query";
+import { AUTH_SESSION_QUERY_KEY } from "@/lib/auth/use-require-teacher-session";
 import { ROUTES } from "@/lib/routes";
 import { hasSupabaseEnv } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
@@ -19,21 +19,21 @@ const FEATURE_ICONS = [Sparkles, Puzzle, ClipboardList] as const;
 const bulletClass =
   "group flex flex-col items-center gap-3.5 rounded-2xl border border-[color-mix(in_srgb,var(--primary)_14%,var(--border))] bg-[var(--surface)] px-5 py-6 text-center shadow-[var(--elevation-sm)] ring-1 ring-[color-mix(in_srgb,var(--primary)_8%,transparent)] transition duration-300 hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--primary)_28%,var(--border))] hover:shadow-[var(--elevation-md)] sm:items-start sm:gap-4 sm:px-5 sm:py-7 sm:text-left";
 
-const LANDING_EYEBROW = "직소 모형 기반 온라인 협동학습 게임";
-const LANDING_TAGLINE = "복잡한 직소 활동 설계는 그만! 학생 랜덤 배정부터 점수 계산까지 알아서 해드립니다";
-const LANDING_RESEARCH_TITLE = "중·고 협동학습 수업을 위한 직소·STAD 온라인 활동 플랫폼 Zigso 개발 및 적용"
+const LANDING_EYEBROW = "AI 기반의 스마트한 Jigsaw & STAD 협동학습 플랫폼";
+const LANDING_TAGLINE = "번거로운 협동학습 수업 설계는 그만! 학생 자동 모둠 배정부터 전문가 학습, 개별 퀴즈 채점, 향상 점수 계산까지 한 번에 해결하세요.";
+const LANDING_RESEARCH_TITLE = "중·고등학교 협동학습을 위해 최적화된 직소(Jigsaw) 및 STAD 모형 온라인 교육 플랫폼, Zigso";
 const LANDING_FEATURES = [
   {
-    title: "AI로 활동 생성",
-    body: "AI가 활동에 필요한 콘텐츠를 자동 완성해줍니다.",
+    title: "AI 기반의 1초 활동 생성",
+    body: "주제와 대상 학년만 입력하면, AI가 협동학습에 필요한 역할별 핵심 지문과 연습 문제, 실전 퀴즈까지 자동으로 완성해 줍니다.",
   },
   {
-    title: "상호의존성 및 책무성 극대화",
-    body: "직소 및 STAD 협동학습 이론을 실제로 구현해 자동 운영이 가능합니다.",
+    title: "상호의존성 & 개별책무성 설계",
+    body: "모두가 가르치고 배우는 직소(Jigsaw) 모형과 개인의 노력이 모둠의 성공으로 이어지는 STAD 향상 점수 제도를 온라인으로 자연스럽게 결합했습니다.",
   },
   {
-    title: "과정중심 학습 지원",
-    body: "실시간 동시 참여, 스캐폴딩, 활동 리포트로 과정 중심 학습 및 평가를 지원합니다.",
+    title: "과정 중심 실시간 리포트",
+    body: "학생들의 진행 상황, 퀴즈 제출 이력, 오답률을 실시간 대시보드로 모니터링하여 개별 맞춤형 피드백과 과정 중심 평가를 제공합니다.",
   },
 ] as const;
 
@@ -70,11 +70,11 @@ export default function HomePage() {
           `,
             }}
             aria-hidden
-          />
+            />
           <div
             className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-40 bg-gradient-to-t from-[color-mix(in_srgb,var(--ink)_4%,transparent)] to-transparent"
             aria-hidden
-          />
+            />
 
           <div
             className={cn(

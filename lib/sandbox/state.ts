@@ -2,7 +2,7 @@
  * 시뮬레이션 모드 — 교사 혼자서 활동 흐름을 시연·검수하기 위한 in-memory 모델.
  */
 
-import { MIN_ROLES_PER_GROUP } from "@/lib/activity-pack/sizing";
+import { MIN_ROLES_PER_GROUP } from "@/lib/activity-pack/activity-draft";
 import type { ActivityPhase, SessionStatus } from "@/lib/types";
 import {
   assignRolesToPlayers,

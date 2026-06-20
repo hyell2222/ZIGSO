@@ -49,7 +49,7 @@ import {
 import { resolveHomeGroupMembers } from "@/lib/play/home-group-members";
 import { getSessionRoomChannelName } from "@/lib/realtime/session-presence";
 import { hasSupabaseEnv, supabase } from "@/lib/supabase";
-import { formatAssignedRoleLabels } from "@/lib/activity-pack/roles";
+import { formatAssignedRoleLabels } from "@/lib/play/role-codenames";
 import { LOADING_COPY } from "@/lib/activity-phases";
 import { cn } from "@/lib/utils";
 
