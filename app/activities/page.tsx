@@ -152,59 +152,59 @@ export default function ActivitiesPage() {
                   const isDeleting = pendingDeleteId === row.id;
                   return (
                     <div key={row.id}>
-                    <div
-                      className="relative space-y-3 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4 text-left shadow-[var(--elevation-sm)] transition hover:border-[color-mix(in_srgb,var(--primary)_35%,var(--border))] hover:shadow-[var(--elevation-md)]"
-                    >
-                      <div className="flex justify-between items-center">
-                        <div className="flex flex-col gap-2">
-                          <p className="min-w-0 flex-1 text-lg font-semibold text-[var(--foreground)]">
-                            {row.title ?? "제목 없는 활동"}
-                          </p>
-                          <p className="text-xs text-[var(--muted-foreground)] pb-2">
-                            모둠 당 최소 필요 인원 : {row.activity_pack?.roles?.length ?? "—"}명
-                          </p>
-                        </div>
+                      <div
+                        className="relative space-y-3 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-4 py-3 text-left shadow-[var(--elevation-sm)] transition hover:border-[color-mix(in_srgb,var(--primary)_35%,var(--border))] hover:shadow-[var(--elevation-md)]"
+                      >
+                        <div className="flex justify-between items-center">
+                          <div className="flex flex-col gap-2">
+                            <p className="min-w-0 flex-1 text-lg font-semibold text-[var(--foreground)]">
+                              {row.title ?? "제목 없는 활동"}
+                            </p>
+                            <p className="text-xs text-[var(--muted-foreground)]">
+                              모둠 당 최소 필요 인원 : {row.activity_pack?.roles?.length ?? "—"}명
+                            </p>
+                          </div>
 
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            type="button"
-                            onClick={() => handleStartGame(row)}
-                            disabled={
-                              startGameMutation.isPending ||
-                              isDeleting ||
-                              !sessionQuery.data?.user.id
-                            }
-                          >
-                            {startGameMutation.isPending ? (
-                              <>
-                                <Loader2 className="mr-2 h-4 w-4 shrink-0 animate-spin text-[var(--primary)]" aria-hidden />
-                                시작하는 중…
-                              </>
-                            ) : (
-                              "시작하기"
-                            )}
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="secondary"
-                            onClick={() => handleSandbox(row)}
-                            disabled={isDeleting}
-                            className="gap-2"
-                          >
-                            시뮬레이션
-                          </Button>
-
-                          <div className="ml-auto shrink-0 flex flex-col justify-center">
-                            <KebabMenu
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              type="button"
+                              onClick={() => handleStartGame(row)}
+                              disabled={
+                                startGameMutation.isPending ||
+                                isDeleting ||
+                                !sessionQuery.data?.user.id
+                              }
+                            >
+                              {startGameMutation.isPending ? (
+                                <>
+                                  <Loader2 className="mr-2 h-4 w-4 shrink-0 animate-spin text-[var(--primary)]" aria-hidden />
+                                  시작하는 중…
+                                </>
+                              ) : (
+                                "시작하기"
+                              )}
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              onClick={() => handleSandbox(row)}
                               disabled={isDeleting}
-                              onEdit={() => handleEdit(row)}
-                              onDelete={() => handleDelete(row)}
-                            />
+                              className="gap-2"
+                            >
+                              시뮬레이션
+                            </Button>
+
+                            <div className="ml-auto shrink-0 flex flex-col justify-center">
+                              <KebabMenu
+                                disabled={isDeleting}
+                                onEdit={() => handleEdit(row)}
+                                onDelete={() => handleDelete(row)}
+                              />
+                            </div>
                           </div>
                         </div>
                       </div>
                     </div>
-                  </div>
                   );
                 })}
               </div>

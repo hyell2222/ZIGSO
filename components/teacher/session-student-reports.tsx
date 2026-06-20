@@ -11,7 +11,7 @@ const tableShellClass =
   "overflow-x-auto rounded-xl border border-[var(--border)] bg-[var(--surface-overlay)] shadow-[var(--elevation-sm)]";
 
 const thClass = cn(
-  "whitespace-nowrap border-b border-[var(--border))] bg-[color-mix(in_srgb,var(--primary)_4%,var(--surface-overlay))] px-3 py-2.5 text-left text-[0.875rem] font-semibold uppercase tracking-wide text-[var(--muted-foreground)]",
+  "whitespace-nowrap border-b border-[var(--border)] bg-[color-mix(in_srgb,var(--primary)_4%,var(--surface-overlay))] px-3 py-2.5 text-left text-[0.875rem] font-semibold uppercase tracking-wide text-[var(--muted-foreground)]",
 );
 
 const tdClass =
@@ -32,28 +32,26 @@ function rankCell(rank: number | null) {
   return `${rank}`;
 }
 
-function CompletionBadge({
-  submitted,
-  phaseComplete,
-}: {
-  submitted: boolean;
-  phaseComplete: boolean;
-}) {
-  if (submitted) {
-    return (
-      <span className="inline-flex rounded-full border border-[var(--primary)] px-2 py-0.5 text-[0.625rem] font-medium text-[var(--primary)]">
-        제출
-      </span>
-    );
+function submittedCell(
+  submitted: boolean,
+  value: string | number | null | undefined,
+  fallback = "—",
+) {
+  if (!submitted) return fallback;
+  return cell(value, fallback);
+}
+
+function practiceScoreCell(student: SessionReportStudentRow) {
+  if (student.baseScore == null) return "—";
+
+  const wrongAttempts = student.practiceWrongAttemptsByQuestion;
+
+  if (Array.isArray(wrongAttempts) && wrongAttempts.length > 0) {
+    const totalWrong = wrongAttempts.reduce((sum, val) => sum + val, 0);
+    return `${student.baseScore}점 (오답 ${totalWrong}회)`;
   }
-  if (phaseComplete) {
-    return (
-      <span className="inline-flex rounded-full border border-[color-mix(in_srgb,var(--primary)_30%,var(--border))] px-2 py-0.5 text-[0.625rem] font-medium text-[var(--muted-foreground)]">
-        진행
-      </span>
-    );
-  }
-  return <span className="text-[var(--muted-foreground)]">—</span>;
+
+  return `${student.baseScore}점`;
 }
 
 export function SessionStudentReportList({
@@ -65,7 +63,11 @@ export function SessionStudentReportList({
 }) {
   if (loading) {
     return (
-      <LoadingState variant="section" label={RESULTS_COPY.loading} className="min-h-[8rem]" />
+      <LoadingState
+        variant="section"
+        label={RESULTS_COPY.loading}
+        className="min-h-[8rem]"
+      />
     );
   }
 
@@ -89,44 +91,62 @@ export function SessionStudentReportList({
             <th className={thClass}>역할</th>
             <th className={cn(thClass, "text-center")}>모둠순위</th>
             <th className={cn(thClass, "text-center")}>개인순위</th>
-            <th className={cn(thClass, "text-right")}>기준</th>
-            <th className={cn(thClass, "text-right")}>실전</th>
-            <th className={cn(thClass, "text-right")}>향상</th>
-            <th className={cn(thClass, "text-center")}>정답</th>
-            <th className={cn(thClass, "text-center")}>완료</th>
+            <th className={cn(thClass, "text-right")}>연습 점수</th>
+            <th className={cn(thClass, "text-right")}>실전 점수</th>
+            <th className={cn(thClass, "text-right")}>향상 점수</th>
           </tr>
         </thead>
+
         <tbody>
           {students.map((student) => (
             <tr key={student.playerId}>
-              <td className={cn(tdClass, "sticky left-0 z-[1] bg-[var(--surface-overlay)] font-medium")}>
+              <td
+                className={cn(
+                  tdClass,
+                  "sticky left-0 z-[1] bg-[var(--surface-overlay)] font-medium",
+                )}
+              >
                 <span className="block truncate">{student.nickname}</span>
               </td>
+
               <td className={tdMutedClass}>
-                {cell(student.groupName ? formatGroupDisplayName(student.groupName) : null)}
+                {cell(
+                  student.groupName
+                    ? formatGroupDisplayName(student.groupName)
+                    : null,
+                )}
               </td>
-              <td className={cn(tdMutedClass, "max-w-[8rem] truncate")}>{cell(student.roleLabel)}</td>
-              <td className={cn(tdClass, "text-center font-medium")}>{rankCell(student.teamRank)}</td>
-              <td className={cn(tdClass, "text-center font-medium")}>{rankCell(student.personalRank)}</td>
+
+              <td className={cn(tdMutedClass, "max-w-[8rem] truncate")}>
+                {cell(student.roleLabel)}
+              </td>
+
+              <td className={cn(tdClass, "text-center font-medium")}>
+                {rankCell(student.teamRank)}
+              </td>
+
+              <td className={cn(tdClass, "text-center font-medium")}>
+                {rankCell(student.personalRank)}
+              </td>
+
               <td className={cn(tdClass, "text-right")}>
-                {student.baseScore != null ? `${student.baseScore}` : "—"}
+                {practiceScoreCell(student)}
               </td>
+
               <td className={cn(tdClass, "text-right")}>
-                {student.testScore != null ? `${student.testScore}%` : "—"}
+                {submittedCell(
+                  student.submitted,
+                  student.testScore != null ? `${student.testScore}% (정답 ${student.testCorrect}/${student.testTotal})` : null,
+                )}
               </td>
-              <td className={cn(tdClass, "text-right font-semibold text-[var(--primary)]")}>
-                {student.improvementPoints != null ? `${student.improvementPoints}` : "—"}
-              </td>
-              <td className={cn(tdClass, "text-center")}>
-                {student.testCorrect != null && student.testTotal != null
-                  ? `${student.testCorrect}/${student.testTotal}`
-                  : "—"}
-              </td>
-              <td className={cn(tdClass, "text-center")}>
-                <CompletionBadge
-                  submitted={student.submitted}
-                  phaseComplete={student.phaseComplete}
-                />
+
+              <td
+                className={cn(
+                  tdClass,
+                  "text-right font-semibold text-[var(--primary)]",
+                )}
+              >
+                {submittedCell(student.submitted, student.improvementPoints)}
               </td>
             </tr>
           ))}

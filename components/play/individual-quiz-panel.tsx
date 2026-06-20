@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
+import { Loader2, Sparkles } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { PlayPhaseShell } from "@/components/play/play-phase-shell";
@@ -12,7 +12,7 @@ import {
   PlayStudentTopBanner,
   playPhaseFormActions,
 } from "@/components/play/play-phase-layout";
-import { PlayQuestionHelperText } from "@/components/play/play-question-support";
+import { PlayQuestionHelperText, PlayQuestionExplanation } from "@/components/play/play-question-support";
 import { BaseScoreGuideModal } from "@/components/play/base-score-guide-modal";
 import { GuideInfoModal } from "@/components/play/guide-info-modal";
 import { QuizSubmitSummary } from "@/components/play/quiz-submit-summary";
@@ -63,9 +63,18 @@ export function IndividualQuizPanel({
   const testSections = useMemo(() => getTestQuestionSections(pack), [pack]);
   const roleIds = useMemo(() => pack.roles.map((r) => r.id), [pack.roles]);
 
+  const [busy, setBusy] = useState(false);
   const submitted = Boolean(submittedAt);
   const [justSubmitted, setJustSubmitted] = useState(false);
-  const isSubmitted = submitted || justSubmitted;
+  const [isSubmittedLocal, setIsSubmittedLocal] = useState(submitted);
+
+  useEffect(() => {
+    if (submitted && !busy) {
+      setIsSubmittedLocal(true);
+    }
+  }, [submitted, busy]);
+
+  const isSubmitted = isSubmittedLocal || justSubmitted;
   const [scoreModalOpen, setScoreModalOpen] = useState(false);
   const [stadGuideOpen, setStadGuideOpen] = useState(false);
   const [baseScoreGuideOpen, setBaseScoreGuideOpen] = useState(false);
@@ -75,7 +84,6 @@ export function IndividualQuizPanel({
     submittedAnswers ? answersToSelected(submittedAnswers) : {},
   );
   const [message, setMessage] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
 
   const answers = selectedToAnswers(questions, selected);
   const answeredCount = answers.length;
@@ -91,6 +99,79 @@ export function IndividualQuizPanel({
     [baseScore, grade.correctCount, questions.length],
   );
 
+  const [aiExplanations, setAiExplanations] = useState<Record<string, { hint1: string; hint2: string; explanation: string }>>({});
+  const [loadingExplanations, setLoadingExplanations] = useState(false);
+
+  const allExplanationsLoaded = useMemo(() => {
+    return questions.every((q) => aiExplanations[q.id]);
+  }, [questions, aiExplanations]);
+
+  const fetchAllExplanations = async (targetAnswers: QuizAnswer[]) => {
+    setLoadingExplanations(true);
+    const newExplanations: Record<string, any> = {};
+
+    try {
+      const promises = questions.map(async (q) => {
+        const role = pack.roles.find((r) => r.testQuestions.some((tq) => tq.id === q.id));
+        const segment = role?.segment;
+        if (!segment) {
+          newExplanations[q.id] = { hint1: "", hint2: "", explanation: "지문을 찾을 수 없어 해설을 생성할 수 없습니다." };
+          return;
+        }
+
+        const chosenAnswer = targetAnswers.find((a) => a.questionId === q.id);
+        const chosenIndex = chosenAnswer?.choiceIndex;
+        const wrongChoices = chosenIndex !== undefined && chosenIndex !== q.correctIndex ? [chosenIndex] : [];
+
+        try {
+          const res = await fetch("/api/ai/explain/", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              passage: segment,
+              question: q.prompt,
+              choices: q.choices,
+              correctIndex: q.correctIndex,
+              wrongChoices,
+            }),
+          });
+          if (res.ok) {
+            const data = await res.json();
+            newExplanations[q.id] = data;
+          } else {
+            newExplanations[q.id] = { hint1: "", hint2: "", explanation: "해설을 불러오는데 실패했습니다." };
+          }
+        } catch (err) {
+          console.error(`Failed to fetch AI explanation for question ${q.id}:`, err);
+          newExplanations[q.id] = { hint1: "", hint2: "", explanation: "해설을 불러오는데 실패했습니다." };
+        }
+      });
+
+      await Promise.all(promises);
+      questions.forEach((q) => {
+        if (!newExplanations[q.id]) {
+          newExplanations[q.id] = { hint1: "", hint2: "", explanation: "해설을 불러오는데 실패했습니다." };
+        }
+      });
+      setAiExplanations(newExplanations);
+    } catch (e) {
+      console.error("Failed to fetch AI explanations for quiz:", e);
+      const fallbackExplanations: Record<string, any> = {};
+      questions.forEach((q) => {
+        fallbackExplanations[q.id] = { hint1: "", hint2: "", explanation: "해설을 불러오는데 실패했습니다." };
+      });
+      setAiExplanations(fallbackExplanations);
+    } finally {
+      setLoadingExplanations(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!isSubmitted || loadingExplanations || Object.keys(aiExplanations).length > 0) return;
+
+    void fetchAllExplanations(submittedAnswers ?? answers);
+  }, [isSubmitted, questions, pack, submittedAnswers, answers, aiExplanations, loadingExplanations]);
+
   useEffect(() => {
     if (justSubmitted) setScoreModalOpen(true);
   }, [justSubmitted]);
@@ -100,8 +181,10 @@ export function IndividualQuizPanel({
     setBusy(true);
     try {
       await onSubmit(answers);
+      setIsSubmittedLocal(true);
       setJustSubmitted(true);
       onUpdate?.();
+      void fetchAllExplanations(answers);
     } catch (e) {
       setMessage(e instanceof Error ? e.message : PLAYER_MESSAGES.operationFailed);
     } finally {
@@ -129,12 +212,68 @@ export function IndividualQuizPanel({
               title="제출 완료!"
               titleId={scoreModalTitleId}
             >
-              <QuizSubmitSummary
-                snapshot={scoreSnapshot}
-                onOpenBaseScoreGuide={() => setBaseScoreGuideOpen(true)}
-                onOpenTestScoreGuide={() => setTestScoreGuideOpen(true)}
-                onOpenStadGuide={() => setStadGuideOpen(true)}
-              />
+              {!allExplanationsLoaded ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center space-y-3">
+                  <Loader2 className="h-8 w-8 animate-spin text-[var(--primary)]" />
+                  <p className="text-sm font-semibold text-[var(--muted-foreground)]">결과 불러오는 중...</p>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  <QuizSubmitSummary
+                    snapshot={scoreSnapshot}
+                    onOpenBaseScoreGuide={() => setBaseScoreGuideOpen(true)}
+                    onOpenTestScoreGuide={() => setTestScoreGuideOpen(true)}
+                    onOpenStadGuide={() => setStadGuideOpen(true)}
+                  />
+
+                  <div className="border-t border-[var(--border)] pt-4 space-y-6">
+                    <h3 className="text-sm font-semibold mb-3">실전 문제 해설</h3>
+                    {questions.map((q, idx) => {
+                      const aiResult = aiExplanations[q.id];
+                      const chosenAnswer = (submittedAnswers ?? answers).find((a) => a.questionId === q.id);
+                      const chosenIndex = chosenAnswer?.choiceIndex;
+                      const isCorrect = chosenIndex === q.correctIndex;
+
+                      return (
+                        <div key={q.id} className="space-y-2 border-b border-[var(--border)] pb-4 last:border-b-0">
+                          <div className="flex flex-col items-start gap-2">
+                            <span className={cn(
+                              "inline-flex items-center px-1.5 py-0.5 rounded text-[14px] font-bold border shrink-0 mt-0.5",
+                              isCorrect
+                                ? "bg-[var(--tint-primary-weak)] text-[var(--primary)] border-[var(--primary)]/20"
+                                : "bg-[var(--danger)]/10 text-[var(--danger)] border-[var(--danger)]/20"
+                            )}>
+                              {isCorrect ? "정답" : "오답"}
+                            </span>
+                            <p className="font-medium text-xs">
+                              {idx + 1}. {q.prompt}
+                            </p>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-0.5 text-[15px] font-medium">
+                            <span className="text-[var(--primary)]">정답: {q.choices[q.correctIndex]}</span>
+                            {chosenIndex !== undefined && !isCorrect && (
+                              <span className="text-[var(--danger)]">
+                                내가 고른 답: {q.choices[chosenIndex]}
+                              </span>
+                            )}
+                          </div>
+                          {aiResult?.explanation && (
+                            <div className="mt-2 space-y-2">
+                              <PlayQuestionExplanation className="border-[var(--primary)]/30 bg-[var(--tint-primary-weak)]">
+                                <span className="font-semibold text-[var(--primary)] flex items-center gap-1.5 mb-1 text-xs">
+                                  <Sparkles className="h-3.5 w-3.5" />
+                                  AI 상세 해설
+                                </span>
+                                <span className="block text-[var(--foreground)] whitespace-pre-wrap">{aiResult.explanation}</span>
+                              </PlayQuestionExplanation>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </GuideInfoModal>
           ) : null}
           <BaseScoreGuideModal
@@ -185,12 +324,12 @@ export function IndividualQuizPanel({
                     className="h-7 px-2 text-xs"
                     onClick={() => setScoreModalOpen(true)}
                   >
-                    점수 보기
+                    결과 보기
                   </Button>
                 ) : null}
                 <PlayPhaseSectionBadge>
                   {isSubmitted
-                    ? `${grade.correctCount}/${questions.length} 정답`
+                    ? `정답 ${grade.correctCount}/${questions.length}`
                     : `${answeredCount}/${questions.length} 문항`}
                 </PlayPhaseSectionBadge>
               </div>
@@ -222,8 +361,8 @@ export function IndividualQuizPanel({
                   >
                     {busy ? (
                       <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin text-[var(--primary)]" aria-hidden />
-                        제출 중…
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin text-current" aria-hidden />
+                        {loadingExplanations ? "해설 생성 중…" : "제출 중…"}
                       </>
                     ) : (
                       "제출"

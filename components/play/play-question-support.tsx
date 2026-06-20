@@ -1,6 +1,6 @@
 "use client";
 
-import { Lightbulb } from "lucide-react";
+import { Lightbulb, Sparkles } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { activityLayoutType } from "@/components/activity/activity-layout-typography";
@@ -74,8 +74,14 @@ export function PlayQuestionHints({ hints }: { hints: string[] }) {
   return (
     <ul className="mt-3 space-y-2">
       {hints.map((hint, i) => (
-        <li key={i} className={cn("flex gap-2", playQuestionNoteClass)}>
-          <Lightbulb className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--accent)]" aria-hidden />
+        <li
+          key={i}
+          className={cn(
+            "flex gap-2 border-[var(--primary)]/30 bg-[var(--tint-primary-weak)]",
+            playQuestionNoteClass,
+          )}
+        >
+          <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--primary)]" aria-hidden />
           <span>{hint}</span>
         </li>
       ))}
@@ -91,5 +97,5 @@ export function PlayQuestionExplanation({
   children: ReactNode;
   className?: string;
 }) {
-  return <p className={cn(playQuestionNoteClass, "whitespace-pre-wrap", className)}>{children}</p>;
+  return <div className={cn(playQuestionNoteClass, "whitespace-pre-wrap", className)}>{children}</div>;
 }

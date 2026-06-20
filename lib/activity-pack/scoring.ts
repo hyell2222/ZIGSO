@@ -36,13 +36,19 @@ export function testPercent(correct: number, total: number): number {
 
 /**
  * STAD 향상 점수표 — 기준 점수 대비 실전 점수 차이를 0~30점으로 환산.
- * 연습·실전 모두 100점이면 차이가 0이어도 향상 점수 30점(만점)을 줍니다.
  */
-export function stadImprovementPoints(baseScore: number, testScore: number): number {
+export function stadImprovementPoints(
+  baseScore: number,
+  testScore: number,
+): number {
   const base = Math.max(0, Math.round(baseScore));
   const test = Math.max(0, Math.round(testScore));
   const diff = test - base;
 
+  // 둘 다 0점이면 향상점수 없음
+  if (base === 0 && test === 0) return 0;
+
+  // 둘 다 만점이면 최고 향상점수
   if (base >= 100 && test >= 100) return 30;
 
   if (diff <= -11) return 5;

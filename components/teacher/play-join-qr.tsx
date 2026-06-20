@@ -11,7 +11,7 @@ import { Modal } from "@/components/ui/modal";
 import { ROUTES } from "@/lib/routes";
 import { Z } from "@/lib/ui/z-index";
 import { cn } from "@/lib/utils";
-import { QrCode } from "lucide-react";
+import { Check, Copy, QrCode } from "lucide-react";
 
 type PlayJoinQrProps = {
   joinCode: string;
@@ -29,7 +29,7 @@ function subscribePlayJoinOrigin(onStoreChange: () => void) {
     }
     onStoreChange();
   });
-  return () => {};
+  return () => { };
 }
 
 function getPlayJoinOriginSnapshot() {
@@ -43,6 +43,7 @@ function getPlayJoinOriginServerSnapshot() {
 /** 학생 참가 URL QR — 썸네일 또는 QR 공유 버튼, 탭 시 모달 */
 export function PlayJoinQr({ joinCode, className, variant = "thumbnail" }: PlayJoinQrProps) {
   const [modalOpen, setModalOpen] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
   const scopeRoot = useGuideModalScope();
   const origin = useSyncExternalStore(
     subscribePlayJoinOrigin,
@@ -68,13 +69,28 @@ export function PlayJoinQr({ joinCode, className, variant = "thumbnail" }: PlayJ
       variant={useScope ? "contained" : "viewport"}
       zIndexClassName={useScope ? Z.hostTool : Z.modal}
     >
-      <p className="break-all text-center text-sm text-[var(--muted-foreground)]">{playUrl}</p>
       <div className="flex justify-center rounded-lg border border-[var(--border)] bg-white p-4">
         <QRCode value={playUrl} size={320} style={{ maxWidth: "100%", height: "auto" }} />
       </div>
-      <p className="text-center text-sm text-[var(--muted-foreground)]">
-        카메라로 스캔하거나 URL을 공유하세요.
-      </p>
+      <div className="flex flex-row gap-2 justify-center items-center">
+        <p className="break-all text-center text-sm text-[var(--muted-foreground)]">{playUrl}</p>
+        <Button
+          size="sm"
+          variant="ghost"
+          className="shrink-0 text-[var(--primary)]"
+          onClick={async () => {
+            await navigator.clipboard.writeText(playUrl);
+
+            setIsCopied(true);
+
+            setTimeout(() => {
+              setIsCopied(false);
+            }, 2000);
+          }}
+        >
+          {isCopied ? <Check /> : <Copy />}
+        </Button>
+      </div>
     </Modal>
   ) : null;
 

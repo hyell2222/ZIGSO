@@ -274,6 +274,7 @@ export function GroupPhasePanel({
                                 initialResult={initialResult}
                                 disabled
                                 onComplete={() => {}}
+                                segment={activeRole.segment}
                               />
                             </div>
                           );
@@ -289,6 +290,7 @@ export function GroupPhasePanel({
                               initialResult={done ? { wrongAttempts: 0, baseScore: 0 } : null}
                               disabled={done || busyId === pq.id}
                               onComplete={() => handlePeerComplete(pq.id)}
+                              segment={activeRole.segment}
                             />
                           </div>
                         );

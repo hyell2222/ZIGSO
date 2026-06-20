@@ -18,8 +18,9 @@ import {
   type PracticeResult,
 } from "@/components/play/practice-question-card";
 import { activityLayoutType } from "@/components/activity/activity-layout-typography";
-import { PlaySegmentText } from "@/components/play/play-question-support";
+import { PlaySegmentText, PlayQuestionExplanation } from "@/components/play/play-question-support";
 import { Button } from "@/components/ui/button";
+import { Loader2, Sparkles } from "lucide-react";
 import {
   computeBaseScoreFromPracticeResults,
   getPracticeQuestions,
@@ -67,6 +68,7 @@ export function ExpertPhasePanel({
   const [submitting, setSubmitting] = useState(false);
   const [scoreModalOpen, setScoreModalOpen] = useState(false);
   const [baseScoreGuideOpen, setBaseScoreGuideOpen] = useState(false);
+  const [aiExplanations, setAiExplanations] = useState<Record<string, { hint1: string; hint2: string; explanation: string }>>({});
 
   const role = roleId ? getRoleById(pack, roleId) : undefined;
   const practiceQuestions = useMemo(
@@ -92,8 +94,15 @@ export function ExpertPhasePanel({
 
   const phaseComplete = done && baseScore != null;
 
+  const allExplanationsLoaded = useMemo(() => {
+    return practiceQuestions.every((q) => aiExplanations[q.id]);
+  }, [practiceQuestions, aiExplanations]);
+
   const handleQuestionComplete = async (questionId: string, result: PracticeResult) => {
-    const entry = toPracticeQuestionResult(questionId, result.wrongAttempts);
+    const entry = {
+      ...toPracticeQuestionResult(questionId, result.wrongAttempts),
+      wrongChoices: result.wrongChoices,
+    };
     const next = { ...completed, [questionId]: entry };
     setCompleted(next);
 
@@ -135,10 +144,97 @@ export function ExpertPhasePanel({
               title="2단계 완료!"
               titleId={scoreModalTitleId}
             >
-              <PracticeCompleteSummary
-                baseScore={baseScore}
-                onOpenBaseScoreGuide={() => setBaseScoreGuideOpen(true)}
-              />
+              {!allExplanationsLoaded ? (
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <Loader2 className="h-8 w-8 animate-spin text-[var(--primary)] mb-3" />
+                  <p className="text-sm font-semibold text-[var(--muted-foreground)]">결과 불러오는 중...</p>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  <PracticeCompleteSummary
+                    baseScore={baseScore}
+                    onOpenBaseScoreGuide={() => setBaseScoreGuideOpen(true)}
+                  />
+
+                  <div className="border-t border-[var(--border)] pt-4 space-y-6">
+                    <h3 className="text-sm font-semibold mb-3">연습 문제 해설</h3>
+                    {practiceQuestions.map((q, idx) => {
+                      const aiResult = aiExplanations[q.id];
+                      const result = completed[q.id];
+                      const isCorrect = result ? result.wrongAttempts < 3 : false;
+                      return (
+                        <div key={q.id} className="space-y-2 border-b border-[var(--border)] pb-4 last:border-b-0">
+                          <div className="flex flex-col items-start gap-2">
+                            <div className="flex items-center gap-2">
+                              <span className={cn(
+                                "inline-flex items-center px-1.5 py-0.5 rounded text-[14px] font-bold border shrink-0 mt-0.5",
+                                isCorrect
+                                  ? "bg-[var(--tint-primary-weak)] text-[var(--primary)] border-[var(--primary)]/20"
+                                  : "bg-[var(--danger)]/10 text-[var(--danger)] border-[var(--danger)]/20"
+                              )}>
+                                {isCorrect ? "정답" : "오답"}
+                              </span>
+                              {result && result.wrongAttempts > 0 && (
+                                <span className={cn(
+                                  "inline-flex items-center px-1.5 py-0.5 rounded text-[14px] font-bold border shrink-0 mt-0.5",
+                                  result.wrongAttempts >= 3
+                                    ? "bg-[var(--danger)]/10 text-[var(--danger)] border-[var(--danger)]/20"
+                                    : "bg-amber-50 text-amber-600 border-amber-200"
+                                )}>
+                                  오답 {result.wrongAttempts}회
+                                </span>
+                              )}
+                            </div>
+                            <p className="font-medium text-xs">
+                              {idx + 1}. {q.prompt}
+                            </p>
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <div className="flex flex-wrap items-center gap-x-4 gap-y-0.5 text-[15px] font-medium">
+                              <span className="text-[var(--primary)]">정답: {q.choices[q.correctIndex]}</span>
+                              {result && result.wrongChoices && result.wrongChoices.length > 0 && (
+                                <span className="text-[var(--danger)]">내가 고른 오답: {result.wrongChoices.map((ci) => q.choices[ci] ?? `보기 ${ci + 1}`).join(", ")}</span>
+                              )}
+                            </div>
+
+                          </div>
+                          {aiResult ? (
+                            <div className="mt-2 space-y-2">
+                              {aiResult.hint1 && result && result.wrongAttempts >= 1 && (
+                                <PlayQuestionExplanation className="border-[var(--primary)]/30 bg-[var(--tint-primary-weak)]">
+                                  <span className="font-semibold text-[var(--primary)] flex items-center gap-1.5 mb-1 text-xs">
+                                    <Sparkles className="h-3.5 w-3.5" />
+                                    AI 1차 힌트
+                                  </span>
+                                  <span className="block text-[var(--foreground)]">{aiResult.hint1}</span>
+                                </PlayQuestionExplanation>
+                              )}
+                              {aiResult.hint2 && result && result.wrongAttempts >= 2 && (
+                                <PlayQuestionExplanation className="border-[var(--primary)]/30 bg-[var(--tint-primary-weak)]">
+                                  <span className="font-semibold text-[var(--primary)] flex items-center gap-1.5 mb-1 text-xs">
+                                    <Sparkles className="h-3.5 w-3.5" />
+                                    AI 2차 힌트
+                                  </span>
+                                  <span className="block text-[var(--foreground)]">{aiResult.hint2}</span>
+                                </PlayQuestionExplanation>
+                              )}
+                              {aiResult.explanation && (
+                                <PlayQuestionExplanation className="border-[var(--primary)]/30 bg-[var(--tint-primary-weak)]">
+                                  <span className="font-semibold text-[var(--primary)] flex items-center gap-1.5 mb-1 text-xs">
+                                    <Sparkles className="h-3.5 w-3.5" />
+                                    AI 상세 해설
+                                  </span>
+                                  <span className="block text-[var(--foreground)] whitespace-pre-wrap">{aiResult.explanation}</span>
+                                </PlayQuestionExplanation>
+                              )}
+                            </div>
+                          ) : null}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </GuideInfoModal>
           ) : null}
           <BaseScoreGuideModal
@@ -174,7 +270,7 @@ export function ExpertPhasePanel({
                         className="h-7 px-2 text-xs"
                         onClick={() => setScoreModalOpen(true)}
                       >
-                        점수 보기
+                        결과 보기
                       </Button>
                     ) : null}
                     <PlayPhaseSectionBadge>
@@ -188,9 +284,9 @@ export function ExpertPhasePanel({
                     const stored = completed[q.id];
                     const initialResult = stored
                       ? {
-                          wrongAttempts: stored.wrongAttempts,
-                          baseScore: practiceQuestionScore(stored.wrongAttempts),
-                        }
+                        wrongAttempts: stored.wrongAttempts,
+                        baseScore: practiceQuestionScore(stored.wrongAttempts),
+                      }
                       : null;
                     const locked = practiceSubmitted || Boolean(stored) || submitting;
                     return (
@@ -201,6 +297,10 @@ export function ExpertPhasePanel({
                           onComplete={(r) => handleQuestionComplete(q.id, r)}
                           initialResult={initialResult}
                           disabled={locked && !stored}
+                          segment={role.segment}
+                          onAiExplanationLoaded={(qid, res) => {
+                            setAiExplanations((prev) => ({ ...prev, [qid]: res }));
+                          }}
                         />
                       </div>
                     );

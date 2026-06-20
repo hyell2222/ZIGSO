@@ -17,7 +17,6 @@ import {
   type SessionResultsSummary,
   type StudentResultsSnapshot,
 } from "@/lib/activity-pack/session-results";
-import type { ActivityPack } from "@/lib/activity-pack/types";
 import type { GroupRow, SessionPlayerRow } from "@/lib/api/play";
 import {
   GroupAssignmentGroup,
@@ -44,6 +43,7 @@ export type SessionReportStudentRow = {
   submitted: boolean;
   phaseComplete: boolean;
   snapshot: StudentResultsSnapshot | null;
+  practiceWrongAttemptsByQuestion?: number[] | null;
 };
 
 export function useSessionReportData(sessionId: string) {
@@ -175,6 +175,7 @@ export function useSessionReportData(sessionId: string) {
         submitted: snapshot?.submitted ?? Boolean(player.individual_quiz_submitted_at),
         phaseComplete,
         snapshot,
+        practiceWrongAttemptsByQuestion: player.practice_results.map((r) => r.wrongAttempts),
       };
     });
 

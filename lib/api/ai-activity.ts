@@ -1,6 +1,7 @@
-import type { ContentDifficulty } from "@/lib/activity-pack/content-difficulty";
-import type { ContentLanguage } from "@/lib/activity-pack/content-language";
 import type { QuizQuestion } from "@/lib/activity-pack/types";
+
+export type ContentDifficulty = "easy" | "normal" | "hard" | string;
+export type ContentLanguage = "ko" | "en" | string;
 
 export type ContentLength = "short" | "medium" | "long";
 

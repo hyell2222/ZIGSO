@@ -770,7 +770,7 @@ export function ActivityEditorForm({ draft, onChange }: Props) {
                   </div>
                 </div>
 
-                <div className="px-4 py-4 space-y-6 overflow-y-auto max-h-[70vh]">
+                <div className="px-4 py-4 space-y-6">
                   {draft.roles.map((role, rIdx) => {
                     const label = editorRoleLabel(rIdx);
                     return (

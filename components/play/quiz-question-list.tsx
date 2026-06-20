@@ -5,6 +5,7 @@ import { playPreservedTextClass } from "@/components/play/play-question-support"
 import { CHOICE_LABELS } from "@/lib/activity-pack/validate";
 import type { QuizQuestion } from "@/lib/activity-pack/types";
 import { cn } from "@/lib/utils";
+import { CheckCircle2, XCircle } from "lucide-react";
 
 const t = activityLayoutType;
 
@@ -78,8 +79,8 @@ export function QuizQuestionList({
                       {CHOICE_LABELS[ci] ?? ci + 1}
                     </span>
                     <span className="flex-1">{choice}</span>
-                    {showCorrect ? <span aria-hidden>✓</span> : null}
-                    {showWrong ? <span aria-hidden>✕</span> : null}
+                    {showCorrect ? <CheckCircle2 className="h-4 w-4" aria-hidden /> : null}
+                    {showWrong ? <XCircle className="h-4 w-4" aria-hidden /> : null}
                   </button>
                 );
               })}
