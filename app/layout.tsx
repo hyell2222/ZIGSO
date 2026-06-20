@@ -62,7 +62,7 @@ export default function RootLayout({
             toastOptions={{
               classNames: {
                 toast:
-                  "mx-auto font-[family-name:var(--font-kerisbaeum)] rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-lg",
+                  "!text-xs mx-auto font-[family-name:var(--font-kerisbaeum)] rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-lg",
               },
             }}
           />

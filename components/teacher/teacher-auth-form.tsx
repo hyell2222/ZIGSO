@@ -12,7 +12,6 @@ type TeacherAuthFormProps = {
   mode: "sign-in" | "sign-up";
   onSubmit: (email: string, password: string) => Promise<void>;
   isLoading?: boolean;
-  message?: string | null;
   switchHref: string;
   switchLabel: string;
   switchPrompt: string;
@@ -22,7 +21,6 @@ export function TeacherAuthForm({
   mode,
   onSubmit,
   isLoading,
-  message,
   switchHref,
   switchLabel,
   switchPrompt,
@@ -35,7 +33,7 @@ export function TeacherAuthForm({
     try {
       await onSubmit(email, password);
     } catch {
-      // Mutation errors are surfaced via React Query state (`message` prop).
+      // Mutation errors are surfaced via React Query state (e.g. toasts).
     }
   }
 
@@ -62,6 +60,7 @@ export function TeacherAuthForm({
             onChange={(event) => setPassword(event.target.value)}
             required
             autoComplete={mode === "sign-in" ? "current-password" : "new-password"}
+            className="text-xl placeholder:text-base"
           />
         </FormField>
         <div className="flex justify-center pt-4">
@@ -75,7 +74,6 @@ export function TeacherAuthForm({
             {switchLabel}
           </Link>
         </p>
-        {message ? <p className="text-xs text-[var(--foreground)]">{message}</p> : null}
       </form>
     </Modal>
   );

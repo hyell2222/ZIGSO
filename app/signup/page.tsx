@@ -7,9 +7,11 @@ import { useEffect } from "react";
 import { TeacherAuthForm } from "@/components/teacher/teacher-auth-form";
 import { getCurrentSession, signUpTeacher } from "@/lib/api/auth";
 import { AUTH_SESSION_QUERY_KEY } from "@/lib/auth/use-require-teacher-session";
+import { getKoreanAuthErrorMessage } from "@/lib/auth/errors";
 import { ROUTES } from "@/lib/routes";
 import { hasSupabaseEnv } from "@/lib/supabase";
 import { TopNav } from "@/components/layout/top-nav";
+import { toast } from "sonner";
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -26,13 +28,17 @@ export default function SignUpPage() {
     mutationFn: async ({ email, password }: { email: string; password: string }) => {
       if (!hasSupabaseEnv) {
         throw new Error(
-          "Supabase가 설정되지 않았습니다. .env에 NEXT_PUBLIC_SUPABASE_URL과 NEXT_PUBLIC_SUPABASE_ANON_KEY를 넣어 주세요.",
+          "Supabase가 설정되지 않았습니다. .env 파일에 NEXT_PUBLIC_SUPABASE_URL과 NEXT_PUBLIC_SUPABASE_ANON_KEY를 추가하세요.",
         );
       }
       await signUpTeacher(email, password);
     },
     onSuccess: () => {
+      toast.success("회원가입 요청이 완료되었습니다. 이메일 인증 설정을 확인해 주세요.");
       router.replace(ROUTES.login);
+    },
+    onError: (error) => {
+      toast.error(getKoreanAuthErrorMessage(error));
     },
   });
 
@@ -41,15 +47,6 @@ export default function SignUpPage() {
     if (sessionQuery.isFetching && !sessionQuery.data) return;
     if (sessionQuery.data) router.replace(ROUTES.activities);
   }, [router, sessionQuery.data, sessionQuery.isLoading, sessionQuery.isFetching]);
-
-  const message =
-    signUpMutation.error?.message ??
-    (!hasSupabaseEnv
-      ? "Supabase가 설정되지 않았습니다. .env에 NEXT_PUBLIC_SUPABASE_URL과 NEXT_PUBLIC_SUPABASE_ANON_KEY를 추가하세요."
-      : null) ??
-    (signUpMutation.isSuccess
-      ? "회원가입 요청이 완료되었습니다. 이메일 인증 설정을 확인해 주세요."
-      : null);
 
   return (
     <>
@@ -62,7 +59,6 @@ export default function SignUpPage() {
             return Promise.resolve();
           }}
           isLoading={signUpMutation.isPending || !hasSupabaseEnv}
-          message={message}
           switchHref={ROUTES.login}
           switchPrompt="이미 계정이 있으신가요?"
           switchLabel="로그인"

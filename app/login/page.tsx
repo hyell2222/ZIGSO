@@ -7,9 +7,11 @@ import { useEffect } from "react";
 import { TeacherAuthForm } from "@/components/teacher/teacher-auth-form";
 import { getCurrentSession, signInTeacher } from "@/lib/api/auth";
 import { AUTH_SESSION_QUERY_KEY } from "@/lib/auth/use-require-teacher-session";
+import { getKoreanAuthErrorMessage } from "@/lib/auth/errors";
 import { ROUTES } from "@/lib/routes";
 import { hasSupabaseEnv } from "@/lib/supabase";
 import { TopNav } from "@/components/layout/top-nav";
+import { toast } from "sonner";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -27,7 +29,7 @@ export default function LoginPage() {
     mutationFn: async ({ email, password }: { email: string; password: string }) => {
       if (!hasSupabaseEnv) {
         throw new Error(
-          "Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.",
+          "Supabase가 설정되지 않았습니다. .env 파일에 NEXT_PUBLIC_SUPABASE_URL과 NEXT_PUBLIC_SUPABASE_ANON_KEY를 설정해 주세요.",
         );
       }
       await signInTeacher(email, password);
@@ -35,6 +37,9 @@ export default function LoginPage() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: AUTH_SESSION_QUERY_KEY });
       router.replace(ROUTES.activities);
+    },
+    onError: (error) => {
+      toast.error(getKoreanAuthErrorMessage(error));
     },
   });
 
@@ -55,12 +60,6 @@ export default function LoginPage() {
             return Promise.resolve();
           }}
           isLoading={signInMutation.isPending || !hasSupabaseEnv}
-          message={
-            signInMutation.error?.message ??
-            (!hasSupabaseEnv
-              ? "Supabase is not configured. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to .env."
-              : null)
-          }
           switchHref={ROUTES.signUp}
           switchPrompt="계정이 없으신가요?"
           switchLabel="회원가입"
