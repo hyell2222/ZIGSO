@@ -1,7 +1,6 @@
 "use client";
 
 import { activityOverviewAssignmentCard } from "@/components/activity/activity-layout-chrome";
-import { PlayStudentTopBanner } from "@/components/play/play-student-top-banner";
 import { PlayPhaseShell } from "@/components/play/play-phase-shell";
 import { LoadingState } from "@/components/ui/loading-state";
 import { groupNumberDisplay } from "@/lib/activity-pack/engine";
@@ -25,18 +24,7 @@ export function OverviewPhasePanel({ groupName, roleLabel, pending }: Props) {
   const role = roleLabel?.trim() || "—";
 
   return (
-    <PlayPhaseShell
-      mainClassName="flex min-h-0 flex-1 flex-col"
-      topBanner={
-        <PlayStudentTopBanner
-          phase="overview"
-          groupName={groupName}
-          placeName={roleLabel}
-          placeLabel="역할"
-          pending={pending}
-        />
-      }
-    >
+    <PlayPhaseShell mainClassName="flex min-h-0 flex-1 flex-col pt-12 @sm:pt-20 @md:pt-24">
       {pending ? (
         <LoadingState
           variant="section"
@@ -65,6 +53,13 @@ export function OverviewPhasePanel({ groupName, roleLabel, pending }: Props) {
                 <p className={cn(assignmentValueClass, "text-balance break-keep")}>{role}</p>
               </div>
             </div>
+          </div>
+
+          <div className="mt-8 max-w-md mx-auto px-4 text-center animate-fade-in">
+            <p className="mt-2 text-xs sm:text-sm text-[var(--muted-foreground)] leading-relaxed font-medium">
+              본인의 모둠과 역할을 확인한 후,<br className="hidden sm:inline" />
+              배정된 모둠 자리로 이동하여 모둠원들과 함께 앉아주세요.
+            </p>
           </div>
         </div>
       )}

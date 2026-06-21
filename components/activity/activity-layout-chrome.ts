@@ -158,9 +158,6 @@ export const activityEditorQuestionCard =
 export const activityEditorQuestionCardToolbar =
   "flex items-center justify-between gap-2 border-b border-[var(--border)] bg-[color-mix(in_srgb,var(--tint-accent-weak)_55%,var(--surface-overlay))] px-3 py-2";
 
-export const activityEditorNumberBadge =
-  "mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--tint-primary-weak)] text-sm font-bold tabular-nums text-[var(--primary-muted)]";
-
 export const activityEditorChipActive =
   "border-[color-mix(in_srgb,var(--primary)_38%,var(--border))] bg-[var(--tint-primary-medium)] text-[var(--primary)]";
 

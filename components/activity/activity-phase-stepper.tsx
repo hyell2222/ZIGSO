@@ -2,11 +2,11 @@
 
 import { Check } from "lucide-react";
 
-import { PhaseGuideHelpButton } from "@/components/activity/phase-guide-help-button";
 import {
   PHASE_STEP_DEFS,
   TIMED_PHASE_ORDER,
   type TimedPhaseKey,
+  getPhaseStepGuide,
 } from "@/lib/activity-phases";
 import { cn } from "@/lib/utils";
 
@@ -20,6 +20,7 @@ type StepState = "complete" | "current" | "upcoming";
 type StepDef = (typeof PHASE_STEP_DEFS)[number];
 
 function stepStateAt(index: number, currentIndex: number): StepState {
+  if (currentIndex === -1) return "upcoming";
   if (index < currentIndex) return "complete";
   if (index === currentIndex) return "current";
   return "upcoming";
@@ -42,7 +43,7 @@ function StepChip({
     <div className="flex shrink-0 items-center gap-2 text-left animate-fade-in">
       <span
         className={cn(
-          "flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 text-sm font-semibold tabular-nums transition-colors",
+          "flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 text-[0.8rem] font-semibold tabular-nums transition-colors",
           state === "current" &&
           "border-[var(--primary)] bg-[var(--primary)] text-[var(--on-primary)] shadow-sm",
           state === "complete" &&
@@ -69,21 +70,15 @@ function StepChip({
         )}
       >
         {step.title}
-        <PhaseGuideHelpButton
-          phase={step.key}
-          className={cn(
-            "h-4 w-4 shrink-0",
-            state === "upcoming" && "opacity-70",
-          )}
-        />
       </span>
     </div>
   );
 }
 
 export function ActivityPhaseStepper({ currentPhase, className }: Props) {
-  const currentIndex = Math.max(0, TIMED_PHASE_ORDER.indexOf(currentPhase));
-  const currentStep = PHASE_STEP_DEFS[currentIndex] ?? PHASE_STEP_DEFS[0];
+  const currentIndex = PHASE_STEP_DEFS.findIndex((s) => s.key === currentPhase);
+  const currentStep = currentIndex !== -1 ? PHASE_STEP_DEFS[currentIndex] : PHASE_STEP_DEFS[0];
+  const guide = getPhaseStepGuide(currentPhase);
 
   return (
     <nav
@@ -97,7 +92,7 @@ export function ActivityPhaseStepper({ currentPhase, className }: Props) {
         <StepChip step={currentStep} state="current" />
       </div>
 
-      <ol className="mx-auto hidden max-w-5xl items-center justify-start gap-4 px-4 @md:flex">
+      <ol className="mx-auto hidden max-w-5xl items-center justify-center gap-4 px-4 @md:flex">
         {PHASE_STEP_DEFS.map((step, index) => {
           const state = stepStateAt(index, currentIndex);
           const isLast = index === PHASE_STEP_DEFS.length - 1;
@@ -108,7 +103,7 @@ export function ActivityPhaseStepper({ currentPhase, className }: Props) {
               key={step.key}
               className={cn(
                 "flex items-center",
-                isLast ? "shrink-0" : "flex-1 max-w-[300px]",
+                isLast ? "shrink-0" : "flex-1 max-w-5xl",
               )}
               aria-current={state === "current" ? "step" : undefined}
             >

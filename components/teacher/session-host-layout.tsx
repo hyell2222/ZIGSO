@@ -199,8 +199,7 @@ export function SessionHostLayout({
         <div
           className={cn(
             layout.pageBody,
-            "flex flex-col",
-            showPhaseGuide && "pt-6 @sm:pt-8",
+            "flex flex-col pt-4 @sm:pt-6",
             phase === "waiting" && "items-center py-5 text-center @sm:py-6",
           )}
         >

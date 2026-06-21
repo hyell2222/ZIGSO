@@ -133,7 +133,7 @@ function SingleQuestionEditor({
                   onUpdate((cur) => ({ ...cur, correctIndex: ci }))
                 }
                 className={cn(
-                  "flex h-8 w-8 shrink-0 items-center justify-center rounded-md border text-sm font-semibold transition-colors",
+                  "flex h-7 w-7 shrink-0 items-center justify-center rounded-md border text-[0.8rem] font-semibold transition-colors",
                   isCorrect
                     ? "border-[var(--primary)] bg-[var(--tint-primary-medium)] text-[var(--primary)]"
                     : "border-[var(--border)] bg-[var(--background)] text-[var(--muted-foreground)] hover:border-[var(--primary)] hover:text-[var(--primary)]",
@@ -341,7 +341,7 @@ function EditorPhaseStepper({
   return (
     <nav
       aria-label="편집 단계"
-      className="w-full border-b border-[var(--border)] bg-[var(--card-bg)] py-3 px-4 sm:px-6"
+      className="w-full bg-[var(--card-bg)] py-3 px-4 sm:px-6"
     >
       <ol className="mx-auto flex max-w-5xl px-4 items-center justify-start gap-4">
         {EDITOR_STEPS.map((step, index) => {
@@ -365,7 +365,7 @@ function EditorPhaseStepper({
               >
                 <span
                   className={cn(
-                    "flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 font-semibold tabular-nums transition-colors text-sm",
+                    "flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 font-semibold tabular-nums transition-colors text-[0.8rem]",
                     state === "current" &&
                     "border-[var(--primary)] bg-[var(--primary)] text-[var(--on-primary)] shadow-sm",
                     state === "complete" &&

@@ -22,35 +22,39 @@ export type TimedPhase = TimedPhaseKey;
 /** 1~4단계 정의 — 학생·교사 UI 공통 */
 export const PHASE_STEP_DEFS = [
   {
-    key: "overview" as const,
-    number: 1,
-    title: ACTIVITY_PHASE_LABELS.overview,
-    recommendedMinutes: 8,
-  },
-  {
     key: "expert_group" as const,
-    number: 2,
+    number: 1,
     title: ACTIVITY_PHASE_LABELS.expert_group,
     recommendedMinutes: 12,
   },
   {
     key: "home_group" as const,
-    number: 3,
+    number: 2,
     title: ACTIVITY_PHASE_LABELS.home_group,
     recommendedMinutes: 15,
   },
   {
     key: "individual_quiz" as const,
-    number: 4,
+    number: 3,
     title: ACTIVITY_PHASE_LABELS.individual_quiz,
     recommendedMinutes: 10,
   },
 ] as const;
 
-type PhaseStepDef = (typeof PHASE_STEP_DEFS)[number];
+export type PhaseStepDef = {
+  key: TimedPhaseKey;
+  number: number;
+  title: string;
+  recommendedMinutes: number;
+};
 
 export function getPhaseStepDef(phase: TimedPhaseKey): PhaseStepDef {
-  return PHASE_STEP_DEFS.find((s) => s.key === phase)!;
+  return PHASE_STEP_DEFS.find((s) => s.key === phase) || {
+    key: "overview" as const,
+    number: 0,
+    title: ACTIVITY_PHASE_LABELS.overview,
+    recommendedMinutes: 8,
+  };
 }
 
 export type PhaseGuideKey = TimedPhaseKey | "results";
@@ -63,43 +67,42 @@ export type PhaseStepGuide = {
 /** 단계별 안내 모달 본문 — 교사·학생 공통 */
 export const PHASE_STEP_GUIDES: Record<PhaseGuideKey, PhaseStepGuide> = {
   overview: {
-    intro: "배정된 원모둠원들을 확인하고, 자신이 깊게 탐구할 '전문가 역할'을 확인하는 단계입니다.",
+    intro: "나의 모둠 번호와 오늘 공부해 가르칠 전문가 파트를 확인하는 단계입니다. (연습과 실전 평가의 기반이 됩니다.)",
     details: [
-      "내가 속한 모둠 번호와 이번 활동에서 가르쳐야 할 나의 역할을 확인해 보세요.",
-      "같은 역할을 맡은 다른 모둠의 전문가 친구들과 함께 다음 단계에서 만나 학습하게 됩니다.",
-      "선생님이 단계를 전환하면 전문가 모둠 활동이 시작됩니다.",
+      "내가 가르칠 역할(A~D 파트)을 확인하세요.",
+      "다음 단계에서는 다른 모둠의 동일 파트 전문가들과 만나 탐구합니다.",
+      "교사가 단계를 진행하면 전문가 활동이 개시됩니다.",
     ],
   },
   expert_group: {
-    intro: "같은 역할을 맡은 전문가 친구들과 모여, 자신에게 주어진 지문을 읽고 핵심 개념을 탐구하는 단계입니다.",
+    intro: "같은 파트의 지문을 공부하고 연습문제를 풀어 나의 '기준 점수(0~100점)'를 획득하는 단계입니다. (AI 힌트/해설을 참고할 수 있으나, 오답 시 점수가 감점됩니다.)",
     details: [
-      "화면에 제시된 지문과 단서들을 꼼꼼히 읽고 개념을 파악해 보세요.",
-      "학습을 마친 후 연습 문제를 풀며 내용을 점검합니다.",
-      "연습 문제는 문항당 최대 3번까지 도전할 수 있으며, 정답률에 따라 나의 Jigsaw '기준 점수'가 결정됩니다.",
+      "제시된 파트의 지문을 꼼꼼히 읽고 개념을 학습하세요.",
+      "학습 후 연습문제를 풀며 이해도를 스스로 확인합니다.",
+      "연습문제는 3번까지 풀 수 있고, 정답 시도 차수에 따라 나의 기준 점수가 결정됩니다.",
     ],
   },
   home_group: {
-    intro: "원래의 원모둠으로 돌아와, 자신이 공부해 온 내용을 모둠원들에게 설명하고 가르치는 단계입니다.",
+    intro: "공부해 온 내용을 동료들에게 가르쳐주며, 실전 퀴즈에서 높은 점수를 얻도록 서로 도우며 배움을 공유하는 단계입니다.",
     details: [
-      "모둠원들은 각자 서로 다른 주제를 깊이 있게 공부해 온 전문가들입니다.",
-      "돌아가며 자신이 맡은 역할의 지문 내용과 정답을 차례대로 자세히 설명해 주세요.",
-      "서로 가르쳐 주는 배움의 과정이 끝나면, 모둠원 전체가 준비되어 실전 문제 단계로 나아갈 수 있습니다.",
+      "모둠원들에게 내가 공부해 온 파트의 내용을 차례대로 가르쳐 주세요.",
+      "동료가 공부한 파트의 지문과 연습문제를 화면으로 확인하고 풀어주며 튜터링을 진행합니다.",
+      "모든 모둠원의 지식 전수가 완료되면 다음 실전 평가로 나아갑니다.",
     ],
   },
   individual_quiz: {
-    intro: "모든 역할의 지문과 퀴즈를 망라한 실전 문제를 혼자서 스스로 풀어보는 단계입니다.",
+    intro: "모든 파트의 실전 문제를 풀어 획득한 '실전 점수'와 이전 '기준 점수'를 비교해 최종 '향상 점수(0~30점)'를 내는 단계입니다.",
     details: [
-      "실전 문제는 도움 없이 개인별로 한 번씩만 응시합니다.",
-      "원모둠원들의 설명을 잘 들었다면 모든 문항을 쉽게 맞힐 수 있습니다.",
-      "실전 점수가 이전에 전문가 단계에서 얻은 기준 점수보다 얼마나 향상되었는지에 따라 '향상 점수'가 계산됩니다.",
+      "모둠원들의 설명을 토대로 전체 범위의 실전 문제(1회 응시)를 해결합니다.",
+      "내가 얻은 실전 점수와 이전 전문가 단계 기준 점수를 비교하여 향상 점수가 결정됩니다.",
     ],
   },
   results: {
-    intro: "활동 결과로 산출된 나의 향상 점수와 우리 모둠의 협동 성과를 함께 돌아보는 단계입니다.",
+    intro: "개인별 성장도(향상 점수)의 모둠 평균을 합산하여 최종 'STAD 모둠 순위'와 성과를 함께 돌아보는 단계입니다.",
     details: [
-      "나의 기준 점수, 실전 퀴즈 점수, 최종 향상 점수를 한눈에 확인합니다.",
-      "각자의 학습 향상 수준이 반영된 모둠 전체의 순위를 비교해 봅니다.",
-      "문제를 다시 보며 모둠원들과 함께 오답의 이유를 최종 정리하고 학습을 마무리합니다.",
+      "나의 기준 점수, 실전 점수, 최종 향상도를 확인합니다.",
+      "개인의 성장을 합산하여 산출된 모둠 최종 성취 순위를 비교합니다.",
+      "문제 다시 보기를 통해 오답 원인을 정리하고 활동을 마칩니다.",
     ],
   },
 };
@@ -139,6 +142,13 @@ export function getPhaseStepGuide(phase: PhaseGuideKey) {
       title: ACTIVITY_PHASE_LABELS.results,
     };
   }
+  if (phase === "overview") {
+    return {
+      ...PHASE_STEP_GUIDES.overview,
+      number: 0,
+      title: ACTIVITY_PHASE_LABELS.overview,
+    };
+  }
   const step = getPhaseStepDef(phase);
   return {
     ...PHASE_STEP_GUIDES[phase],
@@ -169,12 +179,15 @@ export const RESULTS_COPY = {
 } as const;
 
 /** 단계별 추천·타이머 기본 시간(분) */
-export const TEACHER_PHASE_MINUTES: Record<TimedPhaseKey, number> = Object.fromEntries(
-  PHASE_STEP_DEFS.map((step) => [step.key, step.recommendedMinutes]),
-) as Record<TimedPhaseKey, number>;
+export const TEACHER_PHASE_MINUTES: Record<TimedPhaseKey, number> = {
+  overview: 8,
+  ...Object.fromEntries(
+    PHASE_STEP_DEFS.map((step) => [step.key, step.recommendedMinutes]),
+  ),
+} as Record<TimedPhaseKey, number>;
 
 export function isTimedPhase(phase: ActivityPhase): phase is TimedPhaseKey {
-  return phase !== "waiting" && phase !== "results";
+  return phase !== "waiting" && phase !== "overview" && phase !== "results";
 }
 
 export function isSessionEnded(status: string | null | undefined): boolean {

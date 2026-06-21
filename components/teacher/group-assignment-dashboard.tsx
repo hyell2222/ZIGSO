@@ -204,7 +204,7 @@ export function GroupAssignmentDashboard({
   }, [groups]);
 
   return (
-    <div className="flex w-full min-h-0 flex-1 flex-col">
+    <div className="flex w-full min-h-0 flex-1 flex-col items-center">
       {loading ? (
         <LoadingState variant="section" label="불러오는 중…" className="min-h-0 flex-1" />
       ) : isEmpty ? (

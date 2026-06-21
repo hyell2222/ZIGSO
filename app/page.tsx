@@ -1,41 +1,21 @@
 "use client";
-
 import { useQuery } from "@tanstack/react-query";
-import { ClipboardList, Puzzle, Sparkles } from "lucide-react";
+import { ClipboardList, Sparkles, Puzzle, Monitor, GraduationCap, ArrowRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
-import { ACTIVITY_LAYOUT_MAX } from "@/components/activity/activity-layout-chrome";
 import { TopNav } from "@/components/layout/top-nav";
-import { ButtonLink } from "@/components/ui/button";
+import { Button, ButtonLink } from "@/components/ui/button";
 import { getCurrentSession } from "@/lib/api/auth";
 import { AUTH_SESSION_QUERY_KEY } from "@/lib/auth/use-require-teacher-session";
 import { ROUTES } from "@/lib/routes";
 import { hasSupabaseEnv } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 
-const FEATURE_ICONS = [Sparkles, Puzzle, ClipboardList] as const;
-
-const bulletClass =
-  "group flex flex-col items-center gap-3.5 rounded-2xl border border-[color-mix(in_srgb,var(--primary)_14%,var(--border))] bg-[var(--surface)] px-5 py-6 text-center shadow-[var(--elevation-sm)] ring-1 ring-[color-mix(in_srgb,var(--primary)_8%,transparent)] transition duration-300 hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--primary)_28%,var(--border))] hover:shadow-[var(--elevation-md)] sm:items-start sm:gap-4 sm:px-5 sm:py-7 sm:text-left";
-
-const LANDING_EYEBROW = "AI 기반의 스마트한 Jigsaw & STAD 협동학습 플랫폼";
-const LANDING_TAGLINE = "번거로운 협동학습 수업 설계는 그만! 학생 자동 모둠 배정부터 전문가 학습, 개별 퀴즈 채점, 향상 점수 계산까지 한 번에 해결하세요.";
-const LANDING_RESEARCH_TITLE = "중·고등학교 협동학습을 위해 최적화된 직소(Jigsaw) 및 STAD 모형 온라인 교육 플랫폼, Zigso";
-const LANDING_FEATURES = [
-  {
-    title: "AI 기반의 1초 활동 생성",
-    body: "주제와 대상 학년만 입력하면, AI가 협동학습에 필요한 역할별 핵심 지문과 연습 문제, 실전 퀴즈까지 자동으로 완성해 줍니다.",
-  },
-  {
-    title: "상호의존성 & 개별책무성 설계",
-    body: "모두가 가르치고 배우는 직소(Jigsaw) 모형과 개인의 노력이 모둠의 성공으로 이어지는 STAD 향상 점수 제도를 온라인으로 자연스럽게 결합했습니다.",
-  },
-  {
-    title: "과정 중심 실시간 리포트",
-    body: "학생들의 진행 상황, 퀴즈 제출 이력, 오답률을 실시간 대시보드로 모니터링하여 개별 맞춤형 피드백과 과정 중심 평가를 제공합니다.",
-  },
-] as const;
+const LANDING_EYEBROW = "직소(Jigsaw) 협동학습 모형의 디지털 전환";
+const LANDING_TAGLINE = "번거롭고 복잡했던 오프라인 직소 수업을 온라인으로 완벽하게 구현하다.";
+const LANDING_DESCRIPTION = "학생 조 편성부터 AI 비계 기반 전문가 학습, 실시간 진행 제어, 그리고 STAD 향상 점수 산출까지 하나의 플랫폼에서 해결하세요.";
+const LANDING_RESEARCH_TITLE = "중·고등학교 교실 수업의 협동과 성장을 위해 설계된 온라인 교육용 소프트웨어, ZIGSO";
 
 export default function HomePage() {
   const router = useRouter();
@@ -55,102 +35,118 @@ export default function HomePage() {
   }, [router, sessionQuery.data, sessionQuery.isLoading, sessionQuery.isFetching]);
 
   return (
-    <div className="flex min-h-dvh flex-col">
+    <div className="flex min-h-dvh flex-col bg-[var(--background)] font-sans">
       <TopNav />
-      <main className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-        <div className="relative flex min-h-full flex-1 flex-col">
-          <div
-            className="pointer-events-none absolute inset-0 -z-10 bg-[var(--background)]"
-            style={{
-              backgroundImage: `
-            radial-gradient(ellipse 90% 55% at 50% -18%, color-mix(in srgb, var(--primary) 10%, transparent), transparent 62%),
-            radial-gradient(ellipse 70% 45% at 85% 85%, color-mix(in srgb, var(--highlight) 7%, transparent), transparent 55%),
-            radial-gradient(ellipse 60% 40% at 10% 70%, color-mix(in srgb, var(--accent) 9%, transparent), transparent 50%),
-            linear-gradient(175deg, color-mix(in srgb, var(--surface) 92%, var(--background)) 0%, var(--background) 38%, var(--background) 100%)
-          `,
-            }}
-            aria-hidden
-            />
-          <div
-            className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-40 bg-gradient-to-t from-[color-mix(in_srgb,var(--ink)_4%,transparent)] to-transparent"
-            aria-hidden
-            />
 
-          <div
-            className={cn(
-              "mx-auto flex w-full flex-1 flex-col justify-center",
-              ACTIVITY_LAYOUT_MAX,
-              "px-5 py-10 pb-[max(2.5rem,env(safe-area-inset-bottom,0px))] pt-8 text-center sm:px-6 sm:py-12 md:px-8 md:py-14",
-            )}
-          >
-            <header className="flex flex-col items-center">
-              <div className="flex items-center gap-2.5 text-[var(--accent)] sm:gap-3.5">
-                <span className="h-px w-8 max-sm:w-5 bg-[color-mix(in_srgb,var(--accent)_45%,transparent)]" aria-hidden />
-                <p className="text-xs font-bold uppercase tracking-[0.22em] text-[color-mix(in_srgb,var(--accent)_92%,var(--mystery))]">
-                  {LANDING_EYEBROW}
-                </p>
-                <span className="h-px w-8 max-sm:w-5 bg-[color-mix(in_srgb,var(--accent)_45%,transparent)]" aria-hidden />
+      <main className="flex-1 flex flex-col justify-center py-12 sm:py-16 md:py-20 px-4 max-w-5xl mx-auto w-full">
+
+        {/* 히어로 헤더 */}
+        <header className="space-y-6 text-center flex flex-col items-center">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--tint-primary-weak)] border border-[var(--primary)]/10">
+            <span className="h-1.5 w-1.5 rounded-full bg-[var(--primary)]" />
+            <p className="text-[11px] font-bold tracking-wider text-[var(--primary)] uppercase sm:text-xs">
+              {LANDING_EYEBROW}
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-[var(--ink)]">
+              ZIGSO
+            </h1>
+            <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--muted-foreground)] leading-snug">
+              {LANDING_TAGLINE}
+            </h2>
+          </div>
+
+          <p className="mx-auto text-base sm:text-lg leading-relaxed text-[var(--muted-foreground)] font-medium max-w-3xl">
+            {LANDING_DESCRIPTION}
+          </p>
+
+          <div className="p-4 rounded-xl border border-[var(--border)] bg-[var(--surface)] text-xs font-semibold text-[var(--accent)]">
+            🎓 {LANDING_RESEARCH_TITLE}
+          </div>
+
+          {/* 시작 버튼: 작게 & 중앙 정렬 */}
+          <div className="pt-2">
+            <Button onClick={() => router.push(ROUTES.login)}>
+              지금 바로 시작하기
+            </Button>
+          </div>
+        </header>
+
+        {/* 핵심 3대 디지털 메커니즘 피쳐 목록 */}
+        <section className="mt-16 space-y-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+            {/* 피쳐 1 */}
+            <div className="border border-[var(--border)] bg-[var(--surface)] p-6 rounded-xl space-y-4 hover:border-[var(--primary)]/30 transition-colors shadow-sm">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--tint-primary-weak)] text-[var(--primary)]">
+                <ClipboardList className="h-5 w-5" />
               </div>
-
-              <h1 className="mt-2.5 bg-[linear-gradient(165deg,var(--primary)_0%,color-mix(in_srgb,var(--primary)_72%,var(--mystery))_100%)] bg-clip-text text-4xl font-bold leading-[1.08] tracking-[-0.02em] text-transparent drop-shadow-[0_1px_0_color-mix(in_srgb,var(--on-primary)_35%,transparent)] sm:mt-3 sm:text-6xl sm:tracking-[-0.03em]">
-                Zigso
-              </h1>
-
-              <p className="mx-auto mt-4 max-w-md text-balance text-base font-medium leading-snug text-[var(--foreground)] sm:mt-5 sm:text-lg sm:leading-snug">
-                {LANDING_TAGLINE}
-              </p>
-
-              <p className="mx-auto mt-3 max-w-lg text-balance text-sm leading-relaxed text-[color-mix(in_srgb,var(--muted-foreground)_92%,var(--mystery))] sm:text-base">
-                {LANDING_RESEARCH_TITLE}
-              </p>
-            </header>
-
-            <div className="mt-8 flex w-full flex-col items-stretch justify-center gap-3 sm:mt-10 sm:flex-row sm:items-center sm:justify-center sm:gap-4">
-              <ButtonLink
-                href={ROUTES.login}
-                variant="default"
-                size="lg"
-                className="w-full sm:w-auto sm:min-w-[13.5rem]"
-              >
-                지금 시작하기
-              </ButtonLink>
+              <div className="space-y-2">
+                <h4 className="font-extrabold text-base text-[var(--ink)]">
+                  1. 수업 행정 디지털화 (수업 효율성)
+                </h4>
+                <p className="text-xs sm:text-sm leading-relaxed text-[var(--muted-foreground)]">
+                  지문 복사/인쇄, 모둠 교대 자리 배치 등의 번거로운 행정을 없애고, 교사용 원클릭 제어판으로 알짜 학습 시간을 100% 보존합니다.
+                </p>
+              </div>
             </div>
 
-            <ul className="mt-10 grid gap-4 sm:mt-12 sm:grid-cols-3 sm:gap-5 md:mt-14">
-              {LANDING_FEATURES.map((feature, index) => {
-                const Icon = FEATURE_ICONS[index] ?? Sparkles;
-                const iconWrap =
-                  index === 0
-                    ? "bg-[var(--tint-primary-weak)] text-[var(--primary)] group-hover:bg-[var(--tint-primary)]"
-                    : index === 1
-                      ? "bg-[color-mix(in_srgb,var(--info)_12%,var(--surface))] text-[var(--info)] group-hover:bg-[color-mix(in_srgb,var(--info)_18%,var(--surface))]"
-                      : "bg-[var(--tint-highlight-weak)] text-[var(--highlight)] group-hover:bg-[var(--tint-highlight)]";
+            {/* 피쳐 2 */}
+            <div className="border border-[var(--border)] bg-[var(--surface)] p-6 rounded-xl space-y-4 hover:border-[var(--info)]/30 transition-colors shadow-sm">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[color-mix(in_srgb,var(--info)_12%,var(--surface))] text-[var(--info)]">
+                <Sparkles className="h-5 w-5" />
+              </div>
+              <div className="space-y-2">
+                <h4 className="font-extrabold text-base text-[var(--ink)]">
+                  2. 전문가 과정 디지털화 (AI 비계)
+                </h4>
+                <p className="text-xs sm:text-sm leading-relaxed text-[var(--muted-foreground)]">
+                  연습문제 오답 횟수에 따라 1차/2차 AI 힌트와 상세 해설을 단계별로 제공하여, 교사 개입 없이 학생 스스로 자기교정 및 완전학습을 지원합니다.
+                </p>
+              </div>
+            </div>
 
-                return (
-                  <li key={feature.title} className={bulletClass}>
-                    <span
-                      className={cn(
-                        "inline-flex h-11 w-11 items-center justify-center rounded-xl shadow-[inset_var(--input-inset)] transition",
-                        iconWrap,
-                      )}
-                    >
-                      <Icon className="h-5 w-5" aria-hidden />
-                    </span>
-                    <div>
-                      <p className="text-sm font-semibold text-[color-mix(in_srgb,var(--mystery)_94%,var(--primary))]">
-                        {feature.title}
-                      </p>
-                      <p className="mt-1.5 text-xs leading-snug text-[color-mix(in_srgb,var(--muted-foreground)_96%,var(--accent))]">
-                        {feature.body}
-                      </p>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
+            {/* 피쳐 3 */}
+            <div className="border border-[var(--border)] bg-[var(--surface)] p-6 rounded-xl space-y-4 hover:border-[var(--highlight)]/30 transition-colors shadow-sm">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--tint-highlight-weak)] text-[var(--highlight)]">
+                <Puzzle className="h-5 w-5" />
+              </div>
+              <div className="space-y-2">
+                <h4 className="font-extrabold text-base text-[var(--ink)]">
+                  3. 무임승차 방지 및 STAD 보상
+                </h4>
+                <p className="text-xs sm:text-sm leading-relaxed text-[var(--muted-foreground)]">
+                  동료들의 퀴즈 제출 현황을 완료 불빛으로 시각화하여 무임승차를 방지하고, 향상도 평균 기반의 최종 모둠 순위 발표로 협동을 자극합니다.
+                </p>
+              </div>
+            </div>
+
           </div>
-        </div>
+        </section>
+
       </main>
+
+      {/* 필수 연구 규격 권장사양 푸터 */}
+      <footer className="w-full border-t border-[var(--border)] bg-[var(--surface)] py-6 text-center text-xs text-[var(--muted-foreground)] px-4 mt-auto">
+        <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 font-medium">
+            <span className="inline-flex items-center gap-1">
+              <GraduationCap className="h-4 w-4" />
+              대상 학년: 중·고교 전 학년 수업용
+            </span>
+            <span className="hidden sm:inline text-gray-300">|</span>
+            <span className="inline-flex items-center gap-1">
+              <Monitor className="h-4 w-4" />
+              해상도: 1920x1080 권장 (반응형 지원)
+            </span>
+          </div>
+          <p className="text-[11px] opacity-75">
+            권장 환경: Chrome, Edge 등 최신 브라우저
+          </p>
+        </div>
+      </footer>
     </div>
   );
 }

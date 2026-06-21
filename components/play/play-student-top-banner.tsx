@@ -1,8 +1,6 @@
 "use client";
 
-import { PhaseGuideHelpButton } from "@/components/activity/phase-guide-help-button";
 import {
-  activityBannerHelpButtonClass,
   appNavContentShell,
   activityPlayStudentHeaderRowContained,
 } from "@/components/activity/activity-layout-chrome";
@@ -11,6 +9,7 @@ import { PlayHeaderGroupPlace } from "@/components/play/play-header-group-place"
 import {
   ACTIVITY_PHASE_LABELS,
   getPhaseStepDef,
+  getPhaseStepGuide,
   TEACHER_RESULTS_STEP,
   type TimedPhaseKey,
 } from "@/lib/activity-phases";
@@ -45,6 +44,7 @@ export function PlayStudentTopBanner({
       ? { number: TEACHER_RESULTS_STEP.number, title: ACTIVITY_PHASE_LABELS.results }
       : getPhaseStepDef(phase);
   const hasStatus = Boolean(completeTitle);
+  const guide = getPhaseStepGuide(phase);
 
   return (
     <div
@@ -56,18 +56,21 @@ export function PlayStudentTopBanner({
       )}
     >
       <div
-        className={cn(appNavContentShell, activityPlayStudentHeaderRowContained, "justify-between")}
+        className={cn(appNavContentShell, activityPlayStudentHeaderRowContained, "justify-between py-2 sm:py-2.5")}
       >
-        <div className="flex min-w-0 flex-1 items-center gap-2 @sm:gap-2.5">
-          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 border-[var(--primary)] bg-[var(--primary)] text-[0.75rem] font-bold tabular-nums text-[var(--on-primary)]">
-            {step.number}
-          </span>
-          <div className="flex min-w-0 flex-1 items-center gap-1.5 @sm:gap-2">
-            <p className="truncate text-base font-bold text-[var(--foreground)] @sm:text-lg">
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
+          <div className="flex items-center gap-2">
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-[var(--primary)] bg-[var(--primary)] text-[0.6rem] font-bold tabular-nums text-[var(--on-primary)]">
+              {step.number}
+            </span>
+            <p className="truncate text-base font-bold text-[var(--primary)]">
               {step.title}
             </p>
-            <PhaseGuideHelpButton phase={phase} className={activityBannerHelpButtonClass} />
           </div>
+          {/* 가이드 설명글을 step 타이틀 아래에 한두 줄 텍스트로 항시 노출 */}
+          <p className="text-[14px] leading-relaxed text-[var(--muted-foreground)] font-medium max-w-xl">
+            {guide.intro}
+          </p>
         </div>
         <PlayHeaderGroupPlace
           groupName={groupName}
