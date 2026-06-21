@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, PlusIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 
 import {
@@ -28,6 +28,23 @@ export default function ActivitiesPage() {
   const [pendingDeleteRow, setPendingDeleteRow] = useState<ActivityListRow | null>(null);
 
   const sessionQuery = useRequireTeacherSession();
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const handleWindowMessage = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return;
+      if (event.data?.action === "saved") {
+        void queryClient.invalidateQueries({ queryKey: ["teacher-activities", sessionQuery.data?.user?.id] });
+        toast.success(event.data.message || "활동이 저장되었습니다.");
+      }
+    };
+    window.addEventListener("message", handleWindowMessage);
+
+    return () => {
+      window.removeEventListener("message", handleWindowMessage);
+    };
+  }, [queryClient, sessionQuery.data?.user?.id]);
 
   const activitiesQuery = useQuery({
     queryKey: ["teacher-activities", sessionQuery.data?.user.id],
@@ -86,7 +103,7 @@ export default function ActivitiesPage() {
 
   const openEditorTab = (url: string) => {
     if (typeof window === "undefined") return;
-    window.open(url, "_blank", "noopener,noreferrer");
+    window.open(url, "_blank");
   };
 
   const handleNewActivity = () => {

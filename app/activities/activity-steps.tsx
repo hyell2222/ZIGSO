@@ -33,6 +33,7 @@ type Props =
 
 function leaveEditor(router: ReturnType<typeof useRouter>) {
   if (typeof window !== "undefined" && window.opener && !window.opener.closed) {
+    window.opener.postMessage({ type: "ACTIVITY_SAVED" }, "*");
     window.close();
     return;
   }
@@ -95,10 +96,27 @@ export function ActivitySteps(props: Props) {
       }
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["teacher-activities"] });
+      const messageText = "활동이 저장되었습니다.";
 
-      toast.success("활동이 저장되었습니다.");
-      leaveEditor(router);
+      // window.opener가 있는 경우 직접 postMessage 발송 (BroadcastChannel의 타이밍 이슈 우회)
+      if (typeof window !== "undefined" && window.opener) {
+        try {
+          window.opener.postMessage({ action: "saved", message: messageText }, window.location.origin);
+        } catch (e) {
+          console.error("postMessage 알림 실패:", e);
+        }
+      }
+
+      const isNewTab = typeof window !== "undefined" && window.opener && !window.opener.closed;
+
+      if (!isNewTab) {
+        await queryClient.invalidateQueries({ queryKey: ["teacher-activities"] });
+        toast.success(messageText);
+        router.push(ROUTES.activities);
+      } else {
+        // 새 탭인 경우 창을 닫음
+        window.close();
+      }
     },
     onError: (e: Error) => {
       toast.error("저장에 실패했습니다.", {
