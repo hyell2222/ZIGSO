@@ -12,6 +12,7 @@ import { getActivity, parseActivityPack } from "@/lib/api/activities";
 import type { ActivityPhase } from "@/lib/api/activities";
 import { useRequireTeacherSession } from "@/lib/auth/use-require-teacher-session";
 import {
+  computeBaseScoreFromPracticeResults,
   getPeerPracticeQuestions,
   getTestQuestions,
   isPeerPracticeComplete,
@@ -85,7 +86,12 @@ function SandboxPageContent() {
   );
 
   const applyHomeGroupProgress = useCallback(
-    (playerId: string, questionId?: string) => {
+    (
+      playerId: string,
+      questionId?: string,
+      wrongAttempts?: number,
+      wrongChoices?: number[]
+    ) => {
       if (!pack) return;
       setState((prev) => {
         const player = prev.players.find((p) => p.id === playerId);
@@ -97,6 +103,26 @@ function SandboxPageContent() {
           ? [...new Set([...(player.peer_practice_completed ?? []), questionId])]
           : (player.peer_practice_completed ?? []);
         const allDone = isPeerPracticeComplete(peerQuestions, completed);
+
+        let nextResults = player.practice_results ?? [];
+        if (questionId && wrongAttempts !== undefined) {
+          const newResult: PracticeQuestionResult = {
+            questionId,
+            wrongAttempts,
+            wrongChoices,
+          };
+          const idx = nextResults.findIndex((r) => r.questionId === questionId);
+          const temp = [...nextResults];
+          if (idx !== -1) {
+            temp[idx] = newResult;
+          } else {
+            temp.push(newResult);
+          }
+          nextResults = temp;
+        }
+
+        const nextBaseScore = computeBaseScoreFromPracticeResults(nextResults);
+
         return {
           ...prev,
           players: prev.players.map((p) =>
@@ -104,6 +130,8 @@ function SandboxPageContent() {
               ? {
                   ...p,
                   peer_practice_completed: completed,
+                  practice_results: nextResults,
+                  base_score: nextBaseScore,
                   home_group_completed_at:
                     allDone && !p.home_group_completed_at
                       ? new Date().toISOString()
@@ -118,8 +146,13 @@ function SandboxPageContent() {
   );
 
   const handlePeerQuestionComplete = useCallback(
-    (playerId: string, questionId: string) => {
-      applyHomeGroupProgress(playerId, questionId);
+    (
+      playerId: string,
+      questionId: string,
+      wrongAttempts: number,
+      wrongChoices?: number[]
+    ) => {
+      applyHomeGroupProgress(playerId, questionId, wrongAttempts, wrongChoices);
     },
     [applyHomeGroupProgress],
   );

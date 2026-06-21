@@ -413,13 +413,14 @@ export async function ensureHomeGroupComplete(args: {
   if (error) throw error;
 }
 
-/** 서로 알려주기 — 모둠원 파트 연습 문항 완료 (점수 없음) */
 export async function completePeerPracticeQuestion(args: {
   playerId: string;
   pack: ActivityPack;
   memberRoleIds: Array<string | null | undefined>;
   ownRoleId: string | null;
   questionId: string;
+  wrongAttempts: number;
+  wrongChoices?: number[];
 }) {
   const player = await getPlayerById(args.playerId);
   if (player.home_group_completed_at) {
@@ -439,11 +440,30 @@ export async function completePeerPracticeQuestion(args: {
   const completed = [...new Set([...player.peer_practice_completed, args.questionId])];
   const allDone = isPeerPracticeComplete(peerQuestions, completed);
 
+  // 3단계 동료 연습문제 결과를 practice_results에 추가/갱신
+  const newResult: PracticeQuestionResult = {
+    questionId: args.questionId,
+    wrongAttempts: args.wrongAttempts,
+    wrongChoices: args.wrongChoices,
+  };
+  const existingResults = player.practice_results || [];
+  const idx = existingResults.findIndex((r) => r.questionId === args.questionId);
+  const nextResults = [...existingResults];
+  if (idx !== -1) {
+    nextResults[idx] = newResult;
+  } else {
+    nextResults.push(newResult);
+  }
+
+  // 내 문제 + 동료 문제 모두 포함하여 기준 점수 재계산
+  const baseScore = computeBaseScoreFromPracticeResults(nextResults);
+
   const { error } = await supabase
     .from("players")
     .update({
       peer_practice_completed: completed,
-      home_group_completed_at: allDone ? new Date().toISOString() : null,
+      practice_results: nextResults,
+      base_score: baseScore,
     })
     .eq("id", args.playerId);
   if (error) throw error;

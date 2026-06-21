@@ -42,7 +42,12 @@ type Props = {
   onJoinAsStudent: (nickname: string) => void;
   onSubmitPractice: (playerId: string, results: PracticeQuestionResult[], baseScore: number) => void;
   onSubmitIndividualQuiz: (playerId: string, answers: QuizAnswer[]) => void;
-  onPeerQuestionComplete: (playerId: string, questionId: string) => void;
+  onPeerQuestionComplete: (
+    playerId: string,
+    questionId: string,
+    wrongAttempts: number,
+    wrongChoices?: number[]
+  ) => void;
   onEnsureHomeGroupComplete: (playerId: string) => void;
 };
 
@@ -197,9 +202,10 @@ function SandboxStudentPanelView({
         roleScopeKey={scopeKey}
         peerPracticeCompleted={primaryPlayer.peer_practice_completed ?? []}
         practiceResults={primaryPlayer.practice_results ?? []}
+        baseScore={primaryPlayer.base_score ?? null}
         homeGroupCompletedAt={primaryPlayer.home_group_completed_at ?? null}
-        onPeerQuestionComplete={(questionId) =>
-          onPeerQuestionComplete(primaryPlayer.id, questionId)
+        onPeerQuestionComplete={(questionId, wrongAttempts, wrongChoices) =>
+          onPeerQuestionComplete(primaryPlayer.id, questionId, wrongAttempts, wrongChoices)
         }
         onEnsureHomeGroupComplete={() => onEnsureHomeGroupComplete(primaryPlayer.id)}
       />

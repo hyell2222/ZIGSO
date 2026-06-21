@@ -420,14 +420,17 @@ export function PlaySessionShell({
         roleScopeKey={sessionId ?? ""}
         peerPracticeCompleted={playerQuery.data?.peer_practice_completed ?? []}
         practiceResults={playerQuery.data?.practice_results ?? []}
+        baseScore={playerQuery.data?.base_score ?? null}
         homeGroupCompletedAt={playerQuery.data?.home_group_completed_at ?? null}
-        onPeerQuestionComplete={(questionId) =>
+        onPeerQuestionComplete={(questionId, wrongAttempts, wrongChoices) =>
           completePeerPracticeQuestion({
             playerId: playerId!,
             pack: activityPack,
             memberRoleIds: groupMembers.map((m) => m.assigned_role_id),
             ownRoleId: assignedRoleId,
             questionId,
+            wrongAttempts,
+            wrongChoices,
           }).then(() => {
             void queryClient.invalidateQueries({ queryKey: ["play-player", playerId] });
           })

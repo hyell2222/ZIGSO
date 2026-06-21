@@ -182,12 +182,17 @@ export function buildSandboxAssignments(
     for (const chip of groupChips) {
       const playerId = chip.isReal ? SANDBOX_REAL_STUDENT_PLAYER_ID : `sandbox-player-${chip.id}`;
       const assigned = roleAssignment.get(playerId);
-      // 가상 플레이어는 연습·형성평가를 미리 마친 상태로, 실제 학생은 비워 둔다.
-      const prefilled = !chip.isReal;
+      const isBot = !chip.isReal;
       const roleId = assigned?.roleId ?? pack.roles[0]?.id ?? "";
       const role = pack.roles.find((r) => r.id === roleId);
+
+      // 50% chance to complete each step
+      const expertComplete = isBot && Math.random() < 0.5;
+      const homeComplete = isBot && Math.random() < 0.5;
+      const quizComplete = isBot && Math.random() < 0.5;
+
       const practice =
-        prefilled && role ? randomPracticeResults(role.practiceQuestions) : null;
+        expertComplete && role ? randomPracticeResults(role.practiceQuestions) : null;
       players.push({
         id: playerId,
         nickname: chip.nickname.trim() || "참가자",
@@ -195,12 +200,13 @@ export function buildSandboxAssignments(
         roleId,
         base_score: practice?.baseScore ?? null,
         practice_results: practice?.results ?? [],
-        practice_submitted_at: prefilled ? recentTimestamp() : null,
+        practice_submitted_at: expertComplete ? recentTimestamp() : null,
+        home_group_completed_at: homeComplete ? recentTimestamp() : null,
         individual_quiz_answers:
-          prefilled && testQuestions.length > 0
+          quizComplete && testQuestions.length > 0
             ? fakeQuizAnswers(testQuestions, randomCorrectRatio())
             : [],
-        individual_quiz_submitted_at: prefilled ? recentTimestamp() : null,
+        individual_quiz_submitted_at: quizComplete ? recentTimestamp() : null,
         isReal: chip.isReal ? true : undefined,
       });
     }

@@ -303,6 +303,7 @@ export function ExpertPhasePanel({
                       ? {
                         wrongAttempts: stored.wrongAttempts,
                         baseScore: practiceQuestionScore(stored.wrongAttempts),
+                        wrongChoiceIndices: stored.wrongChoices,
                       }
                       : null;
                     const locked = practiceSubmitted || Boolean(stored) || submitting;

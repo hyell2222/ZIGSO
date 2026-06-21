@@ -90,25 +90,20 @@ export function isPlayerPhaseComplete(
   player: PlayerPhaseFields,
   context?: PhaseCompleteContext,
 ): boolean {
+  if (phase === "expert_group") {
+    return Boolean(player.practice_submitted_at);
+  }
+  if (phase === "home_group") {
+    return Boolean(player.home_group_completed_at);
+  }
+  if (phase === "individual_quiz") {
+    return Boolean(player.individual_quiz_submitted_at);
+  }
   const progress = getPlayerPhaseProgress(phase, player, context);
   if (progress !== null) return progress >= 100;
   switch (phase) {
     case "overview":
       return false;
-    case "expert_group":
-      return Boolean(player.practice_submitted_at);
-    case "home_group": {
-      if (player.home_group_completed_at) return true;
-      if (!context?.pack || !context.memberRoleIds) return false;
-      const peerQuestions = getPeerPracticeQuestions(
-        context.pack,
-        context.memberRoleIds,
-        player.assigned_role_id ?? null,
-      );
-      return isPeerPracticeComplete(peerQuestions, player.peer_practice_completed ?? []);
-    }
-    case "individual_quiz":
-      return Boolean(player.individual_quiz_submitted_at);
     default:
       return false;
   }
