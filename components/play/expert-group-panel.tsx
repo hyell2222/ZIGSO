@@ -119,6 +119,8 @@ export function ExpertPhasePanel({
     const entry = {
       ...toPracticeQuestionResult(questionId, result.wrongAttempts),
       wrongChoices: result.wrongChoices,
+      viewedHint1: result.viewedHint1,
+      viewedHint2: result.viewedHint2,
     };
     const next = { ...completed, [questionId]: entry };
     setCompleted(next);
@@ -217,20 +219,20 @@ export function ExpertPhasePanel({
                           </div>
                           {aiResult ? (
                             <div className="mt-2 space-y-2">
-                              {aiResult.hint1 && result && result.wrongAttempts >= 1 && (
+                              {aiResult.hint1 && result && result.viewedHint1 && (
                                 <PlayQuestionExplanation className="border-[var(--primary)]/30 bg-[var(--tint-primary-weak)]">
                                   <span className="font-semibold text-[var(--primary)] flex items-center gap-1.5 mb-1 text-xs">
                                     <Sparkles className="h-3.5 w-3.5" />
-                                    AI 1차 힌트
+                                    AI 힌트
                                   </span>
                                   <span className="block text-[var(--foreground)]">{aiResult.hint1}</span>
                                 </PlayQuestionExplanation>
                               )}
-                              {aiResult.hint2 && result && result.wrongAttempts >= 2 && (
+                              {aiResult.hint2 && result && result.viewedHint2 && (
                                 <PlayQuestionExplanation className="border-[var(--primary)]/30 bg-[var(--tint-primary-weak)]">
                                   <span className="font-semibold text-[var(--primary)] flex items-center gap-1.5 mb-1 text-xs">
                                     <Sparkles className="h-3.5 w-3.5" />
-                                    AI 2차 힌트
+                                    AI 상세 힌트
                                   </span>
                                   <span className="block text-[var(--foreground)]">{aiResult.hint2}</span>
                                 </PlayQuestionExplanation>
@@ -304,6 +306,8 @@ export function ExpertPhasePanel({
                         wrongAttempts: stored.wrongAttempts,
                         baseScore: practiceQuestionScore(stored.wrongAttempts),
                         wrongChoiceIndices: stored.wrongChoices,
+                        viewedHint1: stored.viewedHint1,
+                        viewedHint2: stored.viewedHint2,
                       }
                       : null;
                     const locked = practiceSubmitted || Boolean(stored) || submitting;

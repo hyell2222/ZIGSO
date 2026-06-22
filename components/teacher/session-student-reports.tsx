@@ -136,7 +136,7 @@ export function SessionStudentReportList({
               <td className={cn(tdClass, "text-right")}>
                 {submittedCell(
                   student.submitted,
-                  student.testScore != null ? `${student.testScore}% (정답 ${student.testCorrect}/${student.testTotal})` : null,
+                  student.testScore != null ? `${student.testScore}점 (정답 ${student.testCorrect}/${student.testTotal})` : null,
                 )}
               </td>
 

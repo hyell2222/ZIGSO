@@ -86,6 +86,7 @@ export function SessionQuestionsReviewModal({
                   }}
                   disabled
                   scored={false}
+                  hideHelperText
                 />
               ))}
             </div>

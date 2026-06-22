@@ -32,6 +32,8 @@ export type PracticeQuestionResult = {
   questionId: string;
   wrongAttempts: number;
   wrongChoices?: number[];
+  viewedHint1?: boolean;
+  viewedHint2?: boolean;
 };
 
 /** 홈 모둠 역할 — 전문가가 마스터하는 지문 조각 + 연습/실전 문제(각 여러 개) */

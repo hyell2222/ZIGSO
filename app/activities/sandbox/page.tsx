@@ -90,7 +90,9 @@ function SandboxPageContent() {
       playerId: string,
       questionId?: string,
       wrongAttempts?: number,
-      wrongChoices?: number[]
+      wrongChoices?: number[],
+      viewedHint1?: boolean,
+      viewedHint2?: boolean
     ) => {
       if (!pack) return;
       setState((prev) => {
@@ -110,6 +112,8 @@ function SandboxPageContent() {
             questionId,
             wrongAttempts,
             wrongChoices,
+            viewedHint1,
+            viewedHint2,
           };
           const idx = nextResults.findIndex((r) => r.questionId === questionId);
           const temp = [...nextResults];
@@ -150,9 +154,11 @@ function SandboxPageContent() {
       playerId: string,
       questionId: string,
       wrongAttempts: number,
-      wrongChoices?: number[]
+      wrongChoices?: number[],
+      viewedHint1?: boolean,
+      viewedHint2?: boolean
     ) => {
-      applyHomeGroupProgress(playerId, questionId, wrongAttempts, wrongChoices);
+      applyHomeGroupProgress(playerId, questionId, wrongAttempts, wrongChoices, viewedHint1, viewedHint2);
     },
     [applyHomeGroupProgress],
   );

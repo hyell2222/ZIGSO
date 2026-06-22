@@ -46,7 +46,9 @@ type Props = {
     playerId: string,
     questionId: string,
     wrongAttempts: number,
-    wrongChoices?: number[]
+    wrongChoices?: number[],
+    viewedHint1?: boolean,
+    viewedHint2?: boolean
   ) => void;
   onEnsureHomeGroupComplete: (playerId: string) => void;
 };
@@ -204,8 +206,8 @@ function SandboxStudentPanelView({
         practiceResults={primaryPlayer.practice_results ?? []}
         baseScore={primaryPlayer.base_score ?? null}
         homeGroupCompletedAt={primaryPlayer.home_group_completed_at ?? null}
-        onPeerQuestionComplete={(questionId, wrongAttempts, wrongChoices) =>
-          onPeerQuestionComplete(primaryPlayer.id, questionId, wrongAttempts, wrongChoices)
+        onPeerQuestionComplete={(questionId, wrongAttempts, wrongChoices, viewedHint1, viewedHint2) =>
+          onPeerQuestionComplete(primaryPlayer.id, questionId, wrongAttempts, wrongChoices, viewedHint1, viewedHint2)
         }
         onEnsureHomeGroupComplete={() => onEnsureHomeGroupComplete(primaryPlayer.id)}
       />

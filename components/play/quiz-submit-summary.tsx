@@ -28,7 +28,7 @@ export function QuizSubmitSummary({
       />
       <ScoreTile
         label="실전 점수"
-        value={`${snapshot.testScore}%`}
+        value={`${snapshot.testScore}점`}
         labelExtra={<TestScoreGuideHelpButton onClick={onOpenTestScoreGuide} />}
       />
       <ScoreTile

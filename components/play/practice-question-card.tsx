@@ -26,6 +26,8 @@ export type PracticeResult = {
   correct: boolean;
   answer: QuizAnswer;
   wrongChoices?: number[];
+  viewedHint1?: boolean;
+  viewedHint2?: boolean;
 };
 
 type Props = {
@@ -39,6 +41,8 @@ type Props = {
     baseScore: number;
     choiceIndex?: number;
     wrongChoiceIndices?: number[];
+    viewedHint1?: boolean;
+    viewedHint2?: boolean;
   } | null;
   disabled?: boolean;
   /** false면 점수·감점 없이 탐색용 (서로 알려주기 모둠원 파트) */
@@ -48,6 +52,7 @@ type Props = {
     questionId: string,
     aiResult: { hint1: string; hint2: string; explanation: string }
   ) => void;
+  hideHelperText?: boolean;
 };
 
 function initialWrongChoices(initialResult: Props["initialResult"]): number[] {
@@ -64,6 +69,7 @@ export function PracticeQuestionCard({
   scored = true,
   segment,
   onAiExplanationLoaded,
+  hideHelperText = false,
 }: Props) {
   const [selected, setSelected] = useState<number | null>(null);
   const [wrongChoices, setWrongChoices] = useState<number[]>(() =>
@@ -84,6 +90,8 @@ export function PracticeQuestionCard({
     explanation: string;
   } | null>(null);
   const [fetchedAtState, setFetchedAtState] = useState<"none" | "hint1" | "hint2" | "completed">("none");
+  const [viewedHint1, setViewedHint1] = useState(() => initialResult?.viewedHint1 ?? false);
+  const [viewedHint2, setViewedHint2] = useState(() => initialResult?.viewedHint2 ?? false);
 
   const requestAiHelp = useCallback(async (
     targetState: "hint1" | "hint2" | "completed",
@@ -134,6 +142,11 @@ export function PracticeQuestionCard({
 
   const handleRequestAiHelp = useCallback(async (targetState: "hint1" | "hint2" | "completed") => {
     if (loadingAi || busy) return;
+    if (targetState === "hint1") {
+      setViewedHint1(true);
+    } else if (targetState === "hint2") {
+      setViewedHint2(true);
+    }
     await requestAiHelp(targetState, wrongChoices);
   }, [loadingAi, busy, requestAiHelp, wrongChoices]);
 
@@ -169,6 +182,8 @@ export function PracticeQuestionCard({
           correct,
           answer: { questionId: question.id, choiceIndex: selected ?? question.correctIndex },
           wrongChoices: targetWrongChoices,
+          viewedHint1,
+          viewedHint2,
         });
 
         // Fetch AI explanation in parallel
@@ -187,7 +202,7 @@ export function PracticeQuestionCard({
       };
       void loadAndFinish();
     }
-  }, [revealed, done, busy, aiResult, wrongChoices, wrongAttempts, correct, selected, question, onAiExplanationLoaded, finish, requestAiHelp]);
+  }, [revealed, done, busy, aiResult, wrongChoices, wrongAttempts, correct, selected, question, onAiExplanationLoaded, finish, requestAiHelp, viewedHint1, viewedHint2]);
 
   const handleSubmit = async () => {
     if (selected === null || done || busy || loadingAi) return;
@@ -275,23 +290,27 @@ export function PracticeQuestionCard({
       </div>
 
       <div className="mt-4 flex items-center justify-between gap-3">
-        <PlayQuestionHelperText>
-          {showOutcome
-            ? correct
-              ? scored
-                ? `정답이에요! (획득 점수: ${currentScore}점)`
-                : "정답이에요!"
-              : scored
-                ? `오답이에요. 시도 가능 횟수가 모두 초과되었어요. (획득 점수: ${currentScore}점)`
-                : "오답이에요. 시도 가능 횟수가 모두 초과되었어요."
-            : wrongAttempts > 0 && !outOfAttempts
-              ? scored
-                ? `오답이에요. 힌트를 참고해 다시 풀어 보세요. (현재 ${currentScore}점)`
-                : "오답이에요. 힌트를 참고해 다시 풀어 보세요."
-              : scored
-                ? "정답을 골라 제출하세요. 오답마다 점수가 깎여요."
-                : "정답을 골라 제출하세요. 점수에는 영향 없어요."}
-        </PlayQuestionHelperText>
+        {!hideHelperText ? (
+          <PlayQuestionHelperText>
+            {showOutcome
+              ? correct
+                ? scored
+                  ? `정답이에요! (획득 점수: ${currentScore}점)`
+                  : "정답이에요!"
+                : scored
+                  ? `오답이에요. 시도 가능 횟수가 모두 초과되었어요. (획득 점수: ${currentScore}점)`
+                  : "오답이에요. 시도 가능 횟수가 모두 초과되었어요."
+              : wrongAttempts > 0 && !outOfAttempts
+                ? scored
+                  ? `오답이에요. 힌트를 참고해 다시 풀어 보세요. (현재 ${currentScore}점)`
+                  : "오답이에요. 힌트를 참고해 다시 풀어 보세요."
+                : scored
+                  ? "정답을 골라 제출하세요. 오답마다 점수가 깎여요."
+                  : "정답을 골라 제출하세요. 점수에는 영향 없어요."}
+          </PlayQuestionHelperText>
+        ) : (
+          <div />
+        )}
         {!showOutcome && (
           <Button
             type="button"
@@ -314,69 +333,60 @@ export function PracticeQuestionCard({
       {segment && !showOutcome && ((wrongAttempts === 1 || wrongAttempts === 2) || aiResult) && (
         <div className="mt-4 space-y-3 border-t border-[var(--border)] pt-4">
           <div>
-            {wrongAttempts === 1 && fetchedAtState === "none" && (
+            {wrongAttempts >= 1 && !viewedHint1 && !viewedHint2 && (
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => handleRequestAiHelp("hint1")}
+                onClick={() => handleRequestAiHelp(wrongAttempts === 1 ? "hint1" : "hint2")}
                 disabled={loadingAi}
                 className="w-full gap-1.5 text-xs border-[var(--primary)]/40 text-[var(--primary)] hover:bg-[var(--tint-primary-weak)]"
               >
                 {loadingAi ? (
                   <>
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    AI 1차 힌트 분석 중...
+                    AI 힌트 분석 중...
                   </>
                 ) : (
                   <>
                     <Sparkles className="h-3.5 w-3.5" />
-                    AI 1차 힌트 보기
+                    AI 힌트 보기
                   </>
                 )}
               </Button>
             )}
 
-            {wrongAttempts === 2 && fetchedAtState !== "hint2" && (
+            {wrongAttempts === 2 && viewedHint1 && !viewedHint2 && (
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => handleRequestAiHelp("hint2")}
+                onClick={() => setViewedHint2(true)}
                 disabled={loadingAi}
                 className="w-full gap-1.5 text-xs border-[var(--primary)]/40 text-[var(--primary)] hover:bg-[var(--tint-primary-weak)]"
               >
-                {loadingAi ? (
-                  <>
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    AI 2차 힌트 분석 중...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="h-3.5 w-3.5" />
-                    AI 2차 힌트 보기
-                  </>
-                )}
+                <Sparkles className="h-3.5 w-3.5" />
+                AI 상세 힌트 보기
               </Button>
             )}
           </div>
 
           {aiResult && !correct && (
             <div className="space-y-2">
-              {aiResult.hint1 && (fetchedAtState === "hint1" || fetchedAtState === "hint2") && (
+              {aiResult.hint1 && viewedHint1 && (
                 <PlayQuestionExplanation className="border-[var(--primary)]/30 bg-[var(--tint-primary-weak)]">
                   <span className="font-semibold text-[var(--primary)] flex items-center gap-1.5 mb-1 text-xs">
                     <Sparkles className="h-3.5 w-3.5" />
-                    AI 1차 힌트
+                    AI 힌트
                   </span>
                   <span className="block text-[var(--foreground)]">{aiResult.hint1}</span>
                 </PlayQuestionExplanation>
               )}
-              {aiResult.hint2 && fetchedAtState === "hint2" && (
+              {aiResult.hint2 && viewedHint2 && (
                 <PlayQuestionExplanation className="border-[var(--primary)]/30 bg-[var(--tint-primary-weak)]">
                   <span className="font-semibold text-[var(--primary)] flex items-center gap-1.5 mb-1 text-xs">
                     <Sparkles className="h-3.5 w-3.5" />
-                    AI 2차 힌트
+                    AI 상세 힌트
                   </span>
                   <span className="block text-[var(--foreground)]">{aiResult.hint2}</span>
                 </PlayQuestionExplanation>

@@ -234,7 +234,12 @@ export function parsePracticeResults(raw: unknown): PracticeQuestionResult[] {
       const questionId = String(r.questionId ?? "").trim();
       const wrongAttempts =
         typeof r.wrongAttempts === "number" ? Math.max(0, Math.floor(r.wrongAttempts)) : 0;
-      return { questionId, wrongAttempts };
+      const wrongChoices = Array.isArray(r.wrongChoices)
+        ? r.wrongChoices.map((x) => typeof x === "number" ? x : 0)
+        : undefined;
+      const viewedHint1 = typeof r.viewedHint1 === "boolean" ? r.viewedHint1 : undefined;
+      const viewedHint2 = typeof r.viewedHint2 === "boolean" ? r.viewedHint2 : undefined;
+      return { questionId, wrongAttempts, wrongChoices, viewedHint1, viewedHint2 };
     })
     .filter((r) => r.questionId.length > 0);
 }
@@ -421,6 +426,8 @@ export async function completePeerPracticeQuestion(args: {
   questionId: string;
   wrongAttempts: number;
   wrongChoices?: number[];
+  viewedHint1?: boolean;
+  viewedHint2?: boolean;
 }) {
   const player = await getPlayerById(args.playerId);
   if (player.home_group_completed_at) {
@@ -445,6 +452,8 @@ export async function completePeerPracticeQuestion(args: {
     questionId: args.questionId,
     wrongAttempts: args.wrongAttempts,
     wrongChoices: args.wrongChoices,
+    viewedHint1: args.viewedHint1,
+    viewedHint2: args.viewedHint2,
   };
   const existingResults = player.practice_results || [];
   const idx = existingResults.findIndex((r) => r.questionId === args.questionId);

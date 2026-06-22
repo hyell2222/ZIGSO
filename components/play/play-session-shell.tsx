@@ -422,7 +422,7 @@ export function PlaySessionShell({
         practiceResults={playerQuery.data?.practice_results ?? []}
         baseScore={playerQuery.data?.base_score ?? null}
         homeGroupCompletedAt={playerQuery.data?.home_group_completed_at ?? null}
-        onPeerQuestionComplete={(questionId, wrongAttempts, wrongChoices) =>
+        onPeerQuestionComplete={(questionId, wrongAttempts, wrongChoices, viewedHint1, viewedHint2) =>
           completePeerPracticeQuestion({
             playerId: playerId!,
             pack: activityPack,
@@ -431,6 +431,8 @@ export function PlaySessionShell({
             questionId,
             wrongAttempts,
             wrongChoices,
+            viewedHint1,
+            viewedHint2,
           }).then(() => {
             void queryClient.invalidateQueries({ queryKey: ["play-player", playerId] });
           })
