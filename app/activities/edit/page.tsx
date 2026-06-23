@@ -71,6 +71,12 @@ function ActivityEditContent() {
   }
 
   return (
-    <ActivitySteps mode="edit" activityId={activityId} initialPack={activityPack} pageTitle="활동 수정" />
+    <ActivitySteps
+      mode="edit"
+      activityId={activityId}
+      initialPack={activityPack}
+      initialTitle={dataQuery.data?.title ?? ""}
+      pageTitle="활동 수정"
+    />
   );
 }

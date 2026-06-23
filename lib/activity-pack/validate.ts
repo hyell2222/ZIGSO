@@ -1,5 +1,4 @@
 import type { ActivityPack, QuizQuestion, Role } from "@/lib/activity-pack/types";
-import { ACTIVITY_PACK_VERSION } from "@/lib/activity-pack/types";
 
 export const MIN_ROLES_PER_GROUP = 2;
 export const MAX_ROLES_PER_GROUP = 12;
@@ -16,16 +15,6 @@ export type PackValidationIssue = { path: string; message: string };
 export function validateActivityPack(pack: ActivityPack): PackValidationIssue[] {
   const issues: PackValidationIssue[] = [];
 
-  if (pack.version !== ACTIVITY_PACK_VERSION) {
-    issues.push({ path: "version", message: `version must be ${ACTIVITY_PACK_VERSION}` });
-  }
-  if (typeof pack.title !== "string" || !pack.title.trim()) {
-    issues.push({ path: "title", message: "title is required" });
-  }
-  if (typeof pack.description !== "string") {
-    issues.push({ path: "description", message: "description must be a string" });
-  }
-
   const roleCount = pack.roles.length;
   if (roleCount < MIN_ROLES_PER_GROUP || roleCount > MAX_ROLES_PER_GROUP) {
     issues.push({
@@ -39,6 +28,8 @@ export function validateActivityPack(pack: ActivityPack): PackValidationIssue[] 
   for (let ri = 0; ri < pack.roles.length; ri++) {
     issues.push(...validateRole(pack.roles[ri], `roles[${ri}]`, roleIds, questionIds));
   }
+
+  issues.push(...validateQuestionList(pack.testQuestions, "testQuestions", questionIds));
 
   return issues;
 }
@@ -61,16 +52,12 @@ function validateRole(
   } else {
     seenIds.add(role.id);
   }
-  if (typeof role.name !== "string") {
-    issues.push({ path: `${path}.name`, message: "name must be a string" });
-  }
   if (typeof role.segment !== "string" || !role.segment.trim()) {
     issues.push({ path: `${path}.segment`, message: "segment required" });
   }
   issues.push(
     ...validateQuestionList(role.practiceQuestions, `${path}.practiceQuestions`, questionIds),
   );
-  issues.push(...validateQuestionList(role.testQuestions, `${path}.testQuestions`, questionIds));
   return issues;
 }
 
@@ -138,12 +125,6 @@ function validateQuestion(
     ) {
       issues.push({ path: `${path}.correctIndex`, message: "correctIndex out of range" });
     }
-  }
-  if (q.hints !== undefined && !Array.isArray(q.hints)) {
-    issues.push({ path: `${path}.hints`, message: "hints must be an array" });
-  }
-  if (q.explanation !== undefined && typeof q.explanation !== "string") {
-    issues.push({ path: `${path}.explanation`, message: "explanation must be a string" });
   }
   return issues;
 }

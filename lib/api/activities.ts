@@ -7,7 +7,6 @@ import { supabase } from "@/lib/supabase";
 export type ActivityRecord = {
   id: string;
   title: string | null;
-  description: string | null;
   activity_pack: ActivityPack | null;
   creator_id?: string | null;
   created_at?: string | null;
@@ -15,7 +14,7 @@ export type ActivityRecord = {
 };
 
 const ACTIVITY_SELECT =
-  "id,title,description,activity_pack,creator_id,created_at,updated_at";
+  "id,title,activity_pack,creator_id,created_at,updated_at";
 
 function normalizeText(value: string | null | undefined) {
   const trimmed = value?.trim();
@@ -38,9 +37,10 @@ export async function listActivities(teacherId: string) {
   return (data ?? []) as ActivityListRow[];
 }
 
+export type ActivityId = string;
+
 export type CreateActivityInput = {
   title: string;
-  description: string;
   activity_pack: ActivityPack;
   creator_id?: string | null;
 };
@@ -50,7 +50,6 @@ export async function createActivity(input: CreateActivityInput) {
     .from("activities")
     .insert({
       title: normalizeText(input.title),
-      description: normalizeText(input.description) ?? "",
       activity_pack: input.activity_pack,
       creator_id: input.creator_id ?? null,
     })
@@ -78,7 +77,6 @@ export async function updateActivity(
     .from("activities")
     .update({
       title: normalizeText(input.title),
-      description: normalizeText(input.description) ?? "",
       activity_pack: input.activity_pack,
       updated_at: new Date().toISOString(),
     })

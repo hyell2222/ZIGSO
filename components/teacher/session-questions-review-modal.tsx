@@ -10,11 +10,12 @@ import {
 import { PracticeQuestionCard } from "@/components/play/practice-question-card";
 import { QuizQuestionList } from "@/components/play/quiz-question-list";
 import { Modal } from "@/components/ui/modal";
-import { getTestQuestions } from "@/lib/activity-pack/engine";
+
 import type { ActivityPack } from "@/lib/activity-pack/types";
 import { RESULTS_COPY } from "@/lib/activity-phases";
 import { codenameForRole } from "@/lib/play/role-codenames";
 import { Z } from "@/lib/ui/z-index";
+import { PlaySegmentText } from "@/components/play/play-question-support";
 
 const modalTitleId = "session-questions-review-heading";
 const QUESTIONS_REVIEW_MODAL_MAX_WIDTH = "w-[min(100%,42rem)]";
@@ -36,7 +37,7 @@ export function SessionQuestionsReviewModal({
   contained = true,
 }: Props) {
   const roleIds = useMemo(() => pack.roles.map((r) => r.id), [pack.roles]);
-  const testQuestions = useMemo(() => getTestQuestions(pack), [pack]);
+  const testQuestions = pack.testQuestions || [];
 
   const roleSections = useMemo(
     () =>
@@ -72,6 +73,11 @@ export function SessionQuestionsReviewModal({
             variant="active"
             heading="section"
           >
+            {role.segment && (
+              <div className="mb-4">
+                <PlaySegmentText>{role.segment}</PlaySegmentText>
+              </div>
+            )}
             <div className="space-y-4">
               {questions.map((q, idx) => (
                 <PracticeQuestionCard

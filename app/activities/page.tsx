@@ -21,6 +21,21 @@ import { Button } from "@/components/ui/button";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { ROUTES } from "@/lib/routes";
 
+function formatDate(dateStr: string | null | undefined) {
+  if (!dateStr) return "—";
+  try {
+    const d = new Date(dateStr);
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    const hh = String(d.getHours()).padStart(2, "0");
+    const min = String(d.getMinutes()).padStart(2, "0");
+    return `${yyyy}.${mm}.${dd}. ${hh}:${min}`;
+  } catch (e) {
+    return "—";
+  }
+}
+
 export default function ActivitiesPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -177,9 +192,16 @@ export default function ActivitiesPage() {
                             <p className="min-w-0 flex-1 text-lg font-semibold text-[var(--foreground)]">
                               {row.title ?? "제목 없는 활동"}
                             </p>
-                            <p className="text-xs text-[var(--muted-foreground)]">
-                              모둠 당 최소 필요 인원 : {row.activity_pack?.roles?.length ?? "—"}명
-                            </p>
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                              <p className="text-xs text-[var(--muted-foreground)]">
+                                모둠 당 최소 필요 인원 : {row.activity_pack?.roles?.length ?? "—"}명
+                              </p>
+                              {row.created_at && (
+                                <p className="text-[12px] text-[var(--muted-foreground)] bg-[var(--tint-primary-weak)] border border-[var(--primary)]/10 px-1.5 py-0.5 rounded">
+                                  {formatDate(row.created_at)}
+                                </p>
+                              )}
+                            </div>
                           </div>
 
                           <div className="flex flex-wrap items-center justify-start md:justify-end gap-2 w-full md:w-auto shrink-0">

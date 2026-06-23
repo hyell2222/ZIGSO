@@ -1,5 +1,5 @@
 import { formatGroupDisplayName, gradeTest } from "@/lib/activity-pack/engine";
-import { formatAssignedRoleLabels } from "@/lib/play/role-codenames";
+import { formatAssignedRoleLabels, letterLabel } from "@/lib/play/role-codenames";
 import { stadImprovementPoints, testPercent } from "@/lib/activity-pack/scoring";
 import type { ActivityPack, QuizAnswer } from "@/lib/activity-pack/types";
 
@@ -153,11 +153,15 @@ function roleLabelFor(
   if (roleScopeKey) {
     return (
       formatAssignedRoleLabels(pack, [roleId], roleScopeKey) ??
-      pack.roles.find((r) => r.id === roleId)?.name ??
-      roleId
+      getFallbackRoleLabel(pack, roleId)
     );
   }
-  return pack.roles.find((r) => r.id === roleId)?.name ?? roleId;
+  return getFallbackRoleLabel(pack, roleId);
+}
+
+function getFallbackRoleLabel(pack: ActivityPack, roleId: string): string {
+  const index = pack.roles.findIndex((r) => r.id === roleId);
+  return index !== -1 ? letterLabel(index) : roleId;
 }
 
 function computeMemberResults(

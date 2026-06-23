@@ -1,14 +1,11 @@
 import { normalizePackSizing } from "@/lib/activity-pack/activity-draft";
 import { validateActivityPack } from "@/lib/activity-pack/validate";
 import type { ActivityPack, QuizQuestion, Role } from "@/lib/activity-pack/types";
-import { ACTIVITY_PACK_VERSION } from "@/lib/activity-pack/types";
 
 /** JSON(unknown) → ActivityPack. 형식이 맞지 않으면 null */
 export function parseActivityPack(raw: unknown): ActivityPack | null {
   if (!raw || typeof raw !== "object") return null;
   const p = raw as Record<string, unknown>;
-
-  if (p.version !== ACTIVITY_PACK_VERSION) return null;
 
   if (!Array.isArray(p.roles) || p.roles.length === 0) return null;
 
@@ -18,11 +15,15 @@ export function parseActivityPack(raw: unknown): ActivityPack | null {
     readRole(entry, idx, seenRoleIds, seenQuestionIds),
   );
 
+  const testQuestions = readQuestionList(
+    p.testQuestions ?? p.testQuestion,
+    "test",
+    seenQuestionIds,
+  );
+
   const pack = normalizePackSizing({
-    version: ACTIVITY_PACK_VERSION,
-    title: String(p.title ?? "").trim(),
-    description: String(p.description ?? "").trim(),
     roles,
+    testQuestions,
   });
 
   return validateActivityPack(pack).length === 0 ? pack : null;
@@ -35,12 +36,7 @@ function readRole(
   seenQuestionIds: Set<string>,
 ): Role {
   const r = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
-  let roleId = String(r.id ?? `role_${idx + 1}`).trim() || `role_${idx + 1}`;
-  let suffix = 2;
-  while (seenRoleIds.has(roleId)) {
-    roleId = `role_${idx + 1}_${suffix}`;
-    suffix += 1;
-  }
+  const roleId = `role_${idx + 1}`;
   seenRoleIds.add(roleId);
 
   const practiceQuestions = readQuestionList(
@@ -48,18 +44,11 @@ function readRole(
     `${roleId}_practice`,
     seenQuestionIds,
   );
-  const testQuestions = readQuestionList(
-    r.testQuestions ?? r.testQuestion,
-    `${roleId}_test`,
-    seenQuestionIds,
-  );
 
   return {
     id: roleId,
-    name: String(r.name ?? "").trim(),
     segment: String(r.segment ?? ""),
     practiceQuestions,
-    testQuestions,
   };
 }
 
@@ -85,12 +74,7 @@ function readQuestion(
 ): QuizQuestion {
   const q = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
 
-  let id = String(q.id ?? defaultId).trim() || defaultId;
-  let suffix = 2;
-  while (seenQuestionIds.has(id)) {
-    id = `${defaultId}_${suffix}`;
-    suffix += 1;
-  }
+  const id = defaultId;
   seenQuestionIds.add(id);
 
   const choices = Array.isArray(q.choices)
@@ -100,19 +84,10 @@ function readQuestion(
   let correctIndex = typeof q.correctIndex === "number" ? Math.floor(q.correctIndex) : 0;
   if (correctIndex < 0 || correctIndex >= choices.length) correctIndex = 0;
 
-  const hints = Array.isArray(q.hints)
-    ? q.hints.map((h) => String(h ?? "").trim()).filter(Boolean)
-    : [];
-
-  const explanation =
-    typeof q.explanation === "string" ? q.explanation.trim() : "";
-
   return {
     id,
     prompt: String(q.prompt ?? ""),
     choices,
     correctIndex,
-    hints,
-    explanation,
   };
 }

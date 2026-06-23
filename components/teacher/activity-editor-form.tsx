@@ -5,7 +5,6 @@ import { Check, CheckCircle2, Plus, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
   createEmptyQuestion,
@@ -36,9 +35,6 @@ type Props = {
   draft: ActivityEditorDraft;
   onChange: (draft: ActivityEditorDraft) => void;
 };
-
-const inputClass = "h-9 w-full text-sm";
-const textareaClass = "resize-y text-sm";
 
 function EditorDeleteButton({
   label,
@@ -71,15 +67,12 @@ function EditorDeleteButton({
 
 function roleHasContent(role: EditorRole): boolean {
   if (role.segment.trim()) return true;
-  return [...role.practiceQuestions, ...role.testQuestions].some((q) =>
-    q.prompt.trim(),
-  );
+  return role.practiceQuestions.some((q) => q.prompt.trim());
 }
 
 function questionHasContent(question: EditorQuestion): boolean {
   if (question.prompt.trim()) return true;
   if (question.choices.some((c) => c.trim())) return true;
-  if (question.hints.trim() || question.explanation.trim()) return true;
   return false;
 }
 
@@ -106,14 +99,13 @@ function SingleQuestionEditor({
 
         <Textarea
           id={`q-prompt-${q.localId}`}
-          rows={2}
           value={q.prompt}
           onChange={(e) =>
             onUpdate((cur) => ({ ...cur, prompt: e.target.value }))
           }
           placeholder="발문을 입력하세요."
           aria-label={`${qIdx + 1}번 발문`}
-          className={cn(textareaClass, "min-h-[2.75rem]")}
+          className="text-sm"
         />
       </div>
 
@@ -133,16 +125,16 @@ function SingleQuestionEditor({
                   onUpdate((cur) => ({ ...cur, correctIndex: ci }))
                 }
                 className={cn(
-                  "flex h-7 w-7 shrink-0 items-center justify-center rounded-md border text-[0.8rem] font-semibold transition-colors",
+                  "flex h-8 w-8 shrink-0 items-center justify-center rounded-md border text-[0.8rem] font-semibold transition-colors",
                   isCorrect
                     ? "border-[var(--primary)] bg-[var(--tint-primary-medium)] text-[var(--primary)]"
                     : "border-[var(--border)] bg-[var(--background)] text-[var(--muted-foreground)] hover:border-[var(--primary)] hover:text-[var(--primary)]",
                 )}
               >
-                {isCorrect ? <CheckCircle2 className="h-4 w-4" /> : label}
+                {isCorrect ? <CheckCircle2 className="h-5 w-5" /> : label}
               </button>
 
-              <Input
+              <Textarea
                 value={choice}
                 onChange={(e) =>
                   onUpdate((cur) => ({
@@ -153,7 +145,7 @@ function SingleQuestionEditor({
                   }))
                 }
                 placeholder="보기를 입력하세요."
-                className={inputClass}
+                className="text-sm py-1.5"
               />
 
               {canRemoveChoice ? (
@@ -568,36 +560,9 @@ export function ActivityEditorForm({ draft, onChange }: Props) {
   };
 
   const updateTestQuestions = (nextQuestions: EditorQuestion[]) => {
-    const roleCount = draft.roles.length;
-    const distributed = Array.from({ length: roleCount }, () => [] as EditorQuestion[]);
-
-    if (nextQuestions.length <= roleCount) {
-      nextQuestions.forEach((q, idx) => {
-        distributed[idx].push(q);
-      });
-    } else {
-      for (let i = 0; i < roleCount - 1; i++) {
-        distributed[i].push(nextQuestions[i]!);
-      }
-      for (let i = roleCount - 1; i < nextQuestions.length; i++) {
-        distributed[roleCount - 1].push(nextQuestions[i]!);
-      }
-    }
-
-    distributed.forEach((bucket) => {
-      if (bucket.length === 0) {
-        bucket.push(createEmptyQuestion());
-      }
-    });
-
-    const updatedRoles = draft.roles.map((role, idx) => ({
-      ...role,
-      testQuestions: distributed[idx] || [createEmptyQuestion()],
-    }));
-
     onChange({
       ...draft,
-      roles: updatedRoles,
+      testQuestions: nextQuestions,
     });
   };
 
@@ -688,9 +653,8 @@ export function ActivityEditorForm({ draft, onChange }: Props) {
                             aria-label="학습 지문"
                             rows={10}
                             className={cn(
-                              textareaClass,
                               activityEditorSegmentFieldClass,
-                              "text-sm resize-y leading-relaxed",
+                              "text-sm leading-relaxed",
                             )}
                           />
                         </div>
@@ -818,8 +782,8 @@ export function ActivityEditorForm({ draft, onChange }: Props) {
                 <div className="px-4 py-4">
                   <QuestionListEditor
                     key="test-all"
-                    questions={draft.roles.flatMap((r) => r.testQuestions)}
-                    minCount={draft.roles.length}
+                    questions={draft.testQuestions}
+                    minCount={1}
                     onChange={updateTestQuestions}
                   />
                 </div>

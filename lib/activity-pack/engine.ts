@@ -34,12 +34,12 @@ export function getPracticeQuestions(
   return getRoleById(pack, roleId)?.practiceQuestions ?? [];
 }
 
-/** 개별 형성평가 문항 = 모든 역할의 실전 문제 (역할 순서대로) */
+/** 개별 형성평가 문항 = 최상위 실전 문제 */
 export function getTestQuestions(pack: ActivityPack): QuizQuestion[] {
-  return pack.roles.flatMap((r) => r.testQuestions);
+  return pack.testQuestions ?? [];
 }
 
-/** 실전 문제 — 역할별 지문 + 문항 묶음 */
+/** 실전 문제 — 역할별 지문 + 문항 묶음 (지문 UI 호환용) */
 export type TestQuestionRoleSection = {
   roleId: string;
   segment: string;
@@ -47,13 +47,11 @@ export type TestQuestionRoleSection = {
 };
 
 export function getTestQuestionSections(pack: ActivityPack): TestQuestionRoleSection[] {
-  return pack.roles
-    .filter((role) => role.testQuestions.length > 0)
-    .map((role) => ({
-      roleId: role.id,
-      segment: role.segment,
-      questions: role.testQuestions,
-    }));
+  return pack.roles.map((role) => ({
+    roleId: role.id,
+    segment: role.segment,
+    questions: [],
+  }));
 }
 
 /** 해설 모달에 표시할 문항이 있는지 */

@@ -45,5 +45,5 @@ export function getKoreanAuthErrorMessage(error: unknown): string {
   }
 
   // 기본 오류 메시지
-  return `로그인/회원가입에 실패했습니다. (${message})`;
+  return `로그인에 실패했습니다.`;
 }

@@ -26,7 +26,6 @@ drop table if exists public.game_sessions cascade;
 create table public.activities (
   id uuid primary key default gen_random_uuid(),
   title text not null,
-  description text not null default '',
   activity_pack jsonb not null,
   creator_id uuid references auth.users(id) on delete set null,
   created_at timestamptz not null default timezone('utc', now()),

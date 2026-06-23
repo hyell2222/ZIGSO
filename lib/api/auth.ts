@@ -12,12 +12,17 @@ export async function signInTeacher(email: string, password: string) {
   if (error) throw error;
 }
 
-export async function signUpTeacher(email: string, password: string) {
-  const { error } = await supabase.auth.signUp({ email, password });
+export async function signOutTeacher() {
+  const { error } = await supabase.auth.signOut();
   if (error) throw error;
 }
 
-export async function signOutTeacher() {
-  const { error } = await supabase.auth.signOut();
+export async function signInWithGoogle() {
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: `${window.location.origin}/login`,
+    },
+  });
   if (error) throw error;
 }

@@ -262,7 +262,7 @@ export function PracticeQuestionCard({
               onClick={() => setSelected(ci)}
               className={cn(
                 "flex w-full items-center gap-3 rounded-lg border px-3 py-2 text-left transition",
-                t.playPanelBody,
+                t.bodyMuted,
                 showCorrect
                   ? "border-[var(--primary)] bg-[var(--tint-accent-weak)] text-[var(--primary)]"
                   : showWrong

@@ -79,7 +79,7 @@ The exported app is generated to `/out` with `out/index.html` as the entry file.
 
 ## Core Routes
 
-- `/login/`, `/signup/`: teacher authentication
+- `/login/`: teacher authentication
 - `/activities/`, `/activities/new/`, `/activities/edit/`: activity authoring
 - `/activities/sandbox/`: teacher-only flow preview (`?activity=<activity id>`)
 - `/sessions/`: live session host dashboard (`?session=<session id>`)

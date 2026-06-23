@@ -28,18 +28,9 @@ type Props =
     mode: "edit";
     activityId: string;
     initialPack: ActivityPack;
+    initialTitle: string;
     pageTitle?: string;
   };
-
-function leaveEditor(router: ReturnType<typeof useRouter>) {
-  if (typeof window !== "undefined" && window.opener && !window.opener.closed) {
-    window.opener.postMessage({ type: "ACTIVITY_SAVED" }, "*");
-    window.close();
-    return;
-  }
-
-  router.push(ROUTES.activities);
-}
 
 function compactValidationError(message: string) {
   return message
@@ -71,7 +62,7 @@ export function ActivitySteps(props: Props) {
     if (props.mode === "create") {
       return createDefaultActivityDraft();
     }
-    return packToEditorDraft(props.initialPack);
+    return packToEditorDraft(props.initialPack, props.initialTitle);
   });
 
   const saveMutation = useMutation({
@@ -81,8 +72,7 @@ export function ActivitySteps(props: Props) {
       const activityPack = editorDraftToPack(draft);
 
       const payload = {
-        title: activityPack.title,
-        description: activityPack.description,
+        title: draft.title.trim() || "새 직소 활동",
         activity_pack: activityPack,
       };
 

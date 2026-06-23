@@ -24,7 +24,6 @@ export const ROUTES = {
   },
 
   login: "/login/",
-  signUp: "/signup/",
 
   /** 활동 CRUD · 활동 팩 편집 */
   activities: "/activities/",

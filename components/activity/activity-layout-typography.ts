@@ -18,7 +18,7 @@ export const activityLayoutType = {
 
   /** 학생 play 패널 카드 — B(섹션) · R(본문) · L(메타) */
   playPanelSection: "text-base font-bold text-[var(--foreground)] @md:text-lg",
-  playPanelBody: "text-sm font-normal leading-relaxed text-[var(--muted-foreground)]",
+  playPanelBody: "text-sm font-normal leading-relaxed text-[var(--foreground)]",
   playPanelChip: "text-xs font-normal text-[var(--foreground)]",
   playPanelMessage: "text-sm font-normal",
 

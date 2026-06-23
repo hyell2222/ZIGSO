@@ -8,6 +8,7 @@ import {
 import { activityLayoutType } from "@/components/activity/activity-layout-typography";
 import { LoadingState } from "@/components/ui/loading-state";
 import { formatGroupDisplayName } from "@/lib/activity-pack/engine";
+import { letterLabel } from "@/lib/play/role-codenames";
 import { cn } from "@/lib/utils";
 import type { ActivityPack } from "@/lib/activity-pack/types";
 
@@ -87,7 +88,7 @@ export function SeatingLayout({
       if (role) {
         const member = members.find((m) => m.assignedRoleId === role.id && !placedMemberIds.has(m.id)) || null;
         if (member) placedMemberIds.add(member.id);
-        seats.push({ slotName: role.name, member });
+        seats.push({ slotName: letterLabel(i), member });
       } else {
         seats.push({ slotName: `역할 ${i + 1}`, member: null });
       }

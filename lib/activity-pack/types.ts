@@ -7,7 +7,6 @@
  *   4) 실력 확인하기 — 모든 역할 실전 문제 1회, 향상도로 STAD 개인·집단 점수
  */
 
-export const ACTIVITY_PACK_VERSION = 5 as const;
 
 /** 객관식 문항 — 모든 문제는 객관식 */
 export type QuizQuestion = {
@@ -18,10 +17,6 @@ export type QuizQuestion = {
   choices: string[];
   /** 정답 보기 인덱스 (0-based) */
   correctIndex: number;
-  /** 오답 시 단계별 스캐폴딩 힌트 (연습 문제용) */
-  hints: string[];
-  /** 정답 공개 시 보여줄 해설 */
-  explanation: string;
 };
 
 /**
@@ -39,21 +34,16 @@ export type PracticeQuestionResult = {
 /** 홈 모둠 역할 — 전문가가 마스터하는 지문 조각 + 연습/실전 문제(각 여러 개) */
 export type Role = {
   id: string;
-  /** 표시용 코드명 (정답 노출 방지) */
-  name: string;
   /** 2단계에서 맡아 마스터하는 학습 내용 */
   segment: string;
   /** 2단계 연습 문제 (3회·힌트) → 기준 점수는 문항 점수 평균 */
   practiceQuestions: QuizQuestion[];
-  /** 4단계 실전 문제 (1회만 응시) */
-  testQuestions: QuizQuestion[];
 };
 
 export type ActivityPack = {
-  version: typeof ACTIVITY_PACK_VERSION;
-  title: string;
-  description: string;
   roles: Role[];
+  /** 4단계 실전 문제 (1회만 응시) — 활동 전체에 대한 종합 형성평가 */
+  testQuestions: QuizQuestion[];
 };
 
 /** 형성평가 응답 — 문항 id별 선택한 보기 인덱스 */

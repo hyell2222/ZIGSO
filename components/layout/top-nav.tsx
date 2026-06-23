@@ -16,7 +16,6 @@ import { cn } from "@/lib/utils";
 function showTeacherSubNav(pathname: string) {
   const p = pathname.split("?")[0] ?? "";
   if (p.startsWith("/login")) return false;
-  if (p.startsWith("/signup")) return false;
   if (p.startsWith("/play")) return false;
   if (p.startsWith("/sessions")) return false;
   if (p.startsWith("/activities/new")) return false;

@@ -114,9 +114,8 @@ export function IndividualQuizPanel({
     const newExplanations: Record<string, AiExplanation> = {};
 
     try {
+      const segment = pack.roles.map((r) => r.segment).filter(Boolean).join("\n\n");
       const promises = questions.map(async (q) => {
-        const role = pack.roles.find((r) => r.testQuestions.some((tq) => tq.id === q.id));
-        const segment = role?.segment;
         if (!segment) {
           newExplanations[q.id] = { hint1: "", hint2: "", explanation: "지문을 찾을 수 없어 해설을 생성할 수 없습니다." };
           return;
