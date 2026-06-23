@@ -232,7 +232,7 @@ export function ExpertPhasePanel({
                                 <PlayQuestionExplanation className="border-[var(--primary)]/30 bg-[var(--tint-primary-weak)]">
                                   <span className="font-semibold text-[var(--primary)] flex items-center gap-1.5 mb-1 text-xs">
                                     <Sparkles className="h-3.5 w-3.5" />
-                                    AI 상세 힌트
+                                    AI 힌트
                                   </span>
                                   <span className="block text-[var(--foreground)]">{aiResult.hint2}</span>
                                 </PlayQuestionExplanation>

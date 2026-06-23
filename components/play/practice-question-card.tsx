@@ -174,7 +174,7 @@ export function PracticeQuestionCard({
     if (revealed && !done && busy) {
       const loadAndFinish = async () => {
         const targetWrongChoices = correct ? wrongChoices : [...wrongChoices, selected!];
-        
+
         // Trigger completion synchronously to open score modal immediately
         void finish({
           wrongAttempts: correct ? wrongAttempts : PRACTICE_MAX_ATTEMPTS,
@@ -265,9 +265,9 @@ export function PracticeQuestionCard({
                       ? "border-[var(--primary)] bg-[var(--tint-accent-strong)] text-[var(--primary)] ring-2 ring-[var(--primary)]/30"
                       : "border-[var(--border)] bg-[var(--background)] hover:border-[var(--accent)]",
                 choiceDisabled &&
-                  !showCorrect &&
-                  !showWrong &&
-                  "cursor-default opacity-90",
+                !showCorrect &&
+                !showWrong &&
+                "cursor-default opacity-90",
                 isWrongChoice && !lockAll && "cursor-not-allowed",
               )}
             >
@@ -361,12 +361,21 @@ export function PracticeQuestionCard({
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => setViewedHint2(true)}
+                onClick={() => handleRequestAiHelp("hint2")}
                 disabled={loadingAi}
                 className="w-full gap-1.5 text-xs border-[var(--primary)]/40 text-[var(--primary)] hover:bg-[var(--tint-primary-weak)]"
               >
-                <Sparkles className="h-3.5 w-3.5" />
-                AI 상세 힌트 보기
+                {loadingAi ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    분석 중...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-3.5 w-3.5" />
+                    AI 힌트 보기
+                  </>
+                )}
               </Button>
             )}
           </div>
@@ -386,7 +395,7 @@ export function PracticeQuestionCard({
                 <PlayQuestionExplanation className="border-[var(--primary)]/30 bg-[var(--tint-primary-weak)]">
                   <span className="font-semibold text-[var(--primary)] flex items-center gap-1.5 mb-1 text-xs">
                     <Sparkles className="h-3.5 w-3.5" />
-                    AI 상세 힌트
+                    AI 힌트
                   </span>
                   <span className="block text-[var(--foreground)]">{aiResult.hint2}</span>
                 </PlayQuestionExplanation>
