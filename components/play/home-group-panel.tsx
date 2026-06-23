@@ -398,7 +398,7 @@ export function GroupPhasePanel({
                                 <PlayQuestionExplanation className="border-[var(--primary)]/30 bg-[var(--tint-primary-weak)]">
                                   <span className="font-semibold text-[var(--primary)] flex items-center gap-1.5 mb-1 text-xs">
                                     <Sparkles className="h-3.5 w-3.5" />
-                                    AI 힌트
+                                    힌트 1
                                   </span>
                                   <span className="block text-[var(--foreground)]">{aiResult.hint1}</span>
                                 </PlayQuestionExplanation>
@@ -407,7 +407,7 @@ export function GroupPhasePanel({
                                 <PlayQuestionExplanation className="border-[var(--primary)]/30 bg-[var(--tint-primary-weak)]">
                                   <span className="font-semibold text-[var(--primary)] flex items-center gap-1.5 mb-1 text-xs">
                                     <Sparkles className="h-3.5 w-3.5" />
-                                    AI 힌트
+                                    {result.viewedHint1 ? "힌트 2" : "힌트 1"}
                                   </span>
                                   <span className="block text-[var(--foreground)]">{aiResult.hint2}</span>
                                 </PlayQuestionExplanation>
