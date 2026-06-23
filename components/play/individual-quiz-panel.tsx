@@ -2,6 +2,7 @@
 
 import { Loader2, Sparkles } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 
 import { PlayPhaseShell } from "@/components/play/play-phase-shell";
 import { PlayStudentTopBanner } from "@/components/play/play-student-top-banner";
@@ -158,6 +159,7 @@ export function IndividualQuizPanel({
       setAiExplanations(newExplanations);
     } catch (e) {
       console.error("Failed to fetch AI explanations for quiz:", e);
+      toast.error("AI 해설을 불러오는데 실패했습니다.");
       const fallbackExplanations: Record<string, AiExplanation> = {};
       questions.forEach((q) => {
         fallbackExplanations[q.id] = { hint1: "", hint2: "", explanation: "해설을 불러오는데 실패했습니다." };
@@ -188,7 +190,9 @@ export function IndividualQuizPanel({
       onUpdate?.();
       void fetchAllExplanations(answers);
     } catch (e) {
-      setMessage(e instanceof Error ? e.message : PLAYER_MESSAGES.operationFailed);
+      const errMsg = e instanceof Error ? e.message : PLAYER_MESSAGES.operationFailed;
+      setMessage(errMsg);
+      toast.error(errMsg);
     } finally {
       setBusy(false);
     }

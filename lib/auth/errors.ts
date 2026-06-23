@@ -11,6 +11,10 @@ export function getKoreanAuthErrorMessage(error: unknown): string {
         ? String((error as { message: unknown }).message)
         : String(error);
 
+  if (message.includes("Supabase가 설정되지 않았습니다")) {
+    return message;
+  }
+
   if (message.includes("Invalid login credentials")) {
     return "이메일 또는 비밀번호가 올바르지 않습니다.";
   }

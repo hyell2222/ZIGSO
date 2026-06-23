@@ -386,7 +386,9 @@ export function GroupPhasePanel({
                             <div className="flex flex-wrap items-center gap-x-4 gap-y-0.5 text-[15px] font-medium">
                               <span className="text-[var(--primary)]">정답: {q.choices[q.correctIndex]}</span>
                               {result && result.wrongChoices && result.wrongChoices.length > 0 && (
-                                <span className="text-[var(--danger)]">내가 고른 오답: {result.wrongChoices.map((ci) => q.choices[ci] ?? `보기 ${ci + 1}`).join(", ")}</span>
+                                <span className="text-[var(--danger)]">
+                                  {isMyQuestion ? "내가 고른 오답" : "모둠원이 고른 오답"}: {result.wrongChoices.map((ci) => q.choices[ci] ?? `보기 ${ci + 1}`).join(", ")}
+                                </span>
                               )}
                             </div>
                           </div>

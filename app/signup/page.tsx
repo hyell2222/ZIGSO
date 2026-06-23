@@ -58,7 +58,7 @@ export default function SignUpPage() {
             signUpMutation.mutate({ email, password });
             return Promise.resolve();
           }}
-          isLoading={signUpMutation.isPending || !hasSupabaseEnv}
+          isLoading={signUpMutation.isPending}
           switchHref={ROUTES.login}
           switchPrompt="이미 계정이 있으신가요?"
           switchLabel="로그인"

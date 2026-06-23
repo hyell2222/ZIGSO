@@ -59,7 +59,7 @@ export default function LoginPage() {
             signInMutation.mutate({ email, password });
             return Promise.resolve();
           }}
-          isLoading={signInMutation.isPending || !hasSupabaseEnv}
+          isLoading={signInMutation.isPending}
           switchHref={ROUTES.signUp}
           switchPrompt="계정이 없으신가요?"
           switchLabel="회원가입"

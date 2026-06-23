@@ -2,6 +2,7 @@
 
 import { CheckCircle2, Loader2, Sparkles, XCircle } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
 
 import { activityLayoutType } from "@/components/activity/activity-layout-typography";
 import {
@@ -142,12 +143,17 @@ export function PracticeQuestionCard({
 
   const handleRequestAiHelp = useCallback(async (targetState: "hint1" | "hint2" | "completed") => {
     if (loadingAi || busy) return;
-    if (targetState === "hint1") {
-      setViewedHint1(true);
-    } else if (targetState === "hint2") {
-      setViewedHint2(true);
+    try {
+      await requestAiHelp(targetState, wrongChoices);
+      if (targetState === "hint1") {
+        setViewedHint1(true);
+      } else if (targetState === "hint2") {
+        setViewedHint2(true);
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error("AI 힌트를 불러오는데 실패했습니다. 잠시 후 다시 시도해 주세요.");
     }
-    await requestAiHelp(targetState, wrongChoices);
   }, [loadingAi, busy, requestAiHelp, wrongChoices]);
 
   const outOfAttempts = wrongAttempts >= PRACTICE_MAX_ATTEMPTS;
@@ -187,15 +193,15 @@ export function PracticeQuestionCard({
         });
 
         // Fetch AI explanation in parallel
-        if (!aiResult) {
+        if (fetchedAtState !== "completed") {
           try {
             await requestAiHelp("completed", targetWrongChoices);
           } catch (e) {
             console.error(e);
+            toast.error("AI 해설을 불러오는데 실패했습니다.");
           }
         } else {
-          setFetchedAtState("completed");
-          if (onAiExplanationLoaded) {
+          if (onAiExplanationLoaded && aiResult) {
             onAiExplanationLoaded(question.id, aiResult);
           }
         }
@@ -345,7 +351,7 @@ export function PracticeQuestionCard({
                 {loadingAi ? (
                   <>
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    AI 힌트 분석 중...
+                    분석 중...
                   </>
                 ) : (
                   <>
