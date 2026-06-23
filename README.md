@@ -69,7 +69,7 @@ npm run dev
 
 For **submission** (plain `out/` folder, no server), use `npm run export`. This sets `STATIC_EXPORT=1` so Next.js outputs a static site to `/out`.
 
-**Vercel / any host that should run API routes** (e.g. AI question generation at `/api/ai/generate-role-questions`): use the default `npm run build` **without** `STATIC_EXPORT`. Do not set `STATIC_EXPORT` in the hosting environment.
+**Vercel / any host that should run API routes** (e.g. AI progressive hints at `/api/ai/explain`): use the default `npm run build` **without** `STATIC_EXPORT`. Do not set `STATIC_EXPORT` in the hosting environment.
 
 ```bash
 npm run export
@@ -91,9 +91,9 @@ The exported app is generated to `/out` with `out/index.html` as the entry file.
 
 | Route | Purpose |
 |-------|---------|
-| `POST /api/ai/generate-role-questions` | AI-generated practice or test questions for one learning-content segment |
+| `POST /api/ai/explain` | AI-generated progressive hints and explanation for a practice or test question |
 
-Request body: `segment`, `kind` (`practice` | `test`), optional `activityTitle`, `questionCount`, `contentLanguage` (`ko` | `en`).
+Request body: `passage`, `question`, `choices[]`, `correctIndex`, `wrongChoices[]`.
 
 ## Example activity pack
 

@@ -199,12 +199,12 @@ Jigsaw는 브라우저 기반 웹 애플리케이션으로, 별도 설치 없이
 · UI: React, Tailwind CSS
 · 데이터·인증·실시간: Supabase(PostgreSQL, Auth, Realtime)
 · 상태 관리: TanStack React Query
-· AI(선택): OpenAI API (활동 팩 초안 생성)
+· AI(선택): OpenAI API (오답 분석 및 progressive 힌트 생성)
 
 【운영·서버 환경】
 · 웹 호스팅: Node.js 호스팅(Vercel 등) 또는 정적 export(submission/program 제출용)
 · DB·인증: Supabase 클라우드 프로젝트
-· API: /api/ai/generate-role-questions (서버 런타임)
+· API: /api/ai/explain (서버 런타임)
 
 【최적 해상도·기기】
 · 권장: 1920×1080 이상, 반응형 UI
