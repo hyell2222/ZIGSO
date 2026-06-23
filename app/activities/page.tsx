@@ -172,8 +172,8 @@ export default function ActivitiesPage() {
                       <div
                         className="relative space-y-3 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-4 py-3 text-left shadow-[var(--elevation-sm)] transition hover:border-[color-mix(in_srgb,var(--primary)_35%,var(--border))] hover:shadow-[var(--elevation-md)]"
                       >
-                        <div className="flex justify-between items-center">
-                          <div className="flex flex-col gap-2">
+                        <div className="flex flex-col gap-3 md:flex-row md:justify-between md:items-center w-full">
+                          <div className="flex flex-col gap-1.5 min-w-0 w-full md:w-auto">
                             <p className="min-w-0 flex-1 text-lg font-semibold text-[var(--foreground)]">
                               {row.title ?? "제목 없는 활동"}
                             </p>
@@ -182,7 +182,7 @@ export default function ActivitiesPage() {
                             </p>
                           </div>
 
-                          <div className="flex justify-end gap-2">
+                          <div className="flex flex-wrap items-center justify-start md:justify-end gap-2 w-full md:w-auto shrink-0">
                             <Button
                               type="button"
                               onClick={() => handleStartGame(row)}
@@ -206,7 +206,7 @@ export default function ActivitiesPage() {
                               variant="secondary"
                               onClick={() => handleSandbox(row)}
                               disabled={isDeleting}
-                              className="gap-2"
+                              className="gap-2 hidden md:inline-flex"
                             >
                               시뮬레이션
                             </Button>

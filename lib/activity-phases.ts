@@ -25,19 +25,19 @@ export const PHASE_STEP_DEFS = [
     key: "expert_group" as const,
     number: 1,
     title: ACTIVITY_PHASE_LABELS.expert_group,
-    recommendedMinutes: 12,
+    recommendedMinutes: 10,
   },
   {
     key: "home_group" as const,
     number: 2,
     title: ACTIVITY_PHASE_LABELS.home_group,
-    recommendedMinutes: 15,
+    recommendedMinutes: 20,
   },
   {
     key: "individual_quiz" as const,
     number: 3,
     title: ACTIVITY_PHASE_LABELS.individual_quiz,
-    recommendedMinutes: 10,
+    recommendedMinutes: 5,
   },
 ] as const;
 

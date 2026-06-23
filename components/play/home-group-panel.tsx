@@ -447,7 +447,7 @@ export function GroupPhasePanel({
           <>
             {cards.length > 1 ? (
               <div
-                className="flex gap-2 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                className="relative z-10 touch-pan-x flex gap-2 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                 role="tablist"
                 aria-label="모둠원 파트 선택"
               >
@@ -464,6 +464,7 @@ export function GroupPhasePanel({
                       onClick={() => setActiveMemberId(card.key)}
                       className={cn(
                         playChipClass,
+                        "active:scale-[0.98] transition-transform",
                         isActive
                           ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--on-primary)]"
                           : "border-[var(--border)] bg-[var(--card-bg)] text-[var(--foreground)] hover:border-[color-mix(in_srgb,var(--primary)_35%,var(--border))]",

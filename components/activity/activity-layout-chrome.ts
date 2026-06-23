@@ -105,7 +105,7 @@ export const activityPageBody = cn(
 /** 배너·푸터 사이 full-bleed 스크롤 — 패딩·max-width 없음 (스크롤바는 패널 가장자리) */
 export const activityScrollBodyShell = cn(
   "flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto overscroll-y-contain",
-  "w-full [-webkit-overflow-scrolling:touch]",
+  "w-full [-webkit-overflow-scrolling:touch] touch-pan-y",
 );
 
 export const activityFooterChrome = cn(
