@@ -20,14 +20,26 @@ import { Button } from "@/components/ui/button";
 
 
 
-function formatWhen(iso: string | null) {
+function formatWhen(iso: string | null | undefined) {
   if (!iso) return "—";
   try {
-    return new Date(iso).toLocaleString("ko-KR", { dateStyle: "short", timeStyle: "short" });
-  } catch {
+    const d = new Date(iso);
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+
+    let hours = d.getHours();
+    const minutes = String(d.getMinutes()).padStart(2, "0");
+    const ampm = hours >= 12 ? "오후" : "오전";
+    hours = hours % 12;
+    hours = hours ? hours : 12; // 0 should be 12
+
+    return `${yyyy}.${mm}.${dd}. ${ampm} ${hours}:${minutes}`;
+  } catch (e) {
     return "—";
   }
 }
+
 
 
 
@@ -107,10 +119,10 @@ function ReportsSessionsListPanel({ teacherUserId }: { teacherUserId: string }) 
             >
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                 <div className="min-w-0 flex-1 space-y-1">
-                  <p className="font-medium text-[var(--foreground)]">{title}</p>
-                  <p className="text-xs text-[var(--muted-foreground)]">
+                  <p className="text-lg font-semibold text-[var(--foreground)]">{title}</p>
+                  <p className="text-xs text-[var(--muted-foreground)] flex">
                     <span className="font-mono text-[var(--accent)]">{row.join_code}</span>
-                    {" · "}
+                    <span className="mx-2">|</span>
                     {formatWhen(row.created_at)}
                   </p>
                 </div>

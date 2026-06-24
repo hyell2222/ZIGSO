@@ -185,7 +185,7 @@ export default function ActivitiesPage() {
                   return (
                     <div key={row.id}>
                       <div
-                        className="relative space-y-3 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-4 py-3 text-left shadow-[var(--elevation-sm)] transition hover:border-[color-mix(in_srgb,var(--primary)_35%,var(--border))] hover:shadow-[var(--elevation-md)]"
+                        className="relative space-y-3 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4 text-left shadow-[var(--elevation-sm)] transition hover:border-[color-mix(in_srgb,var(--primary)_35%,var(--border))] hover:shadow-[var(--elevation-md)]"
                       >
                         <div className="flex flex-col gap-3 md:flex-row md:justify-between md:items-center w-full">
                           <div className="flex flex-col gap-1.5 min-w-0 w-full md:w-auto">
@@ -194,13 +194,14 @@ export default function ActivitiesPage() {
                             </p>
                             <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                               <p className="text-xs text-[var(--muted-foreground)]">
-                                모둠 당 최소 필요 인원 : {row.activity_pack?.roles?.length ?? "—"}명
+                                모둠 당 최소 필요 인원 : <span className="font-mono text-[var(--accent)] font-semibold">{row.activity_pack?.roles?.length ?? "—"}</span>명
+                                {row.created_at && (
+                                  <>
+                                    {" · "}
+                                    {formatDate(row.created_at)}
+                                  </>
+                                )}
                               </p>
-                              {row.created_at && (
-                                <p className="text-[12px] text-[var(--muted-foreground)] bg-[var(--tint-primary-weak)] border border-[var(--primary)]/10 px-1.5 py-0.5 rounded">
-                                  {formatDate(row.created_at)}
-                                </p>
-                              )}
                             </div>
                           </div>
 

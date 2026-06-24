@@ -107,7 +107,7 @@ function ReportsSessionsListPanel({ teacherUserId }: { teacherUserId: string }) 
             >
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                 <div className="min-w-0 flex-1 space-y-1">
-                  <p className="font-medium text-[var(--foreground)]">{title}</p>
+                  <p className="text-lg font-semibold text-[var(--foreground)]">{title}</p>
                   <p className="text-xs text-[var(--muted-foreground)]">
                     <span className="font-mono text-[var(--accent)]">{row.join_code}</span>
                     {" · "}
