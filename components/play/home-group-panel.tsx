@@ -170,7 +170,7 @@ export function GroupPhasePanel({
         const role = pack.roles.find((r) => r.practiceQuestions.some((pq) => pq.id === q.id));
         const segment = role?.segment;
         if (!segment) {
-          newExplanations[q.id] = { hint1: "", hint2: "", explanation: "지문을 찾을 수 없어 해설을 생성할 수 없습니다." };
+          newExplanations[q.id] = { hint1: "", hint2: "", explanation: "내용을 찾을 수 없어 해설을 생성할 수 없습니다." };
           return;
         }
 

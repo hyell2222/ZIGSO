@@ -7,9 +7,9 @@ import { cn } from "@/lib/utils";
 
 const t = activityLayoutType;
 
-/** 학습 지문 — 에디터 입력(앞띄어쓰기·줄바꿈) 그대로 표시 */
+/** 학습 내용 — 에디터 입력(앞띄어쓰기·줄바꿈) 그대로 표시 */
 export const playSegmentTextClass = cn(
-  "whitespace-pre-wrap rounded-xl border border-[var(--border)] bg-[var(--card-bg)] p-4 leading-relaxed @md:p-5",
+  "whitespace-pre-wrap rounded-xl border border-[var(--border)] bg-[var(--card-bg)] p-4 @md:p-5",
   t.playPanelBody,
 );
 

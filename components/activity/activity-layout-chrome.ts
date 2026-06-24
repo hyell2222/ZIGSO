@@ -134,7 +134,7 @@ export const activityEditorHeaderBg =
 
 export const activityEditorPanelBg = "bg-[var(--card-bg)]";
 
-/** 지문 카드 — primary 계열 */
+/** 내용 카드 — primary 계열 */
 export const activityEditorSegmentPanelBg =
   "bg-[color-mix(in_srgb,var(--tint-primary-weak)_42%,var(--card-bg))]";
 
@@ -172,7 +172,7 @@ export const playPhaseSectionBody = "px-4 py-4 @md:px-5 @md:py-4";
 /** 섹션 카드 세로 스택 (3단계 등) */
 export const playPhasePanelStack = "flex flex-col gap-4";
 
-/** 2단계 — 지문·연습 문제 좌우 2열 (좁은 화면은 세로 스택) */
+/** 2단계 — 내용·연습 문제 좌우 2열 (좁은 화면은 세로 스택) */
 export const playPhaseDualSectionGrid =
   "grid w-full grid-cols-1 items-start gap-4 @md:grid-cols-2 @md:gap-5";
 

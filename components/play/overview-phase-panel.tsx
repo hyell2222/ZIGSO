@@ -56,7 +56,7 @@ export function OverviewPhasePanel({ groupName, roleLabel, pending }: Props) {
           </div>
 
           <div className="mt-8 max-w-md mx-auto px-4 text-center animate-fade-in">
-            <p className="mt-2 text-xs sm:text-sm text-[var(--muted-foreground)] leading-relaxed font-medium">
+            <p className="mt-2 text-xs sm:text-sm text-[var(--muted-foreground)] font-medium break-keep">
               본인의 모둠과 역할을 확인한 후,<br className="hidden sm:inline" />
               배정된 모둠 자리로 이동하여 모둠원들과 함께 앉아주세요.
             </p>

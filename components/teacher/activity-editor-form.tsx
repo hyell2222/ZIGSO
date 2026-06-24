@@ -650,7 +650,7 @@ export function ActivityEditorForm({ draft, onChange }: Props) {
                               })
                             }
                             placeholder="학습 내용을 입력하세요."
-                            aria-label="학습 지문"
+                            aria-label="학습 내용"
                             rows={10}
                             className={cn(
                               activityEditorSegmentFieldClass,
@@ -746,7 +746,7 @@ export function ActivityEditorForm({ draft, onChange }: Props) {
                         <h4 className="text-xs font-bold text-[var(--primary)] mb-2">
                           {label}
                         </h4>
-                        <p className="whitespace-pre-wrap text-sm leading-relaxed text-[var(--foreground)] bg-[var(--surface-overlay)] p-3 rounded-md border border-[var(--border)]">
+                        <p className="whitespace-pre-wrap text-sm text-[var(--foreground)] bg-[var(--surface-overlay)] p-3 rounded-md border border-[var(--border)]">
                           {role.segment.trim() || "(입력된 내용이 없습니다)"}
                         </p>
                       </div>

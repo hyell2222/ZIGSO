@@ -39,7 +39,7 @@ export function getTestQuestions(pack: ActivityPack): QuizQuestion[] {
   return pack.testQuestions ?? [];
 }
 
-/** 실전 문제 — 역할별 지문 + 문항 묶음 (지문 UI 호환용) */
+/** 실전 문제 — 역할별 내용 + 문항 묶음 (내용 UI 호환용) */
 export type TestQuestionRoleSection = {
   roleId: string;
   segment: string;

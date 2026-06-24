@@ -3,26 +3,17 @@
 import { createPortal } from "react-dom";
 import type { ReactNode } from "react";
 
-import { activityLayoutType } from "@/components/activity/activity-layout-typography";
 import { useGuideModalScope } from "@/components/play/guide-modal-scope";
 import { Modal } from "@/components/ui/modal";
 import { Z } from "@/lib/ui/z-index";
-import { cn } from "@/lib/utils";
 
 /** 점수·단계 안내 모달 공통 너비 */
 export const GUIDE_INFO_MODAL_MAX_WIDTH = "w-full max-w-[min(100%,24rem)]";
 
 /** 안내 모달 본문 타이포 — 모든 ? 안내에 동일 적용 */
-export const guideInfoModalBodyClass = activityLayoutType.playPanelBody;
+export const guideInfoModalBodyClass = "text-sm font-medium text-[var(--muted-foreground)] break-keep";
 
-export const guideInfoModalParagraphClass = cn("mb-3 last:mb-0", guideInfoModalBodyClass);
-
-export const guideInfoModalListClass = cn(
-  "list-disc space-y-2 pl-4",
-  guideInfoModalBodyClass,
-);
-
-const GUIDE_INFO_MODAL_CONTENT_CLASS = "px-5 py-4";
+const GUIDE_INFO_MODAL_CONTENT_CLASS = "space-y-4 px-5 py-4";
 
 type Props = {
   open: boolean;

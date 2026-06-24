@@ -62,14 +62,6 @@ export function ResultsPhasePanel({
   return (
     <PlayPhaseShell
       mainClassName="flex min-h-0 flex-col"
-      topBanner={
-        <PlayStudentTopBanner
-          phase="results"
-          groupName={groupName ?? snapshot?.groupName ?? null}
-          placeName={roleLabel ?? "—"}
-          placeLabel="역할"
-        />
-      }
       overlay={
         <>
           <BaseScoreGuideModal

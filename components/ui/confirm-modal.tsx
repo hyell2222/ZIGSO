@@ -69,7 +69,7 @@ export function ConfirmModal({
           {title}
         </h2>
 
-        <div className="mt-2 space-y-1.5 text-sm leading-relaxed text-[var(--muted-foreground)] [&>p:first-child]:text-[var(--foreground)]">
+        <div className="mt-2 space-y-1.5 text-sm text-[var(--muted-foreground)] [&>p:first-child]:text-[var(--foreground)]">
           {children}
         </div>
 

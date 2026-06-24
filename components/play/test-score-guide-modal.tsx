@@ -3,7 +3,7 @@
 import { ScoreGuideHelpButton } from "@/components/play/score-guide-help-button";
 import {
   GuideInfoModal,
-  guideInfoModalParagraphClass,
+  guideInfoModalBodyClass,
 } from "@/components/play/guide-info-modal";
 
 const titleId = "test-score-guide-modal";
@@ -19,11 +19,11 @@ export function TestScoreGuideModal({ open, onClose }: ModalProps) {
     <GuideInfoModal
       open={open}
       onClose={onClose}
-      title="실전 점수 안내"
+      title="실전 점수란?"
       titleId={titleId}
     >
-      <p className={guideInfoModalParagraphClass}>
-        4단계에서 치른 <strong>실전 문제의 정답률(%)</strong>입니다. 모둠원들이 설명해 준 모든 파트의 문제가 골고루 평가되며, 이 실전 점수와 기준 점수를 비교하여 최종 STAD 향상 점수(0~30점)가 결정됩니다.
+      <p className={guideInfoModalBodyClass}>
+        '실전 문제'의 문항별 점수 평균입니다. '기준 점수'와 비교해 '향상 점수'를 계산하는 데 사용됩니다.
       </p>
     </GuideInfoModal>
   );

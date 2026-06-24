@@ -100,7 +100,7 @@ export function PracticeQuestionCard({
   ) => {
     if (!segment) {
       if (targetState === "completed" && onAiExplanationLoaded) {
-        onAiExplanationLoaded(question.id, { hint1: "", hint2: "", explanation: "지문을 찾을 수 없어 해설을 생성할 수 없습니다." });
+        onAiExplanationLoaded(question.id, { hint1: "", hint2: "", explanation: "내용을 찾을 수 없어 해설을 생성할 수 없습니다." });
       }
       return;
     }

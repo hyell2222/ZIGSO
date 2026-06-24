@@ -9,7 +9,7 @@ export default function NotFound() {
       <p className="font-mono text-6xl font-bold tabular-nums text-[var(--accent)] md:text-5xl">404</p>
       <div className="space-y-2">
         <h1 className="text-xl font-semibold text-[var(--foreground)]">페이지를 찾을 수 없습니다</h1>
-        <p className="text-sm leading-relaxed text-[var(--muted-foreground)]">
+        <p className="text-sm text-[var(--muted-foreground)]">
           주소가 바뀌었거나 삭제된 페이지입니다. 입력한 URL을 다시 확인해 주세요.
         </p>
       </div>

@@ -32,11 +32,12 @@ export const PRACTICE_SCORE_TABLE = Array.from({ length: PRACTICE_MAX_ATTEMPTS +
   points: practiceBaseScore(wrong),
 }));
 
-/** STAD 향상 점수표 행 — 실전 점수 − 기준 점수(%) 차이 기준 */
+/** STAD 향상 점수표 행 — 실전 점수 - 기준 점수(%) 차이 기준 */
 export const STAD_IMPROVEMENT_TABLE = [
   { condition: "연습·실전 모두 100점", points: 30 },
-  { condition: "−11 이하", points: 5 },
-  { condition: "−10 ~ −1", points: 10 },
-  { condition: "0 ~ +10", points: 20 },
   { condition: "+11 이상", points: 30 },
+  { condition: "0 ~ +10", points: 20 },
+  { condition: "-10 ~ -1", points: 10 },
+  { condition: "-11 이하", points: 5 },
+  { condition: "연습·실전 모두 0점", points: 0 },
 ] as const;

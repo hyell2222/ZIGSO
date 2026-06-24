@@ -11,7 +11,7 @@ export function StadImprovementTable({ className }: { className?: string }) {
         <thead>
           <tr className="border-b border-[var(--border)]">
             <th scope="col" className="py-1.5 pr-2 font-medium text-[var(--foreground)]">
-              실전 − 기준
+              실전 - 기준
             </th>
             <th
               scope="col"

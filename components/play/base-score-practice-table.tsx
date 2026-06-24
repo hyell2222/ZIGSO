@@ -25,7 +25,7 @@ export function BaseScorePracticeTable({ className }: { className?: string }) {
           {PRACTICE_SCORE_TABLE.map((row) => (
             <tr key={row.wrongAttempts} className="border-b border-[var(--border)]/70 last:border-0">
               <td className="py-1.5 pr-2 text-[var(--muted-foreground)]">
-                {row.wrongAttempts === 0 ? "0회 (만점)" : `${row.wrongAttempts}회`}
+                {row.wrongAttempts === 0 ? "0회" : `${row.wrongAttempts}회`}
               </td>
               <td className="py-1.5 pl-2 text-right font-semibold tabular-nums text-[var(--foreground)]">
                 {row.points}점

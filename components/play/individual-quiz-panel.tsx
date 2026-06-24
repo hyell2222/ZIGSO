@@ -117,7 +117,7 @@ export function IndividualQuizPanel({
       const segment = pack.roles.map((r) => r.segment).filter(Boolean).join("\n\n");
       const promises = questions.map(async (q) => {
         if (!segment) {
-          newExplanations[q.id] = { hint1: "", hint2: "", explanation: "지문을 찾을 수 없어 해설을 생성할 수 없습니다." };
+          newExplanations[q.id] = { hint1: "", hint2: "", explanation: "내용을 찾을 수 없어 해설을 생성할 수 없습니다." };
           return;
         }
 
@@ -300,14 +300,14 @@ export function IndividualQuizPanel({
         <div className="grid items-start gap-4 lg:grid-cols-2">
           {/* Left Column: Combined passages */}
           <div className="lg:sticky lg:top-4">
-            <PlayPhaseSection title="학습 지문" variant="active" className="min-h-0">
-              <div className="space-y-6 rounded-xl border border-[var(--border)] bg-[var(--card-bg)] p-4 leading-relaxed @md:p-5">
+            <PlayPhaseSection title="학습 내용" variant="active" className="min-h-0">
+              <div className="space-y-6 rounded-xl border border-[var(--border)] bg-[var(--card-bg)] p-4 @md:p-5">
                 {testSections.map((section, sectionIndex) => {
                   const sectionLabel = codenameForRole(roleScopeKey, section.roleId, roleIds);
                   return (
                     <div key={section.roleId} className={cn(sectionIndex > 0 && "border-t border-[var(--border)] pt-6")}>
                       <h4 className="text-sm font-semibold mb-2 text-[var(--primary)]">{sectionLabel}</h4>
-                      <p className="whitespace-pre-wrap text-sm leading-relaxed text-[var(--foreground)]">{section.segment}</p>
+                      <p className="whitespace-pre-wrap text-sm text-[var(--foreground)]">{section.segment}</p>
                     </div>
                   );
                 })}

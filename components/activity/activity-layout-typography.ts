@@ -18,13 +18,13 @@ export const activityLayoutType = {
 
   /** 학생 play 패널 카드 — B(섹션) · R(본문) · L(메타) */
   playPanelSection: "text-base font-bold text-[var(--foreground)] @md:text-lg",
-  playPanelBody: "text-sm font-normal leading-relaxed text-[var(--foreground)]",
+  playPanelBody: "text-sm font-normal text-[var(--foreground)]",
   playPanelChip: "text-xs font-normal text-[var(--foreground)]",
   playPanelMessage: "text-sm font-normal",
 
   listRowPrimary: "text-xs font-normal text-[var(--foreground)] @md:text-sm",
   listRowSecondary: "shrink-0 text-xs font-light text-[var(--muted-foreground)]",
 
-  bodyMuted: "text-sm font-normal leading-relaxed text-[var(--muted-foreground)]",
+  bodyMuted: "text-sm font-normal text-[var(--muted-foreground)]",
   caption: "text-xs font-light text-[var(--muted-foreground)]",
 } as const;

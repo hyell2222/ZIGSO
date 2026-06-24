@@ -40,7 +40,7 @@ export function PageHeader({
             {title}
           </Heading>
           {description ? (
-            <div className="pt-0.5 text-base font-normal leading-relaxed text-[var(--muted-foreground)]">{description}</div>
+            <div className="pt-0.5 text-base font-normal text-[var(--muted-foreground)]">{description}</div>
           ) : null}
         </div>
         {actions ? (

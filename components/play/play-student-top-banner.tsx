@@ -7,15 +7,13 @@ import {
 import { activityLayoutType } from "@/components/activity/activity-layout-typography";
 import { PlayHeaderGroupPlace } from "@/components/play/play-header-group-place";
 import {
-  ACTIVITY_PHASE_LABELS,
   getPhaseStepDef,
   getPhaseStepGuide,
-  TEACHER_RESULTS_STEP,
-  type TimedPhaseKey,
+  type PhaseGuideKey,
 } from "@/lib/activity-phases";
 import { cn } from "@/lib/utils";
 
-type PlayBannerPhase = TimedPhaseKey | "results";
+type PlayBannerPhase = PhaseGuideKey;
 
 type Props = {
   phase: PlayBannerPhase;
@@ -39,10 +37,7 @@ export function PlayStudentTopBanner({
   completeMessage,
   className,
 }: Props) {
-  const step =
-    phase === "results"
-      ? { number: TEACHER_RESULTS_STEP.number, title: ACTIVITY_PHASE_LABELS.results }
-      : getPhaseStepDef(phase);
+  const step = getPhaseStepDef(phase);
   const hasStatus = Boolean(completeTitle);
   const guide = getPhaseStepGuide(phase);
 
@@ -67,8 +62,7 @@ export function PlayStudentTopBanner({
               {step.title}
             </p>
           </div>
-          {/* 가이드 설명글을 step 타이틀 아래에 한두 줄 텍스트로 항시 노출 */}
-          <p className="text-[14px] leading-relaxed text-[var(--muted-foreground)] font-medium max-w-xl">
+          <p className="text-[16px] font-light text-[var(--muted-foreground)] max-w-xl whitespace-pre-line break-keep">
             {guide.intro}
           </p>
         </div>

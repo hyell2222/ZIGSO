@@ -14,7 +14,7 @@ import { ActivityPhaseStepper } from "@/components/activity/activity-phase-stepp
 import { PlayJoinQr } from "@/components/teacher/play-join-qr";
 import { Button } from "@/components/ui/button";
 import type { ActivityPhase } from "@/lib/api/activities";
-import { isTimedPhase, RESULTS_COPY, type TimedPhaseKey } from "@/lib/activity-phases";
+import { isTimedPhase, RESULTS_COPY, type TimedPhaseKey, type PhaseGuideKey } from "@/lib/activity-phases";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -192,7 +192,7 @@ export function SessionHostLayout({
       </header>
 
       {showPhaseGuide ? (
-        <ActivityPhaseStepper currentPhase={phase as TimedPhaseKey} className="shrink-0" />
+        <ActivityPhaseStepper currentPhase={phase as PhaseGuideKey} className="shrink-0" />
       ) : null}
 
       <div className={activityScrollBodyShell}>

@@ -4,14 +4,12 @@ import { Check } from "lucide-react";
 
 import {
   PHASE_STEP_DEFS,
-  TIMED_PHASE_ORDER,
-  type TimedPhaseKey,
-  getPhaseStepGuide,
+  type PhaseGuideKey
 } from "@/lib/activity-phases";
 import { cn } from "@/lib/utils";
 
 type Props = {
-  currentPhase: TimedPhaseKey;
+  currentPhase: PhaseGuideKey;
   className?: string;
 };
 
@@ -78,7 +76,6 @@ function StepChip({
 export function ActivityPhaseStepper({ currentPhase, className }: Props) {
   const currentIndex = PHASE_STEP_DEFS.findIndex((s) => s.key === currentPhase);
   const currentStep = currentIndex !== -1 ? PHASE_STEP_DEFS[currentIndex] : PHASE_STEP_DEFS[0];
-  const guide = getPhaseStepGuide(currentPhase);
 
   return (
     <nav

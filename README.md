@@ -43,10 +43,10 @@ Each `QuizQuestion` is `{ id, prompt, choices[], correctIndex, hints?, explanati
 
 ### Play flow (STAD)
 
-1. **Expert group** — Master the segment, then solve **all practice questions** for the role (each: up to 3 attempts, hints, reveal). Per-question score = `100 / 70 / 40 / 10` (−30 per wrong). **Base score** = rounded average of those scores.
+1. **Expert group** — Master the segment, then solve **all practice questions** for the role (each: up to 3 attempts, hints, reveal). Per-question score = `100 / 70 / 40 / 10` (-30 per wrong). **Base score** = rounded average of those scores.
 2. **Home group** — Explain to teammates; view **every member's segment and all practice questions** (with answers). Read-only, teacher-paced.
 3. **Individual formative test** — Answer **all test questions** from every role **once** (no retries). **Test score** = `round(correct ÷ total × 100)`.
-4. **Results (STAD)** — Improvement points from `diff = testScore − baseScore`. **Team score** = average of members' improvement points.
+4. **Results (STAD)** — Improvement points from `diff = testScore - baseScore`. **Team score** = average of members' improvement points.
 
 ## Run Locally
 
@@ -97,7 +97,7 @@ Request body: `passage`, `question`, `choices[]`, `correctIndex`, `wrongChoices[
 
 ## Example activity pack
 
-See [`lib/activity-pack/sample-pack.json`](lib/activity-pack/sample-pack.json) for the **별과 우주** sample `activity_pack` (v5, 역할별 무관한 주제·긴 지문).
+See [`lib/activity-pack/sample-pack.json`](lib/activity-pack/sample-pack.json) for the **별과 우주** sample `activity_pack` (v5, 역할별 무관한 주제·긴 내용).
 
 ## Submission Folder Support
 

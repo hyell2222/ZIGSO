@@ -4,7 +4,7 @@ import { StadImprovementTable } from "@/components/play/stad-improvement-table";
 import { ScoreGuideHelpButton } from "@/components/play/score-guide-help-button";
 import {
   GuideInfoModal,
-  guideInfoModalParagraphClass,
+  guideInfoModalBodyClass,
 } from "@/components/play/guide-info-modal";
 
 const titleId = "stad-improvement-modal";
@@ -20,11 +20,11 @@ export function StadImprovementModal({ open, onClose }: ModalProps) {
     <GuideInfoModal
       open={open}
       onClose={onClose}
-      title="STAD 향상 점수 안내"
+      title="향상 점수란?"
       titleId={titleId}
     >
-      <p className={guideInfoModalParagraphClass}>
-        <strong>'실전 점수 − 기준 점수'</strong>의 성장에 따라 부여되는 점수(0~30점)입니다. 이전보다 실력이 향상되면 누구나 만점(30점)을 획득하여 모둠에 기여할 수 있으며, 모둠원들의 향상 점수 평균이 모둠 최종 성적이 됩니다.
+      <p className={guideInfoModalBodyClass}>
+        '실전 점수'와 '기준 점수'의 차이에 따라 부여되는 점수입니다. 모둠원들의 '향상 점수' 평균이 모둠의 최종 성적이 됩니다.
       </p>
       <StadImprovementTable />
     </GuideInfoModal>
