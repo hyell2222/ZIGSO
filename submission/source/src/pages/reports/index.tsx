@@ -1,0 +1,227 @@
+"use client";
+
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Suspense, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+
+import { deleteSession, listHostSessions, type HostSessionListRow } from "@/lib/api/activities";
+import { useRequireTeacherSession } from "@/lib/auth/use-require-teacher-session";
+import {
+  SessionStudentReportList,
+} from "@/components/teacher/session-student-reports";
+import { ConfirmModal } from "@/components/ui/confirm-modal";
+import { KebabMenu } from "@/components/ui/kebab-menu";
+import { PageHeader } from "@/components/layout/page-header";
+import { TopNav } from "@/components/layout/top-nav";
+import { LoadingState } from "@/components/ui/loading-state";
+import { ROUTES } from "@/lib/routes";
+import { useSessionReportData } from "@/lib/teacher/use-session-report-data";
+import { Button } from "@/components/ui/button";
+
+
+
+function formatWhen(iso: string | null) {
+  if (!iso) return "—";
+  try {
+    return new Date(iso).toLocaleString("ko-KR", { dateStyle: "short", timeStyle: "short" });
+  } catch {
+    return "—";
+  }
+}
+
+
+
+function SessionReportHeader({
+  title,
+  joinCode,
+  createdAt,
+  studentCount,
+  teamCount,
+}: {
+  title: string;
+  joinCode: string;
+  createdAt: string | null;
+  studentCount: number;
+  teamCount: number;
+}) {
+  return (
+    <div>
+      <h2 className="font-mono text-2xl font-semibold text-[var(--accent)]">{title}</h2>
+      <p className="text-sm text-[var(--muted-foreground)]">
+        코드 {joinCode} · {formatWhen(createdAt)} · 학생 {studentCount}명 · 모둠 {teamCount}개
+      </p>
+    </div>
+  );
+}
+
+function ReportsSessionsListPanel({ teacherUserId }: { teacherUserId: string }) {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [pendingDeleteRow, setPendingDeleteRow] = useState<HostSessionListRow | null>(null);
+
+  const listQuery = useQuery({
+    queryKey: ["host-sessions", teacherUserId],
+    queryFn: () => listHostSessions(teacherUserId),
+    enabled: Boolean(teacherUserId),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => deleteSession(id),
+    onSuccess: async (_: unknown, id: string) => {
+      await queryClient.invalidateQueries({ queryKey: ["host-sessions"] });
+      await queryClient.removeQueries({ queryKey: ["host-session", id] });
+    },
+    onError: (e: Error) => window.alert(e.message),
+  });
+
+  const handleDelete = (row: HostSessionListRow) => {
+    setPendingDeleteRow(row);
+  };
+
+  const pendingDeleteTitle =
+    pendingDeleteRow?.activities?.title?.trim() || "제목 없는 활동";
+
+  return (
+    <>
+      <ConfirmModal
+        open={pendingDeleteRow !== null}
+        title="활동 기록 삭제"
+        onClose={() => setPendingDeleteRow(null)}
+        onConfirm={() => {
+          if (!pendingDeleteRow) return;
+          deleteMutation.mutate(pendingDeleteRow.id);
+          setPendingDeleteRow(null);
+        }}
+      >
+        <p>「{pendingDeleteTitle}」 활동 기록을 삭제할까요?</p>
+        <p>모둠·참가 데이터가 삭제되며 되돌릴 수 없습니다. 활동 원본은 유지됩니다.</p>
+      </ConfirmModal>
+
+      <ul className="space-y-3">
+        {listQuery.data?.map((row: HostSessionListRow) => {
+          const title = row.activities?.title?.trim() || "제목 없는 활동";
+          return (
+            <li
+              key={row.id}
+              className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4 shadow-sm"
+            >
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <div className="min-w-0 flex-1 space-y-1">
+                  <p className="font-medium text-[var(--foreground)]">{title}</p>
+                  <p className="text-xs text-[var(--muted-foreground)]">
+                    <span className="font-mono text-[var(--accent)]">{row.join_code}</span>
+                    {" · "}
+                    {formatWhen(row.created_at)}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1 sm:ml-auto">
+                  <Button
+                    type="button"
+                    onClick={() => navigate(ROUTES.reportsForSession(row.id))}
+                  >
+                    리포트 보기
+                  </Button>
+                  <KebabMenu onDelete={() => handleDelete(row)} />
+                </div>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </>
+  );
+}
+
+function ReportsSessionOverviewPanel({
+  sessionId,
+  teacherUserId,
+}: {
+  sessionId: string;
+  teacherUserId: string;
+}) {
+  const report = useSessionReportData(sessionId);
+
+  if (report.sessionQuery.isLoading) {
+    return <LoadingState variant="section" label="불러오는 중…" className="min-h-[min(32rem,55dvh)]" />;
+  }
+
+  if (report.sessionQuery.isError || !report.sessionQuery.data) {
+    return <p className="text-sm text-[var(--danger)]">활동 기록을 불러오지 못했습니다.</p>;
+  }
+
+  if (report.sessionQuery.data.host_id !== teacherUserId) {
+    return <p className="text-sm text-[var(--accent)]">이 활동 기록을 볼 권한이 없습니다.</p>;
+  }
+
+  const session = report.sessionQuery.data;
+
+  return (
+    <div className="space-y-6">
+
+      <SessionReportHeader
+        title={session.activities?.title ?? "세션"}
+        joinCode={session.join_code}
+        createdAt={session.created_at ?? null}
+        studentCount={report.players.length}
+        teamCount={report.groupRows.length}
+      />
+
+      <SessionStudentReportList
+        students={report.studentRows}
+        loading={report.dataLoading}
+      />
+    </div>
+  );
+}
+
+function ReportsPageInner() {
+  const [searchParams] = useSearchParams();
+  const sessionId = searchParams.get("session")?.trim() ?? "";
+  const teacherSession = useRequireTeacherSession();
+  const teacherUserId = teacherSession.data?.user.id ?? "";
+
+  const listQuery = useQuery({
+    queryKey: ["host-sessions", teacherUserId],
+    queryFn: () => listHostSessions(teacherUserId),
+    enabled: Boolean(teacherUserId) && !sessionId,
+  });
+
+  return (
+    <div className="min-h-screen">
+      <TopNav />
+      <main className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8">
+        <PageHeader title="활동 기록" />
+        {sessionId ? (
+          <ReportsSessionOverviewPanel sessionId={sessionId} teacherUserId={teacherUserId} />
+        ) : listQuery.isLoading ? (
+          <LoadingState variant="section" label="불러오는 중…" />
+        ) : (listQuery.data?.length ?? 0) === 0 ? (
+          <p className="rounded-lg border border-dashed border-[var(--border)] px-4 py-8 text-center text-sm text-[var(--muted-foreground)]">
+            아직 진행한 활동이 없습니다.{" "}
+            <Link className="underline text-[var(--accent)]" to={ROUTES.activities}>
+              내 활동
+            </Link>
+            에서 활동을 시작해 주세요.
+          </p>
+        ) : (
+          <ReportsSessionsListPanel teacherUserId={teacherUserId} />
+        )}
+      </main>
+    </div>
+  );
+}
+
+export default function ReportsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="app-page">
+          <TopNav />
+          <LoadingState variant="page" className="min-h-0 flex-1" />
+        </div>
+      }
+    >
+      <ReportsPageInner />
+    </Suspense>
+  );
+}
