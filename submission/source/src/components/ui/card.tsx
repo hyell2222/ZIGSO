@@ -1,0 +1,40 @@
+import { HTMLAttributes } from "react";
+
+import { cn } from "@/lib/utils";
+
+export function Card({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div
+      className={cn(
+        "overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--card-bg)] text-[var(--foreground)] shadow-[var(--elevation-sm)]",
+        className,
+      )}
+      {...props}
+    />
+  );
+}
+
+export function CardHeader({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div
+      className={cn(
+        "border-b border-[var(--border)] bg-[color-mix(in_srgb,var(--tint-primary-weak)_55%,var(--surface))] px-5 py-4",
+        className,
+      )}
+      {...props}
+    />
+  );
+}
+
+export function CardTitle({ className, ...props }: HTMLAttributes<HTMLHeadingElement>) {
+  return (
+    <h3
+      className={cn("text-lg font-semibold tracking-wide text-[var(--primary)]", className)}
+      {...props}
+    />
+  );
+}
+
+export function CardContent({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
+  return <div className={cn("px-5 py-4", className)} {...props} />;
+}

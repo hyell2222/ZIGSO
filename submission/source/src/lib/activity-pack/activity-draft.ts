@@ -1,0 +1,221 @@
+import {
+  CHOICE_LABELS,
+  MIN_CHOICES_PER_QUESTION,
+  MIN_QUESTIONS_PER_ROLE,
+  MIN_ROLES_PER_GROUP,
+  MAX_ROLES_PER_GROUP,
+} from "@/lib/activity-pack/validate";
+import type { ActivityPack, QuizQuestion, Role } from "@/lib/activity-pack/types";
+import { codenameForRole } from "@/lib/play/role-codenames";
+
+export {
+  CHOICE_LABELS,
+  MAX_CHOICES_PER_QUESTION,
+  MIN_CHOICES_PER_QUESTION,
+  MIN_QUESTIONS_PER_ROLE,
+  MIN_ROLES_PER_GROUP,
+  MAX_ROLES_PER_GROUP,
+} from "@/lib/activity-pack/validate";
+
+export function normalizePackSizing(pack: ActivityPack): ActivityPack {
+  return pack;
+}
+
+function makeTempId(): string {
+  return Math.random().toString(36).slice(2, 10);
+}
+
+export const DEFAULT_CHOICE_COUNT = 4;
+
+export type EditorQuestion = {
+  localId: string;
+  id: string;
+  prompt: string;
+  choices: string[];
+  correctIndex: number;
+};
+
+export type EditorRole = {
+  localId: string;
+  id: string;
+  segment: string;
+  practiceQuestions: EditorQuestion[];
+};
+
+export type ActivityEditorDraft = {
+  title: string;
+  roles: EditorRole[];
+  testQuestions: EditorQuestion[];
+};
+
+export function createEmptyQuestion(choiceCount = DEFAULT_CHOICE_COUNT): EditorQuestion {
+  return {
+    localId: makeTempId(),
+    id: "",
+    prompt: "",
+    choices: Array.from({ length: choiceCount }, () => ""),
+    correctIndex: 0,
+  };
+}
+
+export function createEmptyRole(): EditorRole {
+  return {
+    localId: makeTempId(),
+    id: "",
+    segment: "",
+    practiceQuestions: [createEmptyQuestion()],
+  };
+}
+
+export function editorRoleLabel(index: number): string {
+  return `학습 내용 ${index + 1}`;
+}
+
+export function editorQuestionLabel(index: number): string {
+  return `${index + 1}번 문항`;
+}
+
+function multilineToLines(text: string): string[] {
+  return text
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+function questionToEditor(q: QuizQuestion): EditorQuestion {
+  return {
+    localId: makeTempId(),
+    id: q.id,
+    prompt: q.prompt,
+    choices: [...q.choices],
+    correctIndex: q.correctIndex,
+  };
+}
+
+export function questionsToEditor(questions: QuizQuestion[]): EditorQuestion[] {
+  return questions.length > 0 ? questions.map(questionToEditor) : [createEmptyQuestion()];
+}
+
+export function createDefaultActivityDraft(): ActivityEditorDraft {
+  return {
+    title: "",
+    roles: Array.from({ length: MIN_ROLES_PER_GROUP }, () => createEmptyRole()),
+    testQuestions: [createEmptyQuestion()],
+  };
+}
+
+export function packToEditorDraft(pack: ActivityPack, title: string): ActivityEditorDraft {
+  const roles: EditorRole[] = pack.roles.map((role) => ({
+    localId: makeTempId(),
+    id: role.id,
+    segment: role.segment,
+    practiceQuestions: questionsToEditor(role.practiceQuestions),
+  }));
+
+  return {
+    title: title.replace(/^활동:\s*/, ""),
+    roles: roles.length > 0 ? roles : [createEmptyRole(), createEmptyRole()],
+    testQuestions: questionsToEditor(pack.testQuestions || []),
+  };
+}
+
+export function editorDraftToPack(draft: ActivityEditorDraft): ActivityPack {
+  const usedQuestionIds = new Set<string>();
+  const toQuestion = (
+    raw: EditorQuestion,
+    fallbackId: string,
+  ): QuizQuestion => {
+    const id = fallbackId;
+    usedQuestionIds.add(id);
+    const choices = raw.choices.map((c) => c.trim()).filter(Boolean);
+    const correctIndex =
+      raw.correctIndex >= 0 && raw.correctIndex < choices.length ? raw.correctIndex : 0;
+    return {
+      id,
+      prompt: raw.prompt,
+      choices,
+      correctIndex,
+    };
+  };
+
+  const toQuestions = (
+    list: EditorQuestion[],
+    prefix: string,
+  ): QuizQuestion[] =>
+    list.map((q, i) => toQuestion(q, `${prefix}_${i + 1}`));
+
+  const usedRoleIds = new Set<string>();
+  const roles: Role[] = draft.roles.map((rawRole, ri) => {
+    const roleId = `role_${ri + 1}`;
+    usedRoleIds.add(roleId);
+    return {
+      id: roleId,
+      segment: String(rawRole.segment ?? ""),
+      practiceQuestions: toQuestions(rawRole.practiceQuestions, `${roleId}_practice`),
+    };
+  });
+
+  const testQuestions = toQuestions(draft.testQuestions || [], "test");
+
+  return normalizePackSizing({
+    roles,
+    testQuestions,
+  });
+}
+
+function validateQuestion(
+  q: EditorQuestion,
+  label: string,
+  errors: string[],
+) {
+  if (!q.prompt.trim()) errors.push(`${label} 발문을 입력하세요.`);
+  if (q.choices.length < MIN_CHOICES_PER_QUESTION) {
+    errors.push(`${label} 보기를 ${MIN_CHOICES_PER_QUESTION}개 이상 입력하세요.`);
+  }
+  q.choices.forEach((choice, ci) => {
+    if (!choice.trim()) {
+      errors.push(`${label} ${CHOICE_LABELS[ci] ?? ci + 1}번 보기를 입력하세요.`);
+    }
+  });
+  if (!q.choices[q.correctIndex]?.trim()) {
+    errors.push(`${label} 정답 보기를 선택하세요.`);
+  }
+}
+
+function validateQuestionList(
+  questions: EditorQuestion[],
+  label: string,
+  errors: string[],
+) {
+  if (questions.length < MIN_QUESTIONS_PER_ROLE) {
+    errors.push(`${label} 문항을 ${MIN_QUESTIONS_PER_ROLE}개 이상 추가하세요.`);
+    return;
+  }
+  questions.forEach((q, qi) => {
+    validateQuestion(q, `${label} ${editorQuestionLabel(qi)}`, errors);
+  });
+}
+
+function validateRoles(draft: ActivityEditorDraft, errors: string[]) {
+  if (draft.roles.length < MIN_ROLES_PER_GROUP || draft.roles.length > MAX_ROLES_PER_GROUP) {
+    errors.push(
+      `학습 내용은 ${MIN_ROLES_PER_GROUP}~${MAX_ROLES_PER_GROUP}개입니다. (모둠 인원과 같습니다)`,
+    );
+  }
+  for (let ri = 0; ri < draft.roles.length; ri++) {
+    const role = draft.roles[ri]!;
+    const roleLabel = editorRoleLabel(ri);
+    if (!role.segment.trim()) {
+      errors.push(`「${roleLabel}」을 입력하세요.`);
+    }
+    validateQuestionList(role.practiceQuestions, `「${roleLabel}」연습`, errors);
+  }
+}
+
+export function validateEditorDraft(draft: ActivityEditorDraft): string[] {
+  const errors: string[] = [];
+  if (!draft.title.trim()) errors.push("활동 제목을 입력하세요.");
+  validateRoles(draft, errors);
+  validateQuestionList(draft.testQuestions || [], "실전", errors);
+  return errors;
+}
