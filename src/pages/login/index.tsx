@@ -9,7 +9,7 @@ import { getCurrentSession, signInTeacher, signInWithGoogle } from "@/lib/api/au
 import { AUTH_SESSION_QUERY_KEY } from "@/lib/auth/use-require-teacher-session";
 import { getKoreanAuthErrorMessage } from "@/lib/auth/errors";
 import { ROUTES } from "@/lib/routes";
-import { hasSupabaseEnv } from "@/lib/supabase";
+import { hasSupabaseEnv, supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 
 export default function LoginPage() {
@@ -64,6 +64,8 @@ export default function LoginPage() {
 
     if (sessionQuery.isLoading) return;
 
+    if (!hasSupabaseEnv || !supabase) return;
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if ((event === "SIGNED_IN" || event === "USER_UPDATED") && session) {
         await queryClient.invalidateQueries({ queryKey: AUTH_SESSION_QUERY_KEY });
@@ -72,7 +74,7 @@ export default function LoginPage() {
     });
 
     return () => {
-      subscription.unsubscribe();
+      subscription?.unsubscribe();
     };
   }, [navigate, sessionQuery.data, sessionQuery.isLoading, queryClient]);
 
