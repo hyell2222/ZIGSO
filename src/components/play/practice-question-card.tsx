@@ -280,7 +280,7 @@ export function PracticeQuestionCard({
               >
                 {CHOICE_LABELS[ci] ?? ci + 1}
               </span>
-              <span className="flex-1">{choice}</span>
+              <span className="flex-1 break-keep break-words">{choice}</span>
               {showCorrect ? <CheckCircle2 className="h-4 w-4" aria-hidden /> : null}
               {showWrong ? <XCircle className="h-4 w-4" aria-hidden /> : null}
             </button>
@@ -387,7 +387,7 @@ export function PracticeQuestionCard({
                     <Sparkles className="h-3.5 w-3.5" />
                     힌트 1
                   </span>
-                  <span className="block text-[var(--foreground)]">{aiResult.hint1}</span>
+                  <span className="block text-[var(--foreground)] whitespace-pre-wrap break-keep break-words">{aiResult.hint1}</span>
                 </PlayQuestionExplanation>
               )}
               {aiResult.hint2 && viewedHint2 && (
@@ -396,7 +396,7 @@ export function PracticeQuestionCard({
                     <Sparkles className="h-3.5 w-3.5" />
                     {viewedHint1 ? "힌트 2" : "힌트 1"}
                   </span>
-                  <span className="block text-[var(--foreground)]">{aiResult.hint2}</span>
+                  <span className="block text-[var(--foreground)] whitespace-pre-wrap break-keep break-words">{aiResult.hint2}</span>
                 </PlayQuestionExplanation>
               )}
             </div>

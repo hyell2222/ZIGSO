@@ -21,16 +21,21 @@ import { Button } from "@/components/ui/button";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { ROUTES } from "@/lib/routes";
 
-function formatDate(dateStr: string | null | undefined) {
-  if (!dateStr) return "—";
+function formatWhen(iso: string | null | undefined) {
+  if (!iso) return "—";
   try {
-    const d = new Date(dateStr);
+    const d = new Date(iso);
     const yyyy = d.getFullYear();
     const mm = String(d.getMonth() + 1).padStart(2, "0");
     const dd = String(d.getDate()).padStart(2, "0");
-    const hh = String(d.getHours()).padStart(2, "0");
-    const min = String(d.getMinutes()).padStart(2, "0");
-    return `${yyyy}.${mm}.${dd}. ${hh}:${min}`;
+
+    let hours = d.getHours();
+    const minutes = String(d.getMinutes()).padStart(2, "0");
+    const ampm = hours >= 12 ? "오후" : "오전";
+    hours = hours % 12;
+    hours = hours ? hours : 12; // 0 should be 12
+
+    return `${yyyy}.${mm}.${dd}. ${ampm} ${hours}:${minutes}`;
   } catch (e) {
     return "—";
   }
@@ -185,7 +190,7 @@ export default function ActivitiesPage() {
                   return (
                     <div key={row.id}>
                       <div
-                        className="relative space-y-3 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4 text-left shadow-[var(--elevation-sm)] transition hover:border-[color-mix(in_srgb,var(--primary)_35%,var(--border))] hover:shadow-[var(--elevation-md)]"
+                        className="relative space-y-3 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4 text-left shadow-sm transition hover:border-[color-mix(in_srgb,var(--primary)_35%,var(--border))] hover:shadow-[var(--elevation-md)]"
                       >
                         <div className="flex flex-col gap-3 md:flex-row md:justify-between md:items-center w-full">
                           <div className="flex flex-col gap-1.5 min-w-0 w-full md:w-auto">
@@ -194,13 +199,9 @@ export default function ActivitiesPage() {
                             </p>
                             <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                               <p className="text-xs text-[var(--muted-foreground)]">
-                                모둠 당 최소 필요 인원 : <span className="font-mono text-[var(--accent)] font-semibold">{row.activity_pack?.roles?.length ?? "—"}</span>명
-                                {row.created_at && (
-                                  <>
-                                    {" · "}
-                                    {formatDate(row.created_at)}
-                                  </>
-                                )}
+                                <span className="font-mono text-[var(--accent)]">모둠 당 최소 필요 인원 : {row.activity_pack?.roles?.length ?? "—"}명</span>
+                                <span className="mx-2">|</span>
+                                {formatWhen(row.created_at)}
                               </p>
                             </div>
                           </div>

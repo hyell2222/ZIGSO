@@ -370,7 +370,7 @@ export function GroupPhasePanel({
                                 </span>
                               )}
                             </div>
-                            <p className="font-medium text-xs">
+                            <p className="font-medium text-xs break-keep break-words">
                               {idx + 1}. {q.prompt}
                             </p>
                           </div>
@@ -392,7 +392,7 @@ export function GroupPhasePanel({
                                     <Sparkles className="h-3.5 w-3.5" />
                                     힌트 1
                                   </span>
-                                  <span className="block text-[var(--foreground)]">{aiResult.hint1}</span>
+                                  <span className="block text-[var(--foreground)] whitespace-pre-wrap break-keep break-words">{aiResult.hint1}</span>
                                 </PlayQuestionExplanation>
                               )}
                               {aiResult.hint2 && result && result.viewedHint2 && (
@@ -401,7 +401,7 @@ export function GroupPhasePanel({
                                     <Sparkles className="h-3.5 w-3.5" />
                                     {result.viewedHint1 ? "힌트 2" : "힌트 1"}
                                   </span>
-                                  <span className="block text-[var(--foreground)]">{aiResult.hint2}</span>
+                                  <span className="block text-[var(--foreground)] whitespace-pre-wrap break-keep break-words">{aiResult.hint2}</span>
                                 </PlayQuestionExplanation>
                               )}
                               {aiResult.explanation && (
@@ -410,7 +410,7 @@ export function GroupPhasePanel({
                                     <Sparkles className="h-3.5 w-3.5" />
                                     AI 상세 해설
                                   </span>
-                                  <span className="block text-[var(--foreground)] whitespace-pre-wrap">{aiResult.explanation}</span>
+                                  <span className="block text-[var(--foreground)] whitespace-pre-wrap break-keep break-words">{aiResult.explanation}</span>
                                 </PlayQuestionExplanation>
                               )}
                             </div>
@@ -489,7 +489,7 @@ export function GroupPhasePanel({
               <p className={t.playPanelBody}>아직 역할이 배정되지 않았어요.</p>
             ) : (
               <div className="grid items-start gap-4 lg:grid-cols-2">
-                <div className="lg:sticky lg:top-4">
+                <div>
                   <PlayPhaseSection title={segmentTitle} variant="active">
                     <PlaySegmentText className="@md:p-6">
                       {activeRole.segment}

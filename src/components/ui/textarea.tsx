@@ -46,7 +46,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
       <textarea
         ref={setRefs}
         className={cn(
-          "w-full rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-base text-[var(--foreground)] shadow-[var(--input-inset)] placeholder:text-[var(--muted-foreground)] focus:border-[color-mix(in_srgb,var(--primary)_45%,var(--border))] focus:outline-none focus:ring-2 focus:ring-[var(--ring-focus)] resize-none overflow-hidden whitespace-pre-wrap break-all",
+          "w-full rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-base text-[var(--foreground)] shadow-[var(--input-inset)] placeholder:text-[var(--muted-foreground)] focus:border-[color-mix(in_srgb,var(--primary)_45%,var(--border))] focus:outline-none focus:ring-2 focus:ring-[var(--ring-focus)] resize-none overflow-hidden whitespace-pre-wrap break-keep break-words",
           className,
         )}
         onChange={(e) => {
