@@ -169,40 +169,6 @@ export function PracticeQuestionCard({
     }
   }, [onComplete]);
 
-  useEffect(() => {
-    if (revealed && !done && busy) {
-      const loadAndFinish = async () => {
-        const targetWrongChoices = correct ? wrongChoices : [...wrongChoices, selected!];
-
-        // Trigger completion synchronously to open score modal immediately
-        void finish({
-          wrongAttempts: correct ? wrongAttempts : PRACTICE_MAX_ATTEMPTS,
-          baseScore: practiceBaseScore(correct ? wrongAttempts : PRACTICE_MAX_ATTEMPTS),
-          correct,
-          answer: { questionId: question.id, choiceIndex: selected ?? question.correctIndex },
-          wrongChoices: targetWrongChoices,
-          viewedHint1,
-          viewedHint2,
-        });
-
-        // Fetch AI explanation in parallel
-        if (fetchedAtState !== "completed") {
-          try {
-            await requestAiHelp("completed", targetWrongChoices);
-          } catch (e) {
-            console.error(e);
-            toast.error("AI 해설을 불러오는데 실패했습니다.");
-          }
-        } else {
-          if (onAiExplanationLoaded && aiResult) {
-            onAiExplanationLoaded(question.id, aiResult);
-          }
-        }
-      };
-      void loadAndFinish();
-    }
-  }, [revealed, done, busy, aiResult, wrongChoices, wrongAttempts, correct, selected, question, onAiExplanationLoaded, finish, requestAiHelp, viewedHint1, viewedHint2]);
-
   const handleSubmit = async () => {
     if (selected === null || done || busy || loadingAi) return;
 
@@ -210,6 +176,21 @@ export function PracticeQuestionCard({
     if (selected === question.correctIndex) {
       setRevealed(true);
       setCorrect(true);
+
+      const targetWrongChoices = wrongChoices;
+      try {
+        await finish({
+          wrongAttempts,
+          baseScore: practiceBaseScore(wrongAttempts),
+          correct: true,
+          answer: { questionId: question.id, choiceIndex: selected },
+          wrongChoices: targetWrongChoices,
+          viewedHint1,
+          viewedHint2,
+        });
+      } catch (e) {
+        console.error(e);
+      }
       return;
     }
 
@@ -221,6 +202,20 @@ export function PracticeQuestionCard({
     if (nextWrong >= PRACTICE_MAX_ATTEMPTS) {
       setRevealed(true);
       setCorrect(false);
+
+      try {
+        await finish({
+          wrongAttempts: PRACTICE_MAX_ATTEMPTS,
+          baseScore: practiceBaseScore(PRACTICE_MAX_ATTEMPTS),
+          correct: false,
+          answer: { questionId: question.id, choiceIndex: selected },
+          wrongChoices: nextWrongChoices,
+          viewedHint1,
+          viewedHint2,
+        });
+      } catch (e) {
+        console.error(e);
+      }
       return;
     }
 

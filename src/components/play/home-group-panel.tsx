@@ -165,14 +165,16 @@ export function GroupPhasePanel({
     const newExplanations: Record<string, { hint1: string; hint2: string; explanation: string }> = { ...aiExplanations };
 
     try {
-      const promises = allPracticeQuestions.map(async (q) => {
-        if (newExplanations[q.id]) return;
+      for (const q of allPracticeQuestions) {
+        if (newExplanations[q.id]) continue;
 
         const role = pack.roles.find((r) => r.practiceQuestions.some((pq) => pq.id === q.id));
         const segment = role?.segment;
         if (!segment) {
-          newExplanations[q.id] = { hint1: "", hint2: "", explanation: "내용을 찾을 수 없어 해설을 생성할 수 없습니다." };
-          return;
+          const fallback = { hint1: "", hint2: "", explanation: "내용을 찾을 수 없어 해설을 생성할 수 없습니다." };
+          newExplanations[q.id] = fallback;
+          setAiExplanations((prev) => ({ ...prev, [q.id]: fallback }));
+          continue;
         }
 
         const result = ownPracticeResults[q.id];
@@ -187,14 +189,14 @@ export function GroupPhasePanel({
             wrongChoices,
           });
           newExplanations[q.id] = data;
+          setAiExplanations((prev) => ({ ...prev, [q.id]: data }));
         } catch (err) {
           console.error(`Failed to fetch AI explanation for question ${q.id}:`, err);
-          newExplanations[q.id] = { hint1: "", hint2: "", explanation: "해설을 불러오는데 실패했습니다." };
+          const fallback = { hint1: "", hint2: "", explanation: "해설을 불러오는데 실패했습니다." };
+          newExplanations[q.id] = fallback;
+          setAiExplanations((prev) => ({ ...prev, [q.id]: fallback }));
         }
-      });
-
-      await Promise.all(promises);
-      setAiExplanations((prev) => ({ ...prev, ...newExplanations }));
+      }
     } catch (e) {
       console.error("Failed to fetch AI explanations:", e);
     } finally {
