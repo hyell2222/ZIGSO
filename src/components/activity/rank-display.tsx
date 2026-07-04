@@ -34,7 +34,7 @@ const rankTileDefaultClass = "border-[var(--border)] bg-[var(--card-bg)]";
 
 function rankBadgeClass(tier: RankTier, rank: number) {
   const isMedal = tier !== "default";
-  const width = isMedal ? "w-9" : rank >= 100 ? "w-11" : "w-10";
+  const width = "w-11";
 
   return cn(
     width,
@@ -75,8 +75,7 @@ export function RankResultTile({
       <span className={rankBadgeClass(tier, rank)}>{rankLabel}</span>
       <p
         className={cn(
-          "min-w-0 flex-1 truncate text-xs font-light text-[var(--muted-foreground)]",
-          t.caption,
+          "min-w-0 flex-1 truncate text-xs font-semibold text-[var(--foreground)]",
         )}
       >
         {label}

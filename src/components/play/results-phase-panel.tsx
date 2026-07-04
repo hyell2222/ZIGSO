@@ -106,6 +106,19 @@ export function ResultsPhasePanel({
           </PhaseSection>
 
           <PhaseSection
+            title={RESULTS_COPY.teamRank}
+            heading="section"
+            as="h2"
+            className={cn("w-full h-fit", sectionCenterClass)}
+          >
+            <RankResultTile
+              label={teamTitle}
+              rank={snapshot.teamRank}
+              score={`${snapshot.teamScore}점`}
+            />
+          </PhaseSection>
+
+          <PhaseSection
             title={RESULTS_COPY.personalRank}
             heading="section"
             as="h2"
@@ -116,19 +129,6 @@ export function ResultsPhasePanel({
               rank={snapshot.personalRank}
               score={`${snapshot.improvementPoints}점`}
               highlight
-            />
-          </PhaseSection>
-
-          <PhaseSection
-            title={RESULTS_COPY.teamRank}
-            heading="section"
-            as="h2"
-            className={cn("w-full h-fit", sectionCenterClass)}
-          >
-            <RankResultTile
-              label={teamTitle}
-              rank={snapshot.teamRank}
-              score={`${snapshot.teamScore}점`}
             />
           </PhaseSection>
         </div>

@@ -80,6 +80,24 @@ export function SessionResultsDashboard({
   return (
     <div className={playPhaseDualSectionGrid}>
       <PhaseSection
+        title={RESULTS_COPY.teamRank}
+        heading="section"
+        as="h2"
+        className={cn("h-fit w-full", sectionCenterClass)}
+      >
+        <div className="flex flex-col gap-2">
+          {results.rankedTeams.map((team) => (
+            <RankResultTile
+              key={team.groupId}
+              label={formatGroupDisplayName(team.groupName)}
+              rank={team.rank}
+              score={`${team.teamScore}점`}
+            />
+          ))}
+        </div>
+      </PhaseSection>
+
+      <PhaseSection
         title={RESULTS_COPY.personalRank}
         heading="section"
         as="h2"
@@ -101,24 +119,6 @@ export function SessionResultsDashboard({
             ))}
           </div>
         )}
-      </PhaseSection>
-
-      <PhaseSection
-        title={RESULTS_COPY.teamRank}
-        heading="section"
-        as="h2"
-        className={cn("h-fit w-full", sectionCenterClass)}
-      >
-        <div className="flex flex-col gap-2">
-          {results.rankedTeams.map((team) => (
-            <RankResultTile
-              key={team.groupId}
-              label={formatGroupDisplayName(team.groupName)}
-              rank={team.rank}
-              score={`${team.teamScore}점`}
-            />
-          ))}
-        </div>
       </PhaseSection>
     </div>
   );
