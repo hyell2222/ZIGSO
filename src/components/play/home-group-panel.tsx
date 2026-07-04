@@ -251,7 +251,7 @@ export function GroupPhasePanel({
 
 
   useEffect(() => {
-    if (allPeerDone && !homeGroupCompletedAt && peerQuestions.length === 0) {
+    if (allPeerDone && !homeGroupCompletedAt && peerQuestions.length > 0) {
       void onEnsureHomeGroupComplete?.();
     }
   }, [allPeerDone, homeGroupCompletedAt, peerQuestions.length, onEnsureHomeGroupComplete]);
