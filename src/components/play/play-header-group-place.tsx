@@ -31,7 +31,7 @@ export function PlayHeaderGroupPlace({
   return (
     <div
       className={cn(
-        "inline-flex w-fit min-w-0 max-w-full shrink-0 flex-row items-stretch",
+        "inline-flex w-fit min-w-0 max-w-full shrink-0 flex-col items-start gap-1 @sm:flex-row @sm:items-stretch @sm:gap-0",
         "rounded-xl border border-[color-mix(in_srgb,var(--play-border-cool)_60%,var(--border))]",
         "bg-[color-mix(in_srgb,var(--play-panel)_96%,transparent)]",
         "px-3.5 py-2 @sm:px-4 @sm:py-2.5",
@@ -50,7 +50,7 @@ export function PlayHeaderGroupPlace({
             <p className={labelClass}>모둠 ·</p>
             <p className={valueClass}>{group}</p>
           </div>
-          <div className="mx-2 w-px shrink-0 self-stretch bg-[var(--border)] @sm:mx-2.5" aria-hidden />
+          <div className="w-full h-px bg-[var(--border)] @sm:w-px @sm:h-auto @sm:self-stretch @sm:mx-2.5" aria-hidden />
           <div className="flex min-w-0 flex-row items-center gap-2">
             <p className={labelClass}>{placeLabel} ·</p>
             <p className={valueClass}>{place}</p>

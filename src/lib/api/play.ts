@@ -314,47 +314,162 @@ export async function assignGroupsAndRoles(sessionId: string, pack: ActivityPack
   if (tErr) throw tErr;
 
   const roleCount = Math.max(MIN_ROLES_PER_GROUP, pack.roles.length);
-  const shuffled = [...players].sort(() => Math.random() - 0.5);
-  const numGroups = computeSessionGroupCount(shuffled.length, roleCount);
+  const isInitialAssignment = needsAssign.length === players.length;
 
-  const groupRowsByLabel = new Map<string, { id: string; name: string | null }>();
-  for (const t of existingGroups ?? []) {
-    if (t.name) groupRowsByLabel.set(t.name, t);
-  }
-  const desiredLabels = Array.from({ length: numGroups }, (_, i) => groupLabel(i));
-  const labelsToCreate = desiredLabels.filter((label) => !groupRowsByLabel.has(label));
-  if (labelsToCreate.length > 0) {
-    const { data: created, error: createError } = await supabase
-      .from("groups")
-      .insert(labelsToCreate.map((name) => ({ session_id: sessionId, name })))
-      .select("id,name");
-    if (createError) throw createError;
-    for (const t of created ?? []) {
+  if (isInitialAssignment) {
+    const shuffled = [...players].sort(() => Math.random() - 0.5);
+    const numGroups = computeSessionGroupCount(shuffled.length, roleCount);
+
+    const groupRowsByLabel = new Map<string, { id: string; name: string | null }>();
+    for (const t of existingGroups ?? []) {
       if (t.name) groupRowsByLabel.set(t.name, t);
     }
-  }
+    const desiredLabels = Array.from({ length: numGroups }, (_, i) => groupLabel(i));
+    const labelsToCreate = desiredLabels.filter((label) => !groupRowsByLabel.has(label));
+    if (labelsToCreate.length > 0) {
+      const { data: created, error: createError } = await supabase
+        .from("groups")
+        .insert(labelsToCreate.map((name) => ({ session_id: sessionId, name })))
+        .select("id,name");
+      if (createError) throw createError;
+      for (const t of created ?? []) {
+        if (t.name) groupRowsByLabel.set(t.name, t);
+      }
+    }
 
-  const groupIds = desiredLabels
-    .map((label) => groupRowsByLabel.get(label)?.id)
-    .filter((v): v is string => Boolean(v));
-  if (groupIds.length === 0) return;
+    const groupIds = desiredLabels
+      .map((label) => groupRowsByLabel.get(label)?.id)
+      .filter((v): v is string => Boolean(v));
+    if (groupIds.length === 0) return;
 
-  for (let gi = 0; gi < groupIds.length; gi++) {
-    const groupId = groupIds[gi]!;
-    const memberIds = shuffled
-      .filter((_, idx) => idx % numGroups === gi)
-      .map((p) => p.id);
-    const roleAssignment = assignRolesToPlayers(pack, memberIds);
-    for (const playerId of memberIds) {
-      const assigned = roleAssignment.get(playerId);
+    for (let gi = 0; gi < groupIds.length; gi++) {
+      const groupId = groupIds[gi]!;
+      const memberIds = shuffled
+        .filter((_, idx) => idx % numGroups === gi)
+        .map((p) => p.id);
+      const roleAssignment = assignRolesToPlayers(pack, memberIds);
+      for (const playerId of memberIds) {
+        const assigned = roleAssignment.get(playerId);
+        const { error: upErr } = await supabase
+          .from("players")
+          .update({
+            group_id: groupId,
+            assigned_role_id: assigned?.roleId ?? null,
+          })
+          .eq("id", playerId);
+        if (upErr) throw upErr;
+      }
+    }
+  } else {
+    const targetNumGroups = computeSessionGroupCount(players.length, roleCount);
+
+    const groupRowsByLabel = new Map<string, { id: string; name: string | null }>();
+    for (const t of existingGroups ?? []) {
+      if (t.name) groupRowsByLabel.set(t.name, t);
+    }
+    const desiredLabels = Array.from({ length: targetNumGroups }, (_, i) => groupLabel(i));
+    const labelsToCreate = desiredLabels.filter((label) => !groupRowsByLabel.has(label));
+    if (labelsToCreate.length > 0) {
+      const { data: created, error: createError } = await supabase
+        .from("groups")
+        .insert(labelsToCreate.map((name) => ({ session_id: sessionId, name })))
+        .select("id,name");
+      if (createError) throw createError;
+      for (const t of created ?? []) {
+        if (t.name) groupRowsByLabel.set(t.name, t);
+      }
+    }
+
+    const groupIds = desiredLabels
+      .map((label) => groupRowsByLabel.get(label)?.id)
+      .filter((v): v is string => Boolean(v));
+    if (groupIds.length === 0) return;
+
+    const groupPlayersMap = new Map<string, Array<{ id: string; group_id: string | null; assigned_role_id: string | null }>>();
+    for (const gid of groupIds) {
+      groupPlayersMap.set(gid, []);
+    }
+    for (const p of players) {
+      if (p.group_id && p.assigned_role_id) {
+        const list = groupPlayersMap.get(p.group_id);
+        if (list) {
+          list.push(p);
+        }
+      }
+    }
+
+    for (const orphan of needsAssign) {
+      let bestGroupId: string | null = null;
+      let minCount = Infinity;
+      let maxVacantRolesCount = -1;
+
+      for (const gid of groupIds) {
+        const members = groupPlayersMap.get(gid) ?? [];
+        const count = members.length;
+
+        const assignedRoleIds = new Set(members.map((m) => m.assigned_role_id));
+        const vacantRoles = pack.roles.filter((r) => !assignedRoleIds.has(r.id));
+        const vacantCount = vacantRoles.length;
+
+        if (count < minCount) {
+          minCount = count;
+          maxVacantRolesCount = vacantCount;
+          bestGroupId = gid;
+        } else if (count === minCount) {
+          if (vacantCount > maxVacantRolesCount) {
+            maxVacantRolesCount = vacantCount;
+            bestGroupId = gid;
+          }
+        }
+      }
+
+      if (!bestGroupId) continue;
+
+      const members = groupPlayersMap.get(bestGroupId) ?? [];
+      const assignedRoleIds = new Set(members.map((m) => m.assigned_role_id));
+      const vacantRoles = pack.roles.filter((r) => !assignedRoleIds.has(r.id));
+
+      let chosenRoleId: string;
+      if (vacantRoles.length > 0) {
+        chosenRoleId = vacantRoles[0].id;
+      } else {
+        const roleCounts = new Map<string, number>();
+        for (const r of pack.roles) {
+          roleCounts.set(r.id, 0);
+        }
+        for (const m of members) {
+          if (m.assigned_role_id) {
+            roleCounts.set(m.assigned_role_id, (roleCounts.get(m.assigned_role_id) ?? 0) + 1);
+          }
+        }
+        chosenRoleId = pack.roles[0].id;
+        let minRoleCount = Infinity;
+        for (const r of pack.roles) {
+          const rc = roleCounts.get(r.id) ?? 0;
+          if (rc < minRoleCount) {
+            minRoleCount = rc;
+            chosenRoleId = r.id;
+          }
+        }
+      }
+
       const { error: upErr } = await supabase
         .from("players")
         .update({
-          group_id: groupId,
-          assigned_role_id: assigned?.roleId ?? null,
+          group_id: bestGroupId,
+          assigned_role_id: chosenRoleId,
         })
-        .eq("id", playerId);
+        .eq("id", orphan.id);
       if (upErr) throw upErr;
+
+      const list = groupPlayersMap.get(bestGroupId);
+      if (list) {
+        list.push({
+          id: orphan.id,
+          group_id: bestGroupId,
+          assigned_role_id: chosenRoleId,
+        });
+      }
     }
   }
 }

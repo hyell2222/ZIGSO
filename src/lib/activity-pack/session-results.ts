@@ -170,11 +170,22 @@ function computeMemberResults(
   roleScopeKey?: string,
 ): MemberResult[] {
   const testTotal = pack.roles.length;
+
+  const validBaseScores = members
+    .map((m) => m.baseScore)
+    .filter((score): score is number => score !== null && score !== undefined);
+
+  const classAverageBaseScore =
+    validBaseScores.length > 0
+      ? Math.round(validBaseScores.reduce((sum, val) => sum + val, 0) / validBaseScores.length)
+      : 0;
+
   return members.map((m) => {
     const roleLabel = roleLabelFor(pack, m.assignedRoleId, roleScopeKey);
     const grade = gradeTest(pack, m.individual_quiz_answers ?? []);
     const submitted = Boolean(m.individual_quiz_submitted_at);
-    const baseScore = Math.max(0, Math.round(m.baseScore ?? 0));
+    const rawBaseScore = m.baseScore !== null && m.baseScore !== undefined ? m.baseScore : classAverageBaseScore;
+    const baseScore = Math.max(0, Math.round(rawBaseScore));
     const testScore = testPercent(grade.correctCount, testTotal);
     const improvementPoints = submitted ? stadImprovementPoints(baseScore, testScore) : 0;
     return {
