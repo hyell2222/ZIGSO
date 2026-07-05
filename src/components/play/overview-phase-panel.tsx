@@ -24,7 +24,7 @@ export function OverviewPhasePanel({ groupName, roleLabel, pending }: Props) {
   const role = roleLabel?.trim() || "—";
 
   return (
-    <PlayPhaseShell mainClassName="flex min-h-0 flex-1 flex-col pt-12 @sm:pt-20 @md:pt-24">
+    <PlayPhaseShell mainClassName="flex min-h-0 flex-1 flex-col">
       {pending ? (
         <LoadingState
           variant="section"
