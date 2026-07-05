@@ -55,9 +55,12 @@ export default function HomePage() {
           </div>
 
           {/* 시작 버튼: 작게 & 중앙 정렬 */}
-          <div className="pt-2">
+          <div className="pt-2 flex flex-col sm:flex-row gap-3 justify-center items-center">
             <Button onClick={() => navigate(ROUTES.login)}>
               지금 바로 시작하기
+            </Button>
+            <Button variant="outline" onClick={() => navigate(ROUTES.play)}>
+              학생으로 입장하기
             </Button>
           </div>
         </header>

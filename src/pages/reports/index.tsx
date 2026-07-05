@@ -131,7 +131,7 @@ function ReportsSessionsListPanel({ teacherUserId }: { teacherUserId: string }) 
                     type="button"
                     onClick={() => navigate(ROUTES.reportsForSession(row.id))}
                   >
-                    리포트 보기
+                    기록 보기
                   </Button>
                   <KebabMenu onDelete={() => handleDelete(row)} />
                 </div>

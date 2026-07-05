@@ -1,6 +1,6 @@
 import type { ActivityPhase } from "@/lib/types";
 
-/** 활동 진행 단계 — 교사·학생·리포트·샌드박스 공통 (직소 4단계 + 최종 순위) */
+/** 활동 진행 단계 — 교사·학생·기록·샌드박스 공통 (직소 4단계 + 최종 순위) */
 export const ACTIVITY_PHASE_LABELS: Record<ActivityPhase, string> = {
   waiting: "",
   overview: "",
