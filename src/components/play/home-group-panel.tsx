@@ -19,7 +19,7 @@ import { GuideInfoModal } from "@/components/play/guide-info-modal";
 import { LoadingState } from "@/components/ui/loading-state";
 import { activityLayoutType } from "@/components/activity/activity-layout-typography";
 import { Button } from "@/components/ui/button";
-import { Check, Loader2, Sparkles } from "lucide-react";
+import { Loader2, Sparkles } from "lucide-react";
 import type { PlayerSelfRow } from "@/lib/api/play";
 import {
   computeBaseScoreFromPracticeResults,
