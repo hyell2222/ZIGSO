@@ -114,10 +114,9 @@ export function PlayJoinForm({
               : undefined
           }
           className={cn(
-            "font-semibold tracking-[0.12em]",
             joinCodeEditable ? "" : "cursor-default text-[var(--primary)]",
           )}
-          placeholder={joinCodeEditable ? "예: ABC123" : undefined}
+          placeholder={joinCodeEditable ? "ABC123" : undefined}
           disabled={pending}
           autoComplete="off"
           inputMode={joinCodeEditable ? "text" : undefined}
@@ -143,15 +142,6 @@ export function PlayJoinForm({
           )}
         </Button>
       </div>
-      {showMissingCodeClue && !code ? (
-        <p className="text-xs text-[var(--foreground)]">
-          참가 코드가 없으면{" "}
-          <Link className="text-[var(--accent)] hover:text-[var(--highlight)]" to={ROUTES.play}>
-            입장 화면
-          </Link>
-          에서 코드를 입력해 주세요.
-        </p>
-      ) : null}
       {message ? (
         <p
           role="alert"
