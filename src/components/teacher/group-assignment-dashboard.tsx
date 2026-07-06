@@ -101,6 +101,10 @@ export function SeatingLayout({
         if (emptyIdx !== -1) {
           seats[emptyIdx].member = m;
           placedMemberIds.add(m.id);
+          const roleIdx = roles.findIndex((r) => r.id === m.assignedRoleId);
+          if (roleIdx !== -1) {
+            seats[emptyIdx].slotName = letterLabel(roleIdx);
+          }
         }
       }
     });
@@ -124,6 +128,9 @@ export function SeatingLayout({
         if (emptyIdx !== -1) {
           seats[emptyIdx].member = m;
           placedMemberIds.add(m.id);
+          if (m.groupName) {
+            seats[emptyIdx].slotName = m.groupName;
+          }
         }
       }
     });
