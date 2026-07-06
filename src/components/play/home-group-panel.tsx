@@ -264,16 +264,22 @@ export function GroupPhasePanel({
     }
   }, [allPeerDone, homeGroupCompletedAt, peerQuestions.length, onEnsureHomeGroupComplete]);
 
-  const cards = useMemo(
-    () =>
-      members.map((m) => ({
-        key: m.id,
-        nickname: m.nickname ?? "팀원",
-        roleId: m.assigned_role_id,
-        isMe: m.id === playerId,
-      })),
-    [members, playerId],
-  );
+  const cards = useMemo(() => {
+    const list = members.map((m) => ({
+      key: m.id,
+      nickname: m.nickname ?? "모둠원",
+      roleId: m.assigned_role_id,
+      isMe: m.id === playerId,
+    }));
+    return list.sort((a, b) => {
+      const idxA = pack.roles.findIndex((r) => r.id === a.roleId);
+      const idxB = pack.roles.findIndex((r) => r.id === b.roleId);
+      const valA = idxA === -1 ? 9999 : idxA;
+      const valB = idxB === -1 ? 9999 : idxB;
+      if (valA !== valB) return valA - valB;
+      return a.nickname.localeCompare(b.nickname, "ko");
+    });
+  }, [members, playerId, pack.roles]);
 
   const defaultMemberId = useMemo(() => {
     const me = cards.find((c) => c.isMe);
@@ -298,7 +304,7 @@ export function GroupPhasePanel({
   ).length;
   const segmentTitle = activeCard?.isMe
     ? "내가 맡은 부분"
-    : `${roleLabelFor(activeCard?.roleId ?? null)} · ${activeCard?.nickname ?? "팀원"}`;
+    : `${roleLabelFor(activeCard?.roleId ?? null)} · ${activeCard?.nickname ?? "모둠원"}`;
 
   const memberPeerDone = useCallback(
     (card: (typeof cards)[number]) => {
@@ -554,22 +560,22 @@ export function GroupPhasePanel({
                         const inProgress = inProgressResults[pq.id];
                         const initialResult = stored
                           ? {
-                              wrongAttempts: stored.wrongAttempts,
-                              baseScore: practiceQuestionScore(stored.wrongAttempts),
-                              wrongChoiceIndices: stored.wrongChoices,
-                              viewedHint1: stored.viewedHint1,
-                              viewedHint2: stored.viewedHint2,
-                              isCompleted: true,
-                            }
+                            wrongAttempts: stored.wrongAttempts,
+                            baseScore: practiceQuestionScore(stored.wrongAttempts),
+                            wrongChoiceIndices: stored.wrongChoices,
+                            viewedHint1: stored.viewedHint1,
+                            viewedHint2: stored.viewedHint2,
+                            isCompleted: true,
+                          }
                           : inProgress
                             ? {
-                                wrongAttempts: inProgress.wrongAttempts,
-                                baseScore: practiceQuestionScore(inProgress.wrongAttempts),
-                                wrongChoiceIndices: inProgress.wrongChoiceIndices,
-                                viewedHint1: inProgress.viewedHint1,
-                                viewedHint2: inProgress.viewedHint2,
-                                isCompleted: false,
-                              }
+                              wrongAttempts: inProgress.wrongAttempts,
+                              baseScore: practiceQuestionScore(inProgress.wrongAttempts),
+                              wrongChoiceIndices: inProgress.wrongChoiceIndices,
+                              viewedHint1: inProgress.viewedHint1,
+                              viewedHint2: inProgress.viewedHint2,
+                              isCompleted: false,
+                            }
                             : null;
                         return (
                           <div key={pq.id}>
