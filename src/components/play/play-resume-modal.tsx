@@ -42,9 +42,6 @@ export function PlayResumeModal({
           onContinue();
         }}
       >
-        <p className="text-xs text-[var(--foreground)]">
-          이전 입장 기록이 있어요. 이어서 참가할지, 새 닉네임으로 들어갈지 선택하세요.
-        </p>
         <PlayJoinReadonlyFields titleId={titleId} joinCode={joinCode} nickname={nickname} />
         <div className="flex flex-col gap-2 pt-4">
           <Button type="submit" className="w-full">
