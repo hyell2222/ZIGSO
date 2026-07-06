@@ -61,7 +61,7 @@ export function ResultsPhasePanel({
 
   return (
     <PlayPhaseShell
-      mainClassName="flex flex-col items-center justify-center flex-1 min-h-[calc(100dvh-180px)] py-4"
+      mainClassName="flex flex-col @md:items-center min-h-0 @md:flex-1 @md:justify-center @md:min-h-[calc(100dvh-180px)]"
       overlay={
         <>
           <BaseScoreGuideModal
