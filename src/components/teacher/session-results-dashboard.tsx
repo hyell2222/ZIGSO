@@ -22,6 +22,7 @@ export type SessionResultsMember = {
   baseScore?: number | null;
   individual_quiz_answers?: import("@/lib/activity-pack/types").QuizAnswer[];
   individual_quiz_submitted_at?: string | null;
+  home_group_completed_at?: string | null;
 };
 
 type Props = {
@@ -58,6 +59,7 @@ export function SessionResultsDashboard({
         baseScore: m.baseScore,
         individual_quiz_answers: m.individual_quiz_answers,
         individual_quiz_submitted_at: m.individual_quiz_submitted_at,
+        home_group_completed_at: m.home_group_completed_at,
       })),
       roleScopeKey,
     );
@@ -92,6 +94,7 @@ export function SessionResultsDashboard({
               label={formatGroupDisplayName(team.groupName)}
               rank={team.rank}
               score={`${team.teamScore}점`}
+              durationText={team.durationText}
             />
           ))}
         </div>
@@ -115,6 +118,7 @@ export function SessionResultsDashboard({
                 label={member.nickname}
                 rank={member.rank}
                 score={`${member.improvementPoints}점`}
+                durationText={member.durationText}
               />
             ))}
           </div>

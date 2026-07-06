@@ -19,6 +19,7 @@ export type ResultsMemberInput = {
   individual_quiz_answers?: QuizAnswer[];
   /** 개별 형성평가 제출 시각 */
   individual_quiz_submitted_at?: string | null;
+  home_group_completed_at?: string | null;
 };
 
 export type MemberResult = {
@@ -36,6 +37,8 @@ export type MemberResult = {
   improvementPoints: number;
   /** 형성평가 제출 여부 */
   submitted: boolean;
+  submittedAt?: number;
+  durationText?: string;
 };
 
 export type TeamMvpResult = {
@@ -55,6 +58,8 @@ export type RankedTeamResult = {
   memberCount: number;
   mvp: TeamMvpResult;
   members: MemberResult[];
+  completedAt?: number;
+  durationText?: string;
 };
 
 export type SessionResultsSummary = {
@@ -85,6 +90,8 @@ export type StudentResultsSnapshot = {
   personalRank: number;
   totalPlayers: number;
   roleLabel: string;
+  durationText?: string;
+  teamDurationText?: string;
 };
 
 function average(values: number[]): number {
@@ -95,17 +102,16 @@ function average(values: number[]): number {
 function assignMemberRanks(members: MemberResult[]): RankedMemberResult[] {
   const sorted = [...members].sort((a, b) => {
     if (b.improvementPoints !== a.improvementPoints) return b.improvementPoints - a.improvementPoints;
+
+    const aTime = a.submittedAt ?? Infinity;
+    const bTime = b.submittedAt ?? Infinity;
+    if (aTime !== bTime) return aTime - bTime;
+
     return b.testScore - a.testScore;
   });
 
-  let rank = 0;
-  let prevScore: number | null = null;
   return sorted.map((member, index) => {
-    if (prevScore === null || member.improvementPoints < prevScore) {
-      rank = index + 1;
-      prevScore = member.improvementPoints;
-    }
-    return { ...member, rank };
+    return { ...member, rank: index + 1 };
   });
 }
 
@@ -141,6 +147,8 @@ export function getStudentResultsSnapshot(
     personalRank: myRank,
     totalPlayers: summary.totalPlayers,
     roleLabel: myMember.roleLabel,
+    durationText: myMember.durationText,
+    teamDurationText: myTeam.durationText,
   };
 }
 
@@ -167,6 +175,7 @@ function getFallbackRoleLabel(pack: ActivityPack, roleId: string): string {
 function computeMemberResults(
   pack: ActivityPack,
   members: ResultsMemberInput[],
+  sessionStartTimeFallback: number | null,
   roleScopeKey?: string,
 ): MemberResult[] {
   const testTotal = pack.roles.length;
@@ -180,6 +189,16 @@ function computeMemberResults(
       ? Math.round(validBaseScores.reduce((sum, val) => sum + val, 0) / validBaseScores.length)
       : 0;
 
+  const groupMembersWithHomeGroup = members
+    .map((m) => m.home_group_completed_at)
+    .filter((time): time is string => Boolean(time));
+
+  const groupStartTime = groupMembersWithHomeGroup.length > 0
+    ? Math.min(...groupMembersWithHomeGroup.map((time) => new Date(time).getTime()))
+    : null;
+
+  const resolvedGroupStartTime = groupStartTime || sessionStartTimeFallback;
+
   return members.map((m) => {
     const roleLabel = roleLabelFor(pack, m.assignedRoleId, roleScopeKey);
     const grade = gradeTest(pack, m.individual_quiz_answers ?? []);
@@ -188,6 +207,29 @@ function computeMemberResults(
     const baseScore = Math.max(0, Math.round(rawBaseScore));
     const testScore = testPercent(grade.correctCount, testTotal);
     const improvementPoints = submitted ? stadImprovementPoints(baseScore, testScore) : 0;
+
+    const submittedAt = m.individual_quiz_submitted_at
+      ? new Date(m.individual_quiz_submitted_at).getTime()
+      : undefined;
+
+    let durationText: string | undefined = undefined;
+    if (m.individual_quiz_submitted_at) {
+      const start = m.home_group_completed_at
+        ? new Date(m.home_group_completed_at).getTime()
+        : resolvedGroupStartTime;
+
+      if (start) {
+        const end = new Date(m.individual_quiz_submitted_at).getTime();
+        const diff = end - start;
+        if (diff >= 0) {
+          const totalSec = Math.floor(diff / 1000);
+          const min = Math.floor(totalSec / 60);
+          const sec = totalSec % 60;
+          durationText = min > 0 ? `${min}:${sec < 10 ? "0" + sec : sec}` : `0:${sec < 10 ? "0" + sec : sec}`;
+        }
+      }
+    }
+
     return {
       playerId: m.id,
       nickname: m.nickname?.trim() || "참가자",
@@ -199,6 +241,8 @@ function computeMemberResults(
       testTotal,
       improvementPoints,
       submitted,
+      submittedAt,
+      durationText,
     };
   });
 }
@@ -226,19 +270,18 @@ function pickMvp(members: MemberResult[]): TeamMvpResult {
 function assignRanks(teams: Omit<RankedTeamResult, "rank">[]): RankedTeamResult[] {
   const sorted = [...teams].sort((a, b) => {
     if (b.teamScore !== a.teamScore) return b.teamScore - a.teamScore;
+
+    const aTime = a.completedAt ?? Infinity;
+    const bTime = b.completedAt ?? Infinity;
+    if (aTime !== bTime) return aTime - bTime;
+
     const aTest = a.members.reduce((s, m) => s + m.testScore, 0);
     const bTest = b.members.reduce((s, m) => s + m.testScore, 0);
     return bTest - aTest;
   });
 
-  let rank = 0;
-  let prevScore: number | null = null;
   return sorted.map((team, index) => {
-    if (prevScore === null || team.teamScore < prevScore) {
-      rank = index + 1;
-      prevScore = team.teamScore;
-    }
-    return { ...team, rank };
+    return { ...team, rank: index + 1 };
   });
 }
 
@@ -255,11 +298,58 @@ export function buildSessionResults(
     byGroup.set(m.groupId, list);
   }
 
+  // Calculate fallback session-wide start time
+  const allMembersWithHomeGroup = members
+    .map((m) => m.home_group_completed_at)
+    .filter((time): time is string => Boolean(time));
+
+  const sessionStartTime = allMembersWithHomeGroup.length > 0
+    ? Math.min(...allMembersWithHomeGroup.map((time) => new Date(time).getTime()))
+    : null;
+
+  const allQuizSubmissions = members
+    .map((m) => m.individual_quiz_submitted_at)
+    .filter((time): time is string => Boolean(time));
+
+  const earliestQuizSubmission = allQuizSubmissions.length > 0
+    ? Math.min(...allQuizSubmissions.map((time) => new Date(time).getTime()))
+    : null;
+
+  const sessionStartTimeFallback = sessionStartTime || (earliestQuizSubmission ? earliestQuizSubmission - 2 * 60 * 1000 : null);
+
   const teams = groups.map((group) => {
     const groupMembers = byGroup.get(group.id) ?? [];
-    const memberResults = computeMemberResults(pack, groupMembers, roleScopeKey);
+    const memberResults = computeMemberResults(pack, groupMembers, sessionStartTimeFallback, roleScopeKey);
     const teamScore = average(memberResults.map((m) => m.improvementPoints));
     const mvp = pickMvp(memberResults);
+
+    const submittedMembers = groupMembers.filter((m) => m.individual_quiz_submitted_at);
+    const hasSubmissions = submittedMembers.length > 0;
+    const completedAt = hasSubmissions
+      ? Math.max(...submittedMembers.map((m) => new Date(m.individual_quiz_submitted_at!).getTime()))
+      : Infinity;
+
+    const groupMembersWithHomeGroup = groupMembers
+      .map((m) => m.home_group_completed_at)
+      .filter((time): time is string => Boolean(time));
+
+    const groupStartTime = groupMembersWithHomeGroup.length > 0
+      ? Math.min(...groupMembersWithHomeGroup.map((time) => new Date(time).getTime()))
+      : null;
+
+    const resolvedGroupStartTime = groupStartTime || sessionStartTimeFallback;
+
+    let durationText: string | undefined = undefined;
+    if (hasSubmissions && resolvedGroupStartTime) {
+      const diff = completedAt - resolvedGroupStartTime;
+      if (diff >= 0 && diff !== Infinity) {
+        const totalSec = Math.floor(diff / 1000);
+        const min = Math.floor(totalSec / 60);
+        const sec = totalSec % 60;
+        durationText = min > 0 ? `${min}:${sec < 10 ? "0" + sec : sec}` : `0:${sec < 10 ? "0" + sec : sec}`;
+      }
+    }
+
     return {
       groupId: group.id,
       groupName: formatGroupDisplayName(group.name),
@@ -267,6 +357,8 @@ export function buildSessionResults(
       memberCount: memberResults.length,
       mvp,
       members: memberResults.sort((a, b) => b.improvementPoints - a.improvementPoints),
+      completedAt,
+      durationText,
     };
   });
 
