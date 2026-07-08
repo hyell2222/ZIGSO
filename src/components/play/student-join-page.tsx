@@ -8,6 +8,7 @@ import { PlayAtmosphere } from "@/components/play/play-atmosphere";
 import { PlayJoinForm, type PlayJoinFormProps } from "@/components/play/play-join-form";
 import { Modal } from "@/components/ui/modal";
 import { getSessionByJoinCode } from "@/lib/api/play";
+import { getResumeRecord } from "@/lib/play-resume";
 import { ROUTES } from "@/lib/routes";
 import { hasSupabaseEnv } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
@@ -46,8 +47,15 @@ export function StudentJoinPage({
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (prefillJoinCode) setJoinCode(prefillJoinCode);
-  }, [prefillJoinCode]);
+    if (prefillJoinCode) {
+      const stored = getResumeRecord(prefillJoinCode);
+      if (stored) {
+        navigate(ROUTES.playSessionJoin(prefillJoinCode), { replace: true });
+        return;
+      }
+      setJoinCode(prefillJoinCode);
+    }
+  }, [prefillJoinCode, navigate]);
 
   useEffect(() => {
     if (prefillNickname) setNickname(prefillNickname);
