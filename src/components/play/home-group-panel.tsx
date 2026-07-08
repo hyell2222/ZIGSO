@@ -105,6 +105,12 @@ export function GroupPhasePanel({
     for (const id of peerPracticeCompleted) map[id] = true;
     return map;
   });
+  const [inProgressResults, setInProgressResults] = useState<Record<string, {
+    wrongAttempts: number;
+    wrongChoiceIndices: number[];
+    viewedHint1: boolean;
+    viewedHint2: boolean;
+  }>>({});
   const [message, setMessage] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const ownPracticeResults = useMemo(() => {
@@ -258,16 +264,22 @@ export function GroupPhasePanel({
     }
   }, [allPeerDone, homeGroupCompletedAt, peerQuestions.length, onEnsureHomeGroupComplete]);
 
-  const cards = useMemo(
-    () =>
-      members.map((m) => ({
-        key: m.id,
-        nickname: m.nickname ?? "팀원",
-        roleId: m.assigned_role_id,
-        isMe: m.id === playerId,
-      })),
-    [members, playerId],
-  );
+  const cards = useMemo(() => {
+    const list = members.map((m) => ({
+      key: m.id,
+      nickname: m.nickname ?? "모둠원",
+      roleId: m.assigned_role_id,
+      isMe: m.id === playerId,
+    }));
+    return list.sort((a, b) => {
+      const idxA = pack.roles.findIndex((r) => r.id === a.roleId);
+      const idxB = pack.roles.findIndex((r) => r.id === b.roleId);
+      const valA = idxA === -1 ? 9999 : idxA;
+      const valB = idxB === -1 ? 9999 : idxB;
+      if (valA !== valB) return valA - valB;
+      return a.nickname.localeCompare(b.nickname, "ko");
+    });
+  }, [members, playerId, pack.roles]);
 
   const defaultMemberId = useMemo(() => {
     const me = cards.find((c) => c.isMe);
@@ -284,22 +296,27 @@ export function GroupPhasePanel({
   const activeRole = activeCard?.roleId ? getRoleById(pack, activeCard.roleId) : undefined;
   const practiceQuestions = activeRole?.practiceQuestions ?? [];
   const practiceDoneCount = practiceQuestions.filter(
-    (pq) => activeCard?.isMe || completed[pq.id] || homeGroupCompletedAt,
+    (pq) =>
+      activeCard?.isMe ||
+      (ownRoleId && activeCard?.roleId === ownRoleId) ||
+      completed[pq.id] ||
+      homeGroupCompletedAt,
   ).length;
   const segmentTitle = activeCard?.isMe
     ? "내가 맡은 부분"
-    : `${roleLabelFor(activeCard?.roleId ?? null)} · ${activeCard?.nickname ?? "팀원"}`;
+    : `${roleLabelFor(activeCard?.roleId ?? null)} · ${activeCard?.nickname ?? "모둠원"}`;
 
   const memberPeerDone = useCallback(
     (card: (typeof cards)[number]) => {
       if (card.isMe) return true;
+      if (ownRoleId && card.roleId === ownRoleId) return true;
       const role = card.roleId ? getRoleById(pack, card.roleId) : undefined;
       if (!role) return false;
       return role.practiceQuestions.every(
         (pq) => completed[pq.id] || homeGroupCompletedAt,
       );
     },
-    [pack, completed, homeGroupCompletedAt],
+    [pack, completed, homeGroupCompletedAt, ownRoleId],
   );
 
   return (
@@ -451,6 +468,15 @@ export function GroupPhasePanel({
                   const isActive = card.key === resolvedMemberId;
                   const done = memberPeerDone(card);
                   const label = roleLabelFor(card.roleId);
+                  const buttonClass = cn(
+                    playChipClass,
+                    "active:scale-[0.98] transition-transform",
+                    isActive
+                      ? "border-2 border-[var(--primary)] bg-[var(--primary)] text-[var(--on-primary)] font-bold shadow-sm"
+                      : done
+                        ? "border-2 border-[var(--primary)] bg-[color-mix(in_srgb,var(--primary)_8%,var(--card-bg))] text-[var(--foreground)] font-bold shadow-xs"
+                        : "border border-[var(--border)] bg-[var(--card-bg)] text-[var(--foreground)]"
+                  );
                   return (
                     <button
                       key={card.key}
@@ -458,27 +484,8 @@ export function GroupPhasePanel({
                       role="tab"
                       aria-selected={isActive}
                       onClick={() => setActiveMemberId(card.key)}
-                      className={cn(
-                        playChipClass,
-                        "active:scale-[0.98] transition-transform",
-                        isActive
-                          ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--on-primary)]"
-                          : "border-[var(--border)] bg-[var(--card-bg)] text-[var(--foreground)] hover:border-[color-mix(in_srgb,var(--primary)_35%,var(--border))]",
-                      )}
+                      className={buttonClass}
                     >
-                      <span
-                        className={cn(
-                          "h-1.5 w-1.5 rounded-full",
-                          done
-                            ? isActive
-                              ? "bg-[var(--on-primary)]"
-                              : "bg-[var(--primary)]"
-                            : isActive
-                              ? "bg-[var(--on-primary)]/50"
-                              : "bg-[var(--border)]",
-                        )}
-                        aria-hidden
-                      />
                       {label} · {card.nickname}
                       {card.isMe ? " (나)" : ""}
                     </button>
@@ -524,7 +531,8 @@ export function GroupPhasePanel({
                   >
                     <div className="space-y-4">
                       {practiceQuestions.map((pq, idx) => {
-                        if (activeCard.isMe) {
+                        const isMyOwnRole = activeCard.isMe || (ownRoleId && activeCard.roleId === ownRoleId);
+                        if (isMyOwnRole) {
                           const stored = ownPracticeResults[pq.id];
                           const initialResult = stored
                             ? {
@@ -549,6 +557,7 @@ export function GroupPhasePanel({
 
                         const stored = ownPracticeResults[pq.id];
                         const done = Boolean(stored || homeGroupCompletedAt);
+                        const inProgress = inProgressResults[pq.id];
                         const initialResult = stored
                           ? {
                             wrongAttempts: stored.wrongAttempts,
@@ -556,8 +565,18 @@ export function GroupPhasePanel({
                             wrongChoiceIndices: stored.wrongChoices,
                             viewedHint1: stored.viewedHint1,
                             viewedHint2: stored.viewedHint2,
+                            isCompleted: true,
                           }
-                          : null;
+                          : inProgress
+                            ? {
+                              wrongAttempts: inProgress.wrongAttempts,
+                              baseScore: practiceQuestionScore(inProgress.wrongAttempts),
+                              wrongChoiceIndices: inProgress.wrongChoiceIndices,
+                              viewedHint1: inProgress.viewedHint1,
+                              viewedHint2: inProgress.viewedHint2,
+                              isCompleted: false,
+                            }
+                            : null;
                         return (
                           <div key={pq.id}>
                             <PracticeQuestionCard
@@ -567,6 +586,12 @@ export function GroupPhasePanel({
                               initialResult={initialResult}
                               disabled={done || busyId === pq.id}
                               onComplete={(r) => handlePeerComplete(pq.id, r)}
+                              onProgress={(progress) => {
+                                setInProgressResults((prev) => ({
+                                  ...prev,
+                                  [pq.id]: progress,
+                                }));
+                              }}
                               segment={activeRole.segment}
                               onAiExplanationLoaded={(qid, res) => {
                                 setAiExplanations((prev) => ({ ...prev, [qid]: res }));

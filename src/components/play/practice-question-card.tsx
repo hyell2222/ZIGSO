@@ -37,7 +37,13 @@ type Props = {
   index: number;
   /** 연습 종료(정답 또는 3회 오답) 시 1회 호출 */
   onComplete: (result: PracticeResult) => void | Promise<void>;
-  /** 이미 완료된 경우(복귀 등) 표시용 */
+  onProgress?: (progress: {
+    wrongAttempts: number;
+    wrongChoiceIndices: number[];
+    viewedHint1: boolean;
+    viewedHint2: boolean;
+  }) => void;
+  /** 이미 완료된 경우(복귀 등) 또는 진행중 상태 표시용 */
   initialResult?: {
     wrongAttempts: number;
     baseScore: number;
@@ -45,6 +51,7 @@ type Props = {
     wrongChoiceIndices?: number[];
     viewedHint1?: boolean;
     viewedHint2?: boolean;
+    isCompleted?: boolean;
   } | null;
   disabled?: boolean;
   /** false면 점수·감점 없이 탐색용 (서로 알려주기 모둠원 파트) */
@@ -72,17 +79,19 @@ export function PracticeQuestionCard({
   segment,
   onAiExplanationLoaded,
   hideHelperText = false,
+  onProgress,
 }: Props) {
+  const isInitiallyDone = Boolean(initialResult && initialResult.isCompleted !== false);
   const [selected, setSelected] = useState<number | null>(null);
   const [wrongChoices, setWrongChoices] = useState<number[]>(() =>
     initialWrongChoices(initialResult),
   );
   const [wrongAttempts, setWrongAttempts] = useState(initialResult?.wrongAttempts ?? 0);
-  const [revealed, setRevealed] = useState(Boolean(initialResult));
+  const [revealed, setRevealed] = useState(isInitiallyDone);
   const [correct, setCorrect] = useState(
-    initialResult ? initialResult.wrongAttempts < PRACTICE_MAX_ATTEMPTS : false,
+    isInitiallyDone ? initialResult!.wrongAttempts < PRACTICE_MAX_ATTEMPTS : false,
   );
-  const [done, setDone] = useState(Boolean(initialResult));
+  const [done, setDone] = useState(isInitiallyDone);
   const [busy, setBusy] = useState(false);
 
   const [loadingAi, setLoadingAi] = useState(false);
@@ -138,16 +147,26 @@ export function PracticeQuestionCard({
     if (loadingAi || busy) return;
     try {
       await requestAiHelp(targetState, wrongChoices);
+      let nextHint1 = viewedHint1;
+      let nextHint2 = viewedHint2;
       if (targetState === "hint1") {
         setViewedHint1(true);
+        nextHint1 = true;
       } else if (targetState === "hint2") {
         setViewedHint2(true);
+        nextHint2 = true;
       }
+      onProgress?.({
+        wrongAttempts,
+        wrongChoiceIndices: wrongChoices,
+        viewedHint1: nextHint1,
+        viewedHint2: nextHint2,
+      });
     } catch (e) {
       console.error(e);
       toast.error("AI 힌트를 불러오는데 실패했습니다. 잠시 후 다시 시도해 주세요.");
     }
-  }, [loadingAi, busy, requestAiHelp, wrongChoices]);
+  }, [loadingAi, busy, requestAiHelp, wrongChoices, viewedHint1, viewedHint2, wrongAttempts, onProgress]);
 
   const outOfAttempts = wrongAttempts >= PRACTICE_MAX_ATTEMPTS;
   const currentScore = practiceBaseScore(wrongAttempts);
@@ -198,6 +217,13 @@ export function PracticeQuestionCard({
     const nextWrongChoices = [...wrongChoices, selected];
     setWrongAttempts(nextWrong);
     setWrongChoices(nextWrongChoices);
+
+    onProgress?.({
+      wrongAttempts: nextWrong,
+      wrongChoiceIndices: nextWrongChoices,
+      viewedHint1,
+      viewedHint2,
+    });
 
     if (nextWrong >= PRACTICE_MAX_ATTEMPTS) {
       setRevealed(true);
