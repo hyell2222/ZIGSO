@@ -62,6 +62,7 @@ type Props = {
     aiResult: { hint1: string; hint2: string; explanation: string }
   ) => void;
   hideHelperText?: boolean;
+  hideNumber?: boolean;
 };
 
 function initialWrongChoices(initialResult: Props["initialResult"]): number[] {
@@ -80,6 +81,7 @@ export function PracticeQuestionCard({
   onAiExplanationLoaded,
   hideHelperText = false,
   onProgress,
+  hideNumber = false,
 }: Props) {
   const isInitiallyDone = Boolean(initialResult && initialResult.isCompleted !== false);
   const [selected, setSelected] = useState<number | null>(null);
@@ -255,7 +257,7 @@ export function PracticeQuestionCard({
     <div className="rounded-xl border border-[var(--border)] bg-[var(--card-bg)] p-4 @md:p-5">
       <div className="mb-3 flex items-center justify-between gap-2">
         <p className={cn("font-medium", playPreservedTextClass)}>
-          {index + 1}. {question.prompt}
+          {!hideNumber && `${index + 1}. `}{question.prompt}
         </p>
       </div>
 

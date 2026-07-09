@@ -390,7 +390,7 @@ export function GroupPhasePanel({
                               )}
                             </div>
                             <p className="font-medium text-xs break-keep break-words">
-                              {idx + 1}. {q.prompt}
+                              {allPracticeQuestions.length > 1 ? `${idx + 1}. ` : ""}{q.prompt}
                             </p>
                           </div>
                           <div className="flex flex-col gap-1">
@@ -550,6 +550,7 @@ export function GroupPhasePanel({
                                 disabled
                                 onComplete={() => { }}
                                 segment={activeRole.segment}
+                                hideNumber={practiceQuestions.length === 1}
                               />
                             </div>
                           );
@@ -596,6 +597,7 @@ export function GroupPhasePanel({
                               onAiExplanationLoaded={(qid, res) => {
                                 setAiExplanations((prev) => ({ ...prev, [qid]: res }));
                               }}
+                              hideNumber={practiceQuestions.length === 1}
                             />
                           </div>
                         );
