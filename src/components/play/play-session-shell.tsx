@@ -30,6 +30,7 @@ import {
   getSessionByJoinCode,
   getGroupById,
   joinPlayerSession,
+  deletePlayer,
   listSessionGroups,
   listSessionPlayers,
   submitPracticeResult,
@@ -65,6 +66,7 @@ export function PlaySessionShell({
   const autoJoinAttempted = useRef(false);
   /** 이전 입장 기록을 거절하고 새 닉네임으로 입장할 때 URL 자동 입장 차단 */
   const declinedResumeRef = useRef(false);
+  const pendingDeletePlayerIdRef = useRef<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [playerId, setPlayerId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -222,6 +224,16 @@ export function PlaySessionShell({
       });
       setPlayerId(result.player.id);
       const phase = session.phase as ActivityPhase | null | undefined;
+
+      if (pendingDeletePlayerIdRef.current && phase === "waiting") {
+        try {
+          await deletePlayer(pendingDeletePlayerIdRef.current);
+        } catch (err) {
+          console.error("Failed to delete old player:", err);
+        }
+        pendingDeletePlayerIdRef.current = null;
+      }
+
       if (phase && phase !== "waiting" && phase !== "results") {
         await assignOrphanPlayersForOngoingSession(session.id);
       }
@@ -266,6 +278,9 @@ export function PlaySessionShell({
   };
 
   const handleJoinAsNewPlayer = () => {
+    if (resumeQuery.data?.playerId) {
+      pendingDeletePlayerIdRef.current = resumeQuery.data.playerId;
+    }
     if (joinCode) clearResumeRecord(joinCode);
     declinedResumeRef.current = true;
     setResumeDecided(true);

@@ -194,6 +194,11 @@ export async function setPlayerOnline(playerId: string, online: boolean) {
   if (error) throw error;
 }
 
+export async function deletePlayer(playerId: string) {
+  const { error } = await supabase.from("players").delete().eq("id", playerId);
+  if (error) throw error;
+}
+
 export async function setPlayersOnline(playerIds: string[], online: boolean) {
   if (playerIds.length === 0) return;
   const { error } = await supabase.from("players").update({ is_online: online }).in("id", playerIds);

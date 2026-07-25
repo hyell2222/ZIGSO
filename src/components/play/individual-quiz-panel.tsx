@@ -243,7 +243,7 @@ export function IndividualQuizPanel({
                               {isCorrect ? "정답" : "오답"}
                             </span>
                             <p className="font-medium text-xs break-keep break-words">
-                              {idx + 1}. {q.prompt}
+                              {questions.length > 1 ? `${idx + 1}. ` : ""}{q.prompt}
                             </p>
                           </div>
                           <div className="flex flex-wrap items-center gap-x-4 gap-y-0.5 text-[15px] font-medium">
