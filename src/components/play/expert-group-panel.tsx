@@ -160,7 +160,7 @@ export function ExpertPhasePanel({
             <GuideInfoModal
               open={scoreModalOpen}
               onClose={() => setScoreModalOpen(false)}
-              title="2단계 완료!"
+              title="제출 완료!"
               titleId={scoreModalTitleId}
             >
               {!allExplanationsLoaded ? (

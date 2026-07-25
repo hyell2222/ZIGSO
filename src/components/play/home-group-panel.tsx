@@ -336,7 +336,7 @@ export function GroupPhasePanel({
             <GuideInfoModal
               open={scoreModalOpen}
               onClose={() => setScoreModalOpen(false)}
-              title="3단계 완료!"
+              title="제출 완료!"
               titleId="home-practice-score-modal"
             >
               {!allExplanationsLoaded ? (
