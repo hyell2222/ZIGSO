@@ -12,7 +12,7 @@ import { ROUTES } from "@/lib/routes";
 import { hasSupabaseEnv } from "@/lib/supabase";
 
 const LANDING_EYEBROW = "모두가 주인공이 되는 디지털 협동학습";
-const LANDING_TAGLINE = "AI 기반 직소·STAD 협동학습 플랫폼 Zigso의 개발 및 수업 적용";
+const LANDING_TAGLINE = "AI 기반 맞춤형 협동학습 플랫폼 ZIGSO의 개발 및 수업 적용";
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -47,7 +47,7 @@ export default function HomePage() {
 
           <div className="space-y-6">
             <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-[var(--ink)]">
-              Zigso
+              ZIGSO
             </h1>
             <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--muted-foreground)] leading-snug">
               {LANDING_TAGLINE}
@@ -55,9 +55,12 @@ export default function HomePage() {
           </div>
 
           {/* 시작 버튼: 작게 & 중앙 정렬 */}
-          <div className="pt-2">
+          <div className="pt-2 flex flex-col sm:flex-row gap-3 justify-center items-center">
             <Button onClick={() => navigate(ROUTES.login)}>
               지금 바로 시작하기
+            </Button>
+            <Button variant="outline" onClick={() => navigate(ROUTES.play)}>
+              학생으로 입장하기
             </Button>
           </div>
         </header>

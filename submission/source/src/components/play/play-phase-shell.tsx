@@ -42,7 +42,16 @@ export function PlayPhaseShell({
       ) : null}
 
       <div className={activityScrollBodyShell}>
-        <div className={cn(layout.pageBody, "flex flex-col pt-4 @sm:pt-6", mainClassName)}>{children}</div>
+        <div
+          className={cn(
+            layout.pageBody,
+            "flex flex-col pt-4 @sm:pt-6",
+            mainClassName,
+          )}
+        >
+          {children}
+          <div className="h-4 shrink-0 @sm:h-6" aria-hidden />
+        </div>
       </div>
 
       {footer || footerClue ? (

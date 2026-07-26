@@ -9,7 +9,7 @@ const t = activityLayoutType;
 
 /** 학습 내용 — 에디터 입력(앞띄어쓰기·줄바꿈) 그대로 표시 */
 export const playSegmentTextClass = cn(
-  "whitespace-pre-wrap rounded-xl border border-[var(--border)] bg-[var(--card-bg)] p-4 @md:p-5",
+  "whitespace-pre-wrap break-keep break-words rounded-xl border border-[var(--border)] bg-[var(--card-bg)] p-4 @md:p-5",
   t.playPanelBody,
 );
 
@@ -24,7 +24,7 @@ export function PlaySegmentText({
 }
 
 /** 문항 발문·해설 등 — 앞띄어쓰기·줄바꿈 유지 */
-export const playPreservedTextClass = cn("whitespace-pre-wrap", t.playPanelBody);
+export const playPreservedTextClass = cn("whitespace-pre-wrap break-keep break-words", t.playPanelBody);
 
 const playQuestionNoteClass = cn(
   "rounded-lg border border-[var(--border)] bg-[var(--background)] px-3 py-2",
@@ -50,5 +50,5 @@ export function PlayQuestionExplanation({
   children: ReactNode;
   className?: string;
 }) {
-  return <div className={cn(playQuestionNoteClass, "whitespace-pre-wrap", className)}>{children}</div>;
+  return <div className={cn(playQuestionNoteClass, "whitespace-pre-wrap break-keep break-words", className)}>{children}</div>;
 }

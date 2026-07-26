@@ -105,6 +105,12 @@ export function GroupPhasePanel({
     for (const id of peerPracticeCompleted) map[id] = true;
     return map;
   });
+  const [inProgressResults, setInProgressResults] = useState<Record<string, {
+    wrongAttempts: number;
+    wrongChoiceIndices: number[];
+    viewedHint1: boolean;
+    viewedHint2: boolean;
+  }>>({});
   const [message, setMessage] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const ownPracticeResults = useMemo(() => {
@@ -165,14 +171,16 @@ export function GroupPhasePanel({
     const newExplanations: Record<string, { hint1: string; hint2: string; explanation: string }> = { ...aiExplanations };
 
     try {
-      const promises = allPracticeQuestions.map(async (q) => {
-        if (newExplanations[q.id]) return;
+      for (const q of allPracticeQuestions) {
+        if (newExplanations[q.id]) continue;
 
         const role = pack.roles.find((r) => r.practiceQuestions.some((pq) => pq.id === q.id));
         const segment = role?.segment;
         if (!segment) {
-          newExplanations[q.id] = { hint1: "", hint2: "", explanation: "내용을 찾을 수 없어 해설을 생성할 수 없습니다." };
-          return;
+          const fallback = { hint1: "", hint2: "", explanation: "내용을 찾을 수 없어 해설을 생성할 수 없습니다." };
+          newExplanations[q.id] = fallback;
+          setAiExplanations((prev) => ({ ...prev, [q.id]: fallback }));
+          continue;
         }
 
         const result = ownPracticeResults[q.id];
@@ -187,14 +195,14 @@ export function GroupPhasePanel({
             wrongChoices,
           });
           newExplanations[q.id] = data;
+          setAiExplanations((prev) => ({ ...prev, [q.id]: data }));
         } catch (err) {
           console.error(`Failed to fetch AI explanation for question ${q.id}:`, err);
-          newExplanations[q.id] = { hint1: "", hint2: "", explanation: "해설을 불러오는데 실패했습니다." };
+          const fallback = { hint1: "", hint2: "", explanation: "해설을 불러오는데 실패했습니다." };
+          newExplanations[q.id] = fallback;
+          setAiExplanations((prev) => ({ ...prev, [q.id]: fallback }));
         }
-      });
-
-      await Promise.all(promises);
-      setAiExplanations((prev) => ({ ...prev, ...newExplanations }));
+      }
     } catch (e) {
       console.error("Failed to fetch AI explanations:", e);
     } finally {
@@ -251,21 +259,27 @@ export function GroupPhasePanel({
 
 
   useEffect(() => {
-    if (allPeerDone && !homeGroupCompletedAt && peerQuestions.length === 0) {
+    if (allPeerDone && !homeGroupCompletedAt && peerQuestions.length > 0) {
       void onEnsureHomeGroupComplete?.();
     }
   }, [allPeerDone, homeGroupCompletedAt, peerQuestions.length, onEnsureHomeGroupComplete]);
 
-  const cards = useMemo(
-    () =>
-      members.map((m) => ({
-        key: m.id,
-        nickname: m.nickname ?? "팀원",
-        roleId: m.assigned_role_id,
-        isMe: m.id === playerId,
-      })),
-    [members, playerId],
-  );
+  const cards = useMemo(() => {
+    const list = members.map((m) => ({
+      key: m.id,
+      nickname: m.nickname ?? "모둠원",
+      roleId: m.assigned_role_id,
+      isMe: m.id === playerId,
+    }));
+    return list.sort((a, b) => {
+      const idxA = pack.roles.findIndex((r) => r.id === a.roleId);
+      const idxB = pack.roles.findIndex((r) => r.id === b.roleId);
+      const valA = idxA === -1 ? 9999 : idxA;
+      const valB = idxB === -1 ? 9999 : idxB;
+      if (valA !== valB) return valA - valB;
+      return a.nickname.localeCompare(b.nickname, "ko");
+    });
+  }, [members, playerId, pack.roles]);
 
   const defaultMemberId = useMemo(() => {
     const me = cards.find((c) => c.isMe);
@@ -282,22 +296,27 @@ export function GroupPhasePanel({
   const activeRole = activeCard?.roleId ? getRoleById(pack, activeCard.roleId) : undefined;
   const practiceQuestions = activeRole?.practiceQuestions ?? [];
   const practiceDoneCount = practiceQuestions.filter(
-    (pq) => activeCard?.isMe || completed[pq.id] || homeGroupCompletedAt,
+    (pq) =>
+      activeCard?.isMe ||
+      (ownRoleId && activeCard?.roleId === ownRoleId) ||
+      completed[pq.id] ||
+      homeGroupCompletedAt,
   ).length;
   const segmentTitle = activeCard?.isMe
     ? "내가 맡은 부분"
-    : `${roleLabelFor(activeCard?.roleId ?? null)} · ${activeCard?.nickname ?? "팀원"}`;
+    : `${roleLabelFor(activeCard?.roleId ?? null)} · ${activeCard?.nickname ?? "모둠원"}`;
 
   const memberPeerDone = useCallback(
     (card: (typeof cards)[number]) => {
       if (card.isMe) return true;
+      if (ownRoleId && card.roleId === ownRoleId) return true;
       const role = card.roleId ? getRoleById(pack, card.roleId) : undefined;
       if (!role) return false;
       return role.practiceQuestions.every(
         (pq) => completed[pq.id] || homeGroupCompletedAt,
       );
     },
-    [pack, completed, homeGroupCompletedAt],
+    [pack, completed, homeGroupCompletedAt, ownRoleId],
   );
 
   return (
@@ -317,7 +336,7 @@ export function GroupPhasePanel({
             <GuideInfoModal
               open={scoreModalOpen}
               onClose={() => setScoreModalOpen(false)}
-              title="3단계 완료!"
+              title="제출 완료!"
               titleId="home-practice-score-modal"
             >
               {!allExplanationsLoaded ? (
@@ -370,8 +389,8 @@ export function GroupPhasePanel({
                                 </span>
                               )}
                             </div>
-                            <p className="font-medium text-xs">
-                              {idx + 1}. {q.prompt}
+                            <p className="font-medium text-xs break-keep break-words">
+                              {allPracticeQuestions.length > 1 ? `${idx + 1}. ` : ""}{q.prompt}
                             </p>
                           </div>
                           <div className="flex flex-col gap-1">
@@ -392,7 +411,7 @@ export function GroupPhasePanel({
                                     <Sparkles className="h-3.5 w-3.5" />
                                     힌트 1
                                   </span>
-                                  <span className="block text-[var(--foreground)]">{aiResult.hint1}</span>
+                                  <span className="block text-[var(--foreground)] whitespace-pre-wrap break-keep break-words">{aiResult.hint1}</span>
                                 </PlayQuestionExplanation>
                               )}
                               {aiResult.hint2 && result && result.viewedHint2 && (
@@ -401,7 +420,7 @@ export function GroupPhasePanel({
                                     <Sparkles className="h-3.5 w-3.5" />
                                     {result.viewedHint1 ? "힌트 2" : "힌트 1"}
                                   </span>
-                                  <span className="block text-[var(--foreground)]">{aiResult.hint2}</span>
+                                  <span className="block text-[var(--foreground)] whitespace-pre-wrap break-keep break-words">{aiResult.hint2}</span>
                                 </PlayQuestionExplanation>
                               )}
                               {aiResult.explanation && (
@@ -410,7 +429,7 @@ export function GroupPhasePanel({
                                     <Sparkles className="h-3.5 w-3.5" />
                                     AI 상세 해설
                                   </span>
-                                  <span className="block text-[var(--foreground)] whitespace-pre-wrap">{aiResult.explanation}</span>
+                                  <span className="block text-[var(--foreground)] whitespace-pre-wrap break-keep break-words">{aiResult.explanation}</span>
                                 </PlayQuestionExplanation>
                               )}
                             </div>
@@ -449,6 +468,15 @@ export function GroupPhasePanel({
                   const isActive = card.key === resolvedMemberId;
                   const done = memberPeerDone(card);
                   const label = roleLabelFor(card.roleId);
+                  const buttonClass = cn(
+                    playChipClass,
+                    "active:scale-[0.98] transition-transform",
+                    isActive
+                      ? "border-2 border-[var(--primary)] bg-[var(--primary)] text-[var(--on-primary)] font-bold shadow-sm"
+                      : done
+                        ? "border-2 border-[var(--primary)] bg-[color-mix(in_srgb,var(--primary)_8%,var(--card-bg))] text-[var(--foreground)] font-bold shadow-xs"
+                        : "border border-[var(--border)] bg-[var(--card-bg)] text-[var(--foreground)]"
+                  );
                   return (
                     <button
                       key={card.key}
@@ -456,27 +484,8 @@ export function GroupPhasePanel({
                       role="tab"
                       aria-selected={isActive}
                       onClick={() => setActiveMemberId(card.key)}
-                      className={cn(
-                        playChipClass,
-                        "active:scale-[0.98] transition-transform",
-                        isActive
-                          ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--on-primary)]"
-                          : "border-[var(--border)] bg-[var(--card-bg)] text-[var(--foreground)] hover:border-[color-mix(in_srgb,var(--primary)_35%,var(--border))]",
-                      )}
+                      className={buttonClass}
                     >
-                      <span
-                        className={cn(
-                          "h-1.5 w-1.5 rounded-full",
-                          done
-                            ? isActive
-                              ? "bg-[var(--on-primary)]"
-                              : "bg-[var(--primary)]"
-                            : isActive
-                              ? "bg-[var(--on-primary)]/50"
-                              : "bg-[var(--border)]",
-                        )}
-                        aria-hidden
-                      />
                       {label} · {card.nickname}
                       {card.isMe ? " (나)" : ""}
                     </button>
@@ -489,7 +498,7 @@ export function GroupPhasePanel({
               <p className={t.playPanelBody}>아직 역할이 배정되지 않았어요.</p>
             ) : (
               <div className="grid items-start gap-4 lg:grid-cols-2">
-                <div className="lg:sticky lg:top-4">
+                <div>
                   <PlayPhaseSection title={segmentTitle} variant="active">
                     <PlaySegmentText className="@md:p-6">
                       {activeRole.segment}
@@ -522,7 +531,8 @@ export function GroupPhasePanel({
                   >
                     <div className="space-y-4">
                       {practiceQuestions.map((pq, idx) => {
-                        if (activeCard.isMe) {
+                        const isMyOwnRole = activeCard.isMe || (ownRoleId && activeCard.roleId === ownRoleId);
+                        if (isMyOwnRole) {
                           const stored = ownPracticeResults[pq.id];
                           const initialResult = stored
                             ? {
@@ -540,6 +550,7 @@ export function GroupPhasePanel({
                                 disabled
                                 onComplete={() => { }}
                                 segment={activeRole.segment}
+                                hideNumber={practiceQuestions.length === 1}
                               />
                             </div>
                           );
@@ -547,6 +558,7 @@ export function GroupPhasePanel({
 
                         const stored = ownPracticeResults[pq.id];
                         const done = Boolean(stored || homeGroupCompletedAt);
+                        const inProgress = inProgressResults[pq.id];
                         const initialResult = stored
                           ? {
                             wrongAttempts: stored.wrongAttempts,
@@ -554,8 +566,18 @@ export function GroupPhasePanel({
                             wrongChoiceIndices: stored.wrongChoices,
                             viewedHint1: stored.viewedHint1,
                             viewedHint2: stored.viewedHint2,
+                            isCompleted: true,
                           }
-                          : null;
+                          : inProgress
+                            ? {
+                              wrongAttempts: inProgress.wrongAttempts,
+                              baseScore: practiceQuestionScore(inProgress.wrongAttempts),
+                              wrongChoiceIndices: inProgress.wrongChoiceIndices,
+                              viewedHint1: inProgress.viewedHint1,
+                              viewedHint2: inProgress.viewedHint2,
+                              isCompleted: false,
+                            }
+                            : null;
                         return (
                           <div key={pq.id}>
                             <PracticeQuestionCard
@@ -565,10 +587,17 @@ export function GroupPhasePanel({
                               initialResult={initialResult}
                               disabled={done || busyId === pq.id}
                               onComplete={(r) => handlePeerComplete(pq.id, r)}
+                              onProgress={(progress) => {
+                                setInProgressResults((prev) => ({
+                                  ...prev,
+                                  [pq.id]: progress,
+                                }));
+                              }}
                               segment={activeRole.segment}
                               onAiExplanationLoaded={(qid, res) => {
                                 setAiExplanations((prev) => ({ ...prev, [qid]: res }));
                               }}
+                              hideNumber={practiceQuestions.length === 1}
                             />
                           </div>
                         );

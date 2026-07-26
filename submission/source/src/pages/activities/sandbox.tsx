@@ -25,6 +25,7 @@ import {
   buildSandboxAssignments,
   createInitialSandboxState,
   nextSandboxPhase,
+  advanceSandboxState,
   type SandboxState,
 } from "@/lib/sandbox/state";
 import { cn } from "@/lib/utils";
@@ -53,12 +54,13 @@ function SandboxPageContent() {
   }, [activityId, pack]);
 
   const advancePhase = useCallback(() => {
+    if (!pack) return;
     setState((prev) => {
       const next = nextSandboxPhase(prev.phase);
       if (!next) return prev;
-      return { ...prev, phase: next };
+      return advanceSandboxState(prev, next, pack);
     });
-  }, []);
+  }, [pack]);
 
   const joinAsStudent = useCallback((nickname: string) => {
     const trimmed = nickname.trim();

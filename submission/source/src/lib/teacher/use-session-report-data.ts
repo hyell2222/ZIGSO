@@ -110,6 +110,7 @@ export function useSessionReportData(sessionId: string) {
           baseScore: p.base_score,
           individual_quiz_answers: p.individual_quiz_answers ?? [],
           individual_quiz_submitted_at: p.individual_quiz_submitted_at,
+          home_group_completed_at: p.home_group_completed_at,
         })),
     [players],
   );
@@ -127,6 +128,7 @@ export function useSessionReportData(sessionId: string) {
         baseScore: m.baseScore,
         individual_quiz_answers: m.individual_quiz_answers,
         individual_quiz_submitted_at: m.individual_quiz_submitted_at,
+        home_group_completed_at: m.home_group_completed_at,
       })),
       sessionId,
     );

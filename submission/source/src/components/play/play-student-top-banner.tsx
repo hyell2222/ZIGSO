@@ -62,7 +62,7 @@ export function PlayStudentTopBanner({
               {step.title}
             </p>
           </div>
-          <p className="text-[16px] font-light text-[var(--muted-foreground)] max-w-xl whitespace-pre-line break-keep">
+          <p className="text-[16px] font-light text-[var(--muted-foreground)] max-w-xl whitespace-pre-line break-keep break-words">
             {guide.intro}
           </p>
         </div>

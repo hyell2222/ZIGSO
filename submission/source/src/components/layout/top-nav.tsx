@@ -56,7 +56,7 @@ export function TopNav() {
               to={sessionQuery.data ? ROUTES.activities : ROUTES.home}
               className="block whitespace-nowrap text-3xl font-extrabold tracking-tight text-[var(--on-primary)] transition"
             >
-              Zigso
+              ZIGSO
             </Link>
           </div>
           <nav className="flex shrink-0 items-center justify-end gap-2 text-sm">

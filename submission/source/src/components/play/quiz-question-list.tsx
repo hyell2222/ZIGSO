@@ -39,7 +39,9 @@ export function QuizQuestionList({
             className="rounded-xl border border-[var(--border)] bg-[var(--card-bg)] p-4 @md:p-5"
           >
             <p className={cn("mb-3 font-medium", playPreservedTextClass)}>
-              <span className="mr-1.5 text-[var(--muted-foreground)]">{startIndex + qi + 1}.</span>
+              {(questions.length > 1 || startIndex > 0) && (
+                <span className="mr-1.5 text-[var(--muted-foreground)]">{startIndex + qi + 1}.</span>
+              )}
               {q.prompt}
             </p>
             <div className="space-y-2">
@@ -78,7 +80,7 @@ export function QuizQuestionList({
                     >
                       {CHOICE_LABELS[ci] ?? ci + 1}
                     </span>
-                    <span className="flex-1">{choice}</span>
+                    <span className="flex-1 break-keep break-words">{choice}</span>
                     {showCorrect ? <CheckCircle2 className="h-4 w-4" aria-hidden /> : null}
                     {showWrong ? <XCircle className="h-4 w-4" aria-hidden /> : null}
                   </button>

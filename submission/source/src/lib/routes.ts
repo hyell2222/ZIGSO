@@ -17,10 +17,10 @@ export const ROUTES = {
   /** QR·공유용 — 코드만 있으면 입장 페이지, 닉네임까지 있으면 세션으로 */
   playJoin: (joinCode: string, nickname?: string) => {
     if (nickname?.trim()) {
-      return ROUTES.playSessionJoin(joinCode, nickname);
+      return `/#${ROUTES.playSessionJoin(joinCode, nickname)}`;
     }
     const code = encodeURIComponent(joinCode.trim().toUpperCase());
-    return `/play/?code=${code}`;
+    return `/#/play/?code=${code}`;
   },
 
   login: "/login/",

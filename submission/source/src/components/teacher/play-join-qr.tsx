@@ -75,27 +75,33 @@ export function PlayJoinQr({
       variant={useScope ? "contained" : "viewport"}
       zIndexClassName={useScope ? Z.hostTool : Z.modal}
     >
-      <div className="flex justify-center rounded-lg border border-[var(--border)] bg-white p-4">
+      <div className="flex justify-center">
         <QRCode value={playUrl} size={320} style={{ maxWidth: "100%", height: "auto" }} />
       </div>
-      <div className="flex flex-row gap-2 justify-center items-center">
-        <p className="break-all text-center text-sm text-[var(--muted-foreground)]">{playUrl}</p>
-        <Button
-          size="sm"
-          variant="ghost"
-          className="shrink-0 text-[var(--primary)]"
-          onClick={async () => {
-            await navigator.clipboard.writeText(playUrl);
+      <div className="flex flex-col">
+        <div className="text-center text-sm">
+          <span className="text-[var(--muted-foreground)]">입장 코드: </span>
+          <span className="font-bold tracking-wider text-[var(--primary)]">{joinCode}</span>
+        </div>
+        <div className="flex flex-row gap-2 justify-center items-center">
+          <p className="break-all text-center text-sm text-[var(--muted-foreground)]">{playUrl}</p>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="shrink-0 text-[var(--primary)]"
+            onClick={async () => {
+              await navigator.clipboard.writeText(playUrl);
 
-            setIsCopied(true);
+              setIsCopied(true);
 
-            setTimeout(() => {
-              setIsCopied(false);
-            }, 2000);
-          }}
-        >
-          {isCopied ? <Check /> : <Copy />}
-        </Button>
+              setTimeout(() => {
+                setIsCopied(false);
+              }, 2000);
+            }}
+          >
+            {isCopied ? <Check /> : <Copy />}
+          </Button>
+        </div>
       </div>
     </Modal>
   ) : null;

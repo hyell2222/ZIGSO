@@ -9,7 +9,7 @@ import { getCurrentSession, signInTeacher, signInWithGoogle } from "@/lib/api/au
 import { AUTH_SESSION_QUERY_KEY } from "@/lib/auth/use-require-teacher-session";
 import { getKoreanAuthErrorMessage } from "@/lib/auth/errors";
 import { ROUTES } from "@/lib/routes";
-import { hasSupabaseEnv } from "@/lib/supabase";
+import { hasSupabaseEnv, supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 
 export default function LoginPage() {
@@ -57,10 +57,26 @@ export default function LoginPage() {
   });
 
   useEffect(() => {
+    if (sessionQuery.data) {
+      navigate(ROUTES.activities, { replace: true });
+      return;
+    }
+
     if (sessionQuery.isLoading) return;
-    if (sessionQuery.isFetching && !sessionQuery.data) return;
-    if (sessionQuery.data) navigate(ROUTES.activities, { replace: true });
-  }, [navigate, sessionQuery.data, sessionQuery.isLoading, sessionQuery.isFetching]);
+
+    if (!hasSupabaseEnv || !supabase) return;
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if ((event === "SIGNED_IN" || event === "USER_UPDATED") && session) {
+        await queryClient.invalidateQueries({ queryKey: AUTH_SESSION_QUERY_KEY });
+        navigate(ROUTES.activities, { replace: true });
+      }
+    });
+
+    return () => {
+      subscription?.unsubscribe();
+    };
+  }, [navigate, sessionQuery.data, sessionQuery.isLoading, queryClient]);
 
   return (
     <>

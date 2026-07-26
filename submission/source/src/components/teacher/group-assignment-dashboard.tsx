@@ -101,6 +101,10 @@ export function SeatingLayout({
         if (emptyIdx !== -1) {
           seats[emptyIdx].member = m;
           placedMemberIds.add(m.id);
+          const roleIdx = roles.findIndex((r) => r.id === m.assignedRoleId);
+          if (roleIdx !== -1) {
+            seats[emptyIdx].slotName = letterLabel(roleIdx);
+          }
         }
       }
     });
@@ -124,6 +128,9 @@ export function SeatingLayout({
         if (emptyIdx !== -1) {
           seats[emptyIdx].member = m;
           placedMemberIds.add(m.id);
+          if (m.groupName) {
+            seats[emptyIdx].slotName = m.groupName;
+          }
         }
       }
     });
@@ -138,12 +145,14 @@ export function SeatingLayout({
         const isOccupied = m !== null;
         const isOnline = isOccupied ? m.isOnline !== false : false;
         const isComplete = isOccupied ? isMemberPhaseComplete(m) : false;
+        const isLastSingle = seats.length % 2 === 1 && idx === seats.length - 1;
 
         return (
           <div
             key={idx}
             className={cn(
-              "relative flex flex-col items-center justify-center p-2 rounded border text-center min-h-[60px] w-full transition-all duration-200",
+              "relative flex flex-col items-center justify-center p-2 rounded border text-center min-h-[60px] transition-all duration-200",
+              isLastSingle ? "col-span-2 justify-self-center w-[calc(50%-4px)]" : "w-full",
               isOccupied
                 ? isOnline
                   ? isComplete

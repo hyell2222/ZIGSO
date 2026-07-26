@@ -333,7 +333,7 @@ function EditorPhaseStepper({
   return (
     <nav
       aria-label="편집 단계"
-      className="w-full bg-[var(--card-bg)] py-3 px-4 sm:px-6"
+      className="w-full bg-[var(--card-bg)] py-3 px-4 sm:px-6 border-b border-[var(--border)]"
     >
       <ol className="mx-auto flex max-w-5xl px-4 items-center justify-start gap-4">
         {EDITOR_STEPS.map((step, index) => {
@@ -421,7 +421,7 @@ function RoleChipNav({
 }) {
   return (
     <nav
-      className="flex shrink-0 bg-[var(--background)] py-3 border border-b border-[var(--border)]"
+      className="flex shrink-0 bg-[var(--background)] py-3 border-b border-[var(--border)]"
       aria-label="학습 내용 선택"
     >
       <div
@@ -620,7 +620,7 @@ export function ActivityEditorForm({ draft, onChange }: Props) {
                           playPhaseSectionShell,
                           "flex flex-col",
                           activityEditorSegmentPanelBg,
-                          "min-w-0 flex-1 basis-1/2 self-start sm:sticky sm:top-4",
+                          "min-w-0 flex-1 basis-1/2",
                         )}
                       >
                         <div
@@ -714,7 +714,7 @@ export function ActivityEditorForm({ draft, onChange }: Props) {
                   playPhaseSectionShell,
                   "flex flex-col",
                   activityEditorSegmentPanelBg,
-                  "min-w-0 flex-1 basis-1/2 self-start sm:sticky sm:top-4",
+                  "min-w-0 flex-1 basis-1/2",
                 )}
               >
                 <div
@@ -746,7 +746,7 @@ export function ActivityEditorForm({ draft, onChange }: Props) {
                         <h4 className="text-xs font-bold text-[var(--primary)] mb-2">
                           {label}
                         </h4>
-                        <p className="whitespace-pre-wrap text-sm text-[var(--foreground)] bg-[var(--surface-overlay)] p-3 rounded-md border border-[var(--border)]">
+                        <p className="whitespace-pre-wrap break-keep break-words text-sm text-[var(--foreground)] bg-[var(--surface-overlay)] p-3 rounded-md border border-[var(--border)]">
                           {role.segment.trim() || "(입력된 내용이 없습니다)"}
                         </p>
                       </div>

@@ -242,8 +242,8 @@ export function IndividualQuizPanel({
                             )}>
                               {isCorrect ? "정답" : "오답"}
                             </span>
-                            <p className="font-medium text-xs">
-                              {idx + 1}. {q.prompt}
+                            <p className="font-medium text-xs break-keep break-words">
+                              {questions.length > 1 ? `${idx + 1}. ` : ""}{q.prompt}
                             </p>
                           </div>
                           <div className="flex flex-wrap items-center gap-x-4 gap-y-0.5 text-[15px] font-medium">
@@ -261,7 +261,7 @@ export function IndividualQuizPanel({
                                   <Sparkles className="h-3.5 w-3.5" />
                                   AI 상세 해설
                                 </span>
-                                <span className="block text-[var(--foreground)] whitespace-pre-wrap">{aiResult.explanation}</span>
+                                <span className="block text-[var(--foreground)] whitespace-pre-wrap break-keep break-words">{aiResult.explanation}</span>
                               </PlayQuestionExplanation>
                             </div>
                           )}
@@ -291,7 +291,7 @@ export function IndividualQuizPanel({
       <PlayPhasePanel>
         <div className="grid items-start gap-4 lg:grid-cols-2">
           {/* Left Column: Combined passages */}
-          <div className="lg:sticky lg:top-4">
+          <div>
             <PlayPhaseSection title="학습 내용" variant="active" className="min-h-0">
               <div className="space-y-6 rounded-xl border border-[var(--border)] bg-[var(--card-bg)] p-4 @md:p-5">
                 {testSections.map((section, sectionIndex) => {
@@ -299,7 +299,7 @@ export function IndividualQuizPanel({
                   return (
                     <div key={section.roleId} className={cn(sectionIndex > 0 && "border-t border-[var(--border)] pt-6")}>
                       <h4 className="text-sm font-semibold mb-2 text-[var(--primary)]">{sectionLabel}</h4>
-                      <p className="whitespace-pre-wrap text-sm text-[var(--foreground)]">{section.segment}</p>
+                      <p className="whitespace-pre-wrap break-keep break-words text-sm text-[var(--foreground)]">{section.segment}</p>
                     </div>
                   );
                 })}

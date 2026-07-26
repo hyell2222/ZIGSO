@@ -160,7 +160,7 @@ export function ExpertPhasePanel({
             <GuideInfoModal
               open={scoreModalOpen}
               onClose={() => setScoreModalOpen(false)}
-              title="2단계 완료!"
+              title="제출 완료!"
               titleId={scoreModalTitleId}
             >
               {!allExplanationsLoaded ? (
@@ -204,8 +204,8 @@ export function ExpertPhasePanel({
                                 </span>
                               )}
                             </div>
-                            <p className="font-medium text-xs">
-                              {idx + 1}. {q.prompt}
+                            <p className="font-medium text-xs break-keep break-words">
+                              {practiceQuestions.length > 1 ? `${idx + 1}. ` : ""}{q.prompt}
                             </p>
                           </div>
                           <div className="flex flex-col gap-1">
@@ -225,7 +225,7 @@ export function ExpertPhasePanel({
                                     <Sparkles className="h-3.5 w-3.5" />
                                     힌트 1
                                   </span>
-                                  <span className="block text-[var(--foreground)]">{aiResult.hint1}</span>
+                                  <span className="block text-[var(--foreground)] whitespace-pre-wrap break-keep break-words">{aiResult.hint1}</span>
                                 </PlayQuestionExplanation>
                               )}
                               {aiResult.hint2 && result && result.viewedHint2 && (
@@ -234,7 +234,7 @@ export function ExpertPhasePanel({
                                     <Sparkles className="h-3.5 w-3.5" />
                                     {result.viewedHint1 ? "힌트 2" : "힌트 1"}
                                   </span>
-                                  <span className="block text-[var(--foreground)]">{aiResult.hint2}</span>
+                                  <span className="block text-[var(--foreground)] whitespace-pre-wrap break-keep break-words">{aiResult.hint2}</span>
                                 </PlayQuestionExplanation>
                               )}
                               {aiResult.explanation && (
@@ -243,7 +243,7 @@ export function ExpertPhasePanel({
                                     <Sparkles className="h-3.5 w-3.5" />
                                     AI 상세 해설
                                   </span>
-                                  <span className="block text-[var(--foreground)] whitespace-pre-wrap">{aiResult.explanation}</span>
+                                  <span className="block text-[var(--foreground)] whitespace-pre-wrap break-keep break-words">{aiResult.explanation}</span>
                                 </PlayQuestionExplanation>
                               )}
                             </div>
@@ -269,7 +269,7 @@ export function ExpertPhasePanel({
         ) : (
           <>
             <div className="grid items-start gap-4 lg:grid-cols-2">
-              <div className="lg:sticky lg:top-4">
+              <div>
                 <PlayPhaseSection title="내가 맡은 부분" variant="active" className="min-h-0">
                   <PlaySegmentText>{role.segment}</PlaySegmentText>
                 </PlayPhaseSection>
@@ -323,6 +323,7 @@ export function ExpertPhasePanel({
                           onAiExplanationLoaded={(qid, res) => {
                             setAiExplanations((prev) => ({ ...prev, [qid]: res }));
                           }}
+                          hideNumber={practiceQuestions.length === 1}
                         />
                       </div>
                     );

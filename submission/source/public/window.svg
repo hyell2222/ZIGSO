@@ -1,1 +1,44 @@
-<svg fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill-rule="evenodd" clip-rule="evenodd" d="M1.5 2.5h13v10a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1zM0 1h16v11.5a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 0 12.5zm3.75 4.5a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5M7 4.75a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0m1.75.75a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5" fill="#666"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <!-- Gradients for Jigsaw Pieces -->
+    <linearGradient id="grad-tl" x1="8" y1="8" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#206850"/>
+      <stop offset="100%" stop-color="#124030"/>
+    </linearGradient>
+    <linearGradient id="grad-tr" x1="32" y1="8" x2="56" y2="32" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#e2822a"/>
+      <stop offset="100%" stop-color="#a3520e"/>
+    </linearGradient>
+    <linearGradient id="grad-bl" x1="8" y1="32" x2="32" y2="56" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#8c674b"/>
+      <stop offset="100%" stop-color="#503927"/>
+    </linearGradient>
+    <linearGradient id="grad-br" x1="32" y1="32" x2="56" y2="56" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#2da37a"/>
+      <stop offset="100%" stop-color="#155e44"/>
+    </linearGradient>
+    
+    <!-- Drop Shadow Filter -->
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="2.5" stdDeviation="2" flood-color="#14100d" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#shadow)">
+    <!-- Top-Left Piece (Green): 1 tab on right -->
+    <path d="M 12 8 H 32 V 16 A 6 6 0 1 1 32 24 V 32 H 8 V 12 A 4 4 0 0 1 12 8 Z" 
+          fill="url(#grad-tl)" stroke="#ffffff" stroke-width="1" stroke-linejoin="round"/>
+
+    <!-- Top-Right Piece (Orange): 1 blank on left -->
+    <path d="M 32 8 H 52 A 4 4 0 0 1 56 12 V 32 H 32 V 24 A 6 6 0 1 0 32 16 V 8 Z" 
+          fill="url(#grad-tr)" stroke="#ffffff" stroke-width="1" stroke-linejoin="round"/>
+
+    <!-- Bottom-Left Piece (Brown): 1 blank on right -->
+    <path d="M 8 32 H 32 V 40 A 6 6 0 1 0 32 48 V 56 H 12 A 4 4 0 0 1 8 52 Z" 
+          fill="url(#grad-bl)" stroke="#ffffff" stroke-width="1" stroke-linejoin="round"/>
+
+    <!-- Bottom-Right Piece (Teal): 1 tab on left -->
+    <path d="M 32 32 H 56 V 52 A 4 4 0 0 1 52 56 H 32 V 48 A 6 6 0 1 1 32 40 V 32 Z" 
+          fill="url(#grad-br)" stroke="#ffffff" stroke-width="1" stroke-linejoin="round"/>
+  </g>
+</svg>

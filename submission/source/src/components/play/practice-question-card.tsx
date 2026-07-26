@@ -37,7 +37,13 @@ type Props = {
   index: number;
   /** 연습 종료(정답 또는 3회 오답) 시 1회 호출 */
   onComplete: (result: PracticeResult) => void | Promise<void>;
-  /** 이미 완료된 경우(복귀 등) 표시용 */
+  onProgress?: (progress: {
+    wrongAttempts: number;
+    wrongChoiceIndices: number[];
+    viewedHint1: boolean;
+    viewedHint2: boolean;
+  }) => void;
+  /** 이미 완료된 경우(복귀 등) 또는 진행중 상태 표시용 */
   initialResult?: {
     wrongAttempts: number;
     baseScore: number;
@@ -45,6 +51,7 @@ type Props = {
     wrongChoiceIndices?: number[];
     viewedHint1?: boolean;
     viewedHint2?: boolean;
+    isCompleted?: boolean;
   } | null;
   disabled?: boolean;
   /** false면 점수·감점 없이 탐색용 (서로 알려주기 모둠원 파트) */
@@ -55,6 +62,7 @@ type Props = {
     aiResult: { hint1: string; hint2: string; explanation: string }
   ) => void;
   hideHelperText?: boolean;
+  hideNumber?: boolean;
 };
 
 function initialWrongChoices(initialResult: Props["initialResult"]): number[] {
@@ -72,17 +80,20 @@ export function PracticeQuestionCard({
   segment,
   onAiExplanationLoaded,
   hideHelperText = false,
+  onProgress,
+  hideNumber = false,
 }: Props) {
+  const isInitiallyDone = Boolean(initialResult && initialResult.isCompleted !== false);
   const [selected, setSelected] = useState<number | null>(null);
   const [wrongChoices, setWrongChoices] = useState<number[]>(() =>
     initialWrongChoices(initialResult),
   );
   const [wrongAttempts, setWrongAttempts] = useState(initialResult?.wrongAttempts ?? 0);
-  const [revealed, setRevealed] = useState(Boolean(initialResult));
+  const [revealed, setRevealed] = useState(isInitiallyDone);
   const [correct, setCorrect] = useState(
-    initialResult ? initialResult.wrongAttempts < PRACTICE_MAX_ATTEMPTS : false,
+    isInitiallyDone ? initialResult!.wrongAttempts < PRACTICE_MAX_ATTEMPTS : false,
   );
-  const [done, setDone] = useState(Boolean(initialResult));
+  const [done, setDone] = useState(isInitiallyDone);
   const [busy, setBusy] = useState(false);
 
   const [loadingAi, setLoadingAi] = useState(false);
@@ -138,16 +149,26 @@ export function PracticeQuestionCard({
     if (loadingAi || busy) return;
     try {
       await requestAiHelp(targetState, wrongChoices);
+      let nextHint1 = viewedHint1;
+      let nextHint2 = viewedHint2;
       if (targetState === "hint1") {
         setViewedHint1(true);
+        nextHint1 = true;
       } else if (targetState === "hint2") {
         setViewedHint2(true);
+        nextHint2 = true;
       }
+      onProgress?.({
+        wrongAttempts,
+        wrongChoiceIndices: wrongChoices,
+        viewedHint1: nextHint1,
+        viewedHint2: nextHint2,
+      });
     } catch (e) {
       console.error(e);
       toast.error("AI 힌트를 불러오는데 실패했습니다. 잠시 후 다시 시도해 주세요.");
     }
-  }, [loadingAi, busy, requestAiHelp, wrongChoices]);
+  }, [loadingAi, busy, requestAiHelp, wrongChoices, viewedHint1, viewedHint2, wrongAttempts, onProgress]);
 
   const outOfAttempts = wrongAttempts >= PRACTICE_MAX_ATTEMPTS;
   const currentScore = practiceBaseScore(wrongAttempts);
@@ -169,40 +190,6 @@ export function PracticeQuestionCard({
     }
   }, [onComplete]);
 
-  useEffect(() => {
-    if (revealed && !done && busy) {
-      const loadAndFinish = async () => {
-        const targetWrongChoices = correct ? wrongChoices : [...wrongChoices, selected!];
-
-        // Trigger completion synchronously to open score modal immediately
-        void finish({
-          wrongAttempts: correct ? wrongAttempts : PRACTICE_MAX_ATTEMPTS,
-          baseScore: practiceBaseScore(correct ? wrongAttempts : PRACTICE_MAX_ATTEMPTS),
-          correct,
-          answer: { questionId: question.id, choiceIndex: selected ?? question.correctIndex },
-          wrongChoices: targetWrongChoices,
-          viewedHint1,
-          viewedHint2,
-        });
-
-        // Fetch AI explanation in parallel
-        if (fetchedAtState !== "completed") {
-          try {
-            await requestAiHelp("completed", targetWrongChoices);
-          } catch (e) {
-            console.error(e);
-            toast.error("AI 해설을 불러오는데 실패했습니다.");
-          }
-        } else {
-          if (onAiExplanationLoaded && aiResult) {
-            onAiExplanationLoaded(question.id, aiResult);
-          }
-        }
-      };
-      void loadAndFinish();
-    }
-  }, [revealed, done, busy, aiResult, wrongChoices, wrongAttempts, correct, selected, question, onAiExplanationLoaded, finish, requestAiHelp, viewedHint1, viewedHint2]);
-
   const handleSubmit = async () => {
     if (selected === null || done || busy || loadingAi) return;
 
@@ -210,6 +197,21 @@ export function PracticeQuestionCard({
     if (selected === question.correctIndex) {
       setRevealed(true);
       setCorrect(true);
+
+      const targetWrongChoices = wrongChoices;
+      try {
+        await finish({
+          wrongAttempts,
+          baseScore: practiceBaseScore(wrongAttempts),
+          correct: true,
+          answer: { questionId: question.id, choiceIndex: selected },
+          wrongChoices: targetWrongChoices,
+          viewedHint1,
+          viewedHint2,
+        });
+      } catch (e) {
+        console.error(e);
+      }
       return;
     }
 
@@ -218,9 +220,30 @@ export function PracticeQuestionCard({
     setWrongAttempts(nextWrong);
     setWrongChoices(nextWrongChoices);
 
+    onProgress?.({
+      wrongAttempts: nextWrong,
+      wrongChoiceIndices: nextWrongChoices,
+      viewedHint1,
+      viewedHint2,
+    });
+
     if (nextWrong >= PRACTICE_MAX_ATTEMPTS) {
       setRevealed(true);
       setCorrect(false);
+
+      try {
+        await finish({
+          wrongAttempts: PRACTICE_MAX_ATTEMPTS,
+          baseScore: practiceBaseScore(PRACTICE_MAX_ATTEMPTS),
+          correct: false,
+          answer: { questionId: question.id, choiceIndex: selected },
+          wrongChoices: nextWrongChoices,
+          viewedHint1,
+          viewedHint2,
+        });
+      } catch (e) {
+        console.error(e);
+      }
       return;
     }
 
@@ -234,7 +257,7 @@ export function PracticeQuestionCard({
     <div className="rounded-xl border border-[var(--border)] bg-[var(--card-bg)] p-4 @md:p-5">
       <div className="mb-3 flex items-center justify-between gap-2">
         <p className={cn("font-medium", playPreservedTextClass)}>
-          {index + 1}. {question.prompt}
+          {!hideNumber && `${index + 1}. `}{question.prompt}
         </p>
       </div>
 
@@ -280,7 +303,7 @@ export function PracticeQuestionCard({
               >
                 {CHOICE_LABELS[ci] ?? ci + 1}
               </span>
-              <span className="flex-1">{choice}</span>
+              <span className="flex-1 break-keep break-words">{choice}</span>
               {showCorrect ? <CheckCircle2 className="h-4 w-4" aria-hidden /> : null}
               {showWrong ? <XCircle className="h-4 w-4" aria-hidden /> : null}
             </button>
@@ -387,7 +410,7 @@ export function PracticeQuestionCard({
                     <Sparkles className="h-3.5 w-3.5" />
                     힌트 1
                   </span>
-                  <span className="block text-[var(--foreground)]">{aiResult.hint1}</span>
+                  <span className="block text-[var(--foreground)] whitespace-pre-wrap break-keep break-words">{aiResult.hint1}</span>
                 </PlayQuestionExplanation>
               )}
               {aiResult.hint2 && viewedHint2 && (
@@ -396,7 +419,7 @@ export function PracticeQuestionCard({
                     <Sparkles className="h-3.5 w-3.5" />
                     {viewedHint1 ? "힌트 2" : "힌트 1"}
                   </span>
-                  <span className="block text-[var(--foreground)]">{aiResult.hint2}</span>
+                  <span className="block text-[var(--foreground)] whitespace-pre-wrap break-keep break-words">{aiResult.hint2}</span>
                 </PlayQuestionExplanation>
               )}
             </div>

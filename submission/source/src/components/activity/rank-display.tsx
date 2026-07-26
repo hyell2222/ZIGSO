@@ -34,12 +34,12 @@ const rankTileDefaultClass = "border-[var(--border)] bg-[var(--card-bg)]";
 
 function rankBadgeClass(tier: RankTier, rank: number) {
   const isMedal = tier !== "default";
-  const width = isMedal ? "w-9" : rank >= 100 ? "w-11" : "w-10";
+  const width = "w-14";
 
   return cn(
     width,
     "shrink-0 text-center font-bold tabular-nums leading-none",
-    isMedal ? "text-base" : "text-xs",
+    isMedal ? "text-xl" : "text-base",
     tierRankClass[tier],
     "text-[var(--primary)]",
   );
@@ -50,12 +50,14 @@ export function RankResultTile({
   label,
   rank,
   score,
+  durationText,
   highlight,
   className,
 }: {
   label: string;
   rank: number;
   score?: string;
+  durationText?: string;
   highlight?: boolean;
   className?: string;
 }) {
@@ -75,16 +77,20 @@ export function RankResultTile({
       <span className={rankBadgeClass(tier, rank)}>{rankLabel}</span>
       <p
         className={cn(
-          "min-w-0 flex-1 truncate text-xs font-light text-[var(--muted-foreground)]",
-          t.caption,
+          "min-w-0 flex-1 truncate text-base font-bold text-[var(--foreground)]",
         )}
       >
         {label}
       </p>
+      {durationText ? (
+        <span className="shrink-0 text-xs text-[var(--muted-foreground)] tabular-nums w-20 text-right">
+          {durationText}
+        </span>
+      ) : null}
       {score ? (
         <span
           className={cn(
-            "shrink-0 text-base font-bold tabular-nums",
+            "shrink-0 text-base font-bold tabular-nums w-10 text-right",
             highlight ? "text-[var(--primary)]" : "text-[var(--foreground)]",
           )}
         >

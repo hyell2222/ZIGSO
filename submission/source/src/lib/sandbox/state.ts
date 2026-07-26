@@ -193,6 +193,18 @@ export function buildSandboxAssignments(
 
       const practice =
         expertComplete && role ? randomPracticeResults(role.practiceQuestions) : null;
+
+      const baseTime = Date.now() - 10 * 60 * 1000;
+      const practiceTime = expertComplete
+        ? new Date(baseTime + Math.floor(Math.random() * 2 * 60 * 1000)).toISOString()
+        : null;
+      const homeCompleteTime = (homeComplete || quizComplete)
+        ? new Date(baseTime + 3 * 60 * 1000 + Math.floor(Math.random() * 2 * 60 * 1000)).toISOString()
+        : null;
+      const quizCompleteTime = quizComplete
+        ? new Date(new Date(homeCompleteTime!).getTime() + 30 * 1000 + Math.floor(Math.random() * 3 * 60 * 1000)).toISOString()
+        : null;
+
       players.push({
         id: playerId,
         nickname: chip.nickname.trim() || "참가자",
@@ -200,13 +212,13 @@ export function buildSandboxAssignments(
         roleId,
         base_score: practice?.baseScore ?? null,
         practice_results: practice?.results ?? [],
-        practice_submitted_at: expertComplete ? recentTimestamp() : null,
-        home_group_completed_at: homeComplete ? recentTimestamp() : null,
+        practice_submitted_at: practiceTime,
+        home_group_completed_at: homeCompleteTime,
         individual_quiz_answers:
           quizComplete && testQuestions.length > 0
             ? fakeQuizAnswers(testQuestions, randomCorrectRatio())
             : [],
-        individual_quiz_submitted_at: quizComplete ? recentTimestamp() : null,
+        individual_quiz_submitted_at: quizCompleteTime,
         isReal: chip.isReal ? true : undefined,
       });
     }
@@ -219,4 +231,69 @@ export function buildSandboxAssignments(
 export function nextSandboxPhase(current: ActivityPhase): ActivityPhase | null {
   if (current === "waiting") return "overview";
   return getNextPhase(current);
+}
+
+export function advanceSandboxState(
+  state: SandboxState,
+  next: ActivityPhase,
+  pack: ActivityPack,
+): SandboxState {
+  let nextPlayers = state.players;
+  const testQuestions = getTestQuestions(pack);
+
+  if (next === "results") {
+    nextPlayers = nextPlayers.map((p) => {
+      const homeGroupTime = p.home_group_completed_at
+        ? new Date(p.home_group_completed_at).getTime()
+        : Date.now() - 5 * 60 * 1000;
+
+      const submittedAt = new Date(
+        homeGroupTime + 30 * 1000 + Math.floor(Math.random() * 3 * 60 * 1000)
+      ).toISOString();
+
+      return {
+        ...p,
+        home_group_completed_at: p.home_group_completed_at || new Date(homeGroupTime).toISOString(),
+        individual_quiz_answers:
+          p.individual_quiz_answers && p.individual_quiz_answers.length > 0
+            ? p.individual_quiz_answers
+            : fakeQuizAnswers(testQuestions, randomCorrectRatio()),
+        individual_quiz_submitted_at: p.individual_quiz_submitted_at || submittedAt,
+      };
+    });
+  }
+
+  if (next === "individual_quiz") {
+    nextPlayers = nextPlayers.map((p) => {
+      return {
+        ...p,
+        home_group_completed_at:
+          p.home_group_completed_at ||
+          new Date(Date.now() - 10 * 1000 - Math.floor(Math.random() * 60 * 1000)).toISOString(),
+      };
+    });
+  }
+
+  if (next === "home_group") {
+    nextPlayers = nextPlayers.map((p) => {
+      const role = pack.roles.find((r) => r.id === p.roleId);
+      const practice = role ? randomPracticeResults(role.practiceQuestions) : null;
+      return {
+        ...p,
+        base_score:
+          p.base_score !== null && p.base_score !== undefined
+            ? p.base_score
+            : (practice?.baseScore ?? null),
+        practice_results:
+          p.practice_results && p.practice_results.length > 0
+            ? p.practice_results
+            : (practice?.results ?? []),
+        practice_submitted_at:
+          p.practice_submitted_at ||
+          new Date(Date.now() - 10 * 1000 - Math.floor(Math.random() * 60 * 1000)).toISOString(),
+      };
+    });
+  }
+
+  return { ...state, phase: next, players: nextPlayers };
 }

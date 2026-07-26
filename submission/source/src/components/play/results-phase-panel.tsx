@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import {
   RankResultTile,
 } from "@/components/activity/rank-display";
-import { playPhaseTripleSectionGrid } from "@/components/activity/activity-layout-chrome";
+import { playPhaseDualSectionGrid } from "@/components/activity/activity-layout-chrome";
 import { activityLayoutType } from "@/components/activity/activity-layout-typography";
 import { PhaseSection } from "@/components/activity/phase-section-layout";
 import { BaseScoreGuideModal } from "@/components/play/base-score-guide-modal";
@@ -61,7 +61,7 @@ export function ResultsPhasePanel({
 
   return (
     <PlayPhaseShell
-      mainClassName="flex flex-col"
+      mainClassName="flex flex-col @md:items-center min-h-0 @md:flex-1 @md:justify-center @md:min-h-[calc(100dvh-180px)]"
       overlay={
         <>
           <BaseScoreGuideModal
@@ -90,7 +90,7 @@ export function ResultsPhasePanel({
           {RESULTS_COPY.loadError}
         </p>
       ) : (
-        <div className={playPhaseTripleSectionGrid}>
+        <div className={cn(playPhaseDualSectionGrid, "max-w-4xl w-full items-center")}>
           <PhaseSection
             title={RESULTS_COPY.myScores}
             heading="section"
@@ -105,32 +105,36 @@ export function ResultsPhasePanel({
             />
           </PhaseSection>
 
-          <PhaseSection
-            title={RESULTS_COPY.personalRank}
-            heading="section"
-            as="h2"
-            className={cn("w-full h-fit", sectionCenterClass)}
-          >
-            <RankResultTile
-              label="나"
-              rank={snapshot.personalRank}
-              score={`${snapshot.improvementPoints}점`}
-              highlight
-            />
-          </PhaseSection>
+          <div className="flex flex-col gap-4 w-full">
+            <PhaseSection
+              title={RESULTS_COPY.teamRank}
+              heading="section"
+              as="h2"
+              className={cn("w-full h-fit", sectionCenterClass)}
+            >
+              <RankResultTile
+                label={teamTitle}
+                rank={snapshot.teamRank}
+                score={`${snapshot.teamScore}점`}
+                durationText={snapshot.teamDurationText}
+                highlight
+              />
+            </PhaseSection>
 
-          <PhaseSection
-            title={RESULTS_COPY.teamRank}
-            heading="section"
-            as="h2"
-            className={cn("w-full h-fit", sectionCenterClass)}
-          >
-            <RankResultTile
-              label={teamTitle}
-              rank={snapshot.teamRank}
-              score={`${snapshot.teamScore}점`}
-            />
-          </PhaseSection>
+            <PhaseSection
+              title={RESULTS_COPY.personalRank}
+              heading="section"
+              as="h2"
+              className={cn("w-full h-fit", sectionCenterClass)}
+            >
+              <RankResultTile
+                label="나"
+                rank={snapshot.personalRank}
+                score={`${snapshot.improvementPoints}점`}
+                durationText={snapshot.durationText}
+              />
+            </PhaseSection>
+          </div>
         </div>
       )}
     </PlayPhaseShell>
