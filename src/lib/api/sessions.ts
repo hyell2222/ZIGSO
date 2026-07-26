@@ -2,8 +2,8 @@
 
 import { parseActivityPack, type ActivityRecord } from "@/lib/api/activities";
 import { assignGroupsAndRoles } from "@/lib/api/play";
-import { TIMED_PHASE_ORDER } from "@/lib/activity-phases";
-import type { ActivityPhase, SessionStatus } from "@/lib/types";
+import { TIMED_PHASE_ORDER } from "@/lib/activity-pack/activity-phases";
+import type { ActivityPhase, SessionStatus } from "@/types/index";
 import { supabase } from "@/lib/supabase";
 
 export type { ActivityPhase, SessionStatus };

@@ -29,7 +29,7 @@ import {
   activityEditorSegmentHeaderBorder,
   activityEditorSegmentPanelBg,
   playPhaseSectionShell,
-} from "@/components/activity/activity-layout-chrome";
+} from "@/lib/theme/activity-layout-chrome";
 
 type Props = {
   draft: ActivityEditorDraft;

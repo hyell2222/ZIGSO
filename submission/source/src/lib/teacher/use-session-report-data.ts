@@ -24,7 +24,7 @@ import {
 import type { SessionResultsMember } from "@/components/teacher/session-results-dashboard";
 import { groupPlayersByGroup } from "@/lib/teacher/group-players-by-group";
 import { isPlayerPhaseComplete } from "@/lib/teacher/phase-completion";
-import type { ActivityPhase } from "@/lib/types";
+import type { ActivityPhase } from "@/types/index";
 
 export type SessionReportStudentRow = {
   playerId: string;

@@ -7,8 +7,8 @@ import {
   playPhaseSectionBody,
   playPhaseSectionHeader,
   playPhaseSectionShell,
-} from "@/components/activity/activity-layout-chrome";
-import { activityLayoutType } from "@/components/activity/activity-layout-typography";
+} from "@/lib/theme/activity-layout-chrome";
+import { activityLayoutType } from "@/lib/theme/activity-layout-typography";
 import { cn } from "@/lib/utils";
 
 const t = activityLayoutType;

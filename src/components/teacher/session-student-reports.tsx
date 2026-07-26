@@ -1,9 +1,9 @@
 "use client";
 
-import { activityLayoutType } from "@/components/activity/activity-layout-typography";
+import { activityLayoutType } from "@/lib/theme/activity-layout-typography";
 import { LoadingState } from "@/components/ui/loading-state";
 import { formatGroupDisplayName } from "@/lib/activity-pack/engine";
-import { RESULTS_COPY } from "@/lib/activity-phases";
+import { RESULTS_COPY } from "@/lib/activity-pack/activity-phases";
 import type { SessionReportStudentRow } from "@/lib/teacher/use-session-report-data";
 import { cn } from "@/lib/utils";
 

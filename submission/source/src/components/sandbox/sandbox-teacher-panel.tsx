@@ -14,8 +14,8 @@ import { SessionHostLayout } from "@/components/teacher/session-host-layout";
 import { SessionHostWaitingRoster } from "@/components/teacher/session-host-waiting-roster";
 import { PhaseTimerContent } from "@/components/teacher/phase-timer-content";
 import { SessionQuestionsReviewModal } from "@/components/teacher/session-questions-review-modal";
-import { activityGuideModalScope } from "@/components/activity/activity-layout-chrome";
-import { GuideModalScope } from "@/components/play/guide-modal-scope";
+import { activityGuideModalScope } from "@/lib/theme/activity-layout-chrome";
+import { GuideModalScope } from "@/components/play/modals/guide-modal-scope";
 import { Modal } from "@/components/ui/modal";
 import { Z } from "@/lib/ui/z-index";
 import type { ActivityPhase } from "@/lib/api/activities";
@@ -27,8 +27,8 @@ import {
   type SandboxPlayer,
   type SandboxGroup,
 } from "@/lib/sandbox/state";
-import type { SessionStatus } from "@/lib/types";
-import { isSessionEnded, isTimedPhase, type TimedPhase } from "@/lib/activity-phases";
+import type { SessionStatus } from "@/types/index";
+import { isSessionEnded, isTimedPhase, type TimedPhase } from "@/lib/activity-pack/activity-phases";
 import { hostSessionNextPhaseLabel } from "@/lib/api/sessions";
 import { buildRoleCodenameMap } from "@/lib/play/role-codenames";
 import { formatAssignedRoleLabels } from "@/lib/play/role-codenames";

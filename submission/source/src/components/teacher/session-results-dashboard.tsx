@@ -3,15 +3,15 @@
 import { useMemo } from "react";
 
 import { RankResultTile } from "@/components/activity/rank-display";
-import { playPhaseDualSectionGrid } from "@/components/activity/activity-layout-chrome";
-import { activityLayoutType } from "@/components/activity/activity-layout-typography";
+import { playPhaseDualSectionGrid } from "@/lib/theme/activity-layout-chrome";
+import { activityLayoutType } from "@/lib/theme/activity-layout-typography";
 import { PhaseSection } from "@/components/activity/phase-section-layout";
 import { LoadingState } from "@/components/ui/loading-state";
 import { formatGroupDisplayName } from "@/lib/activity-pack/engine";
 import { buildSessionResults } from "@/lib/activity-pack/session-results";
 import type { ActivityPack } from "@/lib/activity-pack/types";
 import type { GroupRow } from "@/lib/api/play";
-import { RESULTS_COPY } from "@/lib/activity-phases";
+import { RESULTS_COPY } from "@/lib/activity-pack/activity-phases";
 import { cn } from "@/lib/utils";
 
 export type SessionResultsMember = {

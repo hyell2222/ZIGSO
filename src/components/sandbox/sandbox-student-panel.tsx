@@ -8,18 +8,18 @@ import {
   activityGuideModalScope,
   activityLayoutFrame,
   activityPageColumn,
-} from "@/components/activity/activity-layout-chrome";
-import { ExpertPhasePanel } from "@/components/play/expert-group-panel";
-import { GroupPhasePanel, type GroupMember } from "@/components/play/home-group-panel";
-import { IndividualQuizPanel } from "@/components/play/individual-quiz-panel";
-import { OverviewPhasePanel } from "@/components/play/overview-phase-panel";
-import { PlayJoinModal } from "@/components/play/play-join-modal";
+} from "@/lib/theme/activity-layout-chrome";
+import { ExpertPhasePanel } from "@/components/play/panels/expert-group-panel";
+import { GroupPhasePanel, type GroupMember } from "@/components/play/panels/home-group-panel";
+import { IndividualQuizPanel } from "@/components/play/quiz/individual-quiz-panel";
+import { OverviewPhasePanel } from "@/components/play/panels/overview-phase-panel";
+import { PlayJoinModal } from "@/components/play/modals/play-join-modal";
 import type { PracticeQuestionResult } from "@/lib/activity-pack/types";
-import { ResultsPhasePanel } from "@/components/play/results-phase-panel";
+import { ResultsPhasePanel } from "@/components/play/panels/results-phase-panel";
 import { buildSessionResults } from "@/lib/activity-pack/session-results";
-import { PlayAtmosphere } from "@/components/play/play-atmosphere";
-import { PlayPhaseShell } from "@/components/play/play-phase-shell";
-import { GuideModalScope } from "@/components/play/guide-modal-scope";
+import { PlayAtmosphere } from "@/components/play/shell/play-atmosphere";
+import { PlayPhaseShell } from "@/components/play/shell/play-phase-shell";
+import { GuideModalScope } from "@/components/play/modals/guide-modal-scope";
 import { LoadingState } from "@/components/ui/loading-state";
 import type { ActivityPhase } from "@/lib/api/activities";
 import type { ActivityPack, QuizAnswer } from "@/lib/activity-pack/types";
@@ -28,7 +28,7 @@ import {
   type SandboxPlayer,
   type SandboxGroup,
 } from "@/lib/sandbox/state";
-import { LOADING_COPY } from "@/lib/activity-phases";
+import { LOADING_COPY } from "@/lib/activity-pack/activity-phases";
 import { formatAssignedRoleLabels } from "@/lib/play/role-codenames";
 import { cn } from "@/lib/utils";
 

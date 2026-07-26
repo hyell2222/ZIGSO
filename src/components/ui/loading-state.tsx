@@ -3,7 +3,7 @@
 import { Loader2 } from "lucide-react";
 import type { ReactNode } from "react";
 
-import { activityLoaderRegionInset } from "@/components/activity/activity-layout-chrome";
+import { activityLoaderRegionInset } from "@/lib/theme/activity-layout-chrome";
 import { cn } from "@/lib/utils";
 
 export type LoadingStateProps = {

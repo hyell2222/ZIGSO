@@ -3,8 +3,8 @@
 import { Suspense } from "react";
 import { useSearchParams } from "react-router-dom";
 
-import { StudentJoinPage } from "@/components/play/student-join-page";
-import { PlayAtmosphere } from "@/components/play/play-atmosphere";
+import { StudentJoinPage } from "@/components/play/panels/student-join-page";
+import { PlayAtmosphere } from "@/components/play/shell/play-atmosphere";
 import { LoadingState } from "@/components/ui/loading-state";
 
 function PlayPageContent() {

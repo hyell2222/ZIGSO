@@ -5,7 +5,7 @@ import { Check } from "lucide-react";
 import {
   PHASE_STEP_DEFS,
   type PhaseGuideKey
-} from "@/lib/activity-phases";
+} from "@/lib/activity-pack/activity-phases";
 import { cn } from "@/lib/utils";
 
 type Props = {

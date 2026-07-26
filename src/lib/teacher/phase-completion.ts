@@ -5,7 +5,7 @@ import {
   isPeerPracticeComplete,
 } from "@/lib/activity-pack/engine";
 import type { ActivityPack, PracticeQuestionResult, QuizAnswer } from "@/lib/activity-pack/types";
-import type { ActivityPhase } from "@/lib/types";
+import type { ActivityPhase } from "@/types/index";
 
 export type PlayerPhaseFields = {
   group_id?: string | null;

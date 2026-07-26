@@ -4,8 +4,8 @@ import { useMemo, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import QRCode from "react-qr-code";
 
-import { activityBannerButtonClass } from "@/components/activity/activity-layout-chrome";
-import { useGuideModalScope } from "@/components/play/guide-modal-scope";
+import { activityBannerButtonClass } from "@/lib/theme/activity-layout-chrome";
+import { useGuideModalScope } from "@/components/play/modals/guide-modal-scope";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { ROUTES } from "@/lib/routes";

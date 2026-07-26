@@ -3,7 +3,7 @@
  */
 
 import { MIN_ROLES_PER_GROUP } from "@/lib/activity-pack/activity-draft";
-import type { ActivityPhase, SessionStatus } from "@/lib/types";
+import type { ActivityPhase, SessionStatus } from "@/types/index";
 import {
   assignRolesToPlayers,
   computeSessionGroupCount,

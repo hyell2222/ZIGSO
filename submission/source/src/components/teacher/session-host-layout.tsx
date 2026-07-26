@@ -8,13 +8,13 @@ import {
   activityLayoutClasses,
   activityScrollBodyShell,
   activitySessionMetaShell,
-} from "@/components/activity/activity-layout-chrome";
-import { activityLayoutType } from "@/components/activity/activity-layout-typography";
+} from "@/lib/theme/activity-layout-chrome";
+import { activityLayoutType } from "@/lib/theme/activity-layout-typography";
 import { ActivityPhaseStepper } from "@/components/activity/activity-phase-stepper";
 import { PlayJoinQr } from "@/components/teacher/play-join-qr";
 import { Button } from "@/components/ui/button";
 import type { ActivityPhase } from "@/lib/api/activities";
-import { isTimedPhase, RESULTS_COPY, type TimedPhaseKey, type PhaseGuideKey } from "@/lib/activity-phases";
+import { isTimedPhase, RESULTS_COPY, type TimedPhaseKey, type PhaseGuideKey } from "@/lib/activity-pack/activity-phases";
 import { cn } from "@/lib/utils";
 
 type Props = {

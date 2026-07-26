@@ -26,8 +26,8 @@ import { parseAssignedRoleIds } from "@/lib/api/play";
 import { groupPlayersByGroup, type GroupGroup } from "@/lib/teacher/group-players-by-group";
 import { isPlayerPhaseComplete } from "@/lib/teacher/phase-completion";
 import { SessionHostLayout } from "@/components/teacher/session-host-layout";
-import { activityViewportRoot } from "@/components/activity/activity-layout-chrome";
-import { GuideModalScope } from "@/components/play/guide-modal-scope";
+import { activityViewportRoot } from "@/lib/theme/activity-layout-chrome";
+import { GuideModalScope } from "@/components/play/modals/guide-modal-scope";
 import { SessionHostWaitingRoster } from "@/components/teacher/session-host-waiting-roster";
 import { PhaseTimerContent } from "@/components/teacher/phase-timer-content";
 import { SessionQuestionsReviewModal } from "@/components/teacher/session-questions-review-modal";
@@ -50,7 +50,7 @@ import {
   type SessionPresenceRow,
 } from "@/lib/realtime/session-presence";
 import { hasSupabaseEnv, supabase } from "@/lib/supabase";
-import { isSessionEnded, isTimedPhase, type TimedPhase } from "@/lib/activity-phases";
+import { isSessionEnded, isTimedPhase, type TimedPhase } from "@/lib/activity-pack/activity-phases";
 import { hostSessionNextPhaseLabel } from "@/lib/api/sessions";
 
 function SessionHostContent() {

@@ -7,15 +7,15 @@ import {
   PhaseSection,
   PhaseSectionPanel,
 } from "@/components/activity/phase-section-layout";
-import { PracticeQuestionCard } from "@/components/play/practice-question-card";
-import { QuizQuestionList } from "@/components/play/quiz-question-list";
+import { PracticeQuestionCard } from "@/components/play/quiz/practice-question-card";
+import { QuizQuestionList } from "@/components/play/quiz/quiz-question-list";
 import { Modal } from "@/components/ui/modal";
 
 import type { ActivityPack } from "@/lib/activity-pack/types";
-import { RESULTS_COPY } from "@/lib/activity-phases";
+import { RESULTS_COPY } from "@/lib/activity-pack/activity-phases";
 import { codenameForRole } from "@/lib/play/role-codenames";
 import { Z } from "@/lib/ui/z-index";
-import { PlaySegmentText } from "@/components/play/play-question-support";
+import { PlaySegmentText } from "@/components/play/quiz/play-question-support";
 
 const modalTitleId = "session-questions-review-heading";
 const QUESTIONS_REVIEW_MODAL_MAX_WIDTH = "w-[min(100%,42rem)]";

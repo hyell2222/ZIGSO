@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import {
   TEACHER_PHASE_MINUTES,
   type TimedPhase,
-} from "@/lib/activity-phases";
+} from "@/lib/activity-pack/activity-phases";
 
 function formatHhMmSs(totalSeconds: number) {
   const s = Math.max(0, Math.floor(totalSeconds));

@@ -1,6 +1,6 @@
 "use client";
 
-import { activityLayoutType } from "@/components/activity/activity-layout-typography";
+import { activityLayoutType } from "@/lib/theme/activity-layout-typography";
 import { cn } from "@/lib/utils";
 
 const t = activityLayoutType;

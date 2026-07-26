@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { Suspense, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { isSessionEnded } from "@/lib/activity-phases";
+import { isSessionEnded } from "@/lib/activity-pack/activity-phases";
 
 import { SandboxStudentPanel } from "@/components/sandbox/sandbox-student-panel";
 import { SandboxTeacherPanel } from "@/components/sandbox/sandbox-teacher-panel";

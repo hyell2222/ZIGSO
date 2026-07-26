@@ -4,8 +4,8 @@ import { useMemo } from "react";
 
 import {
   activityTeacherGroupCard,
-} from "@/components/activity/activity-layout-chrome";
-import { activityLayoutType } from "@/components/activity/activity-layout-typography";
+} from "@/lib/theme/activity-layout-chrome";
+import { activityLayoutType } from "@/lib/theme/activity-layout-typography";
 import { LoadingState } from "@/components/ui/loading-state";
 import { formatGroupDisplayName } from "@/lib/activity-pack/engine";
 import { letterLabel } from "@/lib/play/role-codenames";

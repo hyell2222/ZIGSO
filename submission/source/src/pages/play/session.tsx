@@ -3,10 +3,10 @@
 import { Suspense, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
-import { PlayAtmosphere } from "@/components/play/play-atmosphere";
-import { PlaySessionShell } from "@/components/play/play-session-shell";
-import { activityViewportRoot } from "@/components/activity/activity-layout-chrome";
-import { GuideModalScope } from "@/components/play/guide-modal-scope";
+import { PlayAtmosphere } from "@/components/play/shell/play-atmosphere";
+import { PlaySessionShell } from "@/components/play/shell/play-session-shell";
+import { activityViewportRoot } from "@/lib/theme/activity-layout-chrome";
+import { GuideModalScope } from "@/components/play/modals/guide-modal-scope";
 import { LoadingState } from "@/components/ui/loading-state";
 import { ROUTES } from "@/lib/routes";
 
