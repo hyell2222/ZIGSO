@@ -13,6 +13,8 @@ import { ROUTES } from "@/lib/routes";
 import { hasSupabaseEnv } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 
+import { SANDBOX_JOIN_CODE } from "@/lib/sandbox/state";
+
 type PlayJoinCardProps = Omit<PlayJoinFormProps, "className"> & {
   title?: string;
   description?: string;
@@ -69,6 +71,10 @@ export function StudentJoinPage({
     const nick = nickname.trim();
     if (!code || !nick) {
       setError("참가 코드와 닉네임을 모두 입력해 주세요.");
+      return;
+    }
+    if (code === SANDBOX_JOIN_CODE) {
+      setError("시뮬레이션 모드에서는 외부 접속을 지원하지 않습니다. 시뮬레이션 화면으로 돌아가 주세요.");
       return;
     }
     if (!hasSupabaseEnv) {

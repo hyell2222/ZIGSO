@@ -145,13 +145,7 @@ export function PlayJoinForm({
       {message ? (
         <p
           role="alert"
-          className={cn(
-            "text-xs text-[var(--foreground)]",
-            (message.includes("확인할 수 없") ||
-              message.includes("입력") ||
-              message.includes("실패")) &&
-            "text-[var(--danger)]",
-          )}
+          className="text-xs font-medium text-[var(--danger)]"
         >
           {message}
         </p>
