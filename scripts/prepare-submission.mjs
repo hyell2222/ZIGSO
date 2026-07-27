@@ -59,6 +59,13 @@ function emptyDirSync(dir) {
 // 2. Copy build output from /dist into /submission/program
 console.log('\n[2/5] Copying build output from /dist to /submission/program...');
 emptyDirSync(programDir);
+
+// Ensure all public assets (including all 4 font files) are copied
+const publicDir = path.join(rootDir, 'public');
+if (fs.existsSync(publicDir)) {
+  copyDirSync(publicDir, distDir);
+}
+
 copyDirSync(distDir, programDir);
 
 if (fs.existsSync(path.join(programDir, 'index.html'))) {

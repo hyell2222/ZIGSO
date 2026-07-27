@@ -26,7 +26,12 @@ let playJoinOriginCache = "";
 function subscribePlayJoinOrigin(onStoreChange: () => void) {
   queueMicrotask(() => {
     if (typeof window !== "undefined") {
-      playJoinOriginCache = window.location.origin;
+      const publicUrl = import.meta.env.VITE_PUBLIC_URL || "https://zigso.vercel.app";
+      if (window.location.protocol === "file:") {
+        playJoinOriginCache = publicUrl;
+      } else {
+        playJoinOriginCache = window.location.origin;
+      }
     }
     onStoreChange();
   });

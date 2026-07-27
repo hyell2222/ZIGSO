@@ -2,25 +2,25 @@
 
 @font-face {
   font-family: 'KERISBAEUM';
-  src: url('./assets/KERISBAEUM_L.otf') format('opentype');
+  src: url('/assets/KERISBAEUM_L.otf') format('opentype');
   font-weight: 300;
   font-style: normal;
 }
 @font-face {
   font-family: 'KERISBAEUM';
-  src: url('./assets/KERISBAEUM_R.otf') format('opentype');
+  src: url('/assets/KERISBAEUM_R.otf') format('opentype');
   font-weight: 400;
   font-style: normal;
 }
 @font-face {
   font-family: 'KERISBAEUM';
-  src: url('./assets/KERISBAEUM_B.otf') format('opentype');
+  src: url('/assets/KERISBAEUM_B.otf') format('opentype');
   font-weight: 700;
   font-style: normal;
 }
 @font-face {
   font-family: 'KERISBAEUM';
-  src: url('./assets/KERISBAEUM_EB.otf') format('opentype');
+  src: url('/assets/KERISBAEUM_EB.otf') format('opentype');
   font-weight: 800;
   font-style: normal;
 }

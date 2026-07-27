@@ -18,10 +18,14 @@ export async function signOutTeacher() {
 }
 
 export async function signInWithGoogle() {
+  const targetOrigin = typeof window !== "undefined" && window.location.protocol === "file:"
+    ? "https://zigso.vercel.app"
+    : window.location.origin;
+
   const { error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {
-      redirectTo: `${window.location.origin}/login`,
+      redirectTo: `${targetOrigin}/login`,
     },
   });
   if (error) throw error;
