@@ -120,6 +120,7 @@ export function PlayJoinForm({
           disabled={pending}
           autoComplete="off"
           inputMode={joinCodeEditable ? "text" : undefined}
+          autoFocus={joinCodeEditable && !code}
         />
       </FormField>
       <FormField label="닉네임" htmlFor={`${titleId}-nickname`}>
@@ -130,7 +131,7 @@ export function PlayJoinForm({
           onChange={(event) => onNicknameChange(event.target.value)}
           disabled={pending}
           autoComplete="nickname"
-          autoFocus={joinCodeEditable ? !code : Boolean(code)}
+          autoFocus={joinCodeEditable ? Boolean(code) : true}
         />
       </FormField>
       <div className="flex justify-center pt-4">

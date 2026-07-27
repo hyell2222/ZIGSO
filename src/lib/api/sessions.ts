@@ -26,23 +26,35 @@ export type HostSessionListRow = {
   created_at: string | null;
   activity_id: string | null;
   activities: { title: string | null } | null;
+  player_count: number;
 };
 
 export async function listHostSessions(hostId: string) {
   const { data, error } = await supabase
     .from("sessions")
-    .select("id,join_code,phase,status,created_at,activity_id,activities(title)")
+    .select("id,join_code,phase,status,created_at,activity_id,activities(title),players(id)")
     .eq("host_id", hostId)
     .order("created_at", { ascending: false });
   if (error) throw error;
   const raw = (data ?? []) as Array<
-    Omit<HostSessionListRow, "activities"> & {
+    Omit<HostSessionListRow, "activities" | "player_count"> & {
       activities: { title: string | null } | { title: string | null }[] | null;
+      players?: { id: string }[] | null;
     }
   >;
   return raw.map((r) => {
     const activity = Array.isArray(r.activities) ? r.activities[0] ?? null : r.activities;
-    return { ...r, activities: activity } satisfies HostSessionListRow;
+    const playerCount = Array.isArray(r.players) ? r.players.length : 0;
+    return {
+      id: r.id,
+      join_code: r.join_code,
+      phase: r.phase,
+      status: r.status,
+      created_at: r.created_at,
+      activity_id: r.activity_id,
+      activities: activity,
+      player_count: playerCount,
+    } satisfies HostSessionListRow;
   });
 }
 

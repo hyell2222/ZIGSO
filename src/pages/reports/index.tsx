@@ -120,10 +120,12 @@ function ReportsSessionsListPanel({ teacherUserId }: { teacherUserId: string }) 
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                 <div className="min-w-0 flex-1 space-y-1">
                   <p className="text-lg font-semibold text-[var(--foreground)]">{title}</p>
-                  <p className="text-xs text-[var(--muted-foreground)] flex">
-                    <span className="font-mono text-[var(--accent)]">{row.join_code}</span>
+                  <p className="flex flex-wrap items-center text-xs text-[var(--muted-foreground)]">
+                    <span className="font-mono font-medium text-[var(--accent)]">코드 {row.join_code}</span>
                     <span className="mx-2">|</span>
-                    {formatWhen(row.created_at)}
+                    <span>{formatWhen(row.created_at)}</span>
+                    <span className="mx-2">|</span>
+                    <span className="font-medium text-[var(--muted-foreground)]">학생 {row.player_count ?? 0}명</span>
                   </p>
                 </div>
                 <div className="flex items-center gap-1 sm:ml-auto">
