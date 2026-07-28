@@ -7,11 +7,12 @@ import { activityPageShell } from "@/lib/theme/activity-layout-chrome";
 import { PlayAtmosphere } from "@/components/play/shell/play-atmosphere";
 import { PlayJoinForm, type PlayJoinFormProps } from "@/components/play/shell/play-join-form";
 import { Modal } from "@/components/ui/modal";
-import { getSessionByJoinCode } from "@/lib/api/play";
-import { getResumeRecord } from "@/lib/play/play-resume";
+import { getSessionByJoinCode, joinPlayerSession, assignOrphanPlayersForOngoingSession } from "@/lib/api/play";
+import { getResumeRecord, saveResumeRecord } from "@/lib/play/play-resume";
 import { ROUTES } from "@/lib/routes";
 import { hasSupabaseEnv } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
+import type { ActivityPhase } from "@/types/index";
 
 import { SANDBOX_JOIN_CODE } from "@/lib/sandbox/state";
 
@@ -52,7 +53,7 @@ export function StudentJoinPage({
     if (prefillJoinCode) {
       const stored = getResumeRecord(prefillJoinCode);
       if (stored) {
-        navigate(ROUTES.playSessionJoin(prefillJoinCode), { replace: true });
+        navigate(ROUTES.playSessionJoin(prefillJoinCode, stored.playerId), { replace: true });
         return;
       }
       setJoinCode(prefillJoinCode);
@@ -78,15 +79,33 @@ export function StudentJoinPage({
       return;
     }
     if (!hasSupabaseEnv) {
-      navigate(ROUTES.playSessionJoin(code, nick));
+      navigate(ROUTES.playSessionJoin(code, "local-player"));
       return;
     }
     setBusy(true);
     try {
-      await getSessionByJoinCode(code);
-      navigate(ROUTES.playSessionJoin(code, nick));
-    } catch {
-      setError("참가 코드를 찾을 수 없어요. 선생님께 다시 확인해 주세요.");
+      const session = await getSessionByJoinCode(code);
+      const phase = session.phase as ActivityPhase | null | undefined;
+      const result = await joinPlayerSession({
+        session_id: session.id,
+        nickname: nick,
+      });
+      if (phase && phase !== "waiting" && phase !== "results") {
+        await assignOrphanPlayersForOngoingSession(session.id);
+      }
+      saveResumeRecord({
+        joinCode: code,
+        sessionId: session.id,
+        playerId: result.player.id,
+        nickname: nick,
+      });
+      navigate(ROUTES.playSessionJoin(code, result.player.id));
+    } catch (err: any) {
+      if (err.message && err.message.includes("이미 사용 중인 닉네임")) {
+        setError(err.message);
+      } else {
+        setError("참가 코드를 찾을 수 없어요. 선생님께 다시 확인해 주세요.");
+      }
     } finally {
       setBusy(false);
     }

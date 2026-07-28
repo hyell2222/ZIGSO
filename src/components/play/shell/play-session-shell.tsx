@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 
 import {
   activityBodyPaddingBottomContained,
@@ -56,19 +57,20 @@ import { cn } from "@/lib/utils";
 
 export function PlaySessionShell({
   joinCode,
-  initialNickname = "",
+  initialPlayerId = "",
 }: {
   joinCode: string;
-  initialNickname?: string;
+  initialPlayerId?: string;
 }) {
   const queryClient = useQueryClient();
-  const [nickname, setNickname] = useState(initialNickname);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [nickname, setNickname] = useState("");
   const autoJoinAttempted = useRef(false);
   /** 이전 입장 기록을 거절하고 새 닉네임으로 입장할 때 URL 자동 입장 차단 */
   const declinedResumeRef = useRef(false);
   const pendingDeletePlayerIdRef = useRef<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const [playerId, setPlayerId] = useState<string | null>(null);
+  const [playerId, setPlayerId] = useState<string | null>(() => initialPlayerId || null);
   const [message, setMessage] = useState<string | null>(null);
   const [resumeDecided, setResumeDecided] = useState(false);
 
@@ -79,6 +81,45 @@ export function PlaySessionShell({
     refetchInterval: playerId ? 3_000 : false,
     refetchIntervalInBackground: true,
   });
+
+  // URL 쿼리 스트링의 playerId 값을 상태(playerId)와 동기화
+  useEffect(() => {
+    if (playerId) {
+      if (searchParams.get("playerId") !== playerId) {
+        setSearchParams(
+          (prev) => {
+            const next = new URLSearchParams(prev);
+            next.set("playerId", playerId);
+            next.delete("nickname");
+            return next;
+          },
+          { replace: true }
+        );
+      }
+    } else {
+      if (searchParams.has("playerId")) {
+        setSearchParams(
+          (prev) => {
+            const next = new URLSearchParams(prev);
+            next.delete("playerId");
+            next.delete("nickname");
+            return next;
+          },
+          { replace: true }
+        );
+      }
+    }
+  }, [playerId, searchParams, setSearchParams]);
+
+  // 플레이어 데이터 로드 완료 시 session_id 와 닉네임 동기화
+  useEffect(() => {
+    if (playerQuery.data?.session_id) {
+      setSessionId(playerQuery.data.session_id);
+    }
+    if (playerQuery.data?.nickname) {
+      setNickname(playerQuery.data.nickname);
+    }
+  }, [playerQuery.data?.session_id, playerQuery.data?.nickname]);
 
   const assignedRoleId = playerQuery.data?.assigned_role_id ?? null;
   const groupId = playerQuery.data?.group_id ?? null;
@@ -284,24 +325,13 @@ export function PlaySessionShell({
     if (joinCode) clearResumeRecord(joinCode);
     declinedResumeRef.current = true;
     setResumeDecided(true);
+    setPlayerId(null);
+    setSessionId(null);
     setNickname("");
     setMessage(null);
     autoJoinAttempted.current = true;
     queryClient.setQueryData(["play-resume", joinCode], null);
   };
-
-  useEffect(() => {
-    if (!initialNickname.trim()) return;
-    if (declinedResumeRef.current) return;
-    if (playerId || sessionId) return;
-    if (resumeQuery.isLoading) return;
-    if (resumeQuery.data && !resumeDecided) return;
-    if (autoJoinAttempted.current) return;
-    autoJoinAttempted.current = true;
-    setNickname(initialNickname.trim());
-    joinAndRegisterMutation.mutate({ nickname: initialNickname.trim() });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialNickname, playerId, sessionId, resumeQuery.isLoading, resumeQuery.data, resumeDecided]);
 
   const hasJoinedSession = Boolean(playerId && sessionId);
   const hasAssignment = Boolean(assignedRoleId && groupId);
@@ -535,16 +565,11 @@ export function PlaySessionShell({
 
   const showResumeModal = Boolean(!hasJoinedSession && !resumeDecided && resumeQuery.data);
 
-  const awaitingAutoJoin =
-    Boolean(initialNickname.trim()) &&
-    !declinedResumeRef.current &&
-    !hasJoinedSession &&
-    !resumeDecided &&
-    (resumeQuery.isLoading ||
-      resumeQuery.isFetching ||
-      joinAndRegisterMutation.isPending);
-
-  const showJoinLoading = awaitingAutoJoin && !showResumeModal;
+  const showJoinLoading =
+    !showResumeModal &&
+    ((Boolean(playerId) && playerQuery.isLoading) ||
+      joinAndRegisterMutation.isPending ||
+      ((resumeQuery.isLoading || resumeQuery.isFetching) && !resumeDecided));
 
   if (showJoinLoading) {
     return (
@@ -558,7 +583,7 @@ export function PlaySessionShell({
     );
   }
 
-  const showNicknameModal = !hasJoinedSession && !showResumeModal && !awaitingAutoJoin;
+  const showNicknameModal = !hasJoinedSession && !showResumeModal && !showJoinLoading;
 
   return (
     <PlayAtmosphere>
@@ -587,16 +612,8 @@ export function PlaySessionShell({
             nickname={nickname}
             message={message}
             pending={joinAndRegisterMutation.isPending}
-            title={
-              declinedResumeRef.current || !initialNickname.trim()
-                ? "활동 참가"
-                : "다시 참가하기"
-            }
-            description={
-              declinedResumeRef.current || !initialNickname.trim()
-                ? "선생님이 알려준 참가 코드와 닉네임을 입력하세요."
-                : "닉네임을 확인한 뒤 다시 참가해 주세요."
-            }
+            title="활동 참가"
+            description="선생님이 알려준 참가 코드와 닉네임을 입력하세요."
             joinCodeEditable={false}
             showMissingCodeClue={false}
             onNicknameChange={setNickname}

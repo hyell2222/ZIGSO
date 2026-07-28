@@ -14,7 +14,7 @@ function PlaySessionPageContent() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const code = searchParams.get("code")?.trim() ?? "";
-  const nick = searchParams.get("nickname")?.trim() ?? "";
+  const initialPlayerId = searchParams.get("playerId")?.trim() ?? "";
 
   useEffect(() => {
     if (!code) {
@@ -32,7 +32,7 @@ function PlaySessionPageContent() {
 
   return (
     <GuideModalScope className={activityViewportRoot}>
-      <PlaySessionShell joinCode={code.toUpperCase()} initialNickname={nick} />
+      <PlaySessionShell joinCode={code.toUpperCase()} initialPlayerId={initialPlayerId} />
     </GuideModalScope>
   );
 }
