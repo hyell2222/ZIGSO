@@ -53,7 +53,7 @@ export function StudentJoinPage({
     if (prefillJoinCode) {
       const stored = getResumeRecord(prefillJoinCode);
       if (stored) {
-        navigate(ROUTES.playSessionJoin(prefillJoinCode, stored.playerId), { replace: true });
+        navigate(ROUTES.playSessionJoin(prefillJoinCode), { replace: true });
         return;
       }
       setJoinCode(prefillJoinCode);
