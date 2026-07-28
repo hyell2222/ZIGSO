@@ -134,16 +134,13 @@ export async function joinPlayerSession(input: { session_id: string; nickname: s
 
   const { data: existingRows, error: findError } = await supabase
     .from("players")
-    .select(PLAYER_SELECT)
+    .select("id, nickname")
     .eq("session_id", input.session_id)
-    .eq("nickname", nickname)
-    .order("created_at", { ascending: false });
+    .ilike("nickname", nickname);
   if (findError) throw findError;
 
-  const existing = (existingRows ?? [])[0] as PlayerSelfRow | undefined;
-  if (existing) {
-    await setPlayerOnline(existing.id, true);
-    return { player: normalizePlayerRow(existing) };
+  if (existingRows && existingRows.length > 0) {
+    throw new Error(`'${nickname}'(은)는 이미 사용 중인 닉네임입니다. 다른 닉네임을 입력해 주세요.`);
   }
 
   const { data: joinedPlayer, error } = await supabase

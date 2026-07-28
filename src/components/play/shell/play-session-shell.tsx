@@ -217,12 +217,6 @@ export function PlaySessionShell({
       if (!normalizedJoinCode) throw new Error("참가 코드를 입력해 주세요.");
       if (!nick) throw new Error("닉네임을 입력해 주세요.");
       const session = await getSessionByJoinCode(normalizedJoinCode);
-      setSessionId(session.id);
-      const result = await joinPlayerSession({
-        session_id: session.id,
-        nickname: nick,
-      });
-      setPlayerId(result.player.id);
       const phase = session.phase as ActivityPhase | null | undefined;
 
       if (pendingDeletePlayerIdRef.current && phase === "waiting") {
@@ -233,6 +227,12 @@ export function PlaySessionShell({
         }
         pendingDeletePlayerIdRef.current = null;
       }
+
+      const result = await joinPlayerSession({
+        session_id: session.id,
+        nickname: nick,
+      });
+      setPlayerId(result.player.id);
 
       if (phase && phase !== "waiting" && phase !== "results") {
         await assignOrphanPlayersForOngoingSession(session.id);

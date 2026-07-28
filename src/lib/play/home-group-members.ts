@@ -17,20 +17,14 @@ export function resolveHomeGroupMembers(
   const online = withRole.filter((m) => m.is_online === true);
   const pool = online.length > 0 ? online : withRole;
 
-  const byNickname = new Map<string, PlayerSelfRow>();
+  const byId = new Map<string, PlayerSelfRow>();
   for (const m of pool) {
-    const key = (m.nickname ?? "").trim().toLowerCase() || m.id;
-    const existing = byNickname.get(key);
-    if (!existing) {
-      byNickname.set(key, m);
-      continue;
-    }
-    if (m.id === currentPlayerId) {
-      byNickname.set(key, m);
+    if (!byId.has(m.id)) {
+      byId.set(m.id, m);
     }
   }
 
-  return [...byNickname.values()]
+  return [...byId.values()]
     .sort((a, b) => {
       const ta = Date.parse(a.created_at);
       const tb = Date.parse(b.created_at);
