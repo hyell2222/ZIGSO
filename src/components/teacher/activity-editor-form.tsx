@@ -320,7 +320,7 @@ function QuestionListEditor({
 
 const EDITOR_STEPS = [
   { key: "expert", number: 1, title: "전문가 학습 내용" },
-  { key: "test", number: 2, title: "최종 실전 문제" },
+  { key: "test", number: 2, title: "실전 문제 (개별 형성평가)" },
 ] as const;
 
 function EditorPhaseStepper({
@@ -771,7 +771,7 @@ export function ActivityEditorForm({ draft, onChange }: Props) {
                 >
                   <div>
                     <h3 className="text-sm font-semibold text-[var(--foreground)]">
-                      최종 실전 문제
+                      실전 문제
                     </h3>
                     <p className="mt-1 text-xs text-[var(--muted-foreground)]">
                       마지막에 개별적으로 풀 실전 문제입니다.
