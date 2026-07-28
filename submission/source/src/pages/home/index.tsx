@@ -1,6 +1,14 @@
 "use client";
 import { useQuery } from "@tanstack/react-query";
-import { ClipboardList, Sparkles, Puzzle, Monitor } from "lucide-react";
+import {
+  Globe,
+  Users,
+  Puzzle,
+  Radio,
+  Sparkles,
+  TrendingUp,
+  ClipboardList,
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 
@@ -11,8 +19,50 @@ import { AUTH_SESSION_QUERY_KEY } from "@/lib/auth/use-require-teacher-session";
 import { ROUTES } from "@/lib/routes";
 import { hasSupabaseEnv } from "@/lib/supabase";
 
-const LANDING_EYEBROW = "모두가 주인공이 되는 디지털 협동학습";
-const LANDING_TAGLINE = "AI 기반 맞춤형 협동학습 플랫폼 ZIGSO의 개발 및 수업 적용";
+const FEATURES = [
+  {
+    icon: Globe,
+    title: "웹 기반 학습 환경",
+    description:
+      "별도의 프로그램 설치 없이 다양한 기기에서 웹 브라우저만으로 언제 어디서나 수업을 시작할 수 있습니다.",
+  },
+  {
+    icon: Users,
+    title: "자동 모둠 편성",
+    description:
+      "참가한 학생 수에 맞춰 모둠과 전문가 역할을 자동으로 편성하여 수업 준비 시간을 줄여 줍니다.",
+  },
+  {
+    icon: Puzzle,
+    title: "직소 협동학습 운영",
+    description:
+      "전문가 학습부터 홈 모둠 협동학습, 개별 형성평가까지 직소(Jigsaw II) 협동학습의 전 과정을 하나의 플랫폼에서 운영할 수 있습니다.",
+  },
+  {
+    icon: Radio,
+    title: "실시간 수업 관리",
+    description:
+      "교사의 단계 전환에 따라 모든 학생 화면이 자동으로 전환되며, 학생별 학습 진행 상황을 실시간으로 확인할 수 있습니다.",
+  },
+  {
+    icon: Sparkles,
+    title: "AI 맞춤형 피드백",
+    description:
+      "학생의 오답에 맞는 단계별 AI 힌트와 최종 AI 해설을 제공하여 스스로 학습할 수 있도록 돕습니다.",
+  },
+  {
+    icon: TrendingUp,
+    title: "STAD 성장 평가",
+    description:
+      "기준 점수와 향상 점수를 자동으로 산출하여 개인의 성장과 모둠의 협력 성과를 함께 확인할 수 있습니다.",
+  },
+  {
+    icon: ClipboardList,
+    title: "학습 결과 관리",
+    description:
+      "학습 결과와 참여 기록을 자동으로 저장하고 활동 리포트로 제공하여 학생의 학습 과정을 효과적으로 관리할 수 있습니다.",
+  },
+];
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -35,23 +85,21 @@ export default function HomePage() {
     <div className="flex min-h-dvh flex-col bg-[var(--background)] font-sans">
       <TopNav />
 
-      <main className="flex-1 flex flex-col justify-center py-12 sm:py-16 md:py-20 px-4 max-w-5xl mx-auto w-full">
-
+      <main className="flex-1 flex flex-col justify-center py-10 sm:py-14 px-4 max-w-5xl mx-auto w-full">
         {/* 히어로 헤더 */}
         <header className="space-y-6 text-center flex flex-col items-center">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--tint-primary-weak)] border border-[var(--primary)]/10">
-            <p className="text-[11px] font-bold tracking-wider text-[var(--primary)] uppercase sm:text-xs">
-              {LANDING_EYEBROW}
+            <p className="text-xs font-bold tracking-wider text-[var(--primary)] uppercase sm:text-sm">
+              고등학교 (2학년) 대상
             </p>
           </div>
 
           <div className="space-y-6">
-            <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-[var(--ink)]">
-              ZIGSO
+            <h1 className="text-3xl sm:text-4xl leading-snug font-extrabold tracking-tight text-[var(--ink)]">
+              AI 기반 맞춤형 협동학습 플랫폼(ZIGSO)
+              <br />
+              개발 및 수업 적용
             </h1>
-            <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--muted-foreground)] leading-snug">
-              {LANDING_TAGLINE}
-            </h2>
           </div>
 
           {/* 시작 버튼: 작게 & 중앙 정렬 */}
@@ -65,64 +113,58 @@ export default function HomePage() {
           </div>
         </header>
 
-        {/* 핵심 3대 디지털 메커니즘 피쳐 목록 */}
-        <section className="mt-16 space-y-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* 주요 기능 피쳐 목록 (4 + 3 두 줄 중앙정렬) */}
+        <section className="mt-12 sm:mt-16 space-y-4">
+          {/* 첫 번째 줄: 4개 */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {FEATURES.slice(0, 4).map((feature, idx) => {
+              const Icon = feature.icon;
+              return (
+                <div
+                  key={idx}
+                  className="border border-[var(--border)] bg-[var(--surface)] p-4 rounded-xl space-y-2 hover:border-[var(--primary)]/40 hover:shadow-sm transition-all flex flex-col justify-start"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--tint-primary-weak)] text-[var(--primary)]">
+                      <Icon className="h-4 w-4" />
+                    </div>
+                    <h3 className="font-bold text-sm sm:text-base text-[var(--ink)]">
+                      {feature.title}
+                    </h3>
+                  </div>
+                  <p className="text-xs text-[var(--muted-foreground)] leading-relaxed break-keep">
+                    {feature.description}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
 
-            {/* 피쳐 1 */}
-            <div className="border border-[var(--border)] bg-[var(--surface)] p-6 rounded-xl space-y-4 hover:border-[var(--primary)]/30 transition-colors shadow-sm">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--tint-primary-weak)] text-[var(--primary)]">
-                <ClipboardList className="h-5 w-5" />
-              </div>
-              <div className="space-y-3">
-                <h4 className="font-extrabold text-lg text-[var(--ink)]">
-                  클릭 한 번으로 끝나는
-                  <br />
-                  모둠 수업 자동화
-                </h4>
-                <p className="text-xs sm:text-sm text-[var(--muted-foreground)] break-keep (word-break: keep-all)">
-                  자료 배부부터 모둠 편성, 자동 채점 및 실시간 진행 상황 확인까지 복잡한 모둠 수업 관리를 디지털로 단번에 해결하세요.
-                </p>
-              </div>
-            </div>
-
-            {/* 피쳐 2 */}
-            <div className="border border-[var(--border)] bg-[var(--surface)] p-6 rounded-xl space-y-4 hover:border-[var(--info)]/30 transition-colors shadow-sm">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[color-mix(in_srgb,var(--info)_12%,var(--surface))] text-[var(--info)]">
-                <Sparkles className="h-5 w-5" />
-              </div>
-              <div className="space-y-3">
-                <h4 className="font-extrabold text-lg text-[var(--ink)]">
-                  AI가 도와주는
-                  <br />
-                  개별 맞춤형 완전학습
-                </h4>
-                <p className="text-xs sm:text-sm text-[var(--muted-foreground)] break-keep (word-break: keep-all)">
-                  실시간 단계별 맞춤 힌트와 상세 해설을 통해, 모든 학생이 포기하지 않고 스스로 개념을 완벽히 이해하도록 지원합니다.
-                </p>
-              </div>
-            </div>
-
-            {/* 피쳐 3 */}
-            <div className="border border-[var(--border)] bg-[var(--surface)] p-6 rounded-xl space-y-4 hover:border-[var(--highlight)]/30 transition-colors shadow-sm">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--tint-highlight-weak)] text-[var(--highlight)]">
-                <Puzzle className="h-5 w-5" />
-              </div>
-              <div className="space-y-3">
-                <h4 className="font-extrabold text-lg text-[var(--ink)]">
-                  참여는 확실하게,
-                  <br />
-                  협동심은 단단하게
-                </h4>
-                <p className="text-xs sm:text-sm text-[var(--muted-foreground)] break-keep (word-break: keep-all)">
-                  실시간 제출 현황 시각화로 소외되는 학생을 방지하고, 개인의 향상도 점수를 모둠 평균에 반영하여 연대감과 협동을 이끌어냅니다.
-                </p>
-              </div>
-            </div>
-
+          {/* 두 번째 줄: 3개 중앙 정렬 */}
+          <div className="flex flex-col sm:flex-row justify-center gap-4">
+            {FEATURES.slice(4).map((feature, idx) => {
+              const Icon = feature.icon;
+              return (
+                <div
+                  key={idx}
+                  className="border border-[var(--border)] bg-[var(--surface)] p-4 rounded-xl space-y-2 hover:border-[var(--primary)]/40 hover:shadow-sm transition-all flex flex-col justify-start w-full sm:w-[calc(50%-0.5rem)] lg:w-[calc(25%-0.75rem)]"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--tint-primary-weak)] text-[var(--primary)]">
+                      <Icon className="h-4 w-4" />
+                    </div>
+                    <h3 className="font-bold text-sm sm:text-base text-[var(--ink)]">
+                      {feature.title}
+                    </h3>
+                  </div>
+                  <p className="text-xs text-[var(--muted-foreground)] leading-relaxed break-keep">
+                    {feature.description}
+                  </p>
+                </div>
+              );
+            })}
           </div>
         </section>
-
       </main>
     </div>
   );
