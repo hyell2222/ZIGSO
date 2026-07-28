@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 import {
   activityBodyPaddingBottomContained,
@@ -63,6 +63,7 @@ export function PlaySessionShell({
   initialPlayerId?: string;
 }) {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [nickname, setNickname] = useState("");
   const autoJoinAttempted = useRef(false);
@@ -120,6 +121,14 @@ export function PlaySessionShell({
       setNickname(playerQuery.data.nickname);
     }
   }, [playerQuery.data?.session_id, playerQuery.data?.nickname]);
+
+  // 플레이어 데이터 조회 실패 시 (예: 삭제된 플레이어 ID) /play/?code=XXXXXX 로 리다이렉트
+  useEffect(() => {
+    if (playerQuery.isError) {
+      clearResumeRecord(joinCode);
+      navigate(`/play/?code=${encodeURIComponent(joinCode.trim().toUpperCase())}`, { replace: true });
+    }
+  }, [playerQuery.isError, joinCode, navigate]);
 
   const assignedRoleId = playerQuery.data?.assigned_role_id ?? null;
   const groupId = playerQuery.data?.group_id ?? null;
