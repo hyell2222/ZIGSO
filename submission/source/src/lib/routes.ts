@@ -6,18 +6,18 @@ export const ROUTES = {
   home: "/",
   play: "/play/",
   playSession: "/play/session/",
-  playSessionJoin: (joinCode: string, nickname?: string) => {
+  playSessionJoin: (joinCode: string, playerId?: string) => {
     const code = encodeURIComponent(joinCode.trim().toUpperCase());
     const params = new URLSearchParams({ code });
-    if (nickname?.trim()) {
-      params.set("nickname", nickname.trim());
+    if (playerId?.trim()) {
+      params.set("playerId", playerId.trim());
     }
     return `/play/session/?${params.toString()}`;
   },
   /** QR·공유용 — 코드만 있으면 입장 페이지, 닉네임까지 있으면 세션으로 */
-  playJoin: (joinCode: string, nickname?: string) => {
-    if (nickname?.trim()) {
-      return `/#${ROUTES.playSessionJoin(joinCode, nickname)}`;
+  playJoin: (joinCode: string, playerId?: string) => {
+    if (playerId?.trim()) {
+      return `/#${ROUTES.playSessionJoin(joinCode, playerId)}`;
     }
     const code = encodeURIComponent(joinCode.trim().toUpperCase());
     return `/#/play/?code=${code}`;

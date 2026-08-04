@@ -34,12 +34,12 @@ const rankTileDefaultClass = "border-[var(--border)] bg-[var(--card-bg)]";
 
 function rankBadgeClass(tier: RankTier, rank: number) {
   const isMedal = tier !== "default";
-  const width = "w-14";
+  const width = "w-10 sm:w-14";
 
   return cn(
     width,
     "shrink-0 text-center font-bold tabular-nums leading-none",
-    isMedal ? "text-xl" : "text-base",
+    isMedal ? "text-lg sm:text-xl" : "text-sm sm:text-base",
     tierRankClass[tier],
     "text-[var(--primary)]",
   );
@@ -68,34 +68,41 @@ export function RankResultTile({
   return (
     <div
       className={cn(
-        "flex w-full items-center gap-3 rounded-lg border px-4 py-2.5",
+        "flex w-full items-center justify-between gap-2 sm:gap-3 rounded-lg border px-3 sm:px-4 py-2.5 min-w-0 overflow-hidden",
         highlight ? rankTileHighlightClass : rankTileDefaultClass,
         className,
       )}
       aria-label={score ? `${label} ${rank}위 ${score}` : `${label} ${rank}위`}
     >
-      <span className={rankBadgeClass(tier, rank)}>{rankLabel}</span>
-      <p
-        className={cn(
-          "min-w-0 flex-1 truncate text-base font-bold text-[var(--foreground)]",
-        )}
-      >
-        {label}
-      </p>
-      {durationText ? (
-        <span className="shrink-0 text-xs text-[var(--muted-foreground)] tabular-nums w-20 text-right">
-          {durationText}
-        </span>
-      ) : null}
-      {score ? (
-        <span
+      <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
+        <span className={rankBadgeClass(tier, rank)}>{rankLabel}</span>
+        <p
           className={cn(
-            "shrink-0 text-base font-bold tabular-nums w-10 text-right",
-            highlight ? "text-[var(--primary)]" : "text-[var(--foreground)]",
+            "min-w-0 flex-1 truncate text-sm sm:text-base font-bold text-[var(--foreground)]",
           )}
         >
-          {score}
-        </span>
+          {label}
+        </p>
+      </div>
+
+      {(durationText || score) ? (
+        <div className="flex shrink-0 flex-col items-end sm:flex-row sm:items-center gap-0.5 sm:gap-3 text-right ml-2">
+          {durationText ? (
+            <span className="whitespace-nowrap text-[11px] sm:text-xs text-[var(--muted-foreground)] tabular-nums">
+              {durationText}
+            </span>
+          ) : null}
+          {score ? (
+            <span
+              className={cn(
+                "whitespace-nowrap text-sm sm:text-base font-bold tabular-nums min-w-[2.5rem] text-right",
+                highlight ? "text-[var(--primary)]" : "text-[var(--foreground)]",
+              )}
+            >
+              {score}
+            </span>
+          ) : null}
+        </div>
       ) : null}
     </div>
   );
